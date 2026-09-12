@@ -803,7 +803,10 @@ function calculateRSI(prices, period = 14) {
   let gains = 0;
   let losses = 0;
 
-  for (let i = 1; i < prices.length; i++) {
+  // ⚡ BOLT OPTIMIZATION:
+  // 1. Calculate initial average gain/loss over the first `period` changes only.
+  // 2. Avoid Math.max() calls inside the loop for faster evaluation in V8 JS runtime.
+  for (let i = 1; i <= period && i < prices.length; i++) {
     const change = prices[i] - prices[i - 1];
     if (change > 0) gains += change;
     else losses -= change;
@@ -815,8 +818,8 @@ function calculateRSI(prices, period = 14) {
   // Calculate subsequent RSI values using Wilder's smoothing
   for (let i = period + 1; i < prices.length; i++) {
     const change = prices[i] - prices[i - 1];
-    const gain = Math.max(change, 0);
-    const loss = Math.max(-change, 0);
+    const gain = change > 0 ? change : 0;
+    const loss = change < 0 ? -change : 0;
 
     avgGain = (avgGain * (period - 1) + gain) / period;
     avgLoss = (avgLoss * (period - 1) + loss) / period;

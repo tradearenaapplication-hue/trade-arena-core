@@ -832,9 +832,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
          <button class="gh-bus-btn" onclick="togglePanel('staff')" title="Application Maintenance & Support">👷 STAFF</button>
        <button class="gh-bus-btn" onclick="togglePanel('task')" title="Earn Trade Credits">💰 EARN</button>
        <button class="gh-bus-btn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement">🏆 ARENA</button>
-       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)">🎙️ AGENT</button>
+       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false" aria-controls="voiceAgentModal">🎙️ AGENT</button>
        <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)">📊 FLEET</button>
-       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots">⚙ BUS</button>
+       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false" aria-controls="busPanel">⚙ BUS</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot" aria-label="Add new bot">+</button>
@@ -932,7 +932,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
   <div class="audit-panel" id="auditPanel">
-    <div class="audit-hd" id="auditHd" onclick="toggleAudit()" role="button" tabindex="0">
+    <div class="audit-hd" id="auditHd" onclick="toggleAudit()" role="button" tabindex="0" aria-expanded="false" aria-controls="auditBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🔍</span>
         <span class="audit-title">AGENT AUDIT</span>
@@ -964,7 +964,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ SELF-LEARNING PANEL ★ -->
   <div class="learn-panel" id="learnPanel">
-    <div class="learn-hd" id="learnHd" onclick="toggleLearn()" role="button" tabindex="0">
+    <div class="learn-hd" id="learnHd" onclick="toggleLearn()" role="button" tabindex="0" aria-expanded="false" aria-controls="learnBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🧬</span>
         <span class="learn-title">SELF-LEARNING MODEL</span>
@@ -1012,7 +1012,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ QUANT REPORT PANEL ★ -->
   <div class="cpanel" id="quantPanel">
-    <div class="cpanel-hd" id="quantHd" onclick="togglePanel('quant')" style="background:linear-gradient(90deg,rgba(68,136,255,.06),transparent)" role="button" tabindex="0">
+    <div class="cpanel-hd" id="quantHd" onclick="togglePanel('quant')" style="background:linear-gradient(90deg,rgba(68,136,255,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="quantBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🧪</span>
         <span class="cpanel-title" style="color:var(--blue)">QUANT REPORT</span>
@@ -1154,7 +1154,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ STAFF OPERATIONS PANEL ★ -->
   <div class="cpanel" id="staffPanel">
-    <div class="cpanel-hd" id="staffHd" onclick="togglePanel('staff')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
+    <div class="cpanel-hd" id="staffHd" onclick="togglePanel('staff')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="staffBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">👷</span>
         <span class="cpanel-title" style="color:var(--cyan)">STAFF OPERATIONS</span>
@@ -1203,7 +1203,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ ELO ARENA ★ -->
   <div class="cpanel" id="eloPanel">
-    <div class="cpanel-hd" id="eloHd" onclick="togglePanel('elo')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
+    <div class="cpanel-hd" id="eloHd" onclick="togglePanel('elo')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="eloBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🏆</span>
         <span class="cpanel-title" style="color:var(--cyan)">ELO ARENA</span>
@@ -1221,7 +1221,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ TASK CENTER ★ -->
   <div class="cpanel" id="taskPanel">
-    <div class="cpanel-hd" id="taskHd" onclick="togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0">
+    <div class="cpanel-hd" id="taskHd" onclick="togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="taskBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">💰</span>
         <span class="cpanel-title" style="color:var(--green)">TASK CENTER</span>
@@ -1239,7 +1239,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ CIRCUIT BREAKERS ★ -->
   <div class="cpanel" id="breakerPanel">
-    <div class="cpanel-hd" id="breakerHd" onclick="togglePanel('breaker')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)" role="button" tabindex="0">
+    <div class="cpanel-hd" id="breakerHd" onclick="togglePanel('breaker')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="breakerBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🛡️</span>
         <span class="cpanel-title" style="color:var(--amber)">CIRCUIT BREAKERS</span>
@@ -2421,7 +2421,7 @@ function togglePanel(name) {
   if(!body||!toggle) return;
   const isOpen=body.classList.toggle('open');
   hd?.classList.toggle('open',isOpen);
-  hd?.setAttribute('aria-expanded', isOpen);
+  if(hd) hd.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
   toggle.textContent=isOpen?'▴ HIDE':'▼ '+(name==='quant'?'EXPAND':'CONFIGURE');
   if(name==='quant'&&isOpen){ updateQuantReport(); setTimeout(drawEquityCurve,50); }
   if(name==='elo'&&isOpen){ if(typeof renderEloArena === 'function') renderEloArena(); }
@@ -2996,7 +2996,7 @@ function renderBot(bot){
         <div style="display:flex;gap:4px;align-items:center">
           <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})">AUTO</button>
           <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})" style="padding:6px 12px;font-size:11px">🎰 SPIN</button>
-          <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings" aria-label="Bot ${bot.id} settings">⚙</button>
+          <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings" aria-label="Bot ${bot.id} settings" aria-expanded="false" aria-controls="mdrop-${bot.id}">⚙</button>
         </div>
       </div>
       <div class="m-dropdown" id="mdrop-${bot.id}">
@@ -3125,7 +3125,10 @@ function toggleBotSettings(id){
   const gear=document.getElementById('mgear-'+id);
   if(!drop) return;
   const open=drop.classList.toggle('open');
-  if(gear) gear.classList.toggle('open',open);
+  if(gear) {
+    gear.classList.toggle('open',open);
+    gear.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
 }
 function setBotPersonality(id,val){
   const bot=bots.find(b=>b.id===id); if(!bot) return;
@@ -4278,8 +4281,10 @@ function toggleLearn() {
   const toggle = document.getElementById('learnToggle');
   if (!body) return;
   const isOpen = body.classList.toggle('open');
-  hd.classList.toggle('open', isOpen);
-  hd.setAttribute('aria-expanded', isOpen);
+  if (hd) {
+    hd.classList.toggle('open', isOpen);
+    hd.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
   toggle.textContent = isOpen ? '▴ HIDE' : '▼ EXPAND';
   if (isOpen) renderLearnPanel();
 }
@@ -4595,8 +4600,10 @@ function toggleAudit() {
   const toggle = document.getElementById('auditToggle');
   if (!body) return;
   const isOpen = body.classList.toggle('open');
-  hd.classList.toggle('open', isOpen);
-  hd.setAttribute('aria-expanded', isOpen);
+  if (hd) {
+    hd.classList.toggle('open', isOpen);
+    hd.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
   toggle.textContent = isOpen ? '▴ HIDE' : '▼ EXPAND';
   if (isOpen) renderAuditPanel();
 }
@@ -4776,7 +4783,10 @@ function toggleBusPanel() {
   const btn   = document.getElementById('ghBusBtn');
   if (!panel) return;
   const open = panel.classList.toggle('open');
-  if (btn) btn.classList.toggle('open', open);
+  if (btn) {
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
 }
 
 function _busStatus(msg, ok=true) {
@@ -5165,7 +5175,10 @@ function toggleVoiceAgent() {
   const btn = document.getElementById('voiceAgentBtn');
   if (!modal) return;
   const isOpen = modal.classList.toggle('open');
-  if (btn) btn.classList.toggle('open', isOpen);
+  if (btn) {
+    btn.classList.toggle('open', isOpen);
+    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
 }
 
 async function sendVoiceCommand() {

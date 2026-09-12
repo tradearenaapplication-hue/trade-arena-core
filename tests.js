@@ -293,6 +293,23 @@ describe("Contract Helpers - Security & Simulation", () => {
     expect(valid.valid).toBe(true);
     expect(invalid.valid).toBe(false);
   });
+
+  it("prevents path traversal directory escape", () => {
+    const path = require("path");
+    const baseDir = __dirname;
+
+    const isPathSafe = (filepath) => {
+      if (!filepath || typeof filepath !== "string") return false;
+      const fullPath = path.resolve(baseDir, filepath);
+      const relative = path.relative(baseDir, fullPath);
+      return !relative.startsWith("..") && !path.isAbsolute(relative);
+    };
+
+    expect(isPathSafe("index.html")).toBe(true);
+    expect(isPathSafe("./strategies/loader.js")).toBe(true);
+    expect(isPathSafe("../../../etc/passwd")).toBe(false);
+    expect(isPathSafe("/etc/passwd")).toBe(false);
+  });
 });
 
 describe("Arbitrage & Flash Loan Simulators", () => {

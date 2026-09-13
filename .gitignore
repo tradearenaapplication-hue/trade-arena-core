@@ -3,7 +3,7 @@ dist/
 build/
 public/arena-react-bundle.js
 public/arena-react-bundle.js.map
-.jules/
+.Jules/
 .continue/
 .vscode/
 .idea/
@@ -20,3 +20,5 @@ contracts/foundry.lock
 
 # Local foundry binaries and config
 .foundry/
+! .Jules/bolt.md
+! .Jules/palette.md

@@ -5,12 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-<script src="privy-client.js?v=4.3.40"></script>
-<script src="contract-helpers.js?v=4.3.40"></script>
-<script src="real-wallet.js?v=4.3.40"></script>
-<script src="blockchain-execution.js?v=4.3.40"></script>
-<script src="execution-engine.js?v=4.3.40"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
 <style>
 :root{
   --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
@@ -720,46 +715,18 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <!-- Theme Color -->
 <meta name="theme-color" content="#00f5ff">
 
-<!-- Service Worker & Cache Hard Reset -->
-	<script>
-	  (function() {
-	    const CURRENT_VERSION = '4.3.12';
-	    const lastVersion = localStorage.getItem('ta_app_version');
-    
-    if (lastVersion !== CURRENT_VERSION) {
-      console.log('🚀 Version mismatch detected (Last: ' + lastVersion + ', Current: ' + CURRENT_VERSION + '). Performing hard reset...');
-      
-      // Unregister all Service Workers
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-          for (let r of regs) r.unregister();
-        });
-      }
-      
-      // Clear all caches
-      if ('caches' in window) {
-        caches.keys().then(keys => {
-          for (let k of keys) caches.delete(k);
-        });
-      }
-      
-      localStorage.setItem('ta_app_version', CURRENT_VERSION);
-      console.log('✅ Cache and SW cleared. Refreshing page for latest assets...');
-      setTimeout(() => location.reload(true), 500);
-    } else if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
-    }
-  })();
+<!-- Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
+  }
 </script>
 
 </head>
 <body>
-<div id="toastContainer" style="position:fixed; top:20px; right:20px; z-index:100000; display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
-<div id="react-root"></div>
 <div class="edge"></div>
 
 <!-- ══ CONNECT ══ -->
-<div style="position:fixed; top:10px; right:10px; background:var(--hot); color:white; padding:5px 10px; font-size:10px; z-index:10000; border-radius:4px; font-family:'Bungee'; box-shadow:0 0 10px var(--hot);">LIVE V4.3.40</div>
 <div id="connectScreen">
   <div class="marquee-wrap">
     <div class="marquee-inner">
@@ -773,40 +740,25 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
 <div class="login-card">
-    <div class=login-card-hd>METAMASK AGENT WALLET ENTRY</div>
+    <div class=login-card-hd>SECURE WALLET ENTRY</div>
     <div class=login-card-bd>
-      <!-- Agent Wallet via Google Only -->
-      <button class=g-btn onclick="handleGoogleLogin();" style="height:56px; font-size:14px; background: #fff; color: #111; border: none; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
-        <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" style="width:24px; height:24px;">
-        <span style="font-family:'Bungee'; letter-spacing:1px">CONNECT AGENT VIA GOOGLE</span>
+      <!-- MetaMask Priority -->
+      <button id="mmConnectBtn" class="g-btn" onclick="handleMetaMaskConnect()" style="height:44px; font-size:12px; background: #f6851b; color: #fff; border: none; margin-bottom: 8px;">
+        <span style="font-family:'Bungee'; letter-spacing:1px">CONNECT METAMASK (RECOMMENDED)</span>
       </button>
 
-      <div style="margin-top:16px; padding: 12px; background: rgba(0,255,231,0.05); border: 1px solid rgba(0,255,231,0.2); border-radius: 8px;">
-        <p style="font-size:10px; color:var(--cyan); text-align:center; line-height:1.4; font-family:'JetBrains Mono'">
-          <span style="font-weight:bold">AGENT MODE ACTIVE</span><br>
-          Only authenticated MetaMask Agent Wallets are accepted. All trades are executed on-chain via the Agent CLI.
-        </p>
-      </div>
+      <button class=g-btn onclick="if(typeof privyInit==='function') privyInit(); if(window.privyLogin) window.privyLogin();" style="height:44px; font-size:12px; background: linear-gradient(90deg, var(--cyan), var(--hot)); color: #000; border: none;">
+        <span style="font-family:'Bungee'; letter-spacing:1px">PRIVY / SOCIAL LOGIN</span>
+      </button>
 
       <div style="margin-top:12px; display:flex; gap:8px;">
         <button class=onramp-btn onclick="window.openMoonpay && window.openMoonpay()" style="flex:1">💳 DEPOSIT</button>
         <button class=offramp-btn onclick="openWithdrawModal()" style="flex:1">💵 WITHDRAW</button>
       </div>
-      
-      <div style="margin-top:16px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:8px;">
-        <div style="display:flex; justify-content:center; gap:10px;">
-          <button onclick="alert('Browser: ' + navigator.userAgent + '\nMetaMask Agent: READY\nAuth: Privy/Google')" style="background:none; border:none; color:var(--dim); font-size:9px; text-decoration:underline; cursor:pointer;">
-            DIAGNOSTICS
-          </button>
-          <button onclick="if(window.navigator.serviceWorker){navigator.serviceWorker.getRegistrations().then(regs=>{for(let r of regs)r.unregister()});} caches.keys().then(keys=>{for(let k of keys)caches.delete(k)}); location.reload(true);" style="background:none; border:none; color:var(--dim); font-size:9px; text-decoration:underline; cursor:pointer;">
-            FORCE RELOAD
-          </button>
-        </div>
-      </div>
 
-      <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:12px; line-height:1.4">
-        MetaMask Agentic CLI v6.1.0 Integration<br>
-        <span style="color:var(--green)">✓ Base Mainnet</span> • <span style="color:var(--green)">✓ Autonomous Arbitrage</span>
+      <p style="font-size:9px; color:var(--dim); text-align:center; margin-top:8px; line-height:1.4">
+        Secure Multi-Chain Authentication<br>
+        <span style="color:var(--green)">✓ Mainnet Ready</span> • <span style="color:var(--green)">✓ EIP-712 Secure Payouts</span>
       </p>
     </div>
   </div>
@@ -820,7 +772,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div class="global-header">
     <div class="gh-avatar" id="ghAvatar" role="img" aria-label="User Avatar">👤</div>
     <div style="flex:1;overflow:hidden;min-width:60px">
-      <div id="react-header-portal"></div>
+      <div id="react-header-root"></div>
       <div class="gh-name" id="ghName" style="display:none">—</div>
 <span style="font-size:9px;padding:1px 6px;border-radius:10px;background:var(--chrome);border:1px solid var(--border);color:var(--green)" id="ghBadge">LIVE</span>
       <span style="font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(0,255,231,.08);border:1px solid rgba(0,255,231,.2);color:var(--cyan);display:none" id="ghNetwork">BASE</span>
@@ -843,8 +795,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
      <!-- bot controls -->
      <div class="gh-controls">
-       <button class="gh-bus-btn" id="masterDashboardBtn" onclick="window.location.href='master-dashboard.html'" title="Master Dashboard (Stitch V3.1)" aria-expanded="false" style="border-color:var(--cyan);color:var(--cyan)"><span role="img" aria-hidden="true">💎</span> MASTER</button>
-       <button class="gh-bus-btn" id="agentConsoleBtn" onclick="window.location.href='agent-console.html'" title="Managed Agent Console (Stitch Terminal)" aria-expanded="false" style="border-color:var(--purple);color:var(--purple)"><span role="img" aria-hidden="true">🤖</span> TERMINAL</button>
        <button class="gh-bus-btn" id="ghStaffBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false"><span role="img" aria-hidden="true">👷</span> STAFF</button>
        <button class="gh-bus-btn" id="ghTaskBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false"><span role="img" aria-hidden="true">💰</span> EARN</button>
        <button class="gh-bus-btn" id="ghEloBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false"><span role="img" aria-hidden="true">🏆</span> ARENA</button>
@@ -857,57 +807,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddTraderBtn" onclick="addBot('TRADER')" title="Add Trading Bot" aria-label="Add new trading bot">🤖</button><button class="gh-bot-btn" id="ghAddWorkerBtn" onclick="addBot('WORKER')" title="Add Worker Bot" aria-label="Add new worker bot">👷</button>
      </div>
-
-  <!-- MetaMask Agent Wallet Panel -->
-  <div class="cpanel" id="agentWalletPanel" style="margin:10px 0; border:1px solid var(--cyan); box-shadow:0 0 15px rgba(0,255,231,.1)">
-    <div class="cpanel-hd open" onclick="toggleCPanel('agentWalletPanel')" style="background:rgba(0,255,231,.05)">
-      <span class="cpanel-title" style="color:var(--cyan)">🤖 METAMASK AGENT WALLET — BASE MAINNET</span>
-      <span class="cpanel-toggle">▼</span>
-    </div>
-    <div class="cpanel-body open">
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
-        <div style="background:var(--chrome); padding:10px; border-radius:8px; border:1px solid var(--border)">
-          <div style="font-size:9px; color:var(--dim); margin-bottom:4px">AGENT ADDRESS</div>
-          <div id="agentAddr" style="font-size:11px; color:var(--cyan); word-break:break-all">Fetching...</div>
-          <div id="agentStatus" style="font-size:9px; color:var(--green); margin-top:4px">● AUTHENTICATED</div>
-        </div>
-        <div style="background:var(--chrome); padding:10px; border-radius:8px; border:1px solid var(--border)">
-          <div style="font-size:9px; color:var(--dim); margin-bottom:4px">AGENT BALANCE</div>
-          <div id="agentBalance" style="font-size:14px; color:var(--gold); font-weight:bold">$0.00</div>
-          <div id="agentEthPrice" style="font-size:9px; color:var(--dim); margin-top:4px">ETH: $0.00</div>
-        </div>
-        <div style="background:var(--chrome); padding:10px; border-radius:8px; border:1px solid var(--border)">
-          <div style="font-size:9px; color:var(--dim); margin-bottom:4px">ARBITRAGE ENGINE</div>
-          <div id="arbStatus" style="font-size:11px; color:var(--hot)">SCANNING...</div>
-          <button id="arbToggleBtn" onclick="toggleArbitrage()" style="margin-top:4px; width:100%; font-size:9px; padding:4px; background:var(--chrome); border:1px solid var(--border); border-radius:4px; color:var(--dim); cursor:pointer; font-family:Bungee">STOP SCANNER</button>
-        </div>
-        <div style="background:var(--chrome); padding:10px; border-radius:8px; border:1px solid var(--border)">
-          <div style="font-size:9px; color:var(--dim); margin-bottom:4px">FLASHLOAN BOT</div>
-          <div id="flashStatus" style="font-size:11px; color:var(--cyan)">READY</div>
-          <button onclick="triggerFlashloan()" style="margin-top:4px; width:100%; font-size:9px; padding:4px; background:var(--hot); border:none; border-radius:4px; color:white; cursor:pointer; font-family:Bungee">TEST FLASHLOAN</button>
-        </div>
-      </div>
-      <div style="margin-top:12px">
-        <div style="font-size:9px; color:var(--dim); margin-bottom:6px">RECENT AGENT TRANSACTIONS</div>
-        <div id="agentTxList" style="font-size:10px; display:flex; flex-direction:column; gap:4px">
-          <div style="color:var(--dim)">No recent activity...</div>
-        </div>
-      </div>
-
-      <!-- Agent Login/Pairing UI (Visible when disconnected) -->
-      <div id="agentPairingUI" style="display:none; margin-top:12px; padding:10px; background:rgba(255,165,0,0.1); border:1px solid rgba(255,165,0,0.3); border-radius:8px; text-align:center">
-        <div style="color:var(--amber); font-size:10px; font-weight:bold; margin-bottom:8px">⚠️ AGENT DISCONNECTED</div>
-        <button onclick="getAgentLoginUrl()" style="width:100%; padding:8px; background:var(--amber); color:#000; border:none; border-radius:4px; font-family:'Bungee'; font-size:10px; cursor:pointer">GENERATE PAIRING LINK</button>
-        <div id="pairingLinkContainer" style="display:none; margin-top:8px">
-          <a id="pairingLink" href="#" target="_blank" style="color:var(--cyan); font-size:9px; word-break:break-all">Click here to pair wallet</a>
-          <div style="margin-top:8px">
-            <input id="cliTokenInput" type="password" placeholder="Paste CLI Token here..." style="width:100%; padding:4px; background:#000; border:1px solid var(--border); color:#fff; font-size:9px; margin-bottom:4px">
-            <button onclick="submitAgentToken()" style="width:100%; padding:4px; background:var(--green); color:#000; border:none; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer">SUBMIT TOKEN</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
   </div>
@@ -1143,28 +1042,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <!-- Databricks Genie Config -->
       <div class="db-config" id="dbConfig">
         <div class="db-config-title">🧱 DATABRICKS GENIE <span style="color:var(--dim);font-size:7px;font-family:'Share Tech Mono',monospace" id="dbStatus">NOT CONFIGURED</span></div>
-
-        <div style="margin-bottom:8px">
-          <label for="dbWorkspace" style="display:block; font-size:8px; color:var(--dim); margin-bottom:2px">DATABRICKS WORKSPACE URL</label>
-          <input type="text" id="dbWorkspace" placeholder="Workspace URL: https://your-workspace.azuredatabricks.net" oninput="updateDbStatus()">
-        </div>
-
-        <div style="margin-bottom:8px">
-          <label for="dbSpaceId" style="display:block; font-size:8px; color:var(--dim); margin-bottom:2px">GENIE SPACE ID</label>
-          <input type="text" id="dbSpaceId" placeholder="Genie Space ID (from Databricks UI)" oninput="updateDbStatus()">
-        </div>
-
-        <div style="margin-bottom:8px">
-          <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--dim); margin-bottom:2px">
-            <label for="dbToken">PERSONAL ACCESS TOKEN</label>
-            <div style="display:flex;gap:8px">
-              <button onclick="toggleVisibility('dbToken', this)" aria-label="Toggle Databricks Genie Token visibility" aria-pressed="false" aria-controls="dbToken" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
-              <a href="https://docs.databricks.com/en/dev-tools/auth/pat.html" target="_blank" rel="noopener noreferrer" aria-label="Get Databricks Personal Access Token (opens in a new tab)" style="color:var(--cyan); text-decoration:none;">Get Token →</a>
-            </div>
-          </div>
-          <input type="password" id="dbToken" placeholder="Personal Access Token (Settings → Developer)" oninput="updateDbStatus()">
-        </div>
-
+        <input type="text" id="dbWorkspace" placeholder="Workspace URL: https://your-workspace.azuredatabricks.net" oninput="updateDbStatus()">
+        <input type="text" id="dbSpaceId" placeholder="Genie Space ID (from Databricks UI)" oninput="updateDbStatus()">
+        <input type="password" id="dbToken" placeholder="Personal Access Token (Settings → Developer)" oninput="updateDbStatus()">
         <div class="db-status">When configured, the Genie agent queries your warehouse for historical trade context and pattern data before each decision.</div>
       </div>
 
@@ -1388,7 +1268,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div id="task-tab-internal" role="tabpanel" aria-labelledby="tab-internal">
           <div id="cStatus" style="font-size:10px;color:var(--dim);margin-bottom:8px">Loading deployment queue…</div>
 
-      <!-- hCaptcha Removed -->
+      <!-- hCaptcha Widget Container (Hidden by default) -->
+      <div id="hcaptcha-container" style="display:none; margin-bottom:15px; text-align:center">
+        <div style="font-size:10px; color:var(--cyan); margin-bottom:8px">PROVE YOU ARE HUMAN TO EARN</div>
+        <div class="h-captcha" id="h-captcha-widget" data-sitekey="10000000-ffff-ffff-ffff-000000000001" data-callback="onHCaptchaSuccess"></div>
+      </div>
 
           <div id="taskQuestList" style="margin-bottom:15px"></div><div id="taskCenterRows"></div>
       </div>
@@ -1536,65 +1420,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <div class="log-list" id="globalLog"><div class="empty-log">No trades yet. Spin a bot to start trading! 🎰</div></div>
   </div>
-
-  <!-- On-Chain Receipts Panel -->
-  <div class="cpanel" id="receiptsPanel" style="margin-top: 20px; border-color: var(--gold2);">
-    <div class="cpanel-hd" id="receiptsHd" onclick="togglePanel('receipts')" style="background:linear-gradient(90deg,rgba(255,215,0,.1),transparent)" role="button" tabindex="0">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px" role="img" aria-hidden="true">🧾</span>
-        <span class="cpanel-title" style="color:var(--gold)">ON-CHAIN RECEIPTS</span>
-        <span style="font-size:9px;color:var(--dim)">Verified Basescan Transactions</span>
-      </div>
-      <span class="cpanel-toggle" id="receiptsToggle">▼ EXPAND</span>
-    </div>
-    <div class="cpanel-body" id="receiptsBody">
-      <div id="receiptsList" style="display:flex; flex-direction:column; gap:8px;">
-        <div style="text-align:center; padding:20px; color:var(--dim); font-size:10px; border:1px dashed var(--border); border-radius:6px;">
-          No on-chain receipts yet. Execute a live trade to see verified receipts here.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- System Monitor & Console Logger Panel -->
-  <div class="cpanel" id="monitorPanel" style="margin-top: 20px; border-color: var(--cyan);">
-    <div class="cpanel-hd" id="monitorHd" onclick="togglePanel('monitor')" style="background:linear-gradient(90deg,rgba(0,240,255,.1),transparent)" role="button" tabindex="0">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:14px" role="img" aria-hidden="true">🖥️</span>
-        <span class="cpanel-title" style="color:var(--cyan)">SYSTEM MONITOR & SERVER LOGS</span>
-        <span style="font-size:9px;color:var(--dim)" id="monitorStatus">Connecting...</span>
-      </div>
-      <span class="cpanel-toggle" id="monitorToggle">▼ EXPAND</span>
-    </div>
-    <div class="cpanel-body" id="monitorBody">
-      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:12px;">
-        <div style="background:var(--chrome); padding:8px; border-radius:6px; border:1px solid var(--border);">
-          <div style="font-size:8px; color:var(--dim); text-transform:uppercase;">Server Uptime</div>
-          <div id="metricUptime" style="font-family:'Share Tech Mono'; font-size:14px; color:var(--gold);">0s</div>
-        </div>
-        <div style="background:var(--chrome); padding:8px; border-radius:6px; border:1px solid var(--border);">
-          <div style="font-size:8px; color:var(--dim); text-transform:uppercase;">Active Traders</div>
-          <div id="metricConnections" style="font-family:'Share Tech Mono'; font-size:14px; color:var(--cyan);">0</div>
-        </div>
-        <div style="background:var(--chrome); padding:8px; border-radius:6px; border:1px solid var(--border);">
-          <div style="font-size:8px; color:var(--dim); text-transform:uppercase;">Memory (Heap Used)</div>
-          <div id="metricMemory" style="font-family:'Share Tech Mono'; font-size:14px; color:var(--green);">0 MB</div>
-        </div>
-        <div style="background:var(--chrome); padding:8px; border-radius:6px; border:1px solid var(--border);">
-          <div style="font-size:8px; color:var(--dim); text-transform:uppercase;">Node Version</div>
-          <div id="metricNode" style="font-family:'Share Tech Mono'; font-size:14px; color:#fff;">v22.13.0</div>
-        </div>
-      </div>
-      <div style="background:#0b0f17; border:1px solid var(--border); border-radius:6px; padding:10px; height:180px; overflow-y:auto; font-family:'Share Tech Mono',monospace; font-size:9px; display:flex; flex-direction:column; gap:4px;" id="serverConsoleLogs">
-        <div style="color:var(--dim);">Awaiting server log stream...</div>
-      </div>
-      <div style="display:flex; gap:8px; margin-top:10px;">
-        <button onclick="testSignature()" style="flex:1; background:rgba(0,240,255,0.1); border:1px solid var(--cyan); color:var(--cyan); padding:6px; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">⚡ TEST SIGNATURE</button>
-        <button onclick="resetExecutionState()" style="flex:1; background:rgba(255,45,120,0.1); border:1px solid var(--hot); color:var(--hot); padding:6px; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">🔄 RESET ENGINE</button>
-        <button onclick="document.getElementById('serverConsoleLogs').innerHTML=''" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--dim); padding:6px; border-radius:4px; font-family:'Bungee'; font-size:9px; cursor:pointer;">🗑️ CLEAR</button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -1616,14 +1441,10 @@ function escapeHTML(str) {
  */
 async function handleMetaMaskConnect() {
   if (!window.ethereum) {
-    if (typeof handlePrivyClick === 'function') {
-      return handlePrivyClick();
-    }
-    if (typeof showToast === 'function') showToast('No provider detected. Please install MetaMask or use Social Login.', 'error');
+    showToast('MetaMask not found. Please install the extension.', 'error');
     return;
   }
   const btn = document.getElementById('mmConnectBtn');
-  const originalText = btn ? btn.textContent : 'CONNECT METAMASK (RECOMMENDED)';
   if (btn) {
     btn.disabled = true;
     btn.textContent = 'CONNECTING...';
@@ -1632,19 +1453,15 @@ async function handleMetaMaskConnect() {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     if (accounts.length > 0) {
       const address = accounts[0];
-      // Ethers v6 uses BrowserProvider
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
       // Update global walletState
       if (!window.walletState) window.walletState = { isConnected: false };
       window.walletState.isConnected = true;
       window.walletState.address = address;
       window.walletState.provider = provider;
-      
-      // getSigner is async in v6
-      provider.getSigner().then(signer => {
-        window.walletState.signer = signer;
-      }).catch(err => console.error('Error getting signer:', err));
+      window.walletState.signer = signer;
 
       showToast(`Connected: ${address.slice(0,6)}...${address.slice(-4)}`, 'success');
 
@@ -1676,22 +1493,41 @@ async function handleMetaMaskConnect() {
           mergedUser = { ...userData, ...data.user };
         }
 
-        // 🛡️ UNIFIED SYNC: Balance is now managed by updateAgentStatus() via /api/network/status
-        // This ensures the dashboard reflects the funded Agent Wallet (0x2ca1...)
-        if (window.lastAgentStatus && window.lastAgentStatus.wallet) {
-            balance = parseFloat(window.lastAgentStatus.wallet.balance) || 0;
-        } else {
+        // Fetch live on-chain balance from MetaMask and sync it
+        if (window.getWalletBalanceUSD) {
+          try {
+            const liveBalance = await window.getWalletBalanceUSD();
+            if (liveBalance !== undefined && liveBalance !== null) {
+              balance = liveBalance;
+            } else {
+              balance = data.success ? data.user.balance || 0 : 0;
+            }
+          } catch (balErr) {
+            console.warn('[MetaMask] Failed to fetch live wallet balance:', balErr);
             balance = data.success ? data.user.balance || 0 : 0;
+          }
+        } else {
+          balance = data.success ? data.user.balance || 0 : 0;
         }
 
         if (typeof setupApp === 'function') setupApp(mergedUser);
       } catch (apiErr) {
         console.warn('API login error, proceeding with fallback:', apiErr);
-        // 🛡️ UNIFIED SYNC: Prioritize Agent Wallet balance even on fallback
-        if (window.lastAgentStatus && window.lastAgentStatus.wallet) {
-            balance = parseFloat(window.lastAgentStatus.wallet.balance) || 0;
-        } else {
+        // Fetch live on-chain balance on fallback too
+        if (window.getWalletBalanceUSD) {
+          try {
+            const liveBalance = await window.getWalletBalanceUSD();
+            if (liveBalance !== undefined && liveBalance !== null) {
+              balance = liveBalance;
+            } else {
+              balance = 0;
+            }
+          } catch (balErr) {
+            console.warn('[MetaMask] Failed to fetch live wallet balance on fallback:', balErr);
             balance = 0;
+          }
+        } else {
+          balance = 0;
         }
         if (typeof setupApp === 'function') setupApp(userData);
       }
@@ -1702,11 +1538,10 @@ async function handleMetaMaskConnect() {
       if (typeof refreshSettingsUI === 'function') refreshSettingsUI();
     }
   } catch (err) {
-    console.error('MetaMask connection error:', err);
-    if (typeof showToast === 'function') showToast(err.message, 'error');
+    showToast(err.message, 'error');
     if (btn) {
       btn.disabled = false;
-      btn.textContent = originalText || 'CONNECT METAMASK (RECOMMENDED)';
+      btn.textContent = 'CONNECT METAMASK (RECOMMENDED)';
     }
   }
 }
@@ -3207,10 +3042,10 @@ function updateConnectionDashboard() {
     .then(data => {
       // Update Missing Keys Alert Banner dynamically
       const keyGenLinks = {
-        'ANTHROPIC_API_KEY': { label: 'Anthropic', url: 'https://console.anthropic.com/settings/keys' },
+        'ANTHROPIC_API_KEY': { label: 'Anthropic', url: 'https://console.anthropic.com' },
         'OPENAI_API_KEY': { label: 'OpenAI', url: 'https://platform.openai.com/api-keys' },
         'GEMINI_API_KEY': { label: 'Gemini', url: 'https://aistudio.google.com/app/apikey' },
-        '0x_API_KEY': { label: '0x API', url: 'https://dashboard.0x.org/apps' },
+        '0x_API_KEY': { label: '0x API', url: 'https://dashboard.0x.org' },
         'TASK_CLAIM_SECRET': { label: 'Task Secret', url: 'https://trade-arena.com/keys' }
       };
 
@@ -3222,7 +3057,7 @@ function updateConnectionDashboard() {
         banner.style.display = 'flex';
         keysListEl.innerHTML = 'Inactive required systems: ' + missing.map(c => {
           const info = keyGenLinks[c.name] || { label: c.name.replace(/_/g, ' '), url: '#' };
-          return `<a href="${info.url}" target="_blank" rel="noopener noreferrer" aria-label="Get ${escapeHTML(info.label)} (opens in a new tab)" style="color:var(--cyan); text-decoration:underline; font-weight:bold; margin:0 4px;">${info.label} (GET KEY →)</a>`;
+          return `<a href="${info.url}" target="_blank" rel="noopener noreferrer" style="color:var(--cyan); text-decoration:underline; font-weight:bold; margin:0 4px;">${info.label} (GET KEY →)</a>`;
         }).join(', ');
       } else if (banner) {
         banner.style.display = 'none';
@@ -3243,10 +3078,10 @@ function updateConnectionDashboard() {
         let keyEntryHtml = '';
         if (isAiKey || isSecret) {
           const keyGenLinks = {
-            'ANTHROPIC_API_KEY': 'https://console.anthropic.com/settings/keys',
+            'ANTHROPIC_API_KEY': 'https://console.anthropic.com',
             'OPENAI_API_KEY': 'https://platform.openai.com/api-keys',
             'GEMINI_API_KEY': 'https://aistudio.google.com/app/apikey',
-            '0x_API_KEY': 'https://dashboard.0x.org/apps',
+            '0x_API_KEY': 'https://dashboard.0x.org',
             'TASK_CLAIM_SECRET': 'https://trade-arena.com/keys'
           };
           const genUrl = keyGenLinks[conn.name] || '#';
@@ -3256,7 +3091,7 @@ function updateConnectionDashboard() {
             <div style="margin-top:8px; border-top:1px solid var(--border); padding-top:8px;">
               <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                 <span style="font-size:8px; color:var(--dim);">${label} — ${escapeHTML(conn.name.replace(/_/g, ' '))}</span>
-                <a href="${genUrl}" target="_blank" rel="noopener noreferrer" aria-label="Get ${escapeHTML(conn.name.replace(/_/g, ' '))} (opens in a new tab)" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>
+                <a href="${genUrl}" target="_blank" rel="noopener noreferrer" style="font-size:8px; color:var(--cyan); text-decoration:none;">GET KEY →</a>
               </div>
               <div style="display:flex; gap:4px;">
                 <input type="password" id="d_cfg_${conn.name}" placeholder="Enter ${escapeHTML(conn.name.replace(/_/g, ' '))}..."
@@ -3711,27 +3546,17 @@ function openOskoRamp(type) {
 
 
 
-window.onPrivyLoginSuccess = function(user, address) {
+window.onPrivyLoginSuccess = function() {
   const s = document.getElementById('loginStatus');
   if(s) s.textContent = '✅ Privy Authorized! Syncing Arena instance...';
 
-  // Use provided arguments or fallback to global window state
-  const activeUser = user || window.privyUser;
-  const activeAddress = address || window.privyWalletAddress;
-
   const userData = {
-    name: activeUser?.google?.name || activeUser?.email?.address || 'Arena Trader',
-    email: activeUser?.email?.address || activeUser?.google?.email,
-    address: activeAddress,
+    name: window.privyUser?.google?.name || window.privyUser?.email?.address || 'Arena Trader',
+    email: window.privyUser?.email?.address || window.privyUser?.google?.email,
+    address: window.privyWalletAddress,
     provider: 'privy',
     badge: '💠 PRIVY'
   };
-
-  // Transition to main app immediately to prevent blocking
-  const cs = document.getElementById('connectScreen');
-  const app = document.getElementById('mainApp');
-  if (cs) cs.style.display = 'none';
-  if (app) { app.style.display = 'flex'; app.style.flexDirection = 'column'; }
 
   fetch('/api/user/login', {
     method: 'POST',
@@ -3741,20 +3566,9 @@ window.onPrivyLoginSuccess = function(user, address) {
   .then(res => res.json())
   .then(data => {
     if(data.success) {
-      // 🛡️ SECURITY: Only use server balance if on-chain balance is NOT active
-      if(typeof balance !== 'undefined') {
-          if (window.walletState && window.walletState.isConnected && window.walletState.balanceUSD > 0) {
-              console.log('[Sync] Preserving on-chain balance over server balance');
-          } else {
-              balance = data.user.balance || 0;
-          }
-      }
+      if(typeof balance !== 'undefined') balance = data.user.balance || 0;
       if(typeof setupApp === 'function') setupApp({ ...userData, ...data.user });
     }
-  }).catch(err => {
-      console.error('Privy Sync Error:', err);
-      // Even if API fails, ensure app is set up with local data
-      if(typeof setupApp === 'function') setupApp(userData);
   });
 };
 
@@ -3766,13 +3580,8 @@ function setupApp({name,avatar,badge,address}){
     if(app){ app.style.display='flex'; app.style.flexDirection='column'; }
     try{ setVal('ghName',name); setVal('ghBadge',badge); }catch(e){}
     if(avatar){ try{ const a=document.getElementById('ghAvatar'); if(a){ a.innerHTML=''; const img=document.createElement('img'); img.src=avatar; img.alt='User avatar'; img.style.cssText='width:26px;height:26px;border-radius:50%;object-fit:cover'; img.onerror=function(){ a.innerHTML='👤'; }; a.appendChild(img); } }catch(e){} }
-    // 🛡️ SYNC: Only set startBalance if it's currently 0 to preserve session baseline
-    if (startBalance === 0 || startBalance === null) {
-        startBalance = balance;
-    }
-    if (equityHistory.length === 0 || (equityHistory.length === 1 && equityHistory[0] === 0)) {
-        equityHistory=[balance];
-    }
+    startBalance = balance;
+    equityHistory=[balance];
     try{ updateLiveBalance(); }catch(e){ console.warn('balance:',e); }
     try{ updateBreakers(); }catch(e){ console.warn('breakers:',e); }
     requestAnimationFrame(function(){
@@ -4449,41 +4258,20 @@ async function spinBot(id){
     if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
 
     // ON-CHAIN EXECUTION TRIGGER
-    const hasWallet = (window.isPrivyConnected && window.isPrivyConnected()) || (window.walletState && window.walletState.isConnected) || (window.ethereum);
-    const isHold = decision.method === 'HOLD';
-    
-    if (hasWallet && !isHold && !decision.method.includes('PAPER')) {
+    if (window.isLiveMode && window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
         console.log('[Arena] Routing to On-Chain Execution Engine...');
-        if (window.showToast) window.showToast(`Initiating Live ${decision.method} on Base...`, 'info');
-        
         try {
-            if (window.executeOnChainTrade) {
-                await window.executeOnChainTrade({
-                    botId: bot.id,
-                    token: decision.token,
-                    method: decision.method,
-                    amountUSD: bot.bet
-                });
-            } else {
-                console.error('[Arena] executeOnChainTrade not found on window');
-                if (window.showToast) window.showToast('Execution engine not loaded', 'error');
-            }
+            await window.executeOnChainTrade({
+                botId: bot.id,
+                token: decision.token,
+                method: decision.method,
+                amountUSD: bot.bet
+            });
         } catch (execError) {
-            console.error('[Arena] On-chain execution failed:', execError);
-            if (window.showToast) window.showToast(`Live Trade Error: ${execError.message}`, 'error');
-            // If execution fails, we stop here to prevent paper-trade recording of a failed live trade
-            return;
+            console.error('[Arena] On-chain execution failed, falling back to simulation', execError);
         }
-    } else if (isHold) {
-        console.log('[Arena] Bot decided to HOLD, skipping execution.');
-    } else if (!hasWallet) {
-        console.log('[Arena] No wallet connected, skipping live execution.');
-        if (window.showToast) window.showToast('Connect wallet to execute live trades', 'warn');
     }
-  }catch(e){
-    console.error('[Arena] Spin error:', e);
-    if (window.showToast) window.showToast(`System Error: ${e.message}`, 'error');
-  }
+  }catch(e){}
 
   await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m);
   updateQuantReport();
@@ -6462,19 +6250,19 @@ document.addEventListener('keydown', function(e) {
 
 </script>
 <!-- Arena React Bundle -->
-<script src="arena-react-bundle.js?v=4.3.40" defer></script>
-<script src="app.js?v=4.3.40" defer></script>
+<script src="arena-react-bundle.js" defer></script>
 
 <!-- ACOUSTIC Audio-Visual Engines -->
-<script src="acoustic-bundle.js?v=4.3.40" defer></script>
-<script src="ACOUSTIC_CORE.js?v=4.3.40" defer></script>
-<script src="trading-bundle.js?v=4.3.40" defer></script>
-<script src="task-center.js?v=4.3.40" defer></script>
-<script src="gas-fund.js?v=4.3.40" defer></script>
-<script src="management-bundle.js?v=4.3.40" defer></script>
+<script src="acoustic-bundle.js" defer></script>
+<script src="ACOUSTIC_CORE.js" defer></script>
+<script src="trading-bundle.js" defer></script>
+<script src="task-center.js" defer></script>
+<script src="gas-fund.js" defer></script>
+<script src="management-bundle.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Trade Arena V4.3.40 Initialized');
+  // checkAutoLogin(); // Legacy removed
+  // privyInit(); // Lazy loaded on interaction now
   const savedTheme = localStorage.getItem('ta_theme') || 'default';
   if (typeof applyTheme === 'function') {
     applyTheme(savedTheme, false);
@@ -6482,32 +6270,16 @@ document.addEventListener('DOMContentLoaded', function() {
   if (typeof updateConnectionDashboard === 'function') {
     updateConnectionDashboard();
   }
-  // Auto-connect disabled to prevent broadcast channel crashes on boot
-  
-  // Real-time Balance Sync (V4.3.40)
-  setInterval(async () => {
-    // 🛡️ UNIFIED SYNC: Prioritize on-chain walletState balance
-    if (window.walletState && window.walletState.isConnected && window.walletState.balanceUSD > 0) {
-        if (typeof balance !== 'undefined') {
-            balance = window.walletState.balanceUSD;
-            if (typeof updateLiveBalance === 'function') updateLiveBalance();
+  // Auto-connect MetaMask if already connected and authorized
+  if (window.ethereum) {
+    window.ethereum.request({ method: 'eth_accounts' })
+      .then(accounts => {
+        if (accounts && accounts.length > 0) {
+          handleMetaMaskConnect();
         }
-        return;
-    }
-    
-    // Fallback to legacy sync if wallet not connected
-    if (window.getWalletBalanceUSD) {
-      try {
-        const liveBalance = await window.getWalletBalanceUSD();
-        if (liveBalance !== undefined && liveBalance !== null) {
-          balance = liveBalance;
-          if (typeof updateLiveBalance === 'function') updateLiveBalance();
-        }
-      } catch (e) {
-        console.warn('[BalanceSync] Failed:', e);
-      }
-    }
-  }, 5000); // Sync every 5 seconds
+      })
+      .catch(err => console.warn('[MetaMask] Auto-connect check failed:', err));
+  }
 
   // Keyboard navigation for Task Center Tablist (role="tablist")
   const taskTablist = document.getElementById('taskTablist');
@@ -6776,23 +6548,6 @@ function refreshSettingsUI() {
     if (b1) { b1.classList.toggle('active', sfxOn); b1.setAttribute('aria-pressed', sfxOn.toString()); }
     if (b2) { b2.classList.toggle('active', voiceOn); b2.setAttribute('aria-pressed', voiceOn.toString()); }
     if (b3) { b3.classList.toggle('active', audioOn); b3.setAttribute('aria-pressed', audioOn.toString()); }
-
-    // Flashloan Arb Status (V4.3.40)
-    if (window.lastAgentStatus && window.lastAgentStatus.arbitrage) {
-        const arb = window.lastAgentStatus.arbitrage;
-        const elExec = document.getElementById('settingsArbExecution');
-        const elMin = document.getElementById('settingsArbMinProfit');
-        const elMax = document.getElementById('settingsArbMaxGas');
-        const elEng = document.getElementById('settingsArbEngine');
-        
-        if (elExec) {
-            elExec.textContent = arb.executionEnabled ? 'ENABLED' : 'DISABLED';
-            elExec.style.color = arb.executionEnabled ? 'var(--green)' : 'var(--dim)';
-        }
-        if (elMin) elMin.textContent = `$${parseFloat(arb.minProfitUsd).toFixed(2)}`;
-        if (elMax) elMax.textContent = `$${parseFloat(arb.maxGasUsd).toFixed(2)}`;
-        if (elEng) elEng.textContent = arb.engineAddress || 'Not Deployed';
-    }
 }
 function applyTheme(theme, isUserClick = false) {
     const currentTheme = localStorage.getItem('ta_theme') || 'default';
@@ -6964,7 +6719,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_ant', this)" aria-label="Toggle Anthropic API Key visibility" aria-pressed="false" aria-controls="s_cfg_ant" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_ant', this)" aria-label="Copy Anthropic API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" aria-label="Get Anthropic API Key (opens in a new tab)" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_ant" placeholder="sk-ant-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -6976,7 +6731,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_oa', this)" aria-label="Toggle OpenAI API Key visibility" aria-pressed="false" aria-controls="s_cfg_oa" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_oa', this)" aria-label="Copy OpenAI API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" aria-label="Get OpenAI API Key (opens in a new tab)" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_oa" placeholder="sk-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -6988,7 +6743,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_gem', this)" aria-label="Toggle Google Gemini API Key visibility" aria-pressed="false" aria-controls="s_cfg_gem" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_gem', this)" aria-label="Copy Google Gemini API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" aria-label="Get Google Gemini API Key (opens in a new tab)" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_gem" placeholder="AIza..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -7000,7 +6755,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_zx', this)" aria-label="Toggle 0x API Key visibility" aria-pressed="false" aria-controls="s_cfg_zx" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_zx', this)" aria-label="Copy 0x API Key" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://dashboard.0x.org/apps" target="_blank" rel="noopener noreferrer" aria-label="Get 0x API Key (opens in a new tab)" style="color:var(--cyan)">Get Key →</a>
+              <a href="https://dashboard.0x.org" target="_blank" rel="noopener noreferrer" style="color:var(--cyan)">Get Key →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_zx" placeholder="0x-api-key-..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -7012,7 +6767,7 @@ function updateSettingsVolume(val) {
             <div style="display:flex;gap:8px">
               <button onclick="toggleVisibility('s_cfg_ts', this)" aria-label="Toggle Task Reward Secret visibility" aria-pressed="false" aria-controls="s_cfg_ts" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">SHOW</button>
               <button onclick="copyToClipboard('s_cfg_ts', this)" aria-label="Copy Task Reward Secret" style="background:none;border:none;color:var(--cyan);font-size:8px;cursor:pointer;padding:0">COPY</button>
-              <a href="https://trade-arena.com/keys" target="_blank" rel="noopener noreferrer" aria-label="Get Task Reward Secret (opens in a new tab)" style="color:var(--cyan); text-decoration:none;">GET SECRET →</a>
+              <a href="https://trade-arena.com/keys" target="_blank" rel="noopener noreferrer" style="color:var(--cyan); text-decoration:none;">GET SECRET →</a>
             </div>
           </div>
           <input type="password" id="s_cfg_ts" placeholder="Enter payout validation secret..." style="width:100%; padding:6px 8px; background:var(--bg); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:10px">
@@ -7030,8 +6785,8 @@ function updateSettingsVolume(val) {
         </div>
 
         <div style="display:flex; gap:6px">
-          <button onclick="saveSettingsApiKeys()" aria-label="Save all API keys and contract configuration settings" title="Save all configuration keys to local storage" style="flex:1; padding:8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">SAVE ALL KEYS</button>
-          <button onclick="testSettingsApiKey()" aria-label="Test Anthropic API key connectivity with Claude" title="Perform a dry-run connection test to Claude API" style="padding:8px 15px; background:var(--chrome); border:1px solid var(--border); color:var(--dim); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">TEST CLAUDE</button>
+          <button onclick="saveSettingsApiKeys()" style="flex:1; padding:8px; background:var(--chrome); border:1px solid var(--border); color:var(--cyan); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">SAVE ALL KEYS</button>
+          <button onclick="testSettingsApiKey()" style="padding:8px 15px; background:var(--chrome); border:1px solid var(--border); color:var(--dim); border-radius:4px; font-family:'Bungee',display; font-size:10px; cursor:pointer">TEST CLAUDE</button>
         </div>
 
         <div id="apiTestResult" style="font-size:9px; color:var(--dim); margin-top:6px"></div>
@@ -7041,49 +6796,25 @@ function updateSettingsVolume(val) {
         </div>
       </div>
       <div class="settings-section">
-        <div class="settings-section-title">⚡ Flashloan Arbitrage</div>
-        <div style="font-size:10px;color:var(--dim);margin-bottom:8px">
-          <div style="display:flex; justify-content:space-between; margin-bottom:4px">
-            <span>Execution Status:</span>
-            <span id="settingsArbExecution" style="color:var(--dim); font-family:'Bungee'">DISABLED</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:4px">
-            <span>Min Profit Threshold:</span>
-            <span id="settingsArbMinProfit" style="color:var(--cyan)">$5.00</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:4px">
-            <span>Max Gas Limit:</span>
-            <span id="settingsArbMaxGas" style="color:var(--cyan)">$2.00</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:4px">
-            <span>Engine Contract:</span>
-            <span id="settingsArbEngine" style="color:var(--cyan); font-size:8px">Not Deployed</span>
-          </div>
-        </div>
-        <div style="font-size:8px;color:var(--dim);line-height:1.4;margin-top:8px;padding:6px;background:rgba(255,255,255,0.03);border-radius:4px">
-          * These parameters are managed via Render environment variables (ENABLE_LIVE_EXECUTION, ARB_MIN_PROFIT_USD, ARB_MAX_GAS_USD).
-        </div>
-      </div>
-      <div class="settings-section">
         <div class="settings-section-title">🎨 Colour Theme</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="theme-preset active" onclick="applyTheme('default', true)" data-theme="default" aria-label="Set theme to Cyberpunk" aria-pressed="true" title="Set visual palette to Cyberpunk">Cyberpunk</button>
-          <button class="theme-preset" onclick="applyTheme('matrix', true)" data-theme="matrix" aria-label="Set theme to Matrix" aria-pressed="false" title="Set visual palette to Matrix">Matrix</button>
-          <button class="theme-preset" onclick="applyTheme('sunset', true)" data-theme="sunset" aria-label="Set theme to Sunset" aria-pressed="false" title="Set visual palette to Sunset">Sunset</button>
-          <button class="theme-preset" onclick="applyTheme('ocean', true)" data-theme="ocean" aria-label="Set theme to Ocean" aria-pressed="false" title="Set visual palette to Ocean">Ocean</button>
+          <button class="theme-preset active" onclick="applyTheme('default', true)" data-theme="default">Cyberpunk</button>
+          <button class="theme-preset" onclick="applyTheme('matrix', true)" data-theme="matrix">Matrix</button>
+          <button class="theme-preset" onclick="applyTheme('sunset', true)" data-theme="sunset">Sunset</button>
+          <button class="theme-preset" onclick="applyTheme('ocean', true)" data-theme="ocean">Ocean</button>
         </div>
       </div>
       <div class="settings-section">
         <div class="settings-section-title">🔊 Sound Preferences</div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <label for="settingsVolume" style="font-size:9px;color:var(--dim);min-width:48px;cursor:pointer">Volume</label>
-          <input type="range" id="settingsVolume" min="0" max="100" value="50" style="flex:1" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" aria-label="Sound volume level" oninput="document.getElementById('settingsVolumeLabel').textContent=this.value+'%';updateSettingsVolume(this.value)" onchange="if(window.SFX && window.SFX.tick) { try { window.SFX.tick(); } catch(e){} }">
+          <input type="range" id="settingsVolume" min="0" max="100" value="50" style="flex:1" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" oninput="document.getElementById('settingsVolumeLabel').textContent=this.value+'%';updateSettingsVolume(this.value)" onchange="if(window.SFX && window.SFX.tick) { try { window.SFX.tick(); } catch(e){} }">
           <span id="settingsVolumeLabel" style="font-size:9px;color:var(--dim);min-width:32px;text-align:right">50%</span>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button id="settingsSfxBtn" class="sound-toggle active" onclick="toggleSettingsSfx()" aria-label="Toggle SFX sound effects" aria-pressed="true" title="Toggle SFX sound effects">🔊 SFX</button>
-          <button id="settingsVoiceBtn" class="sound-toggle" onclick="toggleSettingsVoice()" aria-label="Toggle Voice synthesis commentary" aria-pressed="false" title="Toggle AI voice synthesis">🗣️ Voice</button>
-          <button id="settingsAudioBtn" class="sound-toggle" onclick="toggleSettingsAudio()" aria-label="Toggle background Audio loops" aria-pressed="false" title="Toggle background ambient tracks">🎹 Audio</button>
+          <button id="settingsSfxBtn" class="sound-toggle active" onclick="toggleSettingsSfx()">🔊 SFX</button>
+          <button id="settingsVoiceBtn" class="sound-toggle" onclick="toggleSettingsVoice()">🗣️ Voice</button>
+          <button id="settingsAudioBtn" class="sound-toggle" onclick="toggleSettingsAudio()">🎹 Audio</button>
         </div>
       </div>
     </div>
@@ -7092,7 +6823,7 @@ function updateSettingsVolume(val) {
 
 
 
-<!-- hCaptcha SDK Removed -->
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 
 <!-- Withdrawal QR Modal -->
 <div id="withdrawModal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center;">

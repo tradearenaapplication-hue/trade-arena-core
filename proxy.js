@@ -81,7 +81,11 @@ app.post('/api/maintenance/log', (req, res) => {
 app.post('/api/maintenance/patch', async (req, res) => {
   const { filepath, patch, description } = req.body;
   try {
-    const fullPath = path.join(__dirname, filepath);
+    // SECURITY: Sanitize filepath to prevent Path Traversal vulnerabilities
+    if (!filepath || typeof filepath !== 'string') throw new Error('Invalid filepath');
+    const fullPath = path.resolve(__dirname, filepath);
+    const relative = path.relative(__dirname, fullPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('Access denied: Invalid file path');
     if (!fs.existsSync(fullPath)) throw new Error('File not found');
 
     // In a real self-healing system, we would validate the patch

@@ -866,6 +866,33 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
   });
 });
 
+describe("Header Toggle Controls Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines aria-expanded and aria-controls on #voiceAgentBtn and #ghBusBtn", () => {
+    expect(html).toContain('id="voiceAgentBtn"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('aria-controls="voiceAgentModal"');
+    expect(html).toContain('id="ghBusBtn"');
+    expect(html).toContain('aria-controls="busPanel"');
+  });
+
+  it("defines aria-pressed on #fleetViewBtn and #ghAutoBtn", () => {
+    expect(html).toContain('id="fleetViewBtn"');
+    expect(html).toContain('id="ghAutoBtn"');
+    expect(html).toContain('aria-pressed="false"');
+  });
+
+  it("updates aria-expanded/aria-pressed in toggle JavaScript functions", () => {
+    expect(html).toContain("btn.setAttribute('aria-pressed', isFleet)");
+    expect(html).toContain("btn.setAttribute('aria-expanded', open)");
+    expect(html).toContain("btn.setAttribute('aria-expanded', isOpen)");
+    expect(html).toContain("btn.setAttribute('aria-pressed', _ghAutoOn)");
+    expect(html).toContain("this.setAttribute('aria-pressed', isOn)");
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

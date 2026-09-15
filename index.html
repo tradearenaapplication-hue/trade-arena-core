@@ -1032,24 +1032,24 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <!-- Crucible Controls -->
        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-           <label style="color:var(--dim);font-size:10px">Regime:</label>
-           <div style="display:flex;gap:2px">
-             <button id="regimeBull" class="regime-btn" onclick="selectRegime('BULL')">BULL</button>
-             <button id="regimeBear" class="regime-btn" onclick="selectRegime('BEAR')">BEAR</button>
-             <button id="regimeChop" class="regime-btn" onclick="selectRegime('CHOP')">CHOP</button>
-             <button id="regimeHighVol" class="regime-btn" onclick="selectRegime('HIGH_VOL')">HIGH_VOL</button>
+           <label style="color:var(--dim);font-size:10px" id="regimeGroupLabel">Regime:</label>
+           <div style="display:flex;gap:2px" role="group" aria-labelledby="regimeGroupLabel">
+             <button id="regimeBull" class="regime-btn active" onclick="selectRegime('BULL')" aria-pressed="true" aria-label="Select BULL regime">BULL</button>
+             <button id="regimeBear" class="regime-btn" onclick="selectRegime('BEAR')" aria-pressed="false" aria-label="Select BEAR regime">BEAR</button>
+             <button id="regimeChop" class="regime-btn" onclick="selectRegime('CHOP')" aria-pressed="false" aria-label="Select CHOP regime">CHOP</button>
+             <button id="regimeHighVol" class="regime-btn" onclick="selectRegime('HIGH_VOL')" aria-pressed="false" aria-label="Select HIGH_VOL regime">HIGH_VOL</button>
            </div>
          </div>
 
          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-           <label style="color:var(--dim);font-size:10px">Cost Model:</label>
+           <label for="costModelSelect" style="color:var(--dim);font-size:10px">Cost Model:</label>
            <select id="costModelSelect" style="padding:4px 8px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
              <option value="REALISTIC_1X">REALISTIC_1X (0.1% fees)</option>
              <option value="STRESS_1_5X">STRESS_1_5X (1.5x real costs)</option>
            </select>
          </div>
 
-         <label style="color:var(--dim);font-size:10px">Trades:</label>
+         <label for="crucibleTradeCount" style="color:var(--dim);font-size:10px">Trades:</label>
          <input type="number" id="crucibleTradeCount" value="50" min="1" max="1000" style="width:60px;padding:4px 6px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
 
           <button class="crucible-run-btn" onclick="runCrucibleV2Batch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">▶ RUN CRUCIBLE V2</button>
@@ -2151,6 +2151,16 @@ async function runCrucibleBatch() {
   } finally {
     if(runBtn) runBtn.disabled = false;
   }
+}
+
+function selectRegime(regime) {
+  const map = { BULL: 'regimeBull', BEAR: 'regimeBear', CHOP: 'regimeChop', HIGH_VOL: 'regimeHighVol' };
+  const targetId = map[regime] || 'regimeBull';
+  document.querySelectorAll('.regime-btn').forEach(btn => {
+    const isActive = btn.id === targetId;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
 }
 
 async function runCrucibleV2Batch() {

@@ -1006,6 +1006,24 @@ describe("Header Toggle Controls Accessibility", () => {
   });
 });
 
+describe("Crucible Regime Selection UX & Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines aria-pressed, role=group, and aria-label on regime buttons", () => {
+    expect(html).toContain('role="group" aria-labelledby="regimeGroupLabel"');
+    expect(html).toContain('id="regimeBull" class="regime-btn active" onclick="selectRegime(\'BULL\')" aria-pressed="true"');
+    expect(html).toContain('id="regimeBear" class="regime-btn" onclick="selectRegime(\'BEAR\')" aria-pressed="false"');
+    expect(html).toContain('for="costModelSelect"');
+    expect(html).toContain('for="crucibleTradeCount"');
+  });
+
+  it("defines selectRegime handler updating aria-pressed attributes", () => {
+    expect(html).toContain("function selectRegime(regime)");
+    expect(html).toContain("btn.setAttribute('aria-pressed', isActive ? 'true' : 'false')");
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

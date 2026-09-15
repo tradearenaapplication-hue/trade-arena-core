@@ -3,7 +3,7 @@
   "build": {
     "builder": "RAILPACK",
     "provider": "nodejs",
-    "buildCommand": "npm install && npm run build"
+    "buildCommand": "npm run build"
   },
   "deploy": {
     "startCommand": "node server.js",

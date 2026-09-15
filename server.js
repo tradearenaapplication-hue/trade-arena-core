@@ -9,6 +9,7 @@ const cors = require('cors');
 const ethers = require('ethers');
 const axios = require('axios');
 const WebSocket = require('websocket').w3cwebsocket;
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,6 +36,17 @@ const DEX_ABI = [
     'function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)',
     'function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)'
 ];
+
+/**
+ * Constant-time string comparison to prevent timing side-channel attacks
+ */
+function safeCompare(a, b) {
+    if (!a || !b || typeof a !== 'string' || typeof b !== 'string') return false;
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
+}
 
 /** Deployment queue for confirmed deposits */
 const deploymentEvents = [];
@@ -86,8 +98,9 @@ app.post('/api/webhooks/moonpay/deposit', (req, res) => {
         const signature = req.headers['x-moonpay-signature'];
         const expectedSecret = process.env.MOONPAY_WEBHOOK_SECRET || '';
 
-        if (expectedSecret && signature !== expectedSecret) {
-            return res.status(401).json({ success: false, error: 'Invalid webhook signature' });
+        // Security: Require valid webhook secret & signature, compared in constant time
+        if (!expectedSecret || !signature || !safeCompare(signature, expectedSecret)) {
+            return res.status(401).json({ success: false, error: 'Invalid or unconfigured webhook signature' });
         }
 
         const payload = req.body || {};
@@ -485,9 +498,11 @@ function generateId() {
 /**
  * Start Server
  */
-app.listen(PORT, () => {
-    console.log(`­ƒñû Trade Arena Backend running on port ${PORT}`);
-    console.log(`­ƒôè Market analysis: http://localhost:${PORT}/api/health`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`🤖 Trade Arena Backend running on port ${PORT}`);
+        console.log(`📊 Market analysis: http://localhost:${PORT}/api/health`);
+    });
+}
 
 module.exports = app;

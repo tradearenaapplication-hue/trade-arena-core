@@ -883,6 +883,102 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
   });
 });
 
+describe("MoonPay Webhook Security", () => {
+  const server = require("./server.js");
+
+  it("rejects webhook request when MOONPAY_WEBHOOK_SECRET is unconfigured", () => {
+    const originalSecret = process.env.MOONPAY_WEBHOOK_SECRET;
+    delete process.env.MOONPAY_WEBHOOK_SECRET;
+
+    try {
+      let statusCode = 200;
+      let jsonResponse = null;
+
+      const req = { headers: { "x-moonpay-signature": "test_sig" }, body: { status: "completed" } };
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      const route = server._router.stack.find(
+        (layer) => layer.route && layer.route.path === "/api/webhooks/moonpay/deposit"
+      );
+      expect(Boolean(route)).toBe(true);
+
+      route.route.stack[0].handle(req, res);
+
+      expect(statusCode).toBe(401);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toContain("Invalid or unconfigured webhook signature");
+    } finally {
+      if (originalSecret !== undefined) process.env.MOONPAY_WEBHOOK_SECRET = originalSecret;
+    }
+  });
+
+  it("rejects webhook request when signature is missing or invalid", () => {
+    const originalSecret = process.env.MOONPAY_WEBHOOK_SECRET;
+    process.env.MOONPAY_WEBHOOK_SECRET = "secret_12345";
+
+    try {
+      const route = server._router.stack.find(
+        (layer) => layer.route && layer.route.path === "/api/webhooks/moonpay/deposit"
+      );
+
+      // Missing signature
+      let statusCode = 200;
+      let jsonResponse = null;
+      let res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+      route.route.stack[0].handle({ headers: {}, body: { status: "completed" } }, res);
+      expect(statusCode).toBe(401);
+
+      // Invalid signature
+      statusCode = 200;
+      res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+      route.route.stack[0].handle({ headers: { "x-moonpay-signature": "wrong_sig" }, body: { status: "completed" } }, res);
+      expect(statusCode).toBe(401);
+    } finally {
+      if (originalSecret !== undefined) process.env.MOONPAY_WEBHOOK_SECRET = originalSecret;
+      else delete process.env.MOONPAY_WEBHOOK_SECRET;
+    }
+  });
+
+  it("accepts deposit confirmation when signature is valid", () => {
+    const originalSecret = process.env.MOONPAY_WEBHOOK_SECRET;
+    process.env.MOONPAY_WEBHOOK_SECRET = "secret_12345";
+
+    try {
+      const route = server._router.stack.find(
+        (layer) => layer.route && layer.route.path === "/api/webhooks/moonpay/deposit"
+      );
+
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      route.route.stack[0].handle({
+        headers: { "x-moonpay-signature": "secret_12345" },
+        body: { status: "completed", amount: 100, walletAddress: "0x123" }
+      }, res);
+
+      expect(statusCode).toBe(200);
+      expect(jsonResponse.success).toBe(true);
+      expect(jsonResponse.message).toContain("Deposit confirmed");
+    } finally {
+      if (originalSecret !== undefined) process.env.MOONPAY_WEBHOOK_SECRET = originalSecret;
+      else delete process.env.MOONPAY_WEBHOOK_SECRET;
+    }
+  });
+});
+
 describe("Header Toggle Controls Accessibility", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");

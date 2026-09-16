@@ -1,13 +1,13 @@
 providers = ["node"]
 
 [phases.setup]
-nixPkgs = ["nodejs-22_x", "pnpm"]
+nixPkgs = ["nodejs-22_x", "nodePackages.pnpm"]
 
 [phases.install]
-cmds = ["pnpm install --no-frozen-lockfile"]
+cmds = ["npx pnpm install --no-frozen-lockfile"]
 
 [phases.build]
-cmds = ["pnpm run build"]
+cmds = ["npx pnpm run build"]
 
 [start]
 cmd = "node server.js"

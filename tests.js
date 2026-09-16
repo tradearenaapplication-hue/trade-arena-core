@@ -883,6 +883,64 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
   });
 });
 
+describe("Swap Execution Endpoint Security", () => {
+  const server = require("./server.js");
+
+  it("rejects swap requests with missing or invalid parameters", () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/execute/swap"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidPayloads = [
+      {},
+      { fromToken: "WETH" },
+      { fromToken: "WETH", toToken: "USDC", amount: -5 },
+      { fromToken: "WETH", toToken: "USDC", amount: "invalid" },
+      { fromToken: "WETH", toToken: "USDC", amount: 10, slippage: -0.1 },
+      { fromToken: "WETH", toToken: "USDC", amount: 10, slippage: 1.5 },
+    ];
+
+    for (const body of invalidPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      route.route.stack[0].handle({ body }, res);
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid swap parameters");
+    }
+  });
+
+  it("executes valid swap requests and returns secure txHash", () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/execute/swap"
+    );
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    route.route.stack[0].handle({
+      body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 }
+    }, res);
+
+    expect(statusCode).toBe(200);
+    expect(jsonResponse.success).toBe(true);
+    expect(jsonResponse.swap.from.token).toBe("WETH");
+    expect(jsonResponse.swap.from.amount).toBe("1.5000");
+    expect(jsonResponse.swap.to.token).toBe("USDC");
+    expect(jsonResponse.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+  });
+});
+
 describe("MoonPay Webhook Security", () => {
   const server = require("./server.js");
 

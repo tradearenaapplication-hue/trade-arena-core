@@ -323,30 +323,41 @@ app.post('/api/flash-loan/simulate', async (req, res) => {
  */
 app.post('/api/execute/swap', async (req, res) => {
     try {
-        const { fromToken, toToken, amount, slippage } = req.body;
+        const { fromToken, toToken, amount, slippage } = req.body || {};
+
+        const numAmount = Number(amount);
+        const numSlippage = slippage !== undefined ? Number(slippage) : 0.005;
+
+        // Security: Validate inputs & sanitize error output
+        if (!fromToken || typeof fromToken !== 'string' ||
+            !toToken || typeof toToken !== 'string' ||
+            isNaN(numAmount) || numAmount <= 0 ||
+            isNaN(numSlippage) || numSlippage < 0 || numSlippage > 1) {
+            return res.status(400).json({ success: false, error: 'Invalid swap parameters' });
+        }
 
         // Simulate swap execution
-        const expectedOutput = amount * (1 - (slippage || 0.005)); // Account for slippage
+        const expectedOutput = numAmount * (1 - numSlippage);
         const gasUsed = Math.random() * 150000 + 50000; // 50k - 200k gas
         const gasCost = gasUsed * 0.001; // Simplified (real would use current gas price)
 
         const result = {
             success: true,
             swap: {
-                from: { token: fromToken, amount: amount.toFixed(4) },
+                from: { token: fromToken, amount: numAmount.toFixed(4) },
                 to: { token: toToken, amount: expectedOutput.toFixed(4) },
                 exchange: 'Uniswap V3',
-                slippage: `${(slippage * 100).toFixed(2)}%`,
+                slippage: `${(numSlippage * 100).toFixed(2)}%`,
                 gasUsed: gasUsed.toFixed(0),
                 gasCost: gasCost.toFixed(4),
                 timestamp: Date.now()
             },
-            txHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
+            txHash: '0x' + crypto.randomBytes(32).toString('hex')
         };
 
         res.json(result);
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 

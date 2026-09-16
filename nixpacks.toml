@@ -1,8 +1,10 @@
+providers = ["node"]
+
 [phases.setup]
-nixPkgs = ["nodejs-22_x", "nodePackages.pnpm"]
+nixPkgs = ["nodejs-22_x", "pnpm"]
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
+cmds = ["pnpm install --no-frozen-lockfile"]
 
 [phases.build]
 cmds = ["pnpm run build"]

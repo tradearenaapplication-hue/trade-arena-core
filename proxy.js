@@ -79,14 +79,20 @@ app.post('/api/maintenance/log', (req, res) => {
 });
 
 app.post('/api/maintenance/patch', async (req, res) => {
-  const { filepath, patch, description } = req.body;
+  const { filepath, patch, description } = req.body || {};
   try {
-    // SECURITY: Sanitize filepath to prevent Path Traversal vulnerabilities
-    if (!filepath || typeof filepath !== 'string') throw new Error('Invalid filepath');
+    // SECURITY: Sanitize filepath to prevent Path Traversal vulnerabilities before filesystem access
+    if (!filepath || typeof filepath !== 'string') {
+      return res.status(400).json({ error: 'Invalid filepath' });
+    }
     const fullPath = path.resolve(__dirname, filepath);
     const relative = path.relative(__dirname, fullPath);
-    if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('Access denied: Invalid file path');
-    if (!fs.existsSync(fullPath)) throw new Error('File not found');
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      return res.status(403).json({ error: 'Access denied: Invalid file path' });
+    }
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
 
     // In a real self-healing system, we would validate the patch
     // For this implementation, we log the intent and could apply it

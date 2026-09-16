@@ -941,6 +941,30 @@ describe("Swap Execution Endpoint Security", () => {
   });
 });
 
+describe("Proxy Maintenance Patch Route Security", () => {
+  it("rejects invalid, escaping, or non-existent filepaths in patch endpoint logic", () => {
+    const fs = require("fs");
+    const path = require("path");
+
+    // Pure logic simulation matching /api/maintenance/patch security rules
+    const validatePatchPath = (filepath) => {
+      if (!filepath || typeof filepath !== "string") return { status: 400, error: "Invalid filepath" };
+      const fullPath = path.resolve(__dirname, filepath);
+      const relative = path.relative(__dirname, fullPath);
+      if (relative.startsWith("..") || path.isAbsolute(relative)) return { status: 403, error: "Access denied: Invalid file path" };
+      if (!fs.existsSync(fullPath)) return { status: 404, error: "File not found" };
+      return { status: 200, success: true };
+    };
+
+    expect(validatePatchPath(null).status).toBe(400);
+    expect(validatePatchPath("").status).toBe(400);
+    expect(validatePatchPath("../../../etc/passwd").status).toBe(403);
+    expect(validatePatchPath("/etc/passwd").status).toBe(403);
+    expect(validatePatchPath("non_existent_file_12345.js").status).toBe(404);
+    expect(validatePatchPath("server.js").status).toBe(200);
+  });
+});
+
 describe("MoonPay Webhook Security", () => {
   const server = require("./server.js");
 

@@ -5,9 +5,10 @@
   "main": "server.js",
   "engines": {
     "node": ">=22.18.0"
+    "packageManager": "pnpm@9.12.0"
   },
   "scripts": {
-"packageManager": "pnpm@9.12.0"
+
   "start": "node server.js",
     "start:balanced": "node --max-semi-space-size=64 --max-old-space-size=2048 server.js",
     "start:hft": "node --max-semi-space-size=256 --max-old-space-size=4096 --nouse-idle-notification --incremental-marking server.js",

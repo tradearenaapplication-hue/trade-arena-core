@@ -1064,6 +1064,28 @@ describe("Header Toggle Controls Accessibility", () => {
   });
 });
 
+describe("Collapsible Control Panel Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines aria-expanded and aria-controls on collapsible panel headers", () => {
+    expect(html).toContain('id="quantHd"');
+    expect(html).toContain('aria-controls="quantBody"');
+    expect(html).toContain('id="staffHd"');
+    expect(html).toContain('aria-controls="staffBody"');
+    expect(html).toContain('id="eloHd"');
+    expect(html).toContain('aria-controls="eloBody"');
+    expect(html).toContain('id="taskHd"');
+    expect(html).toContain('aria-controls="taskBody"');
+    expect(html).toContain('id="breakerHd"');
+    expect(html).toContain('aria-controls="breakerBody"');
+    expect(html).toContain('id="auditHd"');
+    expect(html).toContain('aria-controls="auditBody"');
+    expect(html).toContain('id="learnHd"');
+    expect(html).toContain('aria-controls="learnBody"');
+  });
+});
+
 describe("Crucible Regime Selection UX & Accessibility", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");

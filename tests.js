@@ -1047,6 +1047,12 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain('aria-controls="voiceAgentModal"');
     expect(html).toContain('id="ghBusBtn"');
     expect(html).toContain('aria-controls="busPanel"');
+    expect(html).toContain('id="staffNavBtn"');
+    expect(html).toContain('aria-controls="staffPanel"');
+    expect(html).toContain('id="taskNavBtn"');
+    expect(html).toContain('aria-controls="taskPanel"');
+    expect(html).toContain('id="eloNavBtn"');
+    expect(html).toContain('aria-controls="eloPanel"');
   });
 
   it("defines aria-pressed on #fleetViewBtn and #ghAutoBtn", () => {
@@ -1059,6 +1065,7 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain("btn.setAttribute('aria-pressed', isFleet)");
     expect(html).toContain("btn.setAttribute('aria-expanded', open)");
     expect(html).toContain("btn.setAttribute('aria-expanded', isOpen)");
+    expect(html).toContain("navBtn?.setAttribute('aria-expanded', isOpen)");
     expect(html).toContain("btn.setAttribute('aria-pressed', _ghAutoOn)");
     expect(html).toContain("this.setAttribute('aria-pressed', isOn)");
   });

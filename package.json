@@ -5,11 +5,10 @@
   "main": "server.js",
   "engines": {
     "node": ">=22.18.0"
-    "packageManager": "pnpm@9.12.0"
   },
+  "packageManager": "pnpm@9.12.0",
   "scripts": {
-
-  "start": "node server.js",
+    "start": "node server.js",
     "start:balanced": "node --max-semi-space-size=64 --max-old-space-size=2048 server.js",
     "start:hft": "node --max-semi-space-size=256 --max-old-space-size=4096 --nouse-idle-notification --incremental-marking server.js",
     "dev": "node server.js",
@@ -17,7 +16,7 @@
     "proxy": "node proxy.js",
     "serve": "npx serve .",
     "build": "esbuild public/src/main.tsx --bundle --outfile=public/arena-react-bundle.js --minify --sourcemap --loader:.tsx=tsx --loader:.jsx=jsx",
-    "postinstall": "npm run build"
+    "postinstall": "pnpm run build"
   },
   "dependencies": {
     "@biconomy/abstractjs": "^1.2.5",
@@ -34,6 +33,22 @@
     "esbuild": "^0.28.1",
     "ethers": "6.17.0",
     "express": "5.2.1",
+    "express-rate-limit": "^8.6.2",
+    "path-to-regexp": "^8.4.2",
+    "prom-client": "^15.1.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.8",
+    "semver": "^7.8.5",
+    "viem": "^2.55.11",
+    "websocket": "^1.0.35",
+    "ws": "^8.21.3",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.4",
+    "playwright": "^1.62.0"
+  }
+}
     "express-rate-limit": "^8.6.2",
     "path-to-regexp": "^8.4.2",
     "prom-client": "^15.1.3",

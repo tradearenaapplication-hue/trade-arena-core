@@ -366,15 +366,23 @@ app.post('/api/execute/swap', async (req, res) => {
  */
 app.post('/api/bot/create', async (req, res) => {
     try {
-        const { name, strategy, riskLevel, initialCapital, userAddress } = req.body;
+        const { name, strategy, riskLevel, initialCapital, userAddress } = req.body || {};
+
+        const numCapital = Number(initialCapital);
+        if (!name || typeof name !== 'string' || !name.trim() ||
+            !strategy || typeof strategy !== 'string' ||
+            !riskLevel || typeof riskLevel !== 'string' ||
+            isNaN(numCapital) || numCapital <= 0) {
+            return res.status(400).json({ success: false, error: 'Invalid bot creation parameters' });
+        }
 
         const bot = {
             id: generateId(),
-            name,
+            name: name.trim(),
             strategy,
             riskLevel,
-            initialCapital,
-            userAddress,
+            initialCapital: numCapital,
+            userAddress: typeof userAddress === 'string' ? userAddress : null,
             status: 'ACTIVE',
             created: Date.now(),
             trades: [],
@@ -384,7 +392,7 @@ app.post('/api/bot/create', async (req, res) => {
 
         res.json({ success: true, bot });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 

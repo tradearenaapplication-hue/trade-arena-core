@@ -941,6 +941,72 @@ describe("Swap Execution Endpoint Security", () => {
   });
 });
 
+describe("Bot Creation Endpoint Security", () => {
+  const server = require("./server.js");
+
+  it("rejects bot creation requests with missing or invalid parameters", () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/bot/create"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidPayloads = [
+      {},
+      { name: "  " },
+      { name: "My Bot", strategy: "Arbitrage Detection" },
+      { name: "My Bot", strategy: "Arbitrage Detection", riskLevel: "Moderate (5x leverage)", initialCapital: -100 },
+      { name: "My Bot", strategy: "Arbitrage Detection", riskLevel: "Moderate (5x leverage)", initialCapital: 0 },
+      { name: "My Bot", strategy: "Arbitrage Detection", riskLevel: "Moderate (5x leverage)", initialCapital: "abc" },
+      { name: 123, strategy: "Arbitrage Detection", riskLevel: "Moderate (5x leverage)", initialCapital: 1000 },
+    ];
+
+    for (const body of invalidPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      route.route.stack[0].handle({ body }, res);
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid bot creation parameters");
+    }
+  });
+
+  it("creates a bot when valid inputs are provided", () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/bot/create"
+    );
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    route.route.stack[0].handle({
+      body: {
+        name: "  Alpha Trading Bot  ",
+        strategy: "Arbitrage Detection",
+        riskLevel: "Moderate (5x leverage)",
+        initialCapital: 1000,
+        userAddress: "0x1234567890123456789012345678901234567890"
+      }
+    }, res);
+
+    expect(statusCode).toBe(200);
+    expect(jsonResponse.success).toBe(true);
+    expect(jsonResponse.bot.name).toBe("Alpha Trading Bot");
+    expect(jsonResponse.bot.strategy).toBe("Arbitrage Detection");
+    expect(jsonResponse.bot.initialCapital).toBe(1000);
+    expect(jsonResponse.bot.status).toBe("ACTIVE");
+    expect(Boolean(jsonResponse.bot.id)).toBe(true);
+  });
+});
+
 describe("MoonPay Webhook Security", () => {
   const server = require("./server.js");
 

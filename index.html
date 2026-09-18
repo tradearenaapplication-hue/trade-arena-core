@@ -932,7 +932,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
   <div class="audit-panel" id="auditPanel">
-    <div class="audit-hd" id="auditHd" onclick="toggleAudit()" role="button" tabindex="0">
+    <div class="audit-hd" id="auditHd" onclick="toggleAudit()" role="button" tabindex="0" aria-expanded="false" aria-controls="auditBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🔍</span>
         <span class="audit-title">AGENT AUDIT</span>
@@ -964,7 +964,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ SELF-LEARNING PANEL ★ -->
   <div class="learn-panel" id="learnPanel">
-    <div class="learn-hd" id="learnHd" onclick="toggleLearn()" role="button" tabindex="0">
+    <div class="learn-hd" id="learnHd" onclick="toggleLearn()" role="button" tabindex="0" aria-expanded="false" aria-controls="learnBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🧬</span>
         <span class="learn-title">SELF-LEARNING MODEL</span>
@@ -1012,7 +1012,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ QUANT REPORT PANEL ★ -->
   <div class="cpanel" id="quantPanel">
-    <div class="cpanel-hd" id="quantHd" onclick="togglePanel('quant')" style="background:linear-gradient(90deg,rgba(68,136,255,.06),transparent)" role="button" tabindex="0">
+    <div class="cpanel-hd" id="quantHd" onclick="togglePanel('quant')" style="background:linear-gradient(90deg,rgba(68,136,255,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="quantBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🧪</span>
         <span class="cpanel-title" style="color:var(--blue)">QUANT REPORT</span>
@@ -1154,7 +1154,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ STAFF OPERATIONS PANEL ★ -->
   <div class="cpanel" id="staffPanel">
-    <div class="cpanel-hd" id="staffHd" onclick="togglePanel('staff')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
+    <div class="cpanel-hd" id="staffHd" onclick="togglePanel('staff')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="staffBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">👷</span>
         <span class="cpanel-title" style="color:var(--cyan)">STAFF OPERATIONS</span>
@@ -1203,7 +1203,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ ELO ARENA ★ -->
   <div class="cpanel" id="eloPanel">
-    <div class="cpanel-hd" id="eloHd" onclick="togglePanel('elo')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0">
+    <div class="cpanel-hd" id="eloHd" onclick="togglePanel('elo')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="eloBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🏆</span>
         <span class="cpanel-title" style="color:var(--cyan)">ELO ARENA</span>
@@ -1221,7 +1221,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ TASK CENTER ★ -->
   <div class="cpanel" id="taskPanel">
-    <div class="cpanel-hd" id="taskHd" onclick="togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0">
+    <div class="cpanel-hd" id="taskHd" onclick="togglePanel('task')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="taskBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">💰</span>
         <span class="cpanel-title" style="color:var(--green)">TASK CENTER</span>
@@ -1239,7 +1239,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
   <!-- ★ CIRCUIT BREAKERS ★ -->
   <div class="cpanel" id="breakerPanel">
-    <div class="cpanel-hd" id="breakerHd" onclick="togglePanel('breaker')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)" role="button" tabindex="0">
+    <div class="cpanel-hd" id="breakerHd" onclick="togglePanel('breaker')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="breakerBody">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:14px">🛡️</span>
         <span class="cpanel-title" style="color:var(--amber)">CIRCUIT BREAKERS</span>

@@ -3008,7 +3008,7 @@ function renderBot(bot){
         <div style="display:flex;gap:4px;align-items:center">
           <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})">AUTO</button>
           <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})" style="padding:6px 12px;font-size:11px">🎰 SPIN</button>
-          <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings" aria-label="Bot ${bot.id} settings">⚙</button>
+          <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings" aria-label="Bot ${bot.id} settings" aria-expanded="false" aria-controls="mdrop-${bot.id}">⚙</button>
         </div>
       </div>
       <div class="m-dropdown" id="mdrop-${bot.id}">
@@ -3137,7 +3137,10 @@ function toggleBotSettings(id){
   const gear=document.getElementById('mgear-'+id);
   if(!drop) return;
   const open=drop.classList.toggle('open');
-  if(gear) gear.classList.toggle('open',open);
+  if(gear) {
+    gear.classList.toggle('open',open);
+    gear.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
 }
 function setBotPersonality(id,val){
   const bot=bots.find(b=>b.id===id); if(!bot) return;
@@ -4290,8 +4293,10 @@ function toggleLearn() {
   const toggle = document.getElementById('learnToggle');
   if (!body) return;
   const isOpen = body.classList.toggle('open');
-  hd.classList.toggle('open', isOpen);
-  hd.setAttribute('aria-expanded', isOpen);
+  if (hd) {
+    hd.classList.toggle('open', isOpen);
+    hd.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
   toggle.textContent = isOpen ? '▴ HIDE' : '▼ EXPAND';
   if (isOpen) renderLearnPanel();
 }
@@ -4607,8 +4612,10 @@ function toggleAudit() {
   const toggle = document.getElementById('auditToggle');
   if (!body) return;
   const isOpen = body.classList.toggle('open');
-  hd.classList.toggle('open', isOpen);
-  hd.setAttribute('aria-expanded', isOpen);
+  if (hd) {
+    hd.classList.toggle('open', isOpen);
+    hd.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
   toggle.textContent = isOpen ? '▴ HIDE' : '▼ EXPAND';
   if (isOpen) renderAuditPanel();
 }

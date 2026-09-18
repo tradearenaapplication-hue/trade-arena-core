@@ -9,6 +9,7 @@ const cors = require('cors');
 const ethers = require('ethers');
 const axios = require('axios');
 const WebSocket = require('websocket').w3cwebsocket;
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,6 +36,17 @@ const DEX_ABI = [
     'function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)',
     'function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)'
 ];
+
+/**
+ * Constant-time string comparison to prevent timing side-channel attacks
+ */
+function safeCompare(a, b) {
+    if (!a || !b || typeof a !== 'string' || typeof b !== 'string') return false;
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
+}
 
 /** Deployment queue for confirmed deposits */
 const deploymentEvents = [];
@@ -86,8 +98,9 @@ app.post('/api/webhooks/moonpay/deposit', (req, res) => {
         const signature = req.headers['x-moonpay-signature'];
         const expectedSecret = process.env.MOONPAY_WEBHOOK_SECRET || '';
 
-        if (expectedSecret && signature !== expectedSecret) {
-            return res.status(401).json({ success: false, error: 'Invalid webhook signature' });
+        // Security: Require valid webhook secret & signature, compared in constant time
+        if (!expectedSecret || !signature || !safeCompare(signature, expectedSecret)) {
+            return res.status(401).json({ success: false, error: 'Invalid or unconfigured webhook signature' });
         }
 
         const payload = req.body || {};
@@ -310,30 +323,41 @@ app.post('/api/flash-loan/simulate', async (req, res) => {
  */
 app.post('/api/execute/swap', async (req, res) => {
     try {
-        const { fromToken, toToken, amount, slippage } = req.body;
+        const { fromToken, toToken, amount, slippage } = req.body || {};
+
+        const numAmount = Number(amount);
+        const numSlippage = slippage !== undefined ? Number(slippage) : 0.005;
+
+        // Security: Validate inputs & sanitize error output
+        if (!fromToken || typeof fromToken !== 'string' ||
+            !toToken || typeof toToken !== 'string' ||
+            isNaN(numAmount) || numAmount <= 0 ||
+            isNaN(numSlippage) || numSlippage < 0 || numSlippage > 1) {
+            return res.status(400).json({ success: false, error: 'Invalid swap parameters' });
+        }
 
         // Simulate swap execution
-        const expectedOutput = amount * (1 - (slippage || 0.005)); // Account for slippage
+        const expectedOutput = numAmount * (1 - numSlippage);
         const gasUsed = Math.random() * 150000 + 50000; // 50k - 200k gas
         const gasCost = gasUsed * 0.001; // Simplified (real would use current gas price)
 
         const result = {
             success: true,
             swap: {
-                from: { token: fromToken, amount: amount.toFixed(4) },
+                from: { token: fromToken, amount: numAmount.toFixed(4) },
                 to: { token: toToken, amount: expectedOutput.toFixed(4) },
                 exchange: 'Uniswap V3',
-                slippage: `${(slippage * 100).toFixed(2)}%`,
+                slippage: `${(numSlippage * 100).toFixed(2)}%`,
                 gasUsed: gasUsed.toFixed(0),
                 gasCost: gasCost.toFixed(4),
                 timestamp: Date.now()
             },
-            txHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
+            txHash: '0x' + crypto.randomBytes(32).toString('hex')
         };
 
         res.json(result);
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -342,15 +366,23 @@ app.post('/api/execute/swap', async (req, res) => {
  */
 app.post('/api/bot/create', async (req, res) => {
     try {
-        const { name, strategy, riskLevel, initialCapital, userAddress } = req.body;
+        const { name, strategy, riskLevel, initialCapital, userAddress } = req.body || {};
+
+        const numCapital = Number(initialCapital);
+        if (!name || typeof name !== 'string' || !name.trim() ||
+            !strategy || typeof strategy !== 'string' ||
+            !riskLevel || typeof riskLevel !== 'string' ||
+            isNaN(numCapital) || numCapital <= 0) {
+            return res.status(400).json({ success: false, error: 'Invalid bot creation parameters' });
+        }
 
         const bot = {
             id: generateId(),
-            name,
+            name: name.trim(),
             strategy,
             riskLevel,
-            initialCapital,
-            userAddress,
+            initialCapital: numCapital,
+            userAddress: typeof userAddress === 'string' ? userAddress : null,
             status: 'ACTIVE',
             created: Date.now(),
             trades: [],
@@ -360,7 +392,7 @@ app.post('/api/bot/create', async (req, res) => {
 
         res.json({ success: true, bot });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -485,9 +517,11 @@ function generateId() {
 /**
  * Start Server
  */
-app.listen(PORT, () => {
-    console.log(`­ƒñû Trade Arena Backend running on port ${PORT}`);
-    console.log(`­ƒôè Market analysis: http://localhost:${PORT}/api/health`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`🤖 Trade Arena Backend running on port ${PORT}`);
+        console.log(`📊 Market analysis: http://localhost:${PORT}/api/health`);
+    });
+}
 
 module.exports = app;

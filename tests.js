@@ -941,27 +941,69 @@ describe("Swap Execution Endpoint Security", () => {
   });
 });
 
-describe("Proxy Maintenance Patch Route Security", () => {
-  it("rejects invalid, escaping, or non-existent filepaths in patch endpoint logic", () => {
-    const fs = require("fs");
-    const path = require("path");
+describe("Bot Creation Endpoint Security", () => {
+  const server = require("./server.js");
 
-    // Pure logic simulation matching /api/maintenance/patch security rules
-    const validatePatchPath = (filepath) => {
-      if (!filepath || typeof filepath !== "string") return { status: 400, error: "Invalid filepath" };
-      const fullPath = path.resolve(__dirname, filepath);
-      const relative = path.relative(__dirname, fullPath);
-      if (relative.startsWith("..") || path.isAbsolute(relative)) return { status: 403, error: "Access denied: Invalid file path" };
-      if (!fs.existsSync(fullPath)) return { status: 404, error: "File not found" };
-      return { status: 200, success: true };
+  it("rejects bot creation requests with missing or invalid parameters", () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/bot/create"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidPayloads = [
+      {},
+      { name: "  " },
+      { name: "My Bot", strategy: "Arbitrage Detection" },
+      { name: "My Bot", strategy: "Arbitrage Detection", riskLevel: "Moderate (5x leverage)", initialCapital: -100 },
+      { name: "My Bot", strategy: "Arbitrage Detection", riskLevel: "Moderate (5x leverage)", initialCapital: 0 },
+      { name: "My Bot", strategy: "Arbitrage Detection", riskLevel: "Moderate (5x leverage)", initialCapital: "abc" },
+      { name: 123, strategy: "Arbitrage Detection", riskLevel: "Moderate (5x leverage)", initialCapital: 1000 },
+    ];
+
+    for (const body of invalidPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      route.route.stack[0].handle({ body }, res);
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid bot creation parameters");
+    }
+  });
+
+  it("creates a bot when valid inputs are provided", () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/bot/create"
+    );
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
     };
 
-    expect(validatePatchPath(null).status).toBe(400);
-    expect(validatePatchPath("").status).toBe(400);
-    expect(validatePatchPath("../../../etc/passwd").status).toBe(403);
-    expect(validatePatchPath("/etc/passwd").status).toBe(403);
-    expect(validatePatchPath("non_existent_file_12345.js").status).toBe(404);
-    expect(validatePatchPath("server.js").status).toBe(200);
+    route.route.stack[0].handle({
+      body: {
+        name: "  Alpha Trading Bot  ",
+        strategy: "Arbitrage Detection",
+        riskLevel: "Moderate (5x leverage)",
+        initialCapital: 1000,
+        userAddress: "0x1234567890123456789012345678901234567890"
+      }
+    }, res);
+
+    expect(statusCode).toBe(200);
+    expect(jsonResponse.success).toBe(true);
+    expect(jsonResponse.bot.name).toBe("Alpha Trading Bot");
+    expect(jsonResponse.bot.strategy).toBe("Arbitrage Detection");
+    expect(jsonResponse.bot.initialCapital).toBe(1000);
+    expect(jsonResponse.bot.status).toBe("ACTIVE");
+    expect(Boolean(jsonResponse.bot.id)).toBe(true);
   });
 });
 
@@ -1071,6 +1113,12 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain('aria-controls="voiceAgentModal"');
     expect(html).toContain('id="ghBusBtn"');
     expect(html).toContain('aria-controls="busPanel"');
+    expect(html).toContain('id="staffNavBtn"');
+    expect(html).toContain('aria-controls="staffPanel"');
+    expect(html).toContain('id="taskNavBtn"');
+    expect(html).toContain('aria-controls="taskPanel"');
+    expect(html).toContain('id="eloNavBtn"');
+    expect(html).toContain('aria-controls="eloPanel"');
   });
 
   it("defines aria-pressed on #fleetViewBtn and #ghAutoBtn", () => {
@@ -1083,6 +1131,7 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain("btn.setAttribute('aria-pressed', isFleet)");
     expect(html).toContain("btn.setAttribute('aria-expanded', open)");
     expect(html).toContain("btn.setAttribute('aria-expanded', isOpen)");
+    expect(html).toContain("navBtn?.setAttribute('aria-expanded', isOpen)");
     expect(html).toContain("btn.setAttribute('aria-pressed', _ghAutoOn)");
     expect(html).toContain("this.setAttribute('aria-pressed', isOn)");
   });

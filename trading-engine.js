@@ -294,25 +294,71 @@ class TradingEngine {
 
      * Volatility Analysis & Prediction
 
+     * Optimized: Zero-allocation loop pass over price history replacing array creation and functional reduce calls.
+
      */
 
     analyzeVolatility(priceHistory) {
 
-        const returns = [];
+        if (!priceHistory || priceHistory.length <= 1) {
 
-        for (let i = 1; i < priceHistory.length; i++) {
+            return {
 
-            returns.push((priceHistory[i] - priceHistory[i-1]) / priceHistory[i-1]);
+                current: "0.00",
+
+                forecast1h: "0.00",
+
+                forecast24h: "0.00",
+
+                trend: 'LOW',
+
+                recommendation: 'NORMAL'
+
+            };
 
         }
 
 
 
-        // Calculate standard deviation (volatility)
+        const len = priceHistory.length;
 
-        const mean = returns.reduce((a, b) => a + b) / returns.length;
+        const n = len - 1;
 
-        const variance = returns.reduce((sq, n) => sq + Math.pow(n - mean, 2)) / returns.length;
+
+
+        // Single pass mean return calculation without intermediate array allocation
+
+        let sumReturns = 0;
+
+        for (let i = 1; i < len; i++) {
+
+            const prev = priceHistory[i - 1];
+
+            sumReturns += (priceHistory[i] - prev) / prev;
+
+        }
+
+        const mean = sumReturns / n;
+
+
+
+        // Single pass variance calculation
+
+        let sumVariance = 0;
+
+        for (let i = 1; i < len; i++) {
+
+            const prev = priceHistory[i - 1];
+
+            const r = (priceHistory[i] - prev) / prev;
+
+            const diff = r - mean;
+
+            sumVariance += diff * diff;
+
+        }
+
+        const variance = sumVariance / n;
 
         const volatility = Math.sqrt(variance) * 100; // Convert to percentage
 

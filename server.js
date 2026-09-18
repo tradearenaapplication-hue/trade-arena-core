@@ -67,7 +67,7 @@ function queueBotDeployment(deposit) {
 }
 
 // Initialize provider
-const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+const provider = new ethers.JsonRpcProvider(RPC_URL);
 
 /**
  * API Routes
@@ -137,7 +137,7 @@ app.post('/api/webhooks/moonpay/deposit', (req, res) => {
             message: 'Deposit confirmed and deployment queued'
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -241,7 +241,7 @@ app.post('/api/analyze/arbitrage', async (req, res) => {
             prices: priceMap
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -250,10 +250,10 @@ app.post('/api/analyze/arbitrage', async (req, res) => {
  */
 app.post('/api/analyze/volatility', async (req, res) => {
     try {
-        const { priceHistory } = req.body;
+        const { priceHistory } = req.body || {};
 
-        if (!priceHistory || priceHistory.length < 2) {
-            return res.status(400).json({ error: 'Invalid price history' });
+        if (!priceHistory || !Array.isArray(priceHistory) || priceHistory.length < 2 || priceHistory.some(p => typeof p !== 'number' || isNaN(p))) {
+            return res.status(400).json({ success: false, error: 'Invalid price history' });
         }
 
         // Calculate returns
@@ -285,7 +285,7 @@ app.post('/api/analyze/volatility', async (req, res) => {
             trend: volatility > 5 ? 'HIGH' : volatility > 2 ? 'MEDIUM' : 'LOW'
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -314,7 +314,7 @@ app.post('/api/flash-loan/simulate', async (req, res) => {
 
         res.json({ success: true, opportunity });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -411,7 +411,7 @@ app.get('/api/market/prices', async (req, res) => {
 
         res.json({ success: true, prices, timestamp: Date.now() });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 

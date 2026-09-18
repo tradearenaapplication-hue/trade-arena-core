@@ -67,7 +67,9 @@ function queueBotDeployment(deposit) {
 }
 
 // Initialize provider
-const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+const provider = ethers.JsonRpcProvider
+    ? new ethers.JsonRpcProvider(RPC_URL)
+    : new ethers.providers.JsonRpcProvider(RPC_URL);
 
 /**
  * API Routes

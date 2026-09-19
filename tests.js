@@ -941,6 +941,59 @@ describe("Swap Execution Endpoint Security", () => {
   });
 });
 
+describe("Flash Loan Simulation Endpoint Security", () => {
+  const server = require("./server.js");
+
+  it("rejects flash loan simulation requests with missing or invalid loanAmount", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/flash-loan/simulate"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidPayloads = [
+      {},
+      { loanAmount: 0 },
+      { loanAmount: -100 },
+      { loanAmount: "invalid" },
+      { loanAmount: null },
+    ];
+
+    for (const body of invalidPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle({ body }, res);
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid loan amount");
+    }
+  });
+
+  it("simulates flash loan opportunity when valid positive loanAmount is provided", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/flash-loan/simulate"
+    );
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    await route.route.stack[0].handle({ body: { loanAmount: 10000 } }, res);
+    expect(statusCode).toBe(200);
+    expect(jsonResponse.success).toBe(true);
+    expect(jsonResponse.opportunity.loanAmount).toBe(10000);
+    expect(jsonResponse.opportunity.flashFee).toBe(9);
+    expect(jsonResponse.opportunity.type).toBe("MEV_SANDWICH");
+  });
+});
+
 describe("Bot Creation Endpoint Security", () => {
   const server = require("./server.js");
 

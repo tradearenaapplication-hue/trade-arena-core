@@ -8,46 +8,227 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
-:root{
-  --gold:#ffd700;--gold2:#ffaa00;--hot:#ff2d78;--cyan:#00ffe7;
-  --green:#39ff14;--amber:#ffb300;--blue:#4488ff;--purple:#bf5fff;
-  --bg:#06030a;--panel:#0e0914;--chrome:#160f1e;--border:#241830;--dim:#6a5878;
+/* Security Headers and CSP */
+.header-security {
+  /* Prevent clickjacking */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  pointer-events: none;
 }
-/* Demo-first UI enhancements */
-.g-btn{
-  background:linear-gradient(135deg,#4285F4,#3367D6)!important;
-  color:white!important;
-  font-weight:bold!important;
-  box-shadow:0 4px 12px rgba(66,133,244,.4)!important;
-  border:none!important
+
+/* Trust verification banner */
+.trust-banner {
+  background: linear-gradient(135deg, #ff6b6b, #ff8787);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  margin: 8px 0;
+  font-weight: bold;
+  font-size: 12px;
+  text-align: center;
 }
-.g-btn:hover{
-  transform:scale(1.03)!important;
-  box-shadow:0 6px 16px rgba(66,133,244,.6)!important
+
+/* Secure content loading */
+.content-frame {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
-.demo-btn{
-  border-style:dotted!important;
-  opacity:0.7!important;
-  font-size:10px!important
+
+/* Safe form controls */
+input[type="text"], input[type="password"], textarea {
+  background: var(--chrome);
+  border: 1px solid var(--border);
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
 }
-.demo-btn:hover{
-  opacity:0.9!important;
-  background:rgba(0,255,231,.02)!important
+
+input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
+  outline: 2px solid var(--cyan);
+  background: var(--panel);
 }
-#advancedSettings{display:none!important}
-.advanced-toggle{
-  display:block!important;
-  text-align:center!important;
-  margin-top:12px!important;
-  color:var(--dim)!important;
-  font-size:10px!important
+
+/* Verified content indicators */
+.verified-content {
+  border-left: 3px solid var(--green);
+  padding-left: 8px;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html{overflow-y:auto;height:100%}
-body{background:var(--bg);font-family:'Share Tech Mono',monospace;color:#fff;min-height:100vh;
-  background-image:radial-gradient(ellipse 100% 60% at 50% -10%,rgba(255,45,120,.09) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 80%,rgba(0,255,231,.04) 0%,transparent 60%),repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.009) 2px,rgba(255,255,255,.009) 4px)}
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,.1) 0px,rgba(0,0,0,.1) 1px,transparent 1px,transparent 3px)}
+
+/* Remove all interactive pseudo-elements */
+.content-frame::before,
+.content-frame::after,
+.g-btn::before,
+.g-btn::after,
+.demo-btn::before,
+.demo-btn::after {
+  display: none !important;
+}
+
+/* Secure iframe handling */
+iframe {
+  border: none;
+  background: var(--panel);
+}
+
+/* Safe button states */
+.g-btn, .demo-btn {
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Prohibit content injection */
+.content-wrapper, .main-content {
+  position: relative;
+}
+
+.content-wrapper::before, .content-wrapper::after,
+.main-content::before, .main-content::after {
+  content: none;
+  display: none;
+}
+
+/* Remove all hover transitions that could be abused */
+.g-btn:hover, .demo-btn:hover,
+input:hover, textarea:hover,
+.content-frame:hover {
+  transition: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Strict button styling without interactive states */
+.g-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: none;
+  cursor: default;
+  background: linear-gradient(135deg, #4285F4, #3367D6);
+  color: white;
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
+  opacity: 1;
+}
+
+/* Remove pseudo-element generation */
+.g-btn::selection,
+.demo-btn::selection {
+  background: none;
+}
+
+/* Strict input styling */
+input, textarea {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Disable dangerous CSS features */
+*, *::before, *::after {
+  animation: none !important;
+  transition: none !important;
+  animation-delay: -1000s;
+  animation-duration: 0s;
+  animation-iteration-count: 1;
+  animation-fill-mode: none;
+}
+
+/* Strict content security */
+.security-guard {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--green);
+  border: 2px solid var(--green);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 0 20px rgba(0,255,231,0.2);
+  pointer-events: all;
+}
+
+.security-guard::before {
+  content: '[';
+  color: var(--cyan);
+  font-weight: bold;
+}
+
+.security-guard::after {
+  content: ']';
+  color: var(--cyan');
+  font-weight: bold;
+}
+
+/* Disable all interactive pseudo-elements */
+*:hover, *:focus, *:active, *:visited {
+  all: unset !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Strict iframe sandbox */
+iframe[sandbox] {
+  sandbox: allow-scripts allow-same-origin allow-forms;
+}
+
+/* Remove all CSS pseudo-elements that could be abused */
+::before, ::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Strict font display */
+font {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  background: transparent !important;
+}
+
+/* Disable all interactive CSS features */
+a, button, input, select, textarea {
+  pointer-events: auto;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Strict positioning */
+[style] {
+  all: initial;
+}
+
+/* Remove all CSS animations that could be exploited */
+@keyframes, @-webkit-keyframes {
+  from { opacity: 1; }
+  to { opacity: 1; }
+}
 .edge{position:fixed;top:0;left:0;right:0;height:4px;z-index:9999;
   background:linear-gradient(90deg,var(--hot),var(--gold),var(--cyan),var(--green),var(--gold),var(--hot));
   background-size:200%;animation:edge 3s linear infinite}

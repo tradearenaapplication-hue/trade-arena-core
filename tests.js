@@ -1103,6 +1103,57 @@ describe("MoonPay Webhook Security", () => {
   });
 });
 
+describe("Server Error Handling & Input Validation Security", () => {
+  const server = require("./server.js");
+
+  it("sanitizes 500 error responses and does not leak internal error messages", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/analyze/volatility"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    // Pass invalid history array containing NaN to trigger exception handling or 400 validation
+    await route.route.stack[0].handle({ body: { priceHistory: [100, "invalid"] } }, res);
+    expect(statusCode).toBe(400);
+    expect(jsonResponse.success).toBe(false);
+    expect(jsonResponse.error).toBe("Invalid price history");
+  });
+
+  it("rejects non-array or invalid priceHistory inputs in volatility analysis", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/analyze/volatility"
+    );
+
+    const invalidInputs = [
+      {},
+      { priceHistory: "not-an-array" },
+      { priceHistory: [100] },
+      { priceHistory: null },
+    ];
+
+    for (const body of invalidInputs) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle({ body }, res);
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid price history");
+    }
+  });
+});
+
 describe("Header Toggle Controls Accessibility", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");

@@ -730,9 +730,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </button>
       <div class="divider">— or —</div>
       <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
-      <div class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none';">
+      <button type="button" class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none'; this.setAttribute('aria-expanded', 'true');" aria-expanded="false" aria-controls="advancedSettings" style="background:none;border:none;width:100%;cursor:pointer;font-family:inherit;">
         ⚙´©Å Advanced Settings
-      </div>
+      </button>
       <div class="fiat-ramp-row">
         <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
         <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
@@ -750,7 +750,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <p id="cStatus" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
   <div class="setup-note">
     <strong>Optional: Anthropic API Key</strong> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
-    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." style="width:100%;margin-top:5px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
+    <input type="password" id="apiKeyInput" aria-label="Anthropic API Key" placeholder="sk-ant-api03-..." style="width:100%;margin-top:5px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
     <span style="color:var(--dim);font-size:8px">Without a key the app uses rule-based signals and still trades. Demo Mode requires no wallet or key.</span>
   </div>
 
@@ -862,7 +862,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <button class="bus-preset" onclick="busSetAmount(100)">$100</button>
         </div>
         <div class="bus-custom-row">
-          <input type="number" id="busCustomAmt" placeholder="Custom $" min="0.01" step="0.01">
+          <input type="number" id="busCustomAmt" aria-label="Custom trade amount in dollars" placeholder="Custom $" min="0.01" step="0.01">
           <button onclick="busSetCustomAmount()">SET ALL</button>
         </div>
       </div>
@@ -947,9 +947,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <!-- Audit settings -->
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
         <div style="font-size:8px;color:var(--dim)">
-          Audit every <input type="number" id="auditInterval" value="10" min="5" max="50" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> trades ·
-          On notice if WR &lt; <input type="number" id="noticeThreshold" value="40" min="20" max="60" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--amber);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center">% ·
-          Suspend after <input type="number" id="suspendWindow" value="10" min="5" max="30" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--hot);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> probation trades
+          Audit every <input type="number" id="auditInterval" aria-label="Audit trade interval" value="10" min="5" max="50" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> trades ·
+          On notice if WR &lt; <input type="number" id="noticeThreshold" aria-label="Win rate notice threshold percentage" value="40" min="20" max="60" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--amber);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center">% ·
+          Suspend after <input type="number" id="suspendWindow" aria-label="Probation trades before suspension" value="10" min="5" max="30" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--hot);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> probation trades
         </div>
         <button onclick="runManualAudit()" style="padding:4px 10px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--hot);color:var(--hot);border-radius:4px;cursor:pointer;letter-spacing:1px;margin-left:auto">RUN AUDIT NOW</button>
       </div>

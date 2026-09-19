@@ -17,7 +17,8 @@
     "ethers": "^6.17.0",
     "websocket": "^1.0.35",
     "express": "^4.19.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "shell-quote": "^1.9.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

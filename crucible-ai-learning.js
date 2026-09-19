@@ -422,34 +422,44 @@ const CrucibleAITest = {
 
   // ════════════════════════════════════════════════════════════════
   // GET RUNNING STATISTICS
+  // ⚡ OPTIMIZATION: Single-pass accumulator loop replacing 7 intermediate array
+  // allocations/filtering passes (filter × 4, reduce × 3) to eliminate garbage collection overhead.
   // ════════════════════════════════════════════════════════════════
   getRunningStats() {
-    const executedTrades = this.trades.filter(t => !t.skipped);
-    const wins = executedTrades.filter(t => t.isWin).length;
-    const losses = executedTrades.filter(t => !t.isWin).length;
-    const winRate = executedTrades.length > 0 ? (wins / executedTrades.length) * 100 : 0;
+    let totalTrades = 0;
+    let wins = 0;
+    let losses = 0;
+    let totalPnL = 0;
+    let totalWinAmount = 0;
+    let totalLossPnL = 0;
 
-    const totalPnL = executedTrades.reduce((sum, t) => sum + t.pnl, 0);
-    const winTrades = executedTrades.filter(t => t.isWin);
-    const lossTrades = executedTrades.filter(t => !t.isWin);
+    const len = this.trades.length;
+    for (let i = 0; i < len; i++) {
+      const t = this.trades[i];
+      if (t.skipped) continue;
 
-    const avgWin = winTrades.length > 0
-      ? (winTrades.reduce((sum, t) => sum + t.pnl, 0) / winTrades.length)
-      : 0;
+      totalTrades++;
+      totalPnL += t.pnl;
 
-    const avgLoss = lossTrades.length > 0
-      ? (lossTrades.reduce((sum, t) => sum + t.pnl, 0) / lossTrades.length)
-      : 0;
+      if (t.isWin) {
+        wins++;
+        totalWinAmount += t.pnl;
+      } else {
+        losses++;
+        totalLossPnL += t.pnl;
+      }
+    }
 
-    const totalWinAmount = Math.abs(winTrades.reduce((sum, t) => sum + t.pnl, 0));
-    const totalLossAmount = Math.abs(lossTrades.reduce((sum, t) => sum + t.pnl, 0));
-
+    const totalLossAmount = Math.abs(totalLossPnL);
+    const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
+    const avgWin = wins > 0 ? totalWinAmount / wins : 0;
+    const avgLoss = losses > 0 ? totalLossPnL / losses : 0;
     const profitFactor = totalLossAmount !== 0
       ? (totalWinAmount / totalLossAmount)
       : (totalWinAmount > 0 ? 999 : 0);
 
     return {
-      totalTrades: executedTrades.length,
+      totalTrades,
       wins,
       losses,
       winRate,
@@ -462,38 +472,51 @@ const CrucibleAITest = {
 
   // ════════════════════════════════════════════════════════════════
   // GENERATE TEST REPORT
+  // ⚡ OPTIMIZATION: Single pass over trades to compute statistics and separate skipped trades.
   // ════════════════════════════════════════════════════════════════
   generateReport() {
     const duration = ((this.endTime - this.startTime) / 1000).toFixed(2);
 
-    // Separate executed and skipped trades
-    const executedTrades = this.trades.filter(t => !t.skipped);
-    const skippedTrades = this.trades.filter(t => t.skipped);
+    let executedCount = 0;
+    let skippedCount = 0;
+    let wins = 0;
+    let losses = 0;
+    let totalPnL = 0;
+    let totalWinAmount = 0;
+    let totalLossPnL = 0;
 
-    const wins = executedTrades.filter(t => t.isWin).length;
-    const losses = executedTrades.filter(t => !t.isWin).length;
-    const winRate = executedTrades.length > 0 ? (wins / executedTrades.length * 100).toFixed(2) : 0;
+    const len = this.trades.length;
+    const executedTrades = [];
+    const skippedTrades = [];
 
-    // P&L calculations
-    const totalPnL = executedTrades.reduce((sum, t) => sum + t.pnl, 0);
+    for (let i = 0; i < len; i++) {
+      const t = this.trades[i];
+      if (t.skipped) {
+        skippedCount++;
+        skippedTrades.push(t);
+        continue;
+      }
+
+      executedCount++;
+      executedTrades.push(t);
+      totalPnL += t.pnl;
+
+      if (t.isWin) {
+        wins++;
+        totalWinAmount += t.pnl;
+      } else {
+        losses++;
+        totalLossPnL += t.pnl;
+      }
+    }
+
+    const totalLossAmount = Math.abs(totalLossPnL);
+    const winRate = executedCount > 0 ? ((wins / executedCount) * 100).toFixed(2) : 0;
     const finalBalance = this.config.paperBalance + totalPnL;
-    const returnPercent = (totalPnL / this.config.paperBalance * 100).toFixed(2);
+    const returnPercent = ((totalPnL / this.config.paperBalance) * 100).toFixed(2);
 
-    // Trade statistics
-    const winTrades = executedTrades.filter(t => t.isWin);
-    const lossTrades = executedTrades.filter(t => !t.isWin);
-
-    const avgWin = winTrades.length > 0
-      ? (winTrades.reduce((sum, t) => sum + t.pnl, 0) / winTrades.length).toFixed(2)
-      : 0;
-
-    const avgLoss = lossTrades.length > 0
-      ? (lossTrades.reduce((sum, t) => sum + t.pnl, 0) / lossTrades.length).toFixed(2)
-      : 0;
-
-    // Profit Factor
-    const totalWinAmount = Math.abs(winTrades.reduce((sum, t) => sum + t.pnl, 0));
-    const totalLossAmount = Math.abs(lossTrades.reduce((sum, t) => sum + t.pnl, 0));
+    const avgWin = wins > 0 ? (totalWinAmount / wins).toFixed(2) : 0;
+    const avgLoss = losses > 0 ? (totalLossPnL / losses).toFixed(2) : 0;
 
     const profitFactor = totalLossAmount !== 0
       ? (totalWinAmount / totalLossAmount).toFixed(2)

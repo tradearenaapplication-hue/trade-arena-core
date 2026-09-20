@@ -1263,7 +1263,7 @@ describe("Collapsible Control Panel Accessibility", () => {
   });
 });
 
-describe("Crucible Regime Selection UX & Accessibility", () => {
+describe("Crucible Mode & Regime Selection UX & Accessibility", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");
 
@@ -1278,6 +1278,11 @@ describe("Crucible Regime Selection UX & Accessibility", () => {
   it("defines selectRegime handler updating aria-pressed attributes", () => {
     expect(html).toContain("function selectRegime(regime)");
     expect(html).toContain("btn.setAttribute('aria-pressed', isActive ? 'true' : 'false')");
+  });
+
+  it("defines aria-pressed and aria-label on crucibleBtn and updates aria-pressed in toggleCrucible", () => {
+    expect(html).toContain('id="crucibleBtn" onclick="toggleCrucible()" aria-pressed="false" aria-label="Toggle Crucible Mode"');
+    expect(html).toContain("btn.setAttribute('aria-pressed', crucibleMode ? 'true' : 'false')");
   });
 });
 

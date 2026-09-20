@@ -1026,7 +1026,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <span class="crucible-label">🔬 CRUCIBLE</span>
         <div class="crucible-progress"><div class="crucible-fill" id="crucibleFill" style="width:0%"></div></div>
         <span class="crucible-count" id="crucibleCount">0 / 100</span>
-        <button class="crucible-toggle" id="crucibleBtn" onclick="toggleCrucible()">OFF</button>
+        <button class="crucible-toggle" id="crucibleBtn" onclick="toggleCrucible()" aria-pressed="false" aria-label="Toggle Crucible Mode">OFF</button>
       </div>
 
        <!-- Crucible Controls -->
@@ -2070,7 +2070,11 @@ function updateOpenCount() { setVal('mv-open',openPositions.length); }
 function toggleCrucible() {
   crucibleMode=!crucibleMode;
   const btn=document.getElementById('crucibleBtn');
-  if(btn){ btn.textContent=crucibleMode?'ON':'OFF'; btn.classList.toggle('active',crucibleMode); }
+  if(btn){
+    btn.textContent=crucibleMode?'ON':'OFF';
+    btn.classList.toggle('active',crucibleMode);
+    btn.setAttribute('aria-pressed', crucibleMode ? 'true' : 'false');
+  }
   updateCrucible();
 }
 function updateCrucible() {

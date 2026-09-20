@@ -9,3 +9,7 @@
 ## 2026-09-18 - Memoize Static Candidate Pools and Model Lookups in Selection Routines
 **Learning:** In model selection strategies like `MODEL_SELECTION.eloWeighted`, `costEfficient`, and `speedOptimal`, rebuilding candidate arrays and sorting static data on every invocation allocates temporary objects/arrays and runs sorting overhead (~11x to 35x slowdown).
 **Action:** Pre-compute flat lookup maps and lazily memoize static candidate pools for static configuration objects to make selection operations O(1) array index lookups.
+
+## 2026-09-19 - Replace Chained Array Filters and Reductions in Running Stats Accumulations
+**Learning:** Calling `filter` and `reduce` repeatedly in functions invoked on every batch of trades (such as `getRunningStats` in `crucible-ai-learning.js`) creates 7 short-lived intermediate array allocations and performs multi-pass iterations per invocation. Replacing them with a single-pass `for` loop accumulator eliminates memory churn and garbage collection pressure.
+**Action:** For running statistics and trade outcome reports over growing arrays, accumulate totals, win counts, loss sums, and PnL directly in a single indexed loop.

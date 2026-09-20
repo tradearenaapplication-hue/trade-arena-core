@@ -1281,6 +1281,25 @@ describe("Crucible Regime Selection UX & Accessibility", () => {
   });
 });
 
+describe("Advanced Settings Toggle & Form Inputs Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines accessible button with aria-expanded and aria-controls for advanced settings toggle", () => {
+    expect(html).toContain('class="advanced-toggle"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('aria-controls="advancedSettings"');
+  });
+
+  it("defines aria-label on form inputs missing explicit labels", () => {
+    expect(html).toContain('id="apiKeyInput" aria-label="Anthropic API Key"');
+    expect(html).toContain('id="busCustomAmt" aria-label="Custom trade amount in dollars"');
+    expect(html).toContain('id="auditInterval" aria-label="Audit trade interval"');
+    expect(html).toContain('id="noticeThreshold" aria-label="Win rate notice threshold percentage"');
+    expect(html).toContain('id="suspendWindow" aria-label="Probation trades before suspension"');
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

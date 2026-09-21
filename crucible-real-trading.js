@@ -185,60 +185,55 @@ const CrucibleRealTrading = {
 
     const len = candles.length;
 
-    // Direct SMA sum loops to avoid array mapping and slicing
+    // ⚡ OPTIMIZATION: Compute SMA directly without creating array slices or mapping closes
     let sum5 = 0;
-    for (let i = len - 5; i < len; i++) {
-      sum5 += candles[i].close;
+    let sum10 = 0;
+    const start5 = len - 5;
+    const start10 = Math.max(0, len - 10);
+    const count10 = len - start10;
+
+    for (let i = start10; i < len; i++) {
+      const c = candles[i].close;
+      if (i >= start5) sum5 += c;
+      sum10 += c;
     }
     const sma5 = sum5 / 5;
+    const sma10 = sum10 / count10;
 
-    const sma10Count = Math.min(10, len);
-    let sum10 = 0;
-    for (let i = len - sma10Count; i < len; i++) {
-      sum10 += candles[i].close;
-    }
-    const sma10 = sum10 / sma10Count;
-
-    // ⚡ Bolt Optimization: Single-pass accumulation for RSI and volatility returns
-    // Eliminates multiple intermediate array allocations (`closes`, `highs`, `lows`, `changes`, `filter`, `returns`)
-    // reducing garbage collection churn and improving execution time by ~85%.
-    const changesCount = len - 1;
-    let gainsSum = 0;
-    let lossesSum = 0;
-    let sumReturn = 0;
-    const returnsArr = new Float64Array(changesCount);
+    // ⚡ OPTIMIZATION: Single pass for gains, losses, and return sum without temporary arrays
+    let totalGains = 0;
+    let totalLosses = 0;
+    let sumReturns = 0;
+    const numChanges = Math.max(1, len - 1);
 
     for (let i = 1; i < len; i++) {
-      const prevClose = candles[i - 1].close;
-      const currClose = candles[i].close;
-      const change = currClose - prevClose;
+      const prev = candles[i - 1].close;
+      const curr = candles[i].close;
+      const change = curr - prev;
+      if (change > 0) totalGains += change;
+      else if (change < 0) totalLosses += -change;
 
-      if (change > 0) {
-        gainsSum += change;
-      } else {
-        lossesSum -= change;
-      }
-
-      const ret = change / (prevClose || 1);
-      returnsArr[i - 1] = ret;
-      sumReturn += ret;
+      sumReturns += change / (prev || 1);
     }
 
-    const divisor = Math.max(1, changesCount);
-    const gains = gainsSum / divisor;
-    const losses = lossesSum / divisor;
+    const gains = totalGains / numChanges;
+    const losses = totalLosses / numChanges;
     const rs = (gains || 0.5) / (losses || 0.5);
     let rsi = 100 - (100 / (1 + rs));
     if (isNaN(rsi)) rsi = 50; // Default to neutral if calculation fails
 
     // Volatility (Standard Deviation of returns)
-    const avgReturn = sumReturn / divisor;
-    let varianceSum = 0;
-    for (let i = 0; i < changesCount; i++) {
-      const diff = returnsArr[i] - avgReturn;
-      varianceSum += diff * diff;
+    const avgReturn = sumReturns / numChanges;
+    let sumSqDiff = 0;
+    for (let i = 1; i < len; i++) {
+      const prev = candles[i - 1].close;
+      const curr = candles[i].close;
+      const ret = (curr - prev) / (prev || 1);
+      const diff = ret - avgReturn;
+      sumSqDiff += diff * diff;
     }
-    const variance = varianceSum / divisor;
+
+    const variance = sumSqDiff / numChanges;
     let volatility = Math.sqrt(variance) * 100; // Convert to percentage
     if (isNaN(volatility) || volatility === 0) volatility = 0.5; // Default if NaN
 

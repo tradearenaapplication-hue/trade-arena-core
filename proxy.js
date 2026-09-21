@@ -20,7 +20,7 @@ app.post('/api/claude', async (req, res) => {
     res.status(response.status).json(data);
   } catch (error) {
     console.error('Proxy error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 
 });
@@ -39,7 +39,8 @@ app.post('/api/openai', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Proxy OpenAI error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -57,12 +58,24 @@ app.post('/api/gemini', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Proxy Gemini error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 const fs = require('fs');
 const path = require('path');
+
+/**
+ * Helper to check if a requested path stays inside the base directory
+ * Prevents path traversal vulnerabilities
+ */
+function isPathSafe(baseDir, targetPath) {
+  if (!targetPath || typeof targetPath !== 'string') return false;
+  const normalizedBase = path.resolve(baseDir);
+  const resolvedTarget = path.resolve(baseDir, targetPath);
+  return resolvedTarget === normalizedBase || resolvedTarget.startsWith(normalizedBase + path.sep);
+}
 
 app.post('/api/maintenance/log', (req, res) => {
   const { agent, message, level } = req.body;
@@ -79,26 +92,41 @@ app.post('/api/maintenance/log', (req, res) => {
 });
 
 app.post('/api/maintenance/patch', async (req, res) => {
-  const { filepath, patch, description } = req.body;
+  const { filepath, patch, description } = req.body || {};
   try {
-    const fullPath = path.join(__dirname, filepath);
-    if (!fs.existsSync(fullPath)) throw new Error('File not found');
+    // SECURITY: Sanitize filepath to prevent Path Traversal vulnerabilities before filesystem access
+    if (!filepath || typeof filepath !== 'string') {
+      return res.status(400).json({ error: 'Invalid filepath' });
+    }
+    const fullPath = path.resolve(__dirname, filepath);
+    const relative = path.relative(__dirname, fullPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      return res.status(403).json({ error: 'Access denied: Invalid file path' });
+    }
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
 
     // In a real self-healing system, we would validate the patch
     // For this implementation, we log the intent and could apply it
     console.log(`[Developer Agent] Patch requested for ${filepath}: ${description}`);
 
     // Simple overwrite for this demo-scale self-healing
-    // fs.writeFileSync(fullPath, patch);
+    // fs.writeFileSync(resolvedPath, patch);
 
     res.json({ success: true, message: 'Patch received and logged for review' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Proxy patch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 const port = 3001;
-app.listen(port, () => {
-  console.log(`🚀 Proxy server running at http://localhost:${port}`);
-  console.log('Set ANTHROPIC_API_KEY env var for Claude');
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`🚀 Proxy server running at http://localhost:${port}`);
+    console.log('Set ANTHROPIC_API_KEY env var for Claude');
+  });
+}
+
+module.exports = { app, isPathSafe };

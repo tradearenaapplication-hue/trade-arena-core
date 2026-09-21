@@ -17,3 +17,7 @@
 ## 2026-09-20 - Consolidate Multi-Pass Array Slices and Projections in Market Analysis Routines
 **Learning:** In `analyzeMarketConditions` (`ai-strategies.js`), calculating volatility, volume, directional bias, and momentum executed four separate `marketData.slice(0, 8)` operations combined with `map`, `filter`, and `reduce`, creating 8 intermediate temporary array allocations per call. Replacing this with a single indexed loop pass accumulated all four metrics simultaneously, yielding an 8.5x execution speedup and zero memory allocation.
 **Action:** In market data analysis functions, avoid multiple `slice().map()` or `slice().filter()` projections over the same array subset; accumulate sums, absolute values, and condition counts in a single indexed loop.
+
+## 2026-09-21 - Avoid Chained Map-Filter-Reduce Projections in Odds Normalization
+**Learning:** In `removeVig` (`sports-odds-arb.js`), chaining `.map()`, `.filter()`, and `.reduce()` created 3 short-lived intermediate array allocations per call and iterated over outcome arrays 4 times. Replacing this with a single `for` loop pass to sum overround and filter valid probabilities in-place cut array allocations and reduced function execution time.
+**Action:** In high-frequency odds scanning routines, perform overround summation and probability filtering in a single indexed loop pass rather than method-chaining `.map().filter().reduce()`.

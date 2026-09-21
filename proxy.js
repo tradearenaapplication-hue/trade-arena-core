@@ -66,6 +66,17 @@ app.post('/api/gemini', async (req, res) => {
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * Helper to check if a requested path stays inside the base directory
+ * Prevents path traversal vulnerabilities
+ */
+function isPathSafe(baseDir, targetPath) {
+  if (!targetPath || typeof targetPath !== 'string') return false;
+  const normalizedBase = path.resolve(baseDir);
+  const resolvedTarget = path.resolve(baseDir, targetPath);
+  return resolvedTarget === normalizedBase || resolvedTarget.startsWith(normalizedBase + path.sep);
+}
+
 app.post('/api/maintenance/log', (req, res) => {
   const { agent, message, level } = req.body;
   const logDir = path.join(__dirname, '.jules');
@@ -111,7 +122,11 @@ app.post('/api/maintenance/patch', async (req, res) => {
 });
 
 const port = 3001;
-app.listen(port, () => {
-  console.log(`🚀 Proxy server running at http://localhost:${port}`);
-  console.log('Set ANTHROPIC_API_KEY env var for Claude');
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`🚀 Proxy server running at http://localhost:${port}`);
+    console.log('Set ANTHROPIC_API_KEY env var for Claude');
+  });
+}
+
+module.exports = { app, isPathSafe };

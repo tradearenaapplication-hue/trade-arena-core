@@ -78,17 +78,34 @@ function isPathSafe(baseDir, targetPath) {
 }
 
 app.post('/api/maintenance/log', (req, res) => {
-  const { agent, message, level } = req.body;
-  const logDir = path.join(__dirname, '.jules');
-  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
+  try {
+    const { agent, message, level } = req.body || {};
+    // SECURITY: Validate inputs to prevent crashes and null pointer dereferences
+    if (!agent || typeof agent !== 'string' || !message || typeof message !== 'string') {
+      return res.status(400).json({ success: false, error: 'Invalid log payload' });
+    }
 
-  const logFile = agent === 'SENTINEL' ? 'sentinel.md' : 'maintenance.md';
-  const logPath = path.join(logDir, logFile);
+    const logDir = path.join(__dirname, '.jules');
+    if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
 
-  const entry = `\n## ${new Date().toISOString()} - [${level || 'INFO'}] ${agent}\n${message}\n`;
-  fs.appendFileSync(logPath, entry);
+    const safeAgent = agent.toUpperCase() === 'SENTINEL' ? 'SENTINEL' : 'MAINTENANCE';
+    const logFile = safeAgent === 'SENTINEL' ? 'sentinel.md' : 'maintenance.md';
 
-  res.json({ success: true });
+    // SECURITY: Ensure log destination is within the target directory
+    if (!isPathSafe(logDir, logFile)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Invalid log path' });
+    }
+
+    const logPath = path.join(logDir, logFile);
+    const safeLevel = (typeof level === 'string' && level.trim()) ? level.trim().toUpperCase() : 'INFO';
+    const entry = `\n## ${new Date().toISOString()} - [${safeLevel}] ${safeAgent}\n${message}\n`;
+    fs.appendFileSync(logPath, entry);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Proxy log error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
 });
 
 app.post('/api/maintenance/patch', async (req, res) => {

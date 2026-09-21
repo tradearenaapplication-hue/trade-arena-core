@@ -1187,10 +1187,74 @@ describe("MoonPay Webhook Security", () => {
 describe("Proxy Endpoint Security", () => {
   const fs = require("fs");
   const proxyCode = fs.readFileSync("./proxy.js", "utf8");
+  const { app: proxyApp } = require("./proxy.js");
 
   it("contains sanitized error responses for 500 status codes across proxy endpoints", () => {
     expect(proxyCode).toContain("res.status(500).json({ error: 'Internal server error' });");
     expect(proxyCode.includes("res.status(500).json({ error: error.message })")).toBe(false);
+  });
+
+  it("rejects invalid log payloads on maintenance log endpoint", () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/maintenance/log"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidPayloads = [
+      {},
+      { agent: 123, message: "msg" },
+      { agent: "SENTINEL" },
+      { message: "msg" },
+      { agent: "SENTINEL", message: null },
+    ];
+
+    for (const body of invalidPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      route.route.stack[0].handle({ body }, res);
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid log payload");
+    }
+  });
+
+  it("successfully logs valid maintenance entry without side effects", () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/maintenance/log"
+    );
+
+    const originalAppend = fs.appendFileSync;
+    const originalMkdir = fs.mkdirSync;
+    let appendedContent = null;
+
+    try {
+      fs.appendFileSync = (_path, content) => { appendedContent = content; };
+      fs.mkdirSync = () => {};
+
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      route.route.stack[0].handle({
+        body: { agent: "SENTINEL", message: "Test log verification message", level: "INFO" }
+      }, res);
+
+      expect(statusCode).toBe(200);
+      expect(jsonResponse.success).toBe(true);
+      expect(Boolean(appendedContent)).toBe(true);
+      expect(appendedContent).toContain("Test log verification message");
+    } finally {
+      fs.appendFileSync = originalAppend;
+      fs.mkdirSync = originalMkdir;
+    }
   });
 
   it("returns generic error message on patch endpoint when an internal exception occurs", async () => {
@@ -1325,7 +1389,7 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain("navBtn?.setAttribute('aria-expanded', isOpen)");
     expect(html).toContain("btn.setAttribute('aria-pressed', _ghAutoOn)");
     expect(html).toContain("this.setAttribute('aria-pressed', isOn)");
-    expect(html).toContain("gear.setAttribute('aria-expanded', open)");
+    expect(html).toContain("gear.setAttribute('aria-expanded', open ? 'true' : 'false')");
   });
 });
 

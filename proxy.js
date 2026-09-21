@@ -20,7 +20,7 @@ app.post('/api/claude', async (req, res) => {
     res.status(response.status).json(data);
   } catch (error) {
     console.error('Proxy error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 
 });
@@ -39,7 +39,8 @@ app.post('/api/openai', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Proxy OpenAI error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -57,7 +58,8 @@ app.post('/api/gemini', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Proxy Gemini error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -103,7 +105,8 @@ app.post('/api/maintenance/patch', async (req, res) => {
 
     res.json({ success: true, message: 'Patch received and logged for review' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Proxy patch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

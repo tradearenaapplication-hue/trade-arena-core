@@ -873,12 +873,18 @@ describe("Proxy Server - Path Traversal Prevention", () => {
     if (!filepath || typeof filepath !== 'string') {
       return { allowed: false, status: 400, error: 'Invalid filepath parameter' };
     }
-    const resolvedPath = path.resolve(rootDir, filepath);
+
+    if (filepath.includes('..') || path.isAbsolute(filepath)) {
+      return { allowed: false, status: 403, error: 'Access denied: Path traversal detected' };
+    }
+
     const resolvedRoot = path.resolve(rootDir);
+    const resolvedPath = path.resolve(resolvedRoot, filepath);
 
     if (!resolvedPath.startsWith(resolvedRoot + path.sep) && resolvedPath !== resolvedRoot) {
       return { allowed: false, status: 403, error: 'Access denied: Path traversal detected' };
     }
+
     return { allowed: true, path: resolvedPath };
   };
 
@@ -886,6 +892,12 @@ describe("Proxy Server - Path Traversal Prevention", () => {
     const res = validatePathAccess('package.json');
     expect(res.allowed).toBe(true);
     expect(res.path).toBe(path.resolve(__dirname, 'package.json'));
+  });
+
+  it("allows safe nested relative paths within root directory", () => {
+    const res = validatePathAccess('src/validation/regime.ts');
+    expect(res.allowed).toBe(true);
+    expect(res.path).toBe(path.resolve(__dirname, 'src/validation/regime.ts'));
   });
 
   it("blocks path traversal attempts with ../", () => {
@@ -897,6 +909,12 @@ describe("Proxy Server - Path Traversal Prevention", () => {
 
   it("blocks path traversal attempts to parent directory", () => {
     const res = validatePathAccess('../package.json');
+    expect(res.allowed).toBe(false);
+    expect(res.status).toBe(403);
+  });
+
+  it("blocks absolute path traversal attempts", () => {
+    const res = validatePathAccess('/etc/passwd');
     expect(res.allowed).toBe(false);
     expect(res.status).toBe(403);
   });

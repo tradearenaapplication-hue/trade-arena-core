@@ -64,7 +64,29 @@ app.post('/api/gemini', async (req, res) => {
 const fs = require('fs');
 const path = require('path');
 
-app.post('/api/maintenance/log', (req, res) => {
+// Simple in-memory rate-limiter middleware for sensitive endpoints
+const rateLimitMap = new Map();
+const rateLimiter = (maxRequests, windowMs) => (req, res, next) => {
+  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  const now = Date.now();
+  const userRecord = rateLimitMap.get(ip) || { count: 0, resetTime: now + windowMs };
+
+  if (now > userRecord.resetTime) {
+    userRecord.count = 0;
+    userRecord.resetTime = now + windowMs;
+  }
+
+  userRecord.count += 1;
+  rateLimitMap.set(ip, userRecord);
+
+  if (userRecord.count > maxRequests) {
+    return res.status(429).json({ error: 'Too many requests, please try again later.' });
+  }
+
+  next();
+};
+
+app.post('/api/maintenance/log', rateLimiter(30, 60000), (req, res) => {
   const { agent, message, level } = req.body;
   const logDir = path.join(__dirname, '.jules');
   if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
@@ -78,16 +100,20 @@ app.post('/api/maintenance/log', (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/maintenance/patch', async (req, res) => {
+app.post('/api/maintenance/patch', rateLimiter(10, 60000), async (req, res) => {
   const { filepath, patch, description } = req.body;
   try {
     if (!filepath || typeof filepath !== 'string') {
       return res.status(400).json({ error: 'Invalid filepath parameter' });
     }
 
-    // Security: Prevent path traversal attacks by resolving and validating path boundary
-    const resolvedPath = path.resolve(__dirname, filepath);
+    // Security: Sanitize and prevent path traversal attacks
+    if (filepath.includes('..') || path.isAbsolute(filepath)) {
+      return res.status(403).json({ error: 'Access denied: Path traversal detected' });
+    }
+
     const rootDir = path.resolve(__dirname);
+    const resolvedPath = path.resolve(rootDir, filepath);
 
     if (!resolvedPath.startsWith(rootDir + path.sep) && resolvedPath !== rootDir) {
       return res.status(403).json({ error: 'Access denied: Path traversal detected' });

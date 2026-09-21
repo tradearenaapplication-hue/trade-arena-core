@@ -20,7 +20,7 @@ app.post('/api/claude', async (req, res) => {
     res.status(response.status).json(data);
   } catch (error) {
     console.error('Proxy error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 
 });
@@ -39,7 +39,8 @@ app.post('/api/openai', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Proxy OpenAI error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -57,36 +58,26 @@ app.post('/api/gemini', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Proxy Gemini error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 const fs = require('fs');
 const path = require('path');
 
-// Simple in-memory rate-limiter middleware for sensitive endpoints
-const rateLimitMap = new Map();
-const rateLimiter = (maxRequests, windowMs) => (req, res, next) => {
-  const ip = req.ip || req.connection.remoteAddress || 'unknown';
-  const now = Date.now();
-  const userRecord = rateLimitMap.get(ip) || { count: 0, resetTime: now + windowMs };
+/**
+ * Helper to check if a requested path stays inside the base directory
+ * Prevents path traversal vulnerabilities
+ */
+function isPathSafe(baseDir, targetPath) {
+  if (!targetPath || typeof targetPath !== 'string') return false;
+  const normalizedBase = path.resolve(baseDir);
+  const resolvedTarget = path.resolve(baseDir, targetPath);
+  return resolvedTarget === normalizedBase || resolvedTarget.startsWith(normalizedBase + path.sep);
+}
 
-  if (now > userRecord.resetTime) {
-    userRecord.count = 0;
-    userRecord.resetTime = now + windowMs;
-  }
-
-  userRecord.count += 1;
-  rateLimitMap.set(ip, userRecord);
-
-  if (userRecord.count > maxRequests) {
-    return res.status(429).json({ error: 'Too many requests, please try again later.' });
-  }
-
-  next();
-};
-
-app.post('/api/maintenance/log', rateLimiter(30, 60000), (req, res) => {
+app.post('/api/maintenance/log', (req, res) => {
   const { agent, message, level } = req.body;
   const logDir = path.join(__dirname, '.jules');
   if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
@@ -100,26 +91,21 @@ app.post('/api/maintenance/log', rateLimiter(30, 60000), (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/maintenance/patch', rateLimiter(10, 60000), async (req, res) => {
-  const { filepath, patch, description } = req.body;
+app.post('/api/maintenance/patch', async (req, res) => {
+  const { filepath, patch, description } = req.body || {};
   try {
+    // SECURITY: Sanitize filepath to prevent Path Traversal vulnerabilities before filesystem access
     if (!filepath || typeof filepath !== 'string') {
-      return res.status(400).json({ error: 'Invalid filepath parameter' });
+      return res.status(400).json({ error: 'Invalid filepath' });
     }
-
-    // Security: Sanitize and prevent path traversal attacks
-    if (filepath.includes('..') || path.isAbsolute(filepath)) {
-      return res.status(403).json({ error: 'Access denied: Path traversal detected' });
+    const fullPath = path.resolve(__dirname, filepath);
+    const relative = path.relative(__dirname, fullPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      return res.status(403).json({ error: 'Access denied: Invalid file path' });
     }
-
-    const rootDir = path.resolve(__dirname);
-    const resolvedPath = path.resolve(rootDir, filepath);
-
-    if (!resolvedPath.startsWith(rootDir + path.sep) && resolvedPath !== rootDir) {
-      return res.status(403).json({ error: 'Access denied: Path traversal detected' });
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: 'File not found' });
     }
-
-    if (!fs.existsSync(resolvedPath)) throw new Error('File not found');
 
     // In a real self-healing system, we would validate the patch
     // For this implementation, we log the intent and could apply it
@@ -130,12 +116,17 @@ app.post('/api/maintenance/patch', rateLimiter(10, 60000), async (req, res) => {
 
     res.json({ success: true, message: 'Patch received and logged for review' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Proxy patch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 const port = 3001;
-app.listen(port, () => {
-  console.log(`🚀 Proxy server running at http://localhost:${port}`);
-  console.log('Set ANTHROPIC_API_KEY env var for Claude');
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`🚀 Proxy server running at http://localhost:${port}`);
+    console.log('Set ANTHROPIC_API_KEY env var for Claude');
+  });
+}
+
+module.exports = { app, isPathSafe };

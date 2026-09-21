@@ -65,6 +65,7 @@ app.post('/api/gemini', async (req, res) => {
 
 const fs = require('fs');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 
 /**
  * Helper to check if a requested path stays inside the base directory
@@ -78,34 +79,20 @@ function isPathSafe(baseDir, targetPath) {
 }
 
 /**
- * In-memory rate-limiter middleware for route handlers
+ * Rate limiter middleware for filesystem endpoints
  * Prevents Denial of Service (DoS) and brute-force abuse on file system endpoints
  */
-const rateLimitMap = new Map();
+const maintenanceLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => req.ip || req.headers?.['x-forwarded-for'] || '127.0.0.1',
+  message: { error: 'Too many requests, please try again later' }
+});
 
-function rateLimiter(maxRequests = 30, windowMs = 60000) {
-  return (req, res, next) => {
-    const ip = req.ip || req.socket?.remoteAddress || '127.0.0.1';
-    const now = Date.now();
-    const record = rateLimitMap.get(ip) || { count: 0, resetTime: now + windowMs };
-
-    if (now > record.resetTime) {
-      record.count = 0;
-      record.resetTime = now + windowMs;
-    }
-
-    record.count += 1;
-    rateLimitMap.set(ip, record);
-
-    if (record.count > maxRequests) {
-      return res.status(429).json({ error: 'Too many requests, please try again later' });
-    }
-
-    next();
-  };
-}
-
-app.post('/api/maintenance/log', rateLimiter(30, 60000), (req, res) => {
+app.post('/api/maintenance/log', maintenanceLimiter, (req, res) => {
   try {
     const { agent, message, level } = req.body || {};
     // SECURITY: Validate inputs to prevent crashes and null pointer dereferences
@@ -136,7 +123,7 @@ app.post('/api/maintenance/log', rateLimiter(30, 60000), (req, res) => {
   }
 });
 
-app.post('/api/maintenance/patch', rateLimiter(30, 60000), async (req, res) => {
+app.post('/api/maintenance/patch', maintenanceLimiter, async (req, res) => {
   const { filepath, patch, description } = req.body || {};
   try {
     // SECURITY: Sanitize filepath to prevent Path Traversal vulnerabilities before filesystem access

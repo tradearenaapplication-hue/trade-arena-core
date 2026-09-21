@@ -1194,7 +1194,7 @@ describe("Proxy Endpoint Security", () => {
     expect(proxyCode.includes("res.status(500).json({ error: error.message })")).toBe(false);
   });
 
-  it("rejects invalid log payloads on maintenance log endpoint", () => {
+  it("rejects invalid log payloads on maintenance log endpoint", async () => {
     const route = proxyApp._router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/maintenance/log"
     );
@@ -1211,14 +1211,14 @@ describe("Proxy Endpoint Security", () => {
     for (const body of invalidPayloads) {
       let statusCode = 200;
       let jsonResponse = null;
-      const req = { body, ip: "127.0.0.101" };
+      const req = { body, ip: "127.0.0.101", headers: {}, app: proxyApp };
       const res = {
         status: (code) => { statusCode = code; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      route.route.stack[0].handle(req, res, () => {
-        route.route.stack[1].handle(req, res);
+      await route.route.stack[0].handle(req, res, async () => {
+        await route.route.stack[1].handle(req, res);
       });
       expect(statusCode).toBe(400);
       expect(jsonResponse.success).toBe(false);
@@ -1226,7 +1226,7 @@ describe("Proxy Endpoint Security", () => {
     }
   });
 
-  it("enforces rate limiting on excessive maintenance log requests", () => {
+  it("enforces rate limiting on excessive maintenance log requests", async () => {
     const route = proxyApp._router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/maintenance/log"
     );
@@ -1248,16 +1248,19 @@ describe("Proxy Endpoint Security", () => {
         let jsonResponse = null;
         const req = {
           ip: "127.0.0.99",
+          headers: {},
+          app: proxyApp,
           body: { agent: "SENTINEL", message: "Rate limit test entry", level: "INFO" }
         };
         const res = {
+          setHeader: () => {},
           status: (code) => { statusCode = code; return res; },
+          send: (data) => { jsonResponse = data; return res; },
           json: (data) => { jsonResponse = data; return res; },
         };
 
-        // Express route stack runs [rateLimiter, handler]
-        route.route.stack[0].handle(req, res, () => {
-          route.route.stack[1].handle(req, res);
+        await route.route.stack[0].handle(req, res, async () => {
+          await route.route.stack[1].handle(req, res);
         });
 
         lastStatus = statusCode;
@@ -1272,7 +1275,7 @@ describe("Proxy Endpoint Security", () => {
     }
   });
 
-  it("successfully logs valid maintenance entry without side effects", () => {
+  it("successfully logs valid maintenance entry without side effects", async () => {
     const route = proxyApp._router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/maintenance/log"
     );
@@ -1288,16 +1291,20 @@ describe("Proxy Endpoint Security", () => {
       let statusCode = 200;
       let jsonResponse = null;
       const req = {
-        ip: "127.0.0.100", // distinct IP to avoid rate limiter hit from previous tests
+        ip: "127.0.0.100", // distinct IP
+        headers: {},
+        app: proxyApp,
         body: { agent: "SENTINEL", message: "Test log verification message", level: "INFO" }
       };
       const res = {
+        setHeader: () => {},
         status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      route.route.stack[0].handle(req, res, () => {
-        route.route.stack[1].handle(req, res);
+      await route.route.stack[0].handle(req, res, async () => {
+        await route.route.stack[1].handle(req, res);
       });
 
       expect(statusCode).toBe(200);

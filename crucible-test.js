@@ -836,26 +836,33 @@ function calculateRSI(prices, period = 14) {
  * @returns {number} ATR as percentage of price
  */
 function calculateATR(highs, lows, closes, period = 14) {
-  if (highs.length < period) return 0; // Not enough data
+  const len = highs.length;
+  if (len < period) return 0; // Not enough data
 
   let trSum = 0;
-  for (let i = 0; i < highs.length; i++) {
+  let priceSum = 0;
+
+  // Single pass loop accumulating true ranges and price sum
+  // Bolt ⚡ Optimization: Avoid double-pass closes.reduce() and Math.max allocations
+  for (let i = 0; i < len; i++) {
     const high = highs[i];
     const low = lows[i];
-    const prevClose = closes[i - 1] !== undefined ? closes[i - 1] : closes[0];
+    const close = closes[i];
+    priceSum += close;
+    const prevClose = i > 0 ? closes[i - 1] : closes[0];
 
     const tr1 = high - low;
     const tr2 = Math.abs(high - prevClose);
     const tr3 = Math.abs(low - prevClose);
-    const tr = Math.max(tr1, tr2, tr3);
+    let tr = tr1 > tr2 ? tr1 : tr2;
+    if (tr3 > tr) tr = tr3;
 
     trSum += tr;
   }
 
-  const atr = trSum / Math.min(highs.length, period);
+  const atr = trSum / (len < period ? len : period);
   // Return ATR as percentage of price
-  const avgPrice =
-    closes.reduce((sum, price) => sum + price, 0) / closes.length;
+  const avgPrice = priceSum / len;
   return (atr / avgPrice) * 100;
 }
 
@@ -866,9 +873,15 @@ function calculateATR(highs, lows, closes, period = 14) {
  * @returns {number} SMA value
  */
 function calculateSMA(prices, period = 20) {
-  if (prices.length < period) return prices[prices.length - 1]; // Return latest if not enough data
+  const len = prices.length;
+  if (len < period) return prices[len - 1]; // Return latest if not enough data
 
-  const sum = prices.slice(-period).reduce((sum, price) => sum + price, 0);
+  // Bolt ⚡ Optimization: Direct indexed sum over last `period` elements
+  // Replaces prices.slice(-period).reduce(...) to eliminate array allocations
+  let sum = 0;
+  for (let i = len - period; i < len; i++) {
+    sum += prices[i];
+  }
   return sum / period;
 }
 

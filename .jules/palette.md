@@ -1,3 +1,5 @@
-## 2026-09-21 - ARIA Expanded State on Dynamic Collapsible Panels
-**Learning:** When dynamic components (like bot settings gear dropdowns or collapsible section headers) use CSS class toggles (`classList.toggle('open')`), screen readers do not automatically register state changes without matching `aria-expanded` updates on the triggering element.
-**Action:** Always pair `classList.toggle('open')` with `setAttribute('aria-expanded', isOpen)` and ensure the initial trigger markup defines `aria-expanded="false"` and `aria-controls="[target-id]"`.
+# Palette's Journal - UX & Accessibility Learnings
+
+## 2026-09-15 - Crucible Regime Button Group Accessibility
+**Learning:** Custom button groups acting as single-select toggle groups in index.html (like regime buttons) lacked default active classes, `aria-pressed` attributes, and click handlers.
+**Action:** Always wrap custom button group selectors with `role="group"` and `aria-labelledby`, set default active button state with `aria-pressed="true"`, and bind event handlers that maintain synchronized visual state and `aria-pressed` values.

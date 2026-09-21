@@ -730,9 +730,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </button>
       <div class="divider">— or —</div>
       <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
-      <div class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none';">
+      <button type="button" class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none'; this.setAttribute('aria-expanded', 'true');" aria-expanded="false" aria-controls="advancedSettings" style="background:none;border:none;width:100%;cursor:pointer;font-family:inherit;">
         ⚙´©Å Advanced Settings
-      </div>
+      </button>
       <div class="fiat-ramp-row">
         <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
         <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
@@ -750,7 +750,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <p id="cStatus" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
   <div class="setup-note">
     <strong>Optional: Anthropic API Key</strong> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
-    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." style="width:100%;margin-top:5px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
+    <input type="password" id="apiKeyInput" aria-label="Anthropic API Key" placeholder="sk-ant-api03-..." style="width:100%;margin-top:5px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
     <span style="color:var(--dim);font-size:8px">Without a key the app uses rule-based signals and still trades. Demo Mode requires no wallet or key.</span>
   </div>
 
@@ -829,9 +829,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
      <!-- bot controls -->
      <div class="gh-controls">
-         <button class="gh-bus-btn" onclick="togglePanel('staff')" title="Application Maintenance & Support">👷 STAFF</button>
-       <button class="gh-bus-btn" onclick="togglePanel('task')" title="Earn Trade Credits">💰 EARN</button>
-       <button class="gh-bus-btn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement">🏆 ARENA</button>
+         <button class="gh-bus-btn" id="staffNavBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false" aria-controls="staffPanel">👷 STAFF</button>
+       <button class="gh-bus-btn" id="taskNavBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false" aria-controls="taskPanel">💰 EARN</button>
+       <button class="gh-bus-btn" id="eloNavBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false" aria-controls="eloPanel">🏆 ARENA</button>
        <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false" aria-controls="voiceAgentModal">🎙️ AGENT</button>
        <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-pressed="false">📊 FLEET</button>
        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false" aria-controls="busPanel">⚙ BUS</button>
@@ -862,7 +862,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <button class="bus-preset" onclick="busSetAmount(100)">$100</button>
         </div>
         <div class="bus-custom-row">
-          <input type="number" id="busCustomAmt" placeholder="Custom $" min="0.01" step="0.01">
+          <input type="number" id="busCustomAmt" aria-label="Custom trade amount in dollars" placeholder="Custom $" min="0.01" step="0.01">
           <button onclick="busSetCustomAmount()">SET ALL</button>
         </div>
       </div>
@@ -947,9 +947,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <!-- Audit settings -->
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
         <div style="font-size:8px;color:var(--dim)">
-          Audit every <input type="number" id="auditInterval" value="10" min="5" max="50" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> trades ·
-          On notice if WR &lt; <input type="number" id="noticeThreshold" value="40" min="20" max="60" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--amber);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center">% ·
-          Suspend after <input type="number" id="suspendWindow" value="10" min="5" max="30" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--hot);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> probation trades
+          Audit every <input type="number" id="auditInterval" aria-label="Audit trade interval" value="10" min="5" max="50" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--gold);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> trades ·
+          On notice if WR &lt; <input type="number" id="noticeThreshold" aria-label="Win rate notice threshold percentage" value="40" min="20" max="60" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--amber);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center">% ·
+          Suspend after <input type="number" id="suspendWindow" aria-label="Probation trades before suspension" value="10" min="5" max="30" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--hot);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> probation trades
         </div>
         <button onclick="runManualAudit()" style="padding:4px 10px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--hot);color:var(--hot);border-radius:4px;cursor:pointer;letter-spacing:1px;margin-left:auto">RUN AUDIT NOW</button>
       </div>
@@ -1026,30 +1026,30 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <span class="crucible-label">🔬 CRUCIBLE</span>
         <div class="crucible-progress"><div class="crucible-fill" id="crucibleFill" style="width:0%"></div></div>
         <span class="crucible-count" id="crucibleCount">0 / 100</span>
-        <button class="crucible-toggle" id="crucibleBtn" onclick="toggleCrucible()">OFF</button>
+        <button class="crucible-toggle" id="crucibleBtn" onclick="toggleCrucible()" aria-pressed="false" aria-label="Toggle Crucible Mode">OFF</button>
       </div>
 
        <!-- Crucible Controls -->
        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-           <label style="color:var(--dim);font-size:10px">Regime:</label>
-           <div style="display:flex;gap:2px">
-             <button id="regimeBull" class="regime-btn" onclick="selectRegime('BULL')">BULL</button>
-             <button id="regimeBear" class="regime-btn" onclick="selectRegime('BEAR')">BEAR</button>
-             <button id="regimeChop" class="regime-btn" onclick="selectRegime('CHOP')">CHOP</button>
-             <button id="regimeHighVol" class="regime-btn" onclick="selectRegime('HIGH_VOL')">HIGH_VOL</button>
+           <label style="color:var(--dim);font-size:10px" id="regimeGroupLabel">Regime:</label>
+           <div style="display:flex;gap:2px" role="group" aria-labelledby="regimeGroupLabel">
+             <button id="regimeBull" class="regime-btn active" onclick="selectRegime('BULL')" aria-pressed="true" aria-label="Select BULL regime">BULL</button>
+             <button id="regimeBear" class="regime-btn" onclick="selectRegime('BEAR')" aria-pressed="false" aria-label="Select BEAR regime">BEAR</button>
+             <button id="regimeChop" class="regime-btn" onclick="selectRegime('CHOP')" aria-pressed="false" aria-label="Select CHOP regime">CHOP</button>
+             <button id="regimeHighVol" class="regime-btn" onclick="selectRegime('HIGH_VOL')" aria-pressed="false" aria-label="Select HIGH_VOL regime">HIGH_VOL</button>
            </div>
          </div>
 
          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-           <label style="color:var(--dim);font-size:10px">Cost Model:</label>
+           <label for="costModelSelect" style="color:var(--dim);font-size:10px">Cost Model:</label>
            <select id="costModelSelect" style="padding:4px 8px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
              <option value="REALISTIC_1X">REALISTIC_1X (0.1% fees)</option>
              <option value="STRESS_1_5X">STRESS_1_5X (1.5x real costs)</option>
            </select>
          </div>
 
-         <label style="color:var(--dim);font-size:10px">Trades:</label>
+         <label for="crucibleTradeCount" style="color:var(--dim);font-size:10px">Trades:</label>
          <input type="number" id="crucibleTradeCount" value="50" min="1" max="1000" style="width:60px;padding:4px 6px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
 
           <button class="crucible-run-btn" onclick="runCrucibleV2Batch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">▶ RUN CRUCIBLE V2</button>
@@ -1060,9 +1060,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <!-- Databricks Genie Config -->
       <div class="db-config" id="dbConfig">
         <div class="db-config-title">🧱 DATABRICKS GENIE <span style="color:var(--dim);font-size:7px;font-family:'Share Tech Mono',monospace" id="dbStatus">NOT CONFIGURED</span></div>
-        <input type="text" id="dbWorkspace" placeholder="Workspace URL: https://your-workspace.azuredatabricks.net" oninput="updateDbStatus()">
-        <input type="text" id="dbSpaceId" placeholder="Genie Space ID (from Databricks UI)" oninput="updateDbStatus()">
-        <input type="password" id="dbToken" placeholder="Personal Access Token (Settings → Developer)" oninput="updateDbStatus()">
+        <input type="text" id="dbWorkspace" aria-label="Databricks Workspace URL" placeholder="Workspace URL: https://your-workspace.azuredatabricks.net" oninput="updateDbStatus()">
+        <input type="text" id="dbSpaceId" aria-label="Databricks Genie Space ID" placeholder="Genie Space ID (from Databricks UI)" oninput="updateDbStatus()">
+        <input type="password" id="dbToken" aria-label="Databricks Personal Access Token" placeholder="Personal Access Token (Settings → Developer)" oninput="updateDbStatus()">
         <div class="db-status">When configured, the Genie agent queries your warehouse for historical trade context and pattern data before each decision.</div>
       </div>
 
@@ -1249,19 +1249,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
     <div class="cpanel-body" id="breakerBody">
       <div class="breaker-grid">
-        <div class="b-control"><label>⛽ Gas Hard Ceiling (gwei)</label><input type="number" id="gasHard" value="50" min="1" max="500" onchange="updateBreakers()"><div class="b-val" id="gasHardVal">Hard stop at 50 gwei</div></div>
-        <div class="b-control"><label>📊 Daily Drawdown Kill (%)</label><input type="number" id="drawdownPct" value="10" min="1" max="50" onchange="updateBreakers()"><div class="b-val" id="drawdownVal">Stop if -$1,000.00 today</div></div>
+        <div class="b-control"><label for="gasHard">⛽ Gas Hard Ceiling (gwei)</label><input type="number" id="gasHard" value="50" min="1" max="500" onchange="updateBreakers()"><div class="b-val" id="gasHardVal">Hard stop at 50 gwei</div></div>
+        <div class="b-control"><label for="drawdownPct">📊 Daily Drawdown Kill (%)</label><input type="number" id="drawdownPct" value="10" min="1" max="50" onchange="updateBreakers()"><div class="b-val" id="drawdownVal">Stop if -$1,000.00 today</div></div>
         <div class="b-control" style="grid-column:1/-1">
-          <label>🎯 Aggression Level — how hard the agents chase trades</label>
+          <label for="aggrSlider">🎯 Aggression Level — how hard the agents chase trades</label>
           <input type="range" id="aggrSlider" min="1" max="10" value="8" oninput="updateAggrDisplay()">
           <div class="b-val" id="aggrVal" style="color:var(--hot)">Level 8 / 10 — AGGRESSIVE</div>
         </div>
         <div class="b-control" style="grid-column:1/-1">
-          <label>⚡ Consensus Threshold — agents needed to trigger a trade</label>
+          <label for="consensusSlider">⚡ Consensus Threshold — agents needed to trigger a trade</label>
           <input type="range" id="consensusSlider" min="1" max="4" value="2" oninput="updateConsensusDisplay()">
           <div class="b-val" id="consensusVal" style="color:var(--amber)">2 / 4 agents must agree</div>
         </div>
-        <div class="b-control" style="grid-column:1/-1"><label>⛽ Simulated Gas (gwei) — drag to test</label><input type="range" id="gasSlider" min="1" max="200" value="18" oninput="updateGasDisplay()"><div class="b-val" id="gasCurrentVal" style="color:var(--green)">18 gwei ✓ OK</div></div>
+        <div class="b-control" style="grid-column:1/-1"><label for="gasSlider">⛽ Simulated Gas (gwei) — drag to test</label><input type="range" id="gasSlider" min="1" max="200" value="18" oninput="updateGasDisplay()"><div class="b-val" id="gasCurrentVal" style="color:var(--green)">18 gwei ✓ OK</div></div>
       </div>
       <table class="cooldown-table" id="cooldownTable">
         <tr><th>Trigger</th><th>Cooldown</th><th>Rationale</th></tr>
@@ -2070,7 +2070,11 @@ function updateOpenCount() { setVal('mv-open',openPositions.length); }
 function toggleCrucible() {
   crucibleMode=!crucibleMode;
   const btn=document.getElementById('crucibleBtn');
-  if(btn){ btn.textContent=crucibleMode?'ON':'OFF'; btn.classList.toggle('active',crucibleMode); }
+  if(btn){
+    btn.textContent=crucibleMode?'ON':'OFF';
+    btn.classList.toggle('active',crucibleMode);
+    btn.setAttribute('aria-pressed', crucibleMode ? 'true' : 'false');
+  }
   updateCrucible();
 }
 function updateCrucible() {
@@ -2151,6 +2155,16 @@ async function runCrucibleBatch() {
   } finally {
     if(runBtn) runBtn.disabled = false;
   }
+}
+
+function selectRegime(regime) {
+  const map = { BULL: 'regimeBull', BEAR: 'regimeBear', CHOP: 'regimeChop', HIGH_VOL: 'regimeHighVol' };
+  const targetId = map[regime] || 'regimeBull';
+  document.querySelectorAll('.regime-btn').forEach(btn => {
+    const isActive = btn.id === targetId;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
 }
 
 async function runCrucibleV2Batch() {
@@ -2416,12 +2430,14 @@ function downloadFile(content, filename, type) {
 // CIRCUIT BREAKERS
 // ══════════════════════════════════════════════════════
 function togglePanel(name) {
-  const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle';
-  const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId), hd=document.getElementById(hdId);
+  const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle', navBtnId=name+'NavBtn';
+  const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId), hd=document.getElementById(hdId), navBtn=document.getElementById(navBtnId);
   if(!body||!toggle) return;
   const isOpen=body.classList.toggle('open');
   hd?.classList.toggle('open',isOpen);
   hd?.setAttribute('aria-expanded', isOpen);
+  navBtn?.setAttribute('aria-expanded', isOpen);
+  navBtn?.classList.toggle('open', isOpen);
   toggle.textContent=isOpen?'▴ HIDE':'▼ '+(name==='quant'?'EXPAND':'CONFIGURE');
   if(name==='quant'&&isOpen){ updateQuantReport(); setTimeout(drawEquityCurve,50); }
   if(name==='elo'&&isOpen){ if(typeof renderEloArena === 'function') renderEloArena(); }
@@ -3127,7 +3143,7 @@ function toggleBotSettings(id){
   const open=drop.classList.toggle('open');
   if(gear) {
     gear.classList.toggle('open',open);
-    gear.setAttribute('aria-expanded', open);
+    gear.setAttribute('aria-expanded', open ? 'true' : 'false');
   }
 }
 function setBotPersonality(id,val){
@@ -4281,8 +4297,10 @@ function toggleLearn() {
   const toggle = document.getElementById('learnToggle');
   if (!body) return;
   const isOpen = body.classList.toggle('open');
-  hd.classList.toggle('open', isOpen);
-  hd.setAttribute('aria-expanded', isOpen);
+  if (hd) {
+    hd.classList.toggle('open', isOpen);
+    hd.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
   toggle.textContent = isOpen ? '▴ HIDE' : '▼ EXPAND';
   if (isOpen) renderLearnPanel();
 }
@@ -4598,8 +4616,10 @@ function toggleAudit() {
   const toggle = document.getElementById('auditToggle');
   if (!body) return;
   const isOpen = body.classList.toggle('open');
-  hd.classList.toggle('open', isOpen);
-  hd.setAttribute('aria-expanded', isOpen);
+  if (hd) {
+    hd.classList.toggle('open', isOpen);
+    hd.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
   toggle.textContent = isOpen ? '▴ HIDE' : '▼ EXPAND';
   if (isOpen) renderAuditPanel();
 }

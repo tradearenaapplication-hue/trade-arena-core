@@ -44,6 +44,7 @@ const {
   calculateFlashLoanArb,
   scanCrossDexFlashArb,
 } = require("./cross-dex-arb-scanner.js");
+const { isPathSafe } = require("./proxy.js");
 
 const tests = [];
 let currentSuite = "";
@@ -727,6 +728,33 @@ describe("Performance", () => {
     for (let i = 0; i < 100; i++) engine.calculatePositionSize(10, 3, 5);
 
     expect(Date.now() - start).toBeLessThan(150);
+  });
+});
+
+describe("Path Traversal Protection (proxy.js)", () => {
+  const baseDir = __dirname;
+
+  it("allows valid relative file paths inside baseDir", () => {
+    expect(isPathSafe(baseDir, "proxy.js")).toBe(true);
+    expect(isPathSafe(baseDir, "src/index.js")).toBe(true);
+    expect(isPathSafe(baseDir, ".jules/sentinel.md")).toBe(true);
+  });
+
+  it("blocks path traversal attempts attempting to exit baseDir", () => {
+    expect(isPathSafe(baseDir, "../package.json")).toBe(false);
+    expect(isPathSafe(baseDir, "../../etc/passwd")).toBe(false);
+    expect(isPathSafe(baseDir, "..")).toBe(false);
+  });
+
+  it("blocks absolute paths outside baseDir", () => {
+    expect(isPathSafe(baseDir, "/etc/passwd")).toBe(false);
+    expect(isPathSafe(baseDir, "/var/log/syslog")).toBe(false);
+  });
+
+  it("handles null, undefined, or empty inputs safely", () => {
+    expect(isPathSafe(baseDir, null)).toBe(false);
+    expect(isPathSafe(baseDir, undefined)).toBe(false);
+    expect(isPathSafe(baseDir, "")).toBe(false);
   });
 });
 

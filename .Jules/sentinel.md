@@ -17,3 +17,8 @@
 **Vulnerability:** The `showCrucibleResults` function in `index.html` rendered the `results.mode` property directly into an `innerHTML` sink without sanitization.
 **Learning:** Even metadata fields that are expected to be internal strings can be dangerous if there is any path for user-controlled data to reach them. Template literals in `innerHTML` are a common source of XSS.
 **Prevention:** Always use the `escapeHTML` helper when rendering any string into an `innerHTML` template, or prefer safer alternatives like `textContent` for individual elements.
+
+## 2026-09-21 - [HIGH] Path Traversal Vulnerability in Proxy Server
+**Vulnerability:** Unsanitized user-supplied file paths in `/api/maintenance/patch` (`proxy.js`) allowed potential path traversal outside the project root directory using relative path indicators like `../`.
+**Learning:** File paths supplied via API parameters must never be passed directly to file system operations or path joining functions (`path.join`) without validating that the resolved path stays within the intended base directory.
+**Prevention:** Resolve paths with `path.resolve` and verify that the target path begins with the base directory path plus path separator using a jail-check helper like `isPathSafe`.

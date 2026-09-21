@@ -901,12 +901,24 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain('aria-pressed="false"');
   });
 
+  it("defines aria-expanded and aria-controls on collapsible panel headers and bot settings gear button", () => {
+    expect(html).toContain('id="quantHd" onclick="togglePanel(\'quant\')" style="background:linear-gradient(90deg,rgba(68,136,255,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="quantBody"');
+    expect(html).toContain('id="staffHd" onclick="togglePanel(\'staff\')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="staffBody"');
+    expect(html).toContain('id="eloHd" onclick="togglePanel(\'elo\')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="eloBody"');
+    expect(html).toContain('id="taskHd" onclick="togglePanel(\'task\')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="taskBody"');
+    expect(html).toContain('id="breakerHd" onclick="togglePanel(\'breaker\')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="breakerBody"');
+    expect(html).toContain('id="auditHd" onclick="toggleAudit()" role="button" tabindex="0" aria-expanded="false" aria-controls="auditBody"');
+    expect(html).toContain('id="learnHd" onclick="toggleLearn()" role="button" tabindex="0" aria-expanded="false" aria-controls="learnBody"');
+    expect(html).toContain('aria-controls="mdrop-${bot.id}"');
+  });
+
   it("updates aria-expanded/aria-pressed in toggle JavaScript functions", () => {
     expect(html).toContain("btn.setAttribute('aria-pressed', isFleet)");
     expect(html).toContain("btn.setAttribute('aria-expanded', open)");
     expect(html).toContain("btn.setAttribute('aria-expanded', isOpen)");
     expect(html).toContain("btn.setAttribute('aria-pressed', _ghAutoOn)");
     expect(html).toContain("this.setAttribute('aria-pressed', isOn)");
+    expect(html).toContain("gear.setAttribute('aria-expanded', open)");
   });
 });
 

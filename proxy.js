@@ -77,7 +77,35 @@ function isPathSafe(baseDir, targetPath) {
   return resolvedTarget === normalizedBase || resolvedTarget.startsWith(normalizedBase + path.sep);
 }
 
-app.post('/api/maintenance/log', (req, res) => {
+/**
+ * In-memory rate-limiter middleware for route handlers
+ * Prevents Denial of Service (DoS) and brute-force abuse on file system endpoints
+ */
+const rateLimitMap = new Map();
+
+function rateLimiter(maxRequests = 30, windowMs = 60000) {
+  return (req, res, next) => {
+    const ip = req.ip || req.socket?.remoteAddress || '127.0.0.1';
+    const now = Date.now();
+    const record = rateLimitMap.get(ip) || { count: 0, resetTime: now + windowMs };
+
+    if (now > record.resetTime) {
+      record.count = 0;
+      record.resetTime = now + windowMs;
+    }
+
+    record.count += 1;
+    rateLimitMap.set(ip, record);
+
+    if (record.count > maxRequests) {
+      return res.status(429).json({ error: 'Too many requests, please try again later' });
+    }
+
+    next();
+  };
+}
+
+app.post('/api/maintenance/log', rateLimiter(30, 60000), (req, res) => {
   try {
     const { agent, message, level } = req.body || {};
     // SECURITY: Validate inputs to prevent crashes and null pointer dereferences
@@ -108,7 +136,7 @@ app.post('/api/maintenance/log', (req, res) => {
   }
 });
 
-app.post('/api/maintenance/patch', async (req, res) => {
+app.post('/api/maintenance/patch', rateLimiter(30, 60000), async (req, res) => {
   const { filepath, patch, description } = req.body || {};
   try {
     // SECURITY: Sanitize filepath to prevent Path Traversal vulnerabilities before filesystem access

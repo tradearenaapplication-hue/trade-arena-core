@@ -1211,15 +1211,64 @@ describe("Proxy Endpoint Security", () => {
     for (const body of invalidPayloads) {
       let statusCode = 200;
       let jsonResponse = null;
+      const req = { body, ip: "127.0.0.101" };
       const res = {
         status: (code) => { statusCode = code; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      route.route.stack[0].handle({ body }, res);
+      route.route.stack[0].handle(req, res, () => {
+        route.route.stack[1].handle(req, res);
+      });
       expect(statusCode).toBe(400);
       expect(jsonResponse.success).toBe(false);
       expect(jsonResponse.error).toBe("Invalid log payload");
+    }
+  });
+
+  it("enforces rate limiting on excessive maintenance log requests", () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/maintenance/log"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const originalAppend = fs.appendFileSync;
+    const originalMkdir = fs.mkdirSync;
+
+    try {
+      fs.appendFileSync = () => {};
+      fs.mkdirSync = () => {};
+
+      let lastStatus = 200;
+      let lastJson = null;
+
+      // Simulate sending 35 requests from ip "127.0.0.99"
+      for (let i = 0; i < 35; i++) {
+        let statusCode = 200;
+        let jsonResponse = null;
+        const req = {
+          ip: "127.0.0.99",
+          body: { agent: "SENTINEL", message: "Rate limit test entry", level: "INFO" }
+        };
+        const res = {
+          status: (code) => { statusCode = code; return res; },
+          json: (data) => { jsonResponse = data; return res; },
+        };
+
+        // Express route stack runs [rateLimiter, handler]
+        route.route.stack[0].handle(req, res, () => {
+          route.route.stack[1].handle(req, res);
+        });
+
+        lastStatus = statusCode;
+        lastJson = jsonResponse;
+      }
+
+      expect(lastStatus).toBe(429);
+      expect(lastJson.error).toContain("Too many requests");
+    } finally {
+      fs.appendFileSync = originalAppend;
+      fs.mkdirSync = originalMkdir;
     }
   });
 
@@ -1238,14 +1287,18 @@ describe("Proxy Endpoint Security", () => {
 
       let statusCode = 200;
       let jsonResponse = null;
+      const req = {
+        ip: "127.0.0.100", // distinct IP to avoid rate limiter hit from previous tests
+        body: { agent: "SENTINEL", message: "Test log verification message", level: "INFO" }
+      };
       const res = {
         status: (code) => { statusCode = code; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      route.route.stack[0].handle({
-        body: { agent: "SENTINEL", message: "Test log verification message", level: "INFO" }
-      }, res);
+      route.route.stack[0].handle(req, res, () => {
+        route.route.stack[1].handle(req, res);
+      });
 
       expect(statusCode).toBe(200);
       expect(jsonResponse.success).toBe(true);

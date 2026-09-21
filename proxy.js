@@ -112,7 +112,7 @@ app.post('/api/maintenance/patch', async (req, res) => {
     console.log(`[Developer Agent] Patch requested for ${filepath}: ${description}`);
 
     // Simple overwrite for this demo-scale self-healing
-    // fs.writeFileSync(fullPath, patch);
+    // fs.writeFileSync(resolvedPath, patch);
 
     res.json({ success: true, message: 'Patch received and logged for review' });
   } catch (error) {

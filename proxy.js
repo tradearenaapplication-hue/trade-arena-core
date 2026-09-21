@@ -81,15 +81,26 @@ app.post('/api/maintenance/log', (req, res) => {
 app.post('/api/maintenance/patch', async (req, res) => {
   const { filepath, patch, description } = req.body;
   try {
-    const fullPath = path.join(__dirname, filepath);
-    if (!fs.existsSync(fullPath)) throw new Error('File not found');
+    if (!filepath || typeof filepath !== 'string') {
+      return res.status(400).json({ error: 'Invalid filepath parameter' });
+    }
+
+    // Security: Prevent path traversal attacks by resolving and validating path boundary
+    const resolvedPath = path.resolve(__dirname, filepath);
+    const rootDir = path.resolve(__dirname);
+
+    if (!resolvedPath.startsWith(rootDir + path.sep) && resolvedPath !== rootDir) {
+      return res.status(403).json({ error: 'Access denied: Path traversal detected' });
+    }
+
+    if (!fs.existsSync(resolvedPath)) throw new Error('File not found');
 
     // In a real self-healing system, we would validate the patch
     // For this implementation, we log the intent and could apply it
     console.log(`[Developer Agent] Patch requested for ${filepath}: ${description}`);
 
     // Simple overwrite for this demo-scale self-healing
-    // fs.writeFileSync(fullPath, patch);
+    // fs.writeFileSync(resolvedPath, patch);
 
     res.json({ success: true, message: 'Patch received and logged for review' });
   } catch (error) {

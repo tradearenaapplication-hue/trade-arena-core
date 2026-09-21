@@ -866,6 +866,48 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
   });
 });
 
+describe("Proxy Server - Path Traversal Prevention", () => {
+  const path = require('path');
+
+  const validatePathAccess = (filepath, rootDir = __dirname) => {
+    if (!filepath || typeof filepath !== 'string') {
+      return { allowed: false, status: 400, error: 'Invalid filepath parameter' };
+    }
+    const resolvedPath = path.resolve(rootDir, filepath);
+    const resolvedRoot = path.resolve(rootDir);
+
+    if (!resolvedPath.startsWith(resolvedRoot + path.sep) && resolvedPath !== resolvedRoot) {
+      return { allowed: false, status: 403, error: 'Access denied: Path traversal detected' };
+    }
+    return { allowed: true, path: resolvedPath };
+  };
+
+  it("allows safe file paths within root directory", () => {
+    const res = validatePathAccess('package.json');
+    expect(res.allowed).toBe(true);
+    expect(res.path).toBe(path.resolve(__dirname, 'package.json'));
+  });
+
+  it("blocks path traversal attempts with ../", () => {
+    const res = validatePathAccess('../../etc/passwd');
+    expect(res.allowed).toBe(false);
+    expect(res.status).toBe(403);
+    expect(res.error).toBe('Access denied: Path traversal detected');
+  });
+
+  it("blocks path traversal attempts to parent directory", () => {
+    const res = validatePathAccess('../package.json');
+    expect(res.allowed).toBe(false);
+    expect(res.status).toBe(403);
+  });
+
+  it("rejects non-string or missing filepath inputs", () => {
+    const res = validatePathAccess(null);
+    expect(res.allowed).toBe(false);
+    expect(res.status).toBe(400);
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

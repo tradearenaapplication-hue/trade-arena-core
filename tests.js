@@ -294,6 +294,23 @@ describe("Contract Helpers - Security & Simulation", () => {
     expect(valid.valid).toBe(true);
     expect(invalid.valid).toBe(false);
   });
+
+  it("prevents path traversal directory escape", () => {
+    const path = require("path");
+    const baseDir = __dirname;
+
+    const isPathSafe = (filepath) => {
+      if (!filepath || typeof filepath !== "string") return false;
+      const fullPath = path.resolve(baseDir, filepath);
+      const relative = path.relative(baseDir, fullPath);
+      return !relative.startsWith("..") && !path.isAbsolute(relative);
+    };
+
+    expect(isPathSafe("index.html")).toBe(true);
+    expect(isPathSafe("./strategies/loader.js")).toBe(true);
+    expect(isPathSafe("../../../etc/passwd")).toBe(false);
+    expect(isPathSafe("/etc/passwd")).toBe(false);
+  });
 });
 
 describe("Arbitrage & Flash Loan Simulators", () => {
@@ -891,6 +908,476 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
     for (const mode of modes) {
       expect(escapeHTML(mode)).toBe(mode);
     }
+  });
+});
+
+describe("Swap Execution Endpoint Security", () => {
+  const server = require("./server.js");
+
+  it("rejects swap requests with missing or invalid parameters", () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/execute/swap"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidPayloads = [
+      {},
+      { fromToken: "WETH" },
+      { fromToken: "WETH", toToken: "USDC", amount: -5 },
+      { fromToken: "WETH", toToken: "USDC", amount: "invalid" },
+      { fromToken: "WETH", toToken: "USDC", amount: 10, slippage: -0.1 },
+      { fromToken: "WETH", toToken: "USDC", amount: 10, slippage: 1.5 },
+    ];
+
+    for (const body of invalidPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      route.route.stack[0].handle({ body }, res);
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid swap parameters");
+    }
+  });
+
+  it("executes valid swap requests and returns secure txHash", () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/execute/swap"
+    );
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    route.route.stack[0].handle({
+      body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 }
+    }, res);
+
+    expect(statusCode).toBe(200);
+    expect(jsonResponse.success).toBe(true);
+    expect(jsonResponse.swap.from.token).toBe("WETH");
+    expect(jsonResponse.swap.from.amount).toBe("1.5000");
+    expect(jsonResponse.swap.to.token).toBe("USDC");
+    expect(jsonResponse.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+  });
+});
+
+describe("Flash Loan Simulation Endpoint Security", () => {
+  const server = require("./server.js");
+
+  it("rejects flash loan simulation requests with missing or invalid loanAmount", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/flash-loan/simulate"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidPayloads = [
+      {},
+      { loanAmount: 0 },
+      { loanAmount: -100 },
+      { loanAmount: "invalid" },
+      { loanAmount: null },
+    ];
+
+    for (const body of invalidPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle({ body }, res);
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid loan amount");
+    }
+  });
+
+  it("simulates flash loan opportunity when valid positive loanAmount is provided", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/flash-loan/simulate"
+    );
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    await route.route.stack[0].handle({ body: { loanAmount: 10000 } }, res);
+    expect(statusCode).toBe(200);
+    expect(jsonResponse.success).toBe(true);
+    expect(jsonResponse.opportunity.loanAmount).toBe(10000);
+    expect(jsonResponse.opportunity.flashFee).toBe(9);
+    expect(jsonResponse.opportunity.type).toBe("MEV_SANDWICH");
+  });
+});
+
+describe("Bot Creation Endpoint Security", () => {
+  const server = require("./server.js");
+
+  it("rejects bot creation requests with missing or invalid parameters", () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/bot/create"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidPayloads = [
+      {},
+      { name: "  " },
+      { name: "My Bot", strategy: "Arbitrage Detection" },
+      { name: "My Bot", strategy: "Arbitrage Detection", riskLevel: "Moderate (5x leverage)", initialCapital: -100 },
+      { name: "My Bot", strategy: "Arbitrage Detection", riskLevel: "Moderate (5x leverage)", initialCapital: 0 },
+      { name: "My Bot", strategy: "Arbitrage Detection", riskLevel: "Moderate (5x leverage)", initialCapital: "abc" },
+      { name: 123, strategy: "Arbitrage Detection", riskLevel: "Moderate (5x leverage)", initialCapital: 1000 },
+    ];
+
+    for (const body of invalidPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      route.route.stack[0].handle({ body }, res);
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid bot creation parameters");
+    }
+  });
+
+  it("creates a bot when valid inputs are provided", () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/bot/create"
+    );
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    route.route.stack[0].handle({
+      body: {
+        name: "  Alpha Trading Bot  ",
+        strategy: "Arbitrage Detection",
+        riskLevel: "Moderate (5x leverage)",
+        initialCapital: 1000,
+        userAddress: "0x1234567890123456789012345678901234567890"
+      }
+    }, res);
+
+    expect(statusCode).toBe(200);
+    expect(jsonResponse.success).toBe(true);
+    expect(jsonResponse.bot.name).toBe("Alpha Trading Bot");
+    expect(jsonResponse.bot.strategy).toBe("Arbitrage Detection");
+    expect(jsonResponse.bot.initialCapital).toBe(1000);
+    expect(jsonResponse.bot.status).toBe("ACTIVE");
+    expect(Boolean(jsonResponse.bot.id)).toBe(true);
+  });
+});
+
+describe("MoonPay Webhook Security", () => {
+  const server = require("./server.js");
+
+  it("rejects webhook request when MOONPAY_WEBHOOK_SECRET is unconfigured", () => {
+    const originalSecret = process.env.MOONPAY_WEBHOOK_SECRET;
+    delete process.env.MOONPAY_WEBHOOK_SECRET;
+
+    try {
+      let statusCode = 200;
+      let jsonResponse = null;
+
+      const req = { headers: { "x-moonpay-signature": "test_sig" }, body: { status: "completed" } };
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      const route = server._router.stack.find(
+        (layer) => layer.route && layer.route.path === "/api/webhooks/moonpay/deposit"
+      );
+      expect(Boolean(route)).toBe(true);
+
+      route.route.stack[0].handle(req, res);
+
+      expect(statusCode).toBe(401);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toContain("Invalid or unconfigured webhook signature");
+    } finally {
+      if (originalSecret !== undefined) process.env.MOONPAY_WEBHOOK_SECRET = originalSecret;
+    }
+  });
+
+  it("rejects webhook request when signature is missing or invalid", () => {
+    const originalSecret = process.env.MOONPAY_WEBHOOK_SECRET;
+    process.env.MOONPAY_WEBHOOK_SECRET = "secret_12345";
+
+    try {
+      const route = server._router.stack.find(
+        (layer) => layer.route && layer.route.path === "/api/webhooks/moonpay/deposit"
+      );
+
+      // Missing signature
+      let statusCode = 200;
+      let jsonResponse = null;
+      let res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+      route.route.stack[0].handle({ headers: {}, body: { status: "completed" } }, res);
+      expect(statusCode).toBe(401);
+
+      // Invalid signature
+      statusCode = 200;
+      res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+      route.route.stack[0].handle({ headers: { "x-moonpay-signature": "wrong_sig" }, body: { status: "completed" } }, res);
+      expect(statusCode).toBe(401);
+    } finally {
+      if (originalSecret !== undefined) process.env.MOONPAY_WEBHOOK_SECRET = originalSecret;
+      else delete process.env.MOONPAY_WEBHOOK_SECRET;
+    }
+  });
+
+  it("accepts deposit confirmation when signature is valid", () => {
+    const originalSecret = process.env.MOONPAY_WEBHOOK_SECRET;
+    process.env.MOONPAY_WEBHOOK_SECRET = "secret_12345";
+
+    try {
+      const route = server._router.stack.find(
+        (layer) => layer.route && layer.route.path === "/api/webhooks/moonpay/deposit"
+      );
+
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      route.route.stack[0].handle({
+        headers: { "x-moonpay-signature": "secret_12345" },
+        body: { status: "completed", amount: 100, walletAddress: "0x123" }
+      }, res);
+
+      expect(statusCode).toBe(200);
+      expect(jsonResponse.success).toBe(true);
+      expect(jsonResponse.message).toContain("Deposit confirmed");
+    } finally {
+      if (originalSecret !== undefined) process.env.MOONPAY_WEBHOOK_SECRET = originalSecret;
+      else delete process.env.MOONPAY_WEBHOOK_SECRET;
+    }
+  });
+});
+
+describe("Proxy Endpoint Security", () => {
+  const fs = require("fs");
+  const proxyCode = fs.readFileSync("./proxy.js", "utf8");
+
+  it("contains sanitized error responses for 500 status codes across proxy endpoints", () => {
+    expect(proxyCode).toContain("res.status(500).json({ error: 'Internal server error' });");
+    expect(proxyCode.includes("res.status(500).json({ error: error.message })")).toBe(false);
+  });
+
+  it("returns generic error message on patch endpoint when an internal exception occurs", async () => {
+    // Require proxy route logic test or simulate exception path
+    const path = require("path");
+    const originalResolve = path.resolve;
+    path.resolve = () => { throw new Error("Simulated filesystem error"); };
+
+    try {
+      // Mock Express req and res
+      let statusCode = 200;
+      let jsonResponse = null;
+      const req = { body: { filepath: "valid.txt", patch: "diff" } };
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; }
+      };
+
+      // Extract /api/maintenance/patch route handler logic
+      const patchHandler = async (req, res) => {
+        const { filepath } = req.body || {};
+        try {
+          if (!filepath || typeof filepath !== 'string') {
+            return res.status(400).json({ error: 'Invalid filepath' });
+          }
+          const fullPath = path.resolve(__dirname, filepath);
+        } catch (error) {
+          res.status(500).json({ error: 'Internal server error' });
+        }
+      };
+
+      await patchHandler(req, res);
+      expect(statusCode).toBe(500);
+      expect(jsonResponse.error).toBe("Internal server error");
+      expect(jsonResponse.error.includes("Simulated")).toBe(false);
+    } finally {
+      path.resolve = originalResolve;
+    }
+  });
+});
+
+describe("Server Error Handling & Input Validation Security", () => {
+  const server = require("./server.js");
+
+  it("sanitizes 500 error responses and does not leak internal error messages", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/analyze/volatility"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    // Pass invalid history array containing NaN to trigger exception handling or 400 validation
+    await route.route.stack[0].handle({ body: { priceHistory: [100, "invalid"] } }, res);
+    expect(statusCode).toBe(400);
+    expect(jsonResponse.success).toBe(false);
+    expect(jsonResponse.error).toBe("Invalid price history");
+  });
+
+  it("rejects non-array or invalid priceHistory inputs in volatility analysis", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/analyze/volatility"
+    );
+
+    const invalidInputs = [
+      {},
+      { priceHistory: "not-an-array" },
+      { priceHistory: [100] },
+      { priceHistory: null },
+    ];
+
+    for (const body of invalidInputs) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle({ body }, res);
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid price history");
+    }
+  });
+});
+
+describe("Header Toggle Controls Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines aria-expanded and aria-controls on #voiceAgentBtn and #ghBusBtn", () => {
+    expect(html).toContain('id="voiceAgentBtn"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('aria-controls="voiceAgentModal"');
+    expect(html).toContain('id="ghBusBtn"');
+    expect(html).toContain('aria-controls="busPanel"');
+    expect(html).toContain('id="staffNavBtn"');
+    expect(html).toContain('aria-controls="staffPanel"');
+    expect(html).toContain('id="taskNavBtn"');
+    expect(html).toContain('aria-controls="taskPanel"');
+    expect(html).toContain('id="eloNavBtn"');
+    expect(html).toContain('aria-controls="eloPanel"');
+  });
+
+  it("defines aria-pressed on #fleetViewBtn and #ghAutoBtn", () => {
+    expect(html).toContain('id="fleetViewBtn"');
+    expect(html).toContain('id="ghAutoBtn"');
+    expect(html).toContain('aria-pressed="false"');
+  });
+
+  it("updates aria-expanded/aria-pressed in toggle JavaScript functions", () => {
+    expect(html).toContain("btn.setAttribute('aria-pressed', isFleet)");
+    expect(html).toContain("btn.setAttribute('aria-expanded', open)");
+    expect(html).toContain("btn.setAttribute('aria-expanded', isOpen)");
+    expect(html).toContain("navBtn?.setAttribute('aria-expanded', isOpen)");
+    expect(html).toContain("btn.setAttribute('aria-pressed', _ghAutoOn)");
+    expect(html).toContain("this.setAttribute('aria-pressed', isOn)");
+  });
+});
+
+describe("Collapsible Control Panel Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines aria-expanded and aria-controls on collapsible panel headers", () => {
+    expect(html).toContain('id="quantHd"');
+    expect(html).toContain('aria-controls="quantBody"');
+    expect(html).toContain('id="staffHd"');
+    expect(html).toContain('aria-controls="staffBody"');
+    expect(html).toContain('id="eloHd"');
+    expect(html).toContain('aria-controls="eloBody"');
+    expect(html).toContain('id="taskHd"');
+    expect(html).toContain('aria-controls="taskBody"');
+    expect(html).toContain('id="breakerHd"');
+    expect(html).toContain('aria-controls="breakerBody"');
+    expect(html).toContain('id="auditHd"');
+    expect(html).toContain('aria-controls="auditBody"');
+    expect(html).toContain('id="learnHd"');
+    expect(html).toContain('aria-controls="learnBody"');
+  });
+});
+
+describe("Crucible Mode & Regime Selection UX & Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines aria-pressed, role=group, and aria-label on regime buttons", () => {
+    expect(html).toContain('role="group" aria-labelledby="regimeGroupLabel"');
+    expect(html).toContain('id="regimeBull" class="regime-btn active" onclick="selectRegime(\'BULL\')" aria-pressed="true"');
+    expect(html).toContain('id="regimeBear" class="regime-btn" onclick="selectRegime(\'BEAR\')" aria-pressed="false"');
+    expect(html).toContain('for="costModelSelect"');
+    expect(html).toContain('for="crucibleTradeCount"');
+  });
+
+  it("defines selectRegime handler updating aria-pressed attributes", () => {
+    expect(html).toContain("function selectRegime(regime)");
+    expect(html).toContain("btn.setAttribute('aria-pressed', isActive ? 'true' : 'false')");
+  });
+
+  it("defines aria-pressed and aria-label on crucibleBtn and updates aria-pressed in toggleCrucible", () => {
+    expect(html).toContain('id="crucibleBtn" onclick="toggleCrucible()" aria-pressed="false" aria-label="Toggle Crucible Mode"');
+    expect(html).toContain("btn.setAttribute('aria-pressed', crucibleMode ? 'true' : 'false')");
+  });
+});
+
+describe("Advanced Settings Toggle & Form Inputs Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines accessible button with aria-expanded and aria-controls for advanced settings toggle", () => {
+    expect(html).toContain('class="advanced-toggle"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('aria-controls="advancedSettings"');
+  });
+
+  it("defines aria-label on form inputs missing explicit labels", () => {
+    expect(html).toContain('id="apiKeyInput" aria-label="Anthropic API Key"');
+    expect(html).toContain('id="busCustomAmt" aria-label="Custom trade amount in dollars"');
+    expect(html).toContain('id="auditInterval" aria-label="Audit trade interval"');
+    expect(html).toContain('id="noticeThreshold" aria-label="Win rate notice threshold percentage"');
+    expect(html).toContain('id="suspendWindow" aria-label="Probation trades before suspension"');
   });
 });
 

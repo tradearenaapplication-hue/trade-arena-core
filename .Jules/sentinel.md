@@ -18,7 +18,7 @@
 **Learning:** Even metadata fields that are expected to be internal strings can be dangerous if there is any path for user-controlled data to reach them. Template literals in `innerHTML` are a common source of XSS.
 **Prevention:** Always use the `escapeHTML` helper when rendering any string into an `innerHTML` template, or prefer safer alternatives like `textContent` for individual elements.
 
-## 2026-09-21 - [HIGH] Path Traversal Vulnerability in Proxy Server
-**Vulnerability:** Unsanitized user-supplied file paths in `/api/maintenance/patch` (`proxy.js`) allowed potential path traversal outside the project root directory using relative path indicators like `../`.
-**Learning:** File paths supplied via API parameters must never be passed directly to file system operations or path joining functions (`path.join`) without validating that the resolved path stays within the intended base directory.
-**Prevention:** Resolve paths with `path.resolve` and verify that the target path begins with the base directory path plus path separator using a jail-check helper like `isPathSafe`.
+## 2026-09-14 - [CRITICAL] Webhook Signature Authentication Bypass & Timing Attack
+**Vulnerability:** In `server.js`, `if (expectedSecret && signature !== expectedSecret)` allowed deposit webhooks to bypass signature authentication completely when `MOONPAY_WEBHOOK_SECRET` was unconfigured (falsy `''`), allowing unauthenticated attackers to trigger fake deposit confirmations and bot deployments.
+**Learning:** Checking truthiness of an environment variable before validating signatures creates a default-open fallback when configuration is missing. Standard string inequality is also vulnerable to timing side-channels.
+**Prevention:** Always require webhook secrets and signature headers to be present before accepting incoming webhooks, and use `crypto.timingSafeEqual` for constant-time signature verification.

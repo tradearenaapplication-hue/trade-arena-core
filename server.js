@@ -9,6 +9,7 @@ const cors = require('cors');
 const ethers = require('ethers');
 const axios = require('axios');
 const WebSocket = require('websocket').w3cwebsocket;
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -36,6 +37,17 @@ const DEX_ABI = [
     'function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)'
 ];
 
+/**
+ * Constant-time string comparison to prevent timing side-channel attacks
+ */
+function safeCompare(a, b) {
+    if (!a || !b || typeof a !== 'string' || typeof b !== 'string') return false;
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
+}
+
 /** Deployment queue for confirmed deposits */
 const deploymentEvents = [];
 
@@ -55,7 +67,7 @@ function queueBotDeployment(deposit) {
 }
 
 // Initialize provider
-const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+const provider = new ethers.JsonRpcProvider(RPC_URL);
 
 /**
  * API Routes
@@ -86,8 +98,9 @@ app.post('/api/webhooks/moonpay/deposit', (req, res) => {
         const signature = req.headers['x-moonpay-signature'];
         const expectedSecret = process.env.MOONPAY_WEBHOOK_SECRET || '';
 
-        if (expectedSecret && signature !== expectedSecret) {
-            return res.status(401).json({ success: false, error: 'Invalid webhook signature' });
+        // Security: Require valid webhook secret & signature, compared in constant time
+        if (!expectedSecret || !signature || !safeCompare(signature, expectedSecret)) {
+            return res.status(401).json({ success: false, error: 'Invalid or unconfigured webhook signature' });
         }
 
         const payload = req.body || {};
@@ -124,7 +137,7 @@ app.post('/api/webhooks/moonpay/deposit', (req, res) => {
             message: 'Deposit confirmed and deployment queued'
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -228,7 +241,7 @@ app.post('/api/analyze/arbitrage', async (req, res) => {
             prices: priceMap
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -237,10 +250,10 @@ app.post('/api/analyze/arbitrage', async (req, res) => {
  */
 app.post('/api/analyze/volatility', async (req, res) => {
     try {
-        const { priceHistory } = req.body;
+        const { priceHistory } = req.body || {};
 
-        if (!priceHistory || priceHistory.length < 2) {
-            return res.status(400).json({ error: 'Invalid price history' });
+        if (!priceHistory || !Array.isArray(priceHistory) || priceHistory.length < 2 || priceHistory.some(p => typeof p !== 'number' || isNaN(p))) {
+            return res.status(400).json({ success: false, error: 'Invalid price history' });
         }
 
         // Calculate returns
@@ -272,7 +285,7 @@ app.post('/api/analyze/volatility', async (req, res) => {
             trend: volatility > 5 ? 'HIGH' : volatility > 2 ? 'MEDIUM' : 'LOW'
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -281,27 +294,33 @@ app.post('/api/analyze/volatility', async (req, res) => {
  */
 app.post('/api/flash-loan/simulate', async (req, res) => {
     try {
-        const { loanAmount, tokens } = req.body;
+        const { loanAmount, tokens } = req.body || {};
+        const numLoanAmount = Number(loanAmount);
+
+        // Security: Validate loanAmount input to prevent division-by-zero / NaN / negative inputs
+        if (loanAmount === undefined || isNaN(numLoanAmount) || numLoanAmount <= 0) {
+            return res.status(400).json({ success: false, error: 'Invalid loan amount' });
+        }
 
         // Simulate MEV opportunity detection
         const opportunity = {
             type: 'MEV_SANDWICH',
-            loanAmount,
-            flashFee: (loanAmount * 0.0009), // 0.09% Aave fee
-            estimatedProfit: (loanAmount * (0.001 + Math.random() * 0.003)), // 0.1% - 0.4% ROI
+            loanAmount: numLoanAmount,
+            flashFee: (numLoanAmount * 0.0009), // 0.09% Aave fee
+            estimatedProfit: (numLoanAmount * (0.001 + Math.random() * 0.003)), // 0.1% - 0.4% ROI
             strategy: 'Liquidation + Sandwich + Slippage Extraction',
             risk: 'MEDIUM',
             gasEstimate: 500000,
             timestamp: Date.now()
         };
 
-        const roi = (opportunity.estimatedProfit - opportunity.flashFee) / loanAmount * 100;
+        const roi = (opportunity.estimatedProfit - opportunity.flashFee) / numLoanAmount * 100;
         opportunity.roi = roi.toFixed(2);
         opportunity.isProfit = roi > 0;
 
         res.json({ success: true, opportunity });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -310,30 +329,41 @@ app.post('/api/flash-loan/simulate', async (req, res) => {
  */
 app.post('/api/execute/swap', async (req, res) => {
     try {
-        const { fromToken, toToken, amount, slippage } = req.body;
+        const { fromToken, toToken, amount, slippage } = req.body || {};
+
+        const numAmount = Number(amount);
+        const numSlippage = slippage !== undefined ? Number(slippage) : 0.005;
+
+        // Security: Validate inputs & sanitize error output
+        if (!fromToken || typeof fromToken !== 'string' ||
+            !toToken || typeof toToken !== 'string' ||
+            isNaN(numAmount) || numAmount <= 0 ||
+            isNaN(numSlippage) || numSlippage < 0 || numSlippage > 1) {
+            return res.status(400).json({ success: false, error: 'Invalid swap parameters' });
+        }
 
         // Simulate swap execution
-        const expectedOutput = amount * (1 - (slippage || 0.005)); // Account for slippage
+        const expectedOutput = numAmount * (1 - numSlippage);
         const gasUsed = Math.random() * 150000 + 50000; // 50k - 200k gas
         const gasCost = gasUsed * 0.001; // Simplified (real would use current gas price)
 
         const result = {
             success: true,
             swap: {
-                from: { token: fromToken, amount: amount.toFixed(4) },
+                from: { token: fromToken, amount: numAmount.toFixed(4) },
                 to: { token: toToken, amount: expectedOutput.toFixed(4) },
                 exchange: 'Uniswap V3',
-                slippage: `${(slippage * 100).toFixed(2)}%`,
+                slippage: `${(numSlippage * 100).toFixed(2)}%`,
                 gasUsed: gasUsed.toFixed(0),
                 gasCost: gasCost.toFixed(4),
                 timestamp: Date.now()
             },
-            txHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
+            txHash: '0x' + crypto.randomBytes(32).toString('hex')
         };
 
         res.json(result);
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -342,15 +372,23 @@ app.post('/api/execute/swap', async (req, res) => {
  */
 app.post('/api/bot/create', async (req, res) => {
     try {
-        const { name, strategy, riskLevel, initialCapital, userAddress } = req.body;
+        const { name, strategy, riskLevel, initialCapital, userAddress } = req.body || {};
+
+        const numCapital = Number(initialCapital);
+        if (!name || typeof name !== 'string' || !name.trim() ||
+            !strategy || typeof strategy !== 'string' ||
+            !riskLevel || typeof riskLevel !== 'string' ||
+            isNaN(numCapital) || numCapital <= 0) {
+            return res.status(400).json({ success: false, error: 'Invalid bot creation parameters' });
+        }
 
         const bot = {
             id: generateId(),
-            name,
+            name: name.trim(),
             strategy,
             riskLevel,
-            initialCapital,
-            userAddress,
+            initialCapital: numCapital,
+            userAddress: typeof userAddress === 'string' ? userAddress : null,
             status: 'ACTIVE',
             created: Date.now(),
             trades: [],
@@ -360,7 +398,7 @@ app.post('/api/bot/create', async (req, res) => {
 
         res.json({ success: true, bot });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -379,7 +417,7 @@ app.get('/api/market/prices', async (req, res) => {
 
         res.json({ success: true, prices, timestamp: Date.now() });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -485,9 +523,11 @@ function generateId() {
 /**
  * Start Server
  */
-app.listen(PORT, () => {
-    console.log(`­ƒñû Trade Arena Backend running on port ${PORT}`);
-    console.log(`­ƒôè Market analysis: http://localhost:${PORT}/api/health`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`🤖 Trade Arena Backend running on port ${PORT}`);
+        console.log(`📊 Market analysis: http://localhost:${PORT}/api/health`);
+    });
+}
 
 module.exports = app;

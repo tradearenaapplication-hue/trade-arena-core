@@ -1103,6 +1103,31 @@ describe("MoonPay Webhook Security", () => {
   });
 });
 
+describe("Form Labels and Input Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("links label and input for apiKeyInput, gasHard, drawdownPct, aggrSlider, consensusSlider, gasSlider", () => {
+    expect(html).toContain('<label for="apiKeyInput">');
+    expect(html).toContain('<input type="password" id="apiKeyInput" aria-label="Anthropic API Key"');
+    expect(html).toContain('<label for="gasHard">');
+    expect(html).toContain('<label for="drawdownPct">');
+    expect(html).toContain('<label for="aggrSlider">');
+    expect(html).toContain('<label for="consensusSlider">');
+    expect(html).toContain('<label for="gasSlider">');
+  });
+
+  it("defines descriptive aria-labels for Databricks Genie and Audit inputs", () => {
+    expect(html).toContain('id="dbWorkspace" aria-label="Databricks Workspace URL"');
+    expect(html).toContain('id="dbSpaceId" aria-label="Databricks Genie Space ID"');
+    expect(html).toContain('id="dbToken" aria-label="Databricks Personal Access Token"');
+    expect(html).toContain('id="auditInterval" aria-label="Audit interval (trades)"');
+    expect(html).toContain('id="noticeThreshold" aria-label="Notice win rate threshold (%)"');
+    expect(html).toContain('id="suspendWindow" aria-label="Probation trades before suspension"');
+    expect(html).toContain('id="busCustomAmt" aria-label="Custom trade amount for all bots"');
+  });
+});
+
 describe("Header Toggle Controls Accessibility", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");

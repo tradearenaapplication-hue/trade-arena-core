@@ -181,6 +181,11 @@ app.use("/api/v1/payouts", payoutRoutes);
 // Mount health monitoring routes
 app.use("/api/health", apiHealthRoutes);
 
+// Early health check - responds immediately before all routes load
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', ts: Date.now() });
+});
+
 // Sentinel: Protect admin-only endpoints
 app.use(['/api/agent', '/api/arbitrage'], adminAuth);
 
@@ -1098,6 +1103,8 @@ app.use((err, req, res, next) => {
 // Start server
 if (require.main === module) {
     console.log('[Boot] Starting server on 0.0.0.0:' + PORT);
+    console.log('[Boot] NODE_ENV=' + (process.env.NODE_ENV || 'development'));
+    console.log('[Boot] PORT env=' + process.env.PORT);
     server.on('error', (err) => {
         console.error('[Server] Failed to start:', err);
         process.exit(1);

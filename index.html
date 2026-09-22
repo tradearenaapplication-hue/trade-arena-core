@@ -1877,6 +1877,7 @@ function showExitResult(pos, bot) {
     blEl.style.color=better.length?'var(--green)':'var(--hot)';
   }
   rEl.classList.add('show');
+  saveTradeLogToDb(pos);
 }
 
 // ══════════════════════════════════════════════════════
@@ -2649,6 +2650,7 @@ function handleGoogleLoginResponse(response){
 
     s.textContent='✅ Signed in with Google!';
     setupApp(userData);
+    syncUserSessionToDb(address, 'metamask', holdings, balanceUSD);
   }catch(e){
     s.textContent='❌ Google Sign-In Error: '+e.message;
     console.error('Google response handling error:', e);
@@ -2745,6 +2747,7 @@ async function loginMetaMask(){
 
     s.textContent='✅ Connected to MetaMask!';
     setupApp(userData);
+    syncUserSessionToDb(address, 'metamask', holdings, balanceUSD);
 
   }catch(error) {
     console.error('MetaMask connection error:', error);
@@ -2814,13 +2817,128 @@ window.onPrivyReady = function(user, walletAddress) {
   });
 };
 
-function setupApp({name,avatar,badge,address}){
+
+
+function syncUserSessionToDb(address, provider, holdings, balanceUSD) {
+  if (!address) return;
+  try {
+    fetch('/api/user/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: address,
+        provider: provider || 'metamask',
+        holdings: holdings || [],
+        sessionData: { balance: balanceUSD }
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.tradeLogs) {
+        console.log('✅ Loaded ' + data.tradeLogs.length + ' historical trade logs from database for ' + address);
+        window.userDbTradeLogs = data.tradeLogs;
+      }
+    })
+    .catch(e => console.warn('Database signin sync warning:', e));
+  } catch (e) {
+    console.warn('Sync user session error:', e);
+  }
+}
+
+function saveTradeLogToDb(pos) {
+  const addr = window.currentUserAddress || (typeof walletState !== 'undefined' && walletState.address);
+  if (!addr) return;
+  try {
+    fetch('/api/user/tradelog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: addr,
+        agentId: pos.botId || 'agent-1',
+        botName: pos.botName || 'Trade Bot',
+        action: pos.direction || 'SWAP',
+        symbol: pos.token || 'ETH/USD',
+        amount: pos.bet || 0,
+        pnl: pos.netPnl || 0,
+        details: {
+          method: pos.method,
+          regime: pos.regime,
+          entryPrice: pos.entryPrice,
+          exitPrice: pos.exitPrice,
+          isWin: pos.isWin
+        }
+      })
+    }).catch(e => console.warn('Failed to persist trade log:', e));
+  } catch (e) {
+    console.warn('Error sending trade log:', e);
+  }
+}
+
+function showHoldingsModal() {
+  let modal = document.getElementById('holdingsModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'holdingsModal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    document.body.appendChild(modal);
+  }
+
+  const holdings = window.userTokenHoldings || (typeof walletState !== 'undefined' && walletState.tokenHoldings) || [];
+  let holdingsHtml = '';
+
+  if (holdings.length === 0) {
+    holdingsHtml = '<div style="color:var(--dim);text-align:center;padding:20px;font-size:12px;">No token holdings found or zero balance across queried chains.</div>';
+  } else {
+    holdingsHtml = holdings.map(h => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--chrome);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;">
+        <div>
+          <span style="font-weight:bold;color:#fff;font-size:13px;">${h.symbol}</span>
+          <span style="font-size:10px;color:var(--cyan);margin-left:8px;padding:2px 6px;background:rgba(0,255,231,0.1);border:1px solid rgba(0,255,231,0.2);border-radius:4px;">${h.network}</span>
+        </div>
+        <div style="text-align:right;">
+          <div style="color:#fff;font-weight:bold;font-size:12px;">${h.amount.toFixed(6)} ${h.symbol}</div>
+          <div style="font-size:11px;color:var(--gold2);"><small style="color:var(--dim);">$${(h.priceUsd || 0).toFixed(2)}/ea → </small>$${(h.valueUsd || 0).toFixed(2)} USD</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  modal.innerHTML = `
+    <div style="background:var(--panel);border:1px solid var(--gold2);border-radius:12px;width:100%;max-width:480px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,0.8);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;font-family:'Bungee',display;color:var(--gold2);font-size:13px;">💼 MULTI-CHAIN TOKEN HOLDINGS</h3>
+        <button onclick="document.getElementById('holdingsModal').style.display='none'" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button>
+      </div>
+      <div style="max-height:300px;overflow-y:auto;margin-bottom:16px;">
+        ${holdingsHtml}
+      </div>
+      <button onclick="document.getElementById('holdingsModal').style.display='none'" style="width:100%;padding:10px;background:var(--cyan);border:none;border-radius:6px;color:#000;font-weight:bold;font-family:'Bungee',display;font-size:11px;cursor:pointer;">CLOSE</button>
+    </div>
+  `;
+  modal.style.display = 'flex';
+}
+
+function setupApp({name,avatar,badge,address,provider}){
   try{
+    if (!name && !address && badge !== '🎮 DEMO') {
+      console.warn('Unauthorized access attempt: No valid wallet or login session');
+      return;
+    }
+
     const cs=document.getElementById('connectScreen');
     const app=document.getElementById('mainApp');
     if(cs) cs.style.display='none';
     if(app){ app.style.display='flex'; app.style.flexDirection='column'; }
-    try{ setVal('ghName',name); setVal('ghBadge',badge); }catch(e){}
+
+    let displayName = name;
+    if (address && typeof address === 'string') {
+      displayName = address.slice(0, 6) + '...' + address.slice(-4);
+      window.currentUserAddress = address;
+    } else if (address) {
+      window.currentUserAddress = address;
+    }
+
+    try{ setVal('ghName', displayName || 'USER'); setVal('ghBadge', badge || 'USER'); }catch(e){}
     if(avatar){ try{ const a=document.getElementById('ghAvatar'); if(a){ a.innerHTML=''; const img=document.createElement('img'); img.src=avatar; img.alt='User avatar'; img.style.cssText='width:26px;height:26px;border-radius:50%;object-fit:cover'; img.onerror=function(){ a.innerHTML='👤'; }; a.appendChild(img); } }catch(e){} }
     equityHistory=[balance];
     try{ updateGlobalBalance(); }catch(e){ console.warn('balance:',e); }

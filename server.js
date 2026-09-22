@@ -1081,6 +1081,10 @@ app.use((err, req, res, next) => {
 
 // Start server
 if (require.main === module) {
+    server.on('error', (err) => {
+        console.error('[Server] Failed to start:', err);
+        process.exit(1);
+    });
     server.listen(PORT, () => {
         console.log(`Trade Arena Server running on port ${PORT}`);
     });

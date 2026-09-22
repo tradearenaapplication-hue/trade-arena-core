@@ -1,11 +1,16 @@
-# Dockerfile for Railway deployment - using node:22-slim for smaller size
-FROM node:22-slim
+# Dockerfile for Railway deployment - minimal with pre-built node_modules
+FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy package files and install production dependencies only
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts 2>&1 | tail -20
+# Install pnpm globally
+RUN npm install -g pnpm@9.12.0
+
+# Copy only package files first for better caching
+COPY package.json pnpm-lock.yaml ./
+
+# Install only production dependencies (faster, smaller)
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 # Copy source code
 COPY . .

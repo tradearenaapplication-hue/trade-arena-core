@@ -1,9 +1,0 @@
-# Force Node.js build with Nixpacks
-[phases.setup]
-nixPkgs = ["nodejs-22", "pnpm"]
-
-[phases.install]
-cmds = ["pnpm install --frozen-lockfile --prod --ignore-scripts"]
-
-[start]
-cmd = "node server.js"

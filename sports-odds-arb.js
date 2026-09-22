@@ -30,23 +30,46 @@ function oddsToProbability(odds, format = "american") {
   return americanToProbability(odds);
 }
 
+/**
+ * Optimized: Calculates fair probabilities and removes vig in direct loops.
+ * Avoids 3 intermediate temporary array allocations (.map -> .filter -> .reduce -> .map)
+ * per invocation during high-frequency odds scanning.
+ */
 function removeVig(outcomes) {
-  const implied = outcomes
-    .map((outcome) => ({
-      ...outcome,
-      impliedProbability:
-        outcome.impliedProbability ?? oddsToProbability(outcome.price, outcome.format || "american"),
-    }))
-    .filter((outcome) => Number.isFinite(outcome.impliedProbability) && outcome.impliedProbability > 0);
+  if (!Array.isArray(outcomes) || outcomes.length === 0) return [];
 
-  const overround = implied.reduce((sum, outcome) => sum + outcome.impliedProbability, 0);
+  const len = outcomes.length;
+  const validOutcomes = [];
+  let overround = 0;
+
+  for (let i = 0; i < len; i++) {
+    const outcome = outcomes[i];
+    const impliedProbability =
+      outcome.impliedProbability ?? oddsToProbability(outcome.price, outcome.format || "american");
+
+    if (Number.isFinite(impliedProbability) && impliedProbability > 0) {
+      overround += impliedProbability;
+      validOutcomes.push({
+        ...outcome,
+        impliedProbability,
+      });
+    }
+  }
+
   if (overround <= 0) return [];
 
-  return implied.map((outcome) => ({
-    ...outcome,
-    fairProbability: outcome.impliedProbability / overround,
-    overround,
-  }));
+  const resultCount = validOutcomes.length;
+  const result = new Array(resultCount);
+  for (let i = 0; i < resultCount; i++) {
+    const item = validOutcomes[i];
+    result[i] = {
+      ...item,
+      fairProbability: item.impliedProbability / overround,
+      overround,
+    };
+  }
+
+  return result;
 }
 
 function normalizeSportsbookEvent(event, marketKey = "h2h", oddsFormat = "american") {

@@ -892,9 +892,13 @@ async function getCachedCoinGeckoPrices(coinIds) {
 
     if (missingIds.length > 0) {
         try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
             const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${missingIds.join(',')}&vs_currencies=usd`, {
-                timeout: 10000
+                signal: controller.signal,
+                timeout: 5000
             });
+            clearTimeout(timeout);
             const data = response.data || {};
             missingIds.forEach(id => {
                 const price = data[id]?.usd;

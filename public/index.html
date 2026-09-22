@@ -1889,7 +1889,10 @@ async function processPriceBatch() {
 
   try {
     // Request deduplication: join all IDs into a single CSV string for Coingecko
-    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`, { signal: controller.signal });
+    clearTimeout(timeout);
     const d = await r.json();
 
     ids.forEach(id => {
@@ -1916,14 +1919,19 @@ async function getMarketData() {
   // Request deduplication
   if (inFlightRequests.has('marketData')) return inFlightRequests.get('marketData');
 
-  const p = (async () => {
+const p = (async () => {
     try {
-      const r=await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=percent_change_24h_desc&per_page=30&sparkline=false');
-      marketCache=await r.json();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const r = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=percent_change_24h_desc&per_page=30&sparkline=false', { signal: controller.signal });
+      clearTimeout(timeout);
+      marketCache = await r.json();
       // Update O(1) lookup map
       marketMap = new Map(marketCache.map(c => [c.symbol.toLowerCase(), c]));
-      marketCacheTime=now;
-    } catch(e){ marketCache=marketCache||[]; }
+      marketCacheTime = now;
+    } catch (e) {
+      marketCache = marketCache || [];
+    }
     inFlightRequests.delete('marketData');
     return marketCache;
   })();

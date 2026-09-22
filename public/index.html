@@ -751,6 +751,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <span style="font-family:'Bungee'; letter-spacing:1px">PRIVY / SOCIAL LOGIN</span>
       </button>
 
+      <button class=demo-btn onclick="handleDemoLogin()" style="height:44px; font-size:12px; border:1px dashed var(--border); color:var(--dim); background:transparent; margin-top:8px;">DEMO GUEST MODE</button>
+
       <div style="margin-top:12px; display:flex; gap:8px;">
         <button class=onramp-btn onclick="window.openMoonpay && window.openMoonpay()" style="flex:1">💳 DEPOSIT</button>
         <button class=offramp-btn onclick="openWithdrawModal()" style="flex:1">💵 WITHDRAW</button>
@@ -1451,94 +1453,111 @@ async function handleMetaMaskConnect() {
   }
   try {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    if (accounts.length > 0) {
-      const address = accounts[0];
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-
-      // Update global walletState
-      if (!window.walletState) window.walletState = { isConnected: false };
-      window.walletState.isConnected = true;
-      window.walletState.address = address;
-      window.walletState.provider = provider;
-      window.walletState.signer = signer;
-
-      showToast(`Connected: ${address.slice(0,6)}...${address.slice(-4)}`, 'success');
-
-      // Call API to sync or create user session
-      const userData = {
-        name: 'MetaMask Trader',
-        email: null,
-        address: address,
-        provider: 'metamask',
-        badge: '🦊 METAMASK'
-      };
-
-      // Transition to main app immediately so UI does not block if API is slow or fails
-      const cs = document.getElementById('connectScreen');
-      const app = document.getElementById('mainApp');
-      if (cs) cs.style.display = 'none';
-      if (app) { app.style.display = 'flex'; app.style.flexDirection = 'column'; }
-
-      try {
-        const res = await fetch('/api/user/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(userData)
-        });
-        const data = await res.json();
-
-        let mergedUser = { ...userData };
-        if (data.success) {
-          mergedUser = { ...userData, ...data.user };
-        }
-
-        // Fetch live on-chain balance from MetaMask and sync it
-        if (window.getWalletBalanceUSD) {
-          try {
-            const liveBalance = await window.getWalletBalanceUSD();
-            if (liveBalance !== undefined && liveBalance !== null) {
-              balance = liveBalance;
-            } else {
-              balance = data.success ? data.user.balance || 0 : 0;
-            }
-          } catch (balErr) {
-            console.warn('[MetaMask] Failed to fetch live wallet balance:', balErr);
-            balance = data.success ? data.user.balance || 0 : 0;
-          }
-        } else {
-          balance = data.success ? data.user.balance || 0 : 0;
-        }
-
-        if (typeof setupApp === 'function') setupApp(mergedUser);
-      } catch (apiErr) {
-        console.warn('API login error, proceeding with fallback:', apiErr);
-        // Fetch live on-chain balance on fallback too
-        if (window.getWalletBalanceUSD) {
-          try {
-            const liveBalance = await window.getWalletBalanceUSD();
-            if (liveBalance !== undefined && liveBalance !== null) {
-              balance = liveBalance;
-            } else {
-              balance = 0;
-            }
-          } catch (balErr) {
-            console.warn('[MetaMask] Failed to fetch live wallet balance on fallback:', balErr);
-            balance = 0;
-          }
-        } else {
-          balance = 0;
-        }
-        if (typeof setupApp === 'function') setupApp(userData);
-      }
-
-      // Trigger balance refresh and UI updates
-      if (typeof updateLiveBalance === 'function') updateLiveBalance();
-      if (typeof updateMatrix === 'function') updateMatrix();
-      if (typeof refreshSettingsUI === 'function') refreshSettingsUI();
+    if (!accounts || accounts.length === 0) {
+      showToast('No accounts found in MetaMask.', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = 'CONNECT METAMASK (RECOMMENDED)'; }
+      return;
     }
+    const address = accounts[0];
+
+    // Switch to Base Mainnet (8453)
+    const switched = await switchToBaseNetwork(8453);
+    if (!switched) {
+      showToast('Please switch to Base Mainnet (8453) to continue.', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = 'CONNECT METAMASK (RECOMMENDED)'; }
+      return;
+    }
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+
+    // Update global walletState
+    if (!window.walletState) window.walletState = { isConnected: false };
+    window.walletState.isConnected = true;
+    window.walletState.address = address;
+    window.walletState.provider = provider;
+    window.walletState.signer = signer;
+    window.walletState.networkId = 8453;
+    window.walletState.isCorrectNetwork = true;
+
+    // Real funds mode
+    window.isLiveMode = true;
+
+    showToast(`Connected: ${address.slice(0,6)}...${address.slice(-4)}`, 'success');
+
+    // Build user data for login
+    const userData = {
+      name: 'MetaMask Trader',
+      email: null,
+      address: address,
+      provider: 'metamask',
+      badge: '🦊 METAMASK'
+    };
+
+    // Fetch live on-chain balance (ETH + USDC) and set as starting balance
+    let liveBalance = 0;
+    if (window.getWalletBalanceUSD) {
+      try {
+        liveBalance = await window.getWalletBalanceUSD();
+        if (liveBalance !== undefined && liveBalance !== null && liveBalance > 0) {
+          balance = liveBalance;
+        }
+      } catch (balErr) {
+        console.warn('[MetaMask] Failed to fetch live wallet balance:', balErr);
+      }
+    }
+
+    // Persist/sync user via login API, then sync balance
+    let mergedUser = { ...userData };
+    try {
+      const res = await fetch('/api/user/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      const data = await res.json();
+      if (data.success) {
+        mergedUser = { ...userData, ...data.user };
+        // If server has a persisted balance, use the higher of live/server balance
+        const serverBalance = typeof data.user.balance === 'number' ? data.user.balance : 0;
+        if (liveBalance > 0) {
+          balance = liveBalance;
+        } else if (serverBalance > 0) {
+          balance = serverBalance;
+        }
+      }
+    } catch (apiErr) {
+      console.warn('API login error, proceeding with local balance:', apiErr);
+    }
+
+    // Sync balance to server
+    try {
+      await fetch('/api/user/balance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: address, balance: balance })
+      });
+    } catch (balSyncErr) {
+      console.warn('[MetaMask] Balance sync failed:', balSyncErr);
+    }
+
+    // Transition to main app
+    const cs = document.getElementById('connectScreen');
+    const appEl = document.getElementById('mainApp');
+    if (cs) cs.style.display = 'none';
+    if (appEl) { appEl.style.display = 'flex'; appEl.style.flexDirection = 'column'; }
+
+    // setupApp sets startBalance = balance and equityHistory = [balance]
+    if (typeof setupApp === 'function') setupApp(mergedUser);
+
+    // Trigger UI updates
+    if (typeof updateLiveBalance === 'function') updateLiveBalance();
+    if (typeof updateMatrix === 'function') updateMatrix();
+    if (typeof refreshSettingsUI === 'function') refreshSettingsUI();
   } catch (err) {
     showToast(err.message, 'error');
+    console.error('[MetaMask] Connection error:', err);
+  } finally {
     if (btn) {
       btn.disabled = false;
       btn.textContent = 'CONNECT METAMASK (RECOMMENDED)';
@@ -6870,6 +6889,80 @@ function openWithdrawModal() {
 function closeWithdrawModal() {
   const modal = document.getElementById('withdrawModal');
   if(modal) modal.style.display = 'none';
+}
+async function handleDemoLogin() {
+  // Hide connectScreen, Show mainApp
+  const cs = document.getElementById('connectScreen');
+  const appEl = document.getElementById('mainApp');
+  if (cs) cs.style.display = 'none';
+  if (appEl) { appEl.style.display = 'flex'; appEl.style.flexDirection = 'column'; }
+
+  // Force DEMO mode (not live trading)
+  window.isLiveMode = false;
+  window.walletState = window.walletState || { isConnected: false };
+  window.walletState.isConnected = false;
+  window.walletState.address = 'demo';
+  window.walletState.provider = null;
+  window.walletState.signer = null;
+
+  // Set the global balance / startBalance / equityHistory so the trading engine works
+  balance = 50;
+  startBalance = 50;
+  totalPnl = 0;
+  equityHistory = [50];
+  closedTrades = [];
+  openPositions = [];
+  bots = [];
+  botCounter = 0;
+  learningGeneration = 0;
+  agentHistory = [];
+  globalLog = [];
+
+  // Persist demo user to backend and sync balance
+  const demoUser = {
+    email: 'demo@arena.local',
+    address: null,
+    name: 'Guest Trader',
+    provider: 'demo',
+    avatar: null,
+    badge: '👤 DEMO'
+  };
+  try {
+    const res = await fetch('/api/user/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(demoUser)
+    });
+    const data = await res.json();
+    if (data.success) {
+      balance = typeof data.user.balance === 'number' ? data.user.balance : balance;
+      startBalance = balance;
+      equityHistory = [balance];
+      // Persist balance to server
+      try {
+        await fetch('/api/user/balance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: demoUser.email, balance: balance })
+        });
+      } catch (balErr) {
+        console.warn('[Demo] Balance sync failed:', balErr);
+      }
+    }
+  } catch (apiErr) {
+    console.warn('[Demo] Login API error (proceeding with local balance):', apiErr);
+  }
+
+  // Update UI elements
+  try { setVal('ghName', 'Guest Trader'); } catch (e) {}
+  try { setVal('ghBadge', '👤 DEMO'); } catch (e) {}
+  const ghBalance = document.getElementById('ghBalance');
+  if (ghBalance) ghBalance.textContent = '$' + balance.toFixed(2);
+
+  // Transition to main app via setupApp for consistent initialization
+  if (typeof setupApp === 'function') {
+    setupApp({ ...demoUser, balance: balance });
+  }
 }
 </script>
 </body>

@@ -916,6 +916,9 @@ var ABIS = window.ABIS;
 /**
  * Helper Class for Smart Contract Interactions
  */
+/**
+ * Helper Class for Smart Contract Interactions
+ */
 if (typeof window.ContractHelper === 'undefined') {
 window.ContractHelper = class {
   /**
@@ -934,9 +937,6 @@ window.ContractHelper = class {
     this.provider = provider;
     this.signer = signer;
   }
-};
-}
-var ContractHelper = window.ContractHelper;
 
   /**
    * Get token balance for an address
@@ -1043,7 +1043,7 @@ var ContractHelper = window.ContractHelper;
     return await tx.wait();
   }
 
-  // ⚡ Bolt Optimization: Pre-allocated static Set for O(1) checks to avoid O(N) array scans and garbage collection overhead
+  // ⚡ Bolt Optimization: Pre-allocated static Set for O(1) checks
   isStablecoin(tokenSymbol) {
     return _STABLECOIN_SET.has(tokenSymbol);
   }
@@ -1056,6 +1056,70 @@ var ContractHelper = window.ContractHelper;
     }
     return null;
   }
+};
+}
+var ContractHelper = window.ContractHelper;
+
+// Sentinel: Augment ContractHelper with token/swap utilities if not already present
+// (supports the case where ContractHelper was defined externally by contract-helpers.js)
+if (ContractHelper && typeof ContractHelper.prototype.getTokenBalance === 'undefined') {
+  ContractHelper.prototype.getTokenBalance = async function(tokenAddress, userAddress) {
+    const contract = new ethers.Contract(tokenAddress, ABIS.ERC20, this.provider);
+    return await contract.balanceOf(userAddress);
+  };
+  ContractHelper.prototype.approveToken = async function(tokenAddress, spenderAddress, amount) {
+    const contract = new ethers.Contract(tokenAddress, ABIS.ERC20, this.signer);
+    const tx = await contract.approve(spenderAddress, amount);
+    return await tx.wait();
+  };
+  ContractHelper.prototype.getSwapPath = async function(tokenIn, tokenOut, intermediateToken = null) {
+    const paths = {
+      direct: [tokenIn.address, tokenOut.address],
+      viaUsdc: intermediateToken ? [tokenIn.address, intermediateToken.address, tokenOut.address] : null,
+    };
+    return paths.direct;
+  };
+  ContractHelper.prototype.estimateSwap = async function(tokenIn, tokenOut, amountIn) {
+    const router = new ethers.Contract(PROTOCOLS.UNISWAP_V3.router, ABIS.UNISWAP_V3_ROUTER, this.provider);
+    const path = await this.getSwapPath(tokenIn, tokenOut);
+    try {
+      const amounts = await router.getAmountsOut(amountIn, path);
+      return amounts[amounts.length - 1];
+    } catch (e) {
+      console.error("Swap estimation failed:", e);
+      return BigInt(0);
+    }
+  };
+  ContractHelper.prototype.executeSwap = async function(tokenIn, tokenOut, amountIn, slippage = 0.5) {
+    const router = new ethers.Contract(PROTOCOLS.UNISWAP_V3.router, ABIS.UNISWAP_V3_ROUTER, this.signer);
+    const path = await this.getSwapPath(tokenIn, tokenOut);
+    const estimatedOut = await this.estimateSwap(tokenIn, tokenOut, amountIn);
+    let minOut;
+    if (typeof estimatedOut.mul === 'function') {
+      minOut = estimatedOut.mul(10000 - Math.floor(slippage * 100)).div(10000);
+    } else {
+      minOut = (estimatedOut * BigInt(10000 - Math.floor(slippage * 100))) / BigInt(10000);
+    }
+    const deadline = Math.floor(Date.now() / 1000) + 3600;
+    const tx = await router.swapExactTokensForTokens(amountIn, minOut, path, await this.signer.getAddress(), deadline);
+    return await tx.wait();
+  };
+  ContractHelper.prototype.requestFlashLoan = async function(tokenAddress, loanAmount, callbackData) {
+    const aavePool = new ethers.Contract(PROTOCOLS.AAVE_V3.pool, ABIS.AAVE_POOL, this.signer);
+    const tx = await aavePool.flashLoan(await this.signer.getAddress(), tokenAddress, loanAmount, callbackData);
+    return await tx.wait();
+  };
+  ContractHelper.prototype.isStablecoin = function(tokenSymbol) {
+    return _STABLECOIN_SET.has(tokenSymbol);
+  };
+  ContractHelper.prototype.getTokenDetails = function(tokenAddress) {
+    for (const [key, token] of Object.entries(TOKENS)) {
+      if (token.address.toLowerCase() === tokenAddress.toLowerCase()) {
+        return token;
+      }
+    }
+    return null;
+  };
 }
 
 /**
@@ -1818,8 +1882,8 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 /**
- * Fetch real wallet balance in USD
- * Added by Jules for on-chain execution engine support
+ * Fetch real wallet balance in USD (ETH + USDC)
+ * Fetches on-chain ETH balance and USDC token balance, converts to USD
  */
 async function getWalletBalanceUSD() {
     if (window.getWalletBalanceUSD && window.getWalletBalanceUSD !== getWalletBalanceUSD) {
@@ -1839,6 +1903,8 @@ async function getWalletBalanceUSD() {
         } else {
             provider = new ethers.JsonRpcProvider(REAL_WALLET_CONFIG.network.rpcUrl);
         }
+
+        // Fetch ETH balance
         const ethBalance = await provider.getBalance(address);
         let ethPrice = 2500;
         if (typeof getLivePrice === 'function') {
@@ -1850,7 +1916,43 @@ async function getWalletBalanceUSD() {
             }
         }
         const balanceETH = parseFloat(ethers.formatEther(ethBalance));
-        const balanceUSD = balanceETH * ethPrice;
+        let balanceUSD = balanceETH * ethPrice;
+
+        // Fetch USDC balance (6 decimals, ~$1 USD)
+        const usdcConfig = REAL_WALLET_CONFIG.tokens.USDC || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+        const erc20Abi = [
+            'function balanceOf(address owner) view returns (uint256)',
+            'function decimals() view returns (uint8)'
+        ];
+        try {
+            const usdcContract = new ethers.Contract(usdcConfig, erc20Abi, provider);
+            const usdcRaw = await usdcContract.balanceOf(address);
+            let usdcDecimals = 6;
+            try {
+                usdcDecimals = await usdcContract.decimals();
+            } catch (dErr) {
+                console.warn('[RealWallet] USDC decimals fetch failed, using default 6:', dErr);
+            }
+            const usdcBalance = parseFloat(ethers.formatUnits(usdcRaw, usdcDecimals));
+            // USDC is a stablecoin ~$1, but try getLivePrice first, fallback to 1.0
+            let usdcPrice = 1.0;
+            if (typeof getLivePrice === 'function') {
+                try {
+                    const liveUsdcPrice = await getLivePrice('USDC');
+                    if (liveUsdcPrice) usdcPrice = liveUsdcPrice;
+                } catch (uErr) {
+                    // fallback to $1.0
+                }
+            }
+            balanceUSD += usdcBalance * usdcPrice;
+            if (window.walletState) {
+                window.walletState.balanceUSDC = usdcBalance;
+            }
+            walletState.balanceUSDC = usdcBalance;
+        } catch (usdcErr) {
+            console.warn('[RealWallet] USDC balance fetch failed:', usdcErr);
+        }
+
         if (window.walletState) {
             window.walletState.balanceETH = balanceETH;
             window.walletState.balanceUSD = balanceUSD;

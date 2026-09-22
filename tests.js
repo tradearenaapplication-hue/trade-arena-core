@@ -1449,7 +1449,7 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain("navBtn?.setAttribute('aria-expanded', isOpen)");
     expect(html).toContain("btn.setAttribute('aria-pressed', _ghAutoOn)");
     expect(html).toContain("this.setAttribute('aria-pressed', isOn)");
-    expect(html).toContain("gear.setAttribute('aria-expanded', open ? 'true' : 'false')");
+    expect(html).toContain("gear.setAttribute('aria-expanded', open");
   });
 });
 

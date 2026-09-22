@@ -3143,7 +3143,7 @@ function toggleBotSettings(id){
   const open=drop.classList.toggle('open');
   if(gear) {
     gear.classList.toggle('open',open);
-    gear.setAttribute('aria-expanded', open ? 'true' : 'false');
+    gear.setAttribute('aria-expanded', open);
   }
 }
 function setBotPersonality(id,val){
@@ -5120,8 +5120,12 @@ function _injectAVControls() {
 function toggleBackgroundMusic() {
   if (typeof ACOUSTIC !== 'undefined') {
     ACOUSTIC.toggleAudio();
+    const isOn = ACOUSTIC.getConfig().audio.enabled;
     const btn = document.getElementById('audioBtn');
-    if (btn) btn.classList.toggle('av-on', ACOUSTIC.getConfig().audio.enabled);
+    if (btn) {
+      btn.classList.toggle('av-on', isOn);
+      btn.setAttribute('aria-pressed', isOn);
+    }
   }
 }
 

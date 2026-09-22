@@ -1,19 +1,17 @@
-# Dockerfile for Railway deployment - use npm for faster installs
+# Dockerfile for Railway - ultra minimal
 FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and install
 COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts 2>&1 | tail -5
 
-# Install production dependencies with npm (faster in Docker)
-RUN npm ci --omit=dev --ignore-scripts --prefer-offline --no-audit --no-fund
-
-# Copy source code
+# Copy source
 COPY . .
 
-# Expose port
+# Expose
 EXPOSE 3001
 
-# Start the server
+# Start
 CMD ["node", "server.js"]

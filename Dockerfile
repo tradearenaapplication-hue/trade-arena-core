@@ -1,16 +1,13 @@
-# Dockerfile for Railway deployment - minimal with pre-built node_modules
+# Dockerfile for Railway deployment - no build step needed (bundles pre-built)
 FROM node:22-alpine
 
 WORKDIR /app
 
-# Install pnpm globally
-RUN npm install -g pnpm@9.12.0
-
-# Copy only package files first for better caching
+# Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install only production dependencies (faster, smaller)
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+# Install production dependencies only
+RUN npm install -g pnpm@9.12.0 && pnpm install --frozen-lockfile --prod --ignore-scripts
 
 # Copy source code
 COPY . .

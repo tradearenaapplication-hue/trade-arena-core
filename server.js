@@ -3,6 +3,16 @@
  * Handles real trading logic, smart contract interactions, data persistence, and AI proxies
  */
 
+// Sentinel: Global error handlers for Railway startup diagnostics
+process.on('uncaughtException', (err) => {
+    console.error('[FATAL] Uncaught Exception:', err);
+    process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('[FATAL] Unhandled Rejection:', reason);
+    process.exit(1);
+});
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -20,11 +30,13 @@ const payoutRoutes = require("./routes/payoutRoutes");
 const apiHealthRoutes = require("./routes/apiHealth");
 const { loadUsers, saveUsers } = require('./user_persistence');
 
+console.log('[Boot] Starting Trade Arena server...');
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const PORT = process.env.PORT || 3001;
+console.log(`[Boot] PORT=${PORT} NODE_ENV=${process.env.NODE_ENV || 'development'}`);
 
 // Sentinel: Security hardening
 app.set('trust proxy', 1);

@@ -1,12 +1,9 @@
-# Force Node.js build instead of static site detection
+# Force Node.js build with Nixpacks
 [phases.setup]
 nixPkgs = ["nodejs-22", "pnpm"]
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
-
-[phases.build]
-cmds = ["pnpm run build"]
+cmds = ["pnpm install --frozen-lockfile --prod --ignore-scripts"]
 
 [start]
 cmd = "node server.js"

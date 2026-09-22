@@ -35,7 +35,7 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '3001', 10);
 console.log(`[Boot] PORT=${PORT} NODE_ENV=${process.env.NODE_ENV || 'development'}`);
 
 // Sentinel: Security hardening

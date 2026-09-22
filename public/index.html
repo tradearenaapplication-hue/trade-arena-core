@@ -1087,6 +1087,33 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <div class="mcard neu"><div class="mv" id="mv-avgL">—</div><div class="ml">Avg Loss</div></div>
         </div>
 
+        <!-- Enhanced Quant Metrics -->
+        <div class="qr-section-title" style="margin-top:10px">Enhanced Analytics</div>
+        <div class="metrics-grid">
+          <div class="mcard info"><div class="mv" id="mv-beatRandom">—</div><div class="ml">Beat Random</div><div class="ms">vs coin flip</div></div>
+          <div class="mcard info"><div class="mv" id="mv-beatLong">—</div><div class="ml">Beat Long</div><div class="ms">vs buy & hold</div></div>
+          <div class="mcard info"><div class="mv" id="mv-beatMomentum">—</div><div class="ml">Beat Momentum</div><div class="ms">vs trend follow</div></div>
+          <div class="mcard neu"><div class="mv" id="mv-costCorrelation">—</div><div class="ml">Cost-P&L Corr</div><div class="ms">Pearson r</div></div>
+        </div>
+        <div class="metrics-grid-6" style="margin-top:6px">
+          <div class="mcard info"><div class="mv" id="mv-liveWr">—</div><div class="ml">Live WR</div></div>
+          <div class="mcard neu"><div class="mv" id="mv-demoWr">—</div><div class="ml">Demo WR</div></div>
+          <div class="mcard info"><div class="mv" id="mv-liveAvgPnl">—</div><div class="ml">Live Avg/trade</div></div>
+          <div class="mcard neu"><div class="mv" id="mv-demoAvgPnl">—</div><div class="ml">Demo Avg/trade</div></div>
+        </div>
+
+        <!-- Cost Breakdown -->
+        <div class="qr-section-title" style="margin-top:10px">Cost Breakdown (per method)</div>
+        <div id="mv-costBreakdown" style="font-size:8px;color:var(--dim);padding:4px 0">Need trades to populate.</div>
+
+        <!-- Regime Performance -->
+        <div class="qr-section-title" style="margin-top:8px">Regime Performance</div>
+        <div id="mv-regimePerformance" style="font-size:8px;color:var(--dim);padding:4px 0">Need trades to populate.</div>
+
+        <!-- Duration Performance -->
+        <div class="qr-section-title" style="margin-top:8px">Duration vs P&L</div>
+        <div id="mv-durationPerformance" style="font-size:8px;color:var(--dim);padding:4px 0">Need trades to populate.</div>
+
         <!-- Equity curve -->
         <div class="qr-section-title" style="margin-top:10px">Equity Curve</div>
         <div class="eq-chart"><svg class="eq-svg" id="eqSvg" preserveAspectRatio="none">
@@ -1797,7 +1824,7 @@ var _lastClosedCount = -1;
 var _lastLogRenderCount = -1;
 var _lastLogTradeCount = -1;
 var _quantPending = false;
-var _logPending = false;
+let _logPending = false;
 var _perfPending = false;
 
 // ⚡ Bolt Optimization: DOM Cache and State Tracking
@@ -1836,6 +1863,20 @@ let agentProbation = { mom:0, vol:0, pol:0, sen:0, risk:0 };
 let agentProbationStart = {};
 let auditHistory = [];
 let lastAuditAt = 0;
+
+// ── Enhanced Quant Report State ──
+let quantTradeLog = []; // Detailed per-trade log for quant report
+let regimePerformance = {}; // Per-regime P&L tracking
+let methodCostBreakdown = {}; // Per-method cost accumulation
+let tradeDurationBuckets = {}; // Duration vs P&L distribution
+let costVsPnlCorrelation = []; // Cost vs P&L pairs for correlation
+let quantReportSeed = Date.now(); // Deterministic seed for reproducible baselines
+
+// Deterministic pseudo-random for reproducible baselines (same in demo & live)
+function quantRand() {
+  quantReportSeed = (quantReportSeed * 1664525 + 1013904223) >>> 0;
+  return quantReportSeed / 0x100000000;
+}
 
 const SLOT_TOKENS=[
   {e:'🐸',l:'PEPE'},{e:'🐕',l:'DOGE'},{e:'💎',l:'ETH'},{e:'🌕',l:'BTC'},
@@ -1975,8 +2016,8 @@ function computeBaselines(entryPrice, exitPrice, bet, method, volumeUsd, priceCh
   const costs = computeCosts(method, bet, volumeUsd, 1.0);
   const priceDelta = (exitPrice - entryPrice) / entryPrice;
 
-  // Random: coin flip direction
-  const randomDir = Math.random() < 0.5 ? 1 : -1;
+  // Deterministic random: coin flip direction (reproducible in demo & live)
+  const randomDir = quantRand() < 0.5 ? 1 : -1;
   const randomPnl = bet * priceDelta * randomDir - costs.total;
 
   // Always long: just buy and hold same duration
@@ -2021,7 +2062,13 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
     ensemble: decision.ensemble||null,
     polSignal: decision.polSignal||null,
     status:'open',
-    openedAt: Date.now()
+    openedAt: Date.now(),
+    // Enhanced quant tracking
+    botPersonality: bot.personality,
+    isLiveMode: window.isLiveMode || false,
+    entryBalance: balance,
+    startBalance: startBalance,
+    equityIndex: equityHistory.length - 1
   };
   openPositions.push(pos);
   
@@ -2208,6 +2255,102 @@ async function checkExit(pos, bot) {
   bot.pnl += pos.netPnl;
   equityHistory.push(parseFloat(balance.toFixed(2)));
   openPositions=openPositions.filter(p=>p.id!==pos.id);
+
+  // ═══════════════════════════════════════════════════════
+  // ENHANCED QUANT LOGGING — Detailed per-trade retention
+  // ═══════════════════════════════════════════════════════
+  const tradeDurationMs = pos.closedAt - pos.openedAt;
+  const tradeDurationSec = Math.round(tradeDurationMs / 1000);
+  const durationBucket = tradeDurationSec < 30 ? '0-30s' :
+                         tradeDurationSec < 60 ? '30-60s' :
+                         tradeDurationSec < 120 ? '60-120s' :
+                         tradeDurationSec < 300 ? '2-5m' : '5m+';
+
+  const costBreakdown = {
+    gas: pos.costs.gas,
+    slippage: pos.costs.slippage,
+    spread: pos.costs.spread,
+    funding: pos.costs.funding,
+    total: pos.costs.total,
+    costToBetRatio: pos.costs.total / pos.bet
+  };
+
+  // Regime performance tracking
+  if (!regimePerformance[pos.regime]) {
+    regimePerformance[pos.regime] = { trades: 0, wins: 0, netPnl: 0, totalBet: 0 };
+  }
+  const rp = regimePerformance[pos.regime];
+  rp.trades++; rp.netPnl += pos.netPnl; rp.totalBet += pos.bet;
+  if (pos.isWin) rp.wins++;
+
+  // Method cost breakdown
+  if (!methodCostBreakdown[pos.method]) {
+    methodCostBreakdown[pos.method] = { trades: 0, totalCost: 0, totalBet: 0, totalPnl: 0 };
+  }
+  const mb = methodCostBreakdown[pos.method];
+  mb.trades++; mb.totalCost += pos.costs.total; mb.totalBet += pos.bet; mb.totalPnl += pos.netPnl;
+
+  // Duration bucket tracking
+  if (!tradeDurationBuckets[durationBucket]) {
+    tradeDurationBuckets[durationBucket] = { trades: 0, wins: 0, netPnl: 0, avgPnl: 0 };
+  }
+  const db = tradeDurationBuckets[durationBucket];
+  db.trades++; db.netPnl += pos.netPnl; db.avgPnl = db.netPnl / db.trades;
+  if (pos.isWin) db.wins++;
+
+  // Cost vs P&L correlation data
+  costVsPnlCorrelation.push({
+    cost: pos.costs.total,
+    netPnl: pos.netPnl,
+    rawPnl: pos.rawPnl,
+    bet: pos.bet,
+    isWin: pos.isWin
+  });
+  if (costVsPnlCorrelation.length > 500) costVsPnlCorrelation.shift();
+
+  // Detailed quant trade log
+  const quantEntry = {
+    id: pos.id,
+    botId: pos.botId,
+    botPersonality: pos.botPersonality,
+    token: pos.token,
+    method: pos.method,
+    direction: pos.direction,
+    regime: pos.regime,
+    ensemble: pos.ensemble,
+    entryPrice: pos.entryPrice,
+    exitPrice: pos.exitPrice,
+    bet: pos.bet,
+    volumeUsd: pos.volumeUsd,
+    priceChangePct15m: pos.priceChangePct15m,
+    rawPnl: pos.rawPnl,
+    netPnl: pos.netPnl,
+    isWin: pos.isWin,
+    costs: { ...pos.costs },
+    costBreakdown,
+    baselines: pos.baselines ? { ...pos.baselines } : null,
+    beatRandom: pos.baselines && pos.netPnl > pos.baselines.random,
+    beatLong: pos.baselines && pos.netPnl > pos.baselines.long,
+    beatMomentum: pos.baselines && pos.netPnl > pos.baselines.momentum,
+    durationSec: tradeDurationSec,
+    durationBucket,
+    openedAt: pos.openedAt,
+    closedAt: pos.closedAt,
+    tradeDurationMs,
+    entryBalance: pos.entryBalance,
+    exitBalance: balance,
+    equityIndex: pos.equityIndex,
+    isLiveMode: pos.isLiveMode,
+    timestamp: new Date().toISOString()
+  };
+
+  quantTradeLog.push(quantEntry);
+  if (quantTradeLog.length > 500) quantTradeLog.shift();
+
+  // ═══════════════════════════════════════════════════════
+  // END ENHANCED QUANT LOGGING
+  // ═══════════════════════════════════════════════════════
+
   // Reset balance colour and recompute after position closes
   const balEl=document.getElementById('ghBalance');
   if(balEl) balEl.style.color='var(--gold)';
@@ -2445,6 +2588,83 @@ function _runUpdateQuantReport() {
   drawReturnDist(returns, retMin, retMax);
   drawCostSensitivity(totalNetPnl, totalCosts);
   drawVerdict(n, winRate, pf, avgPnl);
+  
+  // ═══════════════════════════════════════════════════════
+  // ENHANCED QUANT REPORT METRICS
+  // ═══════════════════════════════════════════════════════
+  updateEnhancedQuantMetrics(n, avgPnl, winRate);
+}
+
+// ═══════════════════════════════════════════════════════
+// ENHANCED QUANT REPORT METRICS
+// ═══════════════════════════════════════════════════════
+function updateEnhancedQuantMetrics(n, avgPnl, winRate) {
+  // Cost breakdown metrics
+  const costEl = _getEl('mv-costBreakdown');
+  if (costEl && Object.keys(methodCostBreakdown).length > 0) {
+    const costHtml = Object.entries(methodCostBreakdown).map(([method, data]) => {
+      const avgCost = data.trades > 0 ? (data.totalCost / data.trades).toFixed(4) : '0';
+      const costPct = data.totalBet > 0 ? ((data.totalCost / data.totalBet) * 100).toFixed(2) : '0';
+      return `<div style="font-size:8px;padding:2px 0"><span style="color:var(--dim)">${method}:</span> avg $${avgCost} (${costPct}% of bet)</div>`;
+    }).join('');
+    costEl.innerHTML = costHtml;
+  }
+
+  // Regime performance
+  const regimeEl = _getEl('mv-regimePerformance');
+  if (regimeEl && Object.keys(regimePerformance).length > 0) {
+    const regimeHtml = Object.entries(regimePerformance).map(([regime, data]) => {
+      const wr = data.trades > 0 ? ((data.wins / data.trades) * 100).toFixed(1) : '0';
+      const avgPnl = data.trades > 0 ? (data.netPnl / data.trades).toFixed(2) : '0';
+      return `<div style="font-size:8px;padding:2px 0"><span style="color:var(--dim)">${regime}:</span> ${data.trades} trades, ${wr}% WR, avg $${avgPnl}</div>`;
+    }).join('');
+    regimeEl.innerHTML = regimeHtml;
+  }
+
+  // Duration bucket performance
+  const durEl = _getEl('mv-durationPerformance');
+  if (durEl && Object.keys(tradeDurationBuckets).length > 0) {
+    const durHtml = Object.entries(tradeDurationBuckets).map(([bucket, data]) => {
+      const wr = data.trades > 0 ? ((data.wins / data.trades) * 100).toFixed(1) : '0';
+      return `<div style="font-size:8px;padding:2px 0"><span style="color:var(--dim)">${bucket}:</span> ${data.trades} trades, ${wr}% WR, avg $${data.avgPnl.toFixed(2)}</div>`;
+    }).join('');
+    durEl.innerHTML = durHtml;
+  }
+
+  // Baseline beat rates
+  if (quantTradeLog.length > 0) {
+    const beatRandom = quantTradeLog.filter(t => t.beatRandom).length;
+    const beatLong = quantTradeLog.filter(t => t.beatLong).length;
+    const beatMomentum = quantTradeLog.filter(t => t.beatMomentum).length;
+    setVal('mv-beatRandom', `${((beatRandom / n) * 100).toFixed(1)}%`);
+    setVal('mv-beatLong', `${((beatLong / n) * 100).toFixed(1)}%`);
+    setVal('mv-beatMomentum', `${((beatMomentum / n) * 100).toFixed(1)}%`);
+  }
+
+  // Cost vs P&L correlation
+  if (costVsPnlCorrelation.length > 10) {
+    const cov = costVsPnlCorrelation.reduce((sum, d) => sum + d.cost * d.netPnl, 0) / costVsPnlCorrelation.length;
+    const costMean = costVsPnlCorrelation.reduce((sum, d) => sum + d.cost, 0) / costVsPnlCorrelation.length;
+    const pnlMean = costVsPnlCorrelation.reduce((sum, d) => sum + d.netPnl, 0) / costVsPnlCorrelation.length;
+    const costStd = Math.sqrt(costVsPnlCorrelation.reduce((sum, d) => sum + Math.pow(d.cost - costMean, 2), 0) / costVsPnlCorrelation.length);
+    const pnlStd = Math.sqrt(costVsPnlCorrelation.reduce((sum, d) => sum + Math.pow(d.netPnl - pnlMean, 2), 0) / costVsPnlCorrelation.length);
+    const correlation = (costStd && pnlStd) ? (cov - costMean * pnlMean) / (costStd * pnlStd) : 0;
+    setVal('mv-costCorrelation', correlation.toFixed(3));
+  }
+
+  // Demo vs Live mode accuracy (if both exist)
+  const liveTrades = quantTradeLog.filter(t => t.isLiveMode);
+  const demoTrades = quantTradeLog.filter(t => !t.isLiveMode);
+  if (liveTrades.length > 0 && demoTrades.length > 0) {
+    const liveWr = liveTrades.filter(t => t.isWin).length / liveTrades.length;
+    const demoWr = demoTrades.filter(t => t.isWin).length / demoTrades.length;
+    const liveAvgPnl = liveTrades.reduce((s, t) => s + t.netPnl, 0) / liveTrades.length;
+    const demoAvgPnl = demoTrades.reduce((s, t) => s + t.netPnl, 0) / demoTrades.length;
+    setVal('mv-liveWr', (liveWr * 100).toFixed(1) + '%');
+    setVal('mv-demoWr', (demoWr * 100).toFixed(1) + '%');
+    setVal('mv-liveAvgPnl', (liveAvgPnl >= 0 ? '+' : '') + '$' + liveAvgPnl.toFixed(2));
+    setVal('mv-demoAvgPnl', (demoAvgPnl >= 0 ? '+' : '') + '$' + demoAvgPnl.toFixed(2));
+  }
 }
 
 function setMCard(cardId, valId, subId, val, sub, cls) {

@@ -1187,10 +1187,134 @@ describe("MoonPay Webhook Security", () => {
 describe("Proxy Endpoint Security", () => {
   const fs = require("fs");
   const proxyCode = fs.readFileSync("./proxy.js", "utf8");
+  const { app: proxyApp } = require("./proxy.js");
 
   it("contains sanitized error responses for 500 status codes across proxy endpoints", () => {
     expect(proxyCode).toContain("res.status(500).json({ error: 'Internal server error' });");
     expect(proxyCode.includes("res.status(500).json({ error: error.message })")).toBe(false);
+  });
+
+  it("rejects invalid log payloads on maintenance log endpoint", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/maintenance/log"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidPayloads = [
+      {},
+      { agent: 123, message: "msg" },
+      { agent: "SENTINEL" },
+      { message: "msg" },
+      { agent: "SENTINEL", message: null },
+    ];
+
+    for (const body of invalidPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const req = { body, ip: "127.0.0.101", headers: {}, app: proxyApp };
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle(req, res, async () => {
+        await route.route.stack[1].handle(req, res);
+      });
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid log payload");
+    }
+  });
+
+  it("enforces rate limiting on excessive maintenance log requests", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/maintenance/log"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const originalAppend = fs.appendFileSync;
+    const originalMkdir = fs.mkdirSync;
+
+    try {
+      fs.appendFileSync = () => {};
+      fs.mkdirSync = () => {};
+
+      let lastStatus = 200;
+      let lastJson = null;
+
+      // Simulate sending 35 requests from ip "127.0.0.99"
+      for (let i = 0; i < 35; i++) {
+        let statusCode = 200;
+        let jsonResponse = null;
+        const req = {
+          ip: "127.0.0.99",
+          headers: {},
+          app: proxyApp,
+          body: { agent: "SENTINEL", message: "Rate limit test entry", level: "INFO" }
+        };
+        const res = {
+          setHeader: () => {},
+          status: (code) => { statusCode = code; return res; },
+          send: (data) => { jsonResponse = data; return res; },
+          json: (data) => { jsonResponse = data; return res; },
+        };
+
+        await route.route.stack[0].handle(req, res, async () => {
+          await route.route.stack[1].handle(req, res);
+        });
+
+        lastStatus = statusCode;
+        lastJson = jsonResponse;
+      }
+
+      expect(lastStatus).toBe(429);
+      expect(lastJson.error).toContain("Too many requests");
+    } finally {
+      fs.appendFileSync = originalAppend;
+      fs.mkdirSync = originalMkdir;
+    }
+  });
+
+  it("successfully logs valid maintenance entry without side effects", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/maintenance/log"
+    );
+
+    const originalAppend = fs.appendFileSync;
+    const originalMkdir = fs.mkdirSync;
+    let appendedContent = null;
+
+    try {
+      fs.appendFileSync = (_path, content) => { appendedContent = content; };
+      fs.mkdirSync = () => {};
+
+      let statusCode = 200;
+      let jsonResponse = null;
+      const req = {
+        ip: "127.0.0.100", // distinct IP
+        headers: {},
+        app: proxyApp,
+        body: { agent: "SENTINEL", message: "Test log verification message", level: "INFO" }
+      };
+      const res = {
+        setHeader: () => {},
+        status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle(req, res, async () => {
+        await route.route.stack[1].handle(req, res);
+      });
+
+      expect(statusCode).toBe(200);
+      expect(jsonResponse.success).toBe(true);
+      expect(Boolean(appendedContent)).toBe(true);
+      expect(appendedContent).toContain("Test log verification message");
+    } finally {
+      fs.appendFileSync = originalAppend;
+      fs.mkdirSync = originalMkdir;
+    }
   });
 
   it("returns generic error message on patch endpoint when an internal exception occurs", async () => {

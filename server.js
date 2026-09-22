@@ -1093,11 +1093,16 @@ app.use((err, req, res, next) => {
 
 // Start server
 if (require.main === module) {
+    console.log('[Boot] Starting server on 0.0.0.0:' + PORT);
     server.on('error', (err) => {
         console.error('[Server] Failed to start:', err);
         process.exit(1);
     });
-    server.listen(PORT, () => {
+    server.on('listening', () => {
+        const addr = server.address();
+        console.log('[Boot] Server listening on', addr);
+    });
+    server.listen(PORT, '0.0.0.0', () => {
         console.log(`Trade Arena Server running on port ${PORT}`);
     });
 }

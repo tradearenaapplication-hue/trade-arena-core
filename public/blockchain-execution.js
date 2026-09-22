@@ -16,7 +16,7 @@ async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
       provider = window.walletState.provider;
     } else if (window.ethereum) {
       console.log('[executeRealSwap] Using window.ethereum provider');
-      provider = new ethers.BrowserProvider(window.ethereum);
+      provider = new ethers.providers.Web3Provider(window.ethereum);
     } else {
       console.error('[executeRealSwap] No provider found');
       return { success: false, error: 'No wallet provider detected. Please connect your wallet.' };
@@ -162,7 +162,7 @@ async function get0xSwapQuote(betUSD, tokenIn, tokenOut) {
 async function trackTransactionStatus(txHash) {
   if (!window.ethereum) return null;
   try {
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
     const receipt = await provider.getTransactionReceipt(txHash);
     if (!receipt) return { status: 'PENDING' };
     return {

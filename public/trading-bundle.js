@@ -1899,7 +1899,7 @@ async function getWalletBalanceUSD() {
         } else if (window.walletState && window.walletState.provider) {
             provider = window.walletState.provider;
         } else if (window.ethereum) {
-            provider = new ethers.BrowserProvider(window.ethereum);
+            provider = new ethers.providers.Web3Provider(window.ethereum);
         } else {
             provider = new ethers.JsonRpcProvider(REAL_WALLET_CONFIG.network.rpcUrl);
         }
@@ -3215,8 +3215,6 @@ async function simulateOrSendTransaction(quote) {
             } else if (window.ethereum) {
                 if (typeof ethers.providers !== 'undefined' && ethers.providers.Web3Provider) {
                     provider = new ethers.providers.Web3Provider(window.ethereum);
-                } else if (ethers.BrowserProvider) {
-                    provider = new ethers.BrowserProvider(window.ethereum);
                 } else {
                     provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
                 }
@@ -3280,8 +3278,6 @@ async function waitForTransaction(hash) {
             } else if (window.ethereum) {
                 if (typeof ethers.providers !== 'undefined' && ethers.providers.Web3Provider) {
                     provider = new ethers.providers.Web3Provider(window.ethereum);
-                } else if (ethers.BrowserProvider) {
-                    provider = new ethers.BrowserProvider(window.ethereum);
                 }
             }
             if (provider) {

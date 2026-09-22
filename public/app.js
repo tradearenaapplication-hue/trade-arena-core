@@ -979,7 +979,7 @@ window.testSignature = async function() {
         } else if (window.walletState && window.walletState.provider) {
             provider = window.walletState.provider;
         } else if (window.ethereum) {
-            provider = new ethers.BrowserProvider(window.ethereum);
+            provider = new ethers.providers.Web3Provider(window.ethereum);
         } else {
             throw new Error('No wallet provider detected. Please connect your wallet first.');
         }

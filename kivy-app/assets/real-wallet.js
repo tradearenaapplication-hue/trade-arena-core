@@ -66,6 +66,7 @@ let walletState = {
   signer: null,
   nonce: 0,
   transactions: [],
+  tokenHoldings: [],
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -145,6 +146,160 @@ async function validateNetwork(provider) {
 // ═══════════════════════════════════════════════════════════
 // BALANCE & GAS ESTIMATION
 // ═══════════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════════
+// MULTI-CHAIN TOKEN BALANCE FETCHING
+// ═══════════════════════════════════════════════════════════
+
+async function fetchMultiChainTokenBalances(walletAddress) {
+  const address = walletAddress || walletState.address;
+  if (!address) {
+    console.warn('No wallet address available for multi-chain query');
+    return { address: null, totalUsd: 0, holdings: [] };
+  }
+
+  console.log('🔍 Fetching multi-chain token holdings for ' + address + '...');
+
+  const NETWORKS = [
+    { name: 'Base', chainId: 8453, rpc: 'https://mainnet.base.org', nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
+    { name: 'Ethereum', chainId: 1, rpc: 'https://cloudflare-eth.com', nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
+    { name: 'Arbitrum', chainId: 42161, rpc: 'https://arb1.arbitrum.io/rpc', nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
+    { name: 'Optimism', chainId: 10, rpc: 'https://mainnet.optimism.io', nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
+    { name: 'Polygon', chainId: 137, rpc: 'https://polygon-rpc.com', nativeSymbol: 'POL', coingeckoId: 'matic-network' },
+    { name: 'BSC', chainId: 56, rpc: 'https://bsc-dataseed.binance.org', nativeSymbol: 'BNB', coingeckoId: 'binancecoin' }
+  ];
+
+  const COMMON_TOKENS = {
+    8453: [
+      { symbol: 'USDC', address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals: 6, coingeckoId: 'usd-coin' },
+      { symbol: 'WETH', address: '0x4200000000000000000000000000000000000006', decimals: 18, coingeckoId: 'ethereum' },
+      { symbol: 'DAI', address: '0x50c5725949A6F0c72afAA8647BC0D4a6d7c15e50', decimals: 18, coingeckoId: 'dai' }
+    ],
+    1: [
+      { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6, coingeckoId: 'usd-coin' },
+      { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6, coingeckoId: 'tether' },
+      { symbol: 'WBTC', address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', decimals: 8, coingeckoId: 'wrapped-bitcoin' }
+    ]
+  };
+
+  const fetchWithTimeout = (url, options, timeoutMs = 3000) => {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeout = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    return fetch(url, { ...options, signal: controller ? controller.signal : undefined })
+      .finally(() => timeout && clearTimeout(timeout));
+  };
+
+  const getRpcBalance = async (rpc, addr) => {
+    try {
+      const res = await fetchWithTimeout(rpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [addr, 'latest']
+        })
+      }, 3000);
+      const data = await res.json();
+      if (data && data.result) return BigInt(data.result);
+    } catch (e) {}
+    return 0n;
+  };
+
+  const getRpcErc20Balance = async (rpc, tokenAddress, addr) => {
+    try {
+      const cleanAddress = addr.toLowerCase().replace('0x', '').padStart(64, '0');
+      const dataCall = '0x70a08231' + cleanAddress;
+      const res = await fetchWithTimeout(rpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', id: 2, method: 'eth_call', params: [{ to: tokenAddress, data: dataCall }, 'latest']
+        })
+      }, 3000);
+      const data = await res.json();
+      if (data && data.result && data.result !== '0x') return BigInt(data.result);
+    } catch (e) {}
+    return 0n;
+  };
+
+  const promises = NETWORKS.map(async (net) => {
+    const netResults = [];
+    const balWei = await getRpcBalance(net.rpc, address);
+    const nativeAmount = parseFloat(
+      typeof ethers !== 'undefined' && ethers.utils
+        ? ethers.utils.formatEther(balWei)
+        : (typeof ethers !== 'undefined' && ethers.formatEther ? ethers.formatEther(balWei) : (Number(balWei) / 1e18).toString())
+    );
+
+    if (nativeAmount > 0) {
+      netResults.push({
+        network: net.name,
+        symbol: net.nativeSymbol,
+        amount: nativeAmount,
+        coingeckoId: net.coingeckoId,
+        contractAddress: null
+      });
+    }
+
+    const tokens = COMMON_TOKENS[net.chainId] || [];
+    for (const token of tokens) {
+      const tokenBalRaw = await getRpcErc20Balance(net.rpc, token.address, address);
+      if (tokenBalRaw > 0n) {
+        const formatted = parseFloat(
+          typeof ethers !== 'undefined' && ethers.utils
+            ? ethers.utils.formatUnits(tokenBalRaw, token.decimals)
+            : (typeof ethers !== 'undefined' && ethers.formatUnits ? ethers.formatUnits(tokenBalRaw, token.decimals) : (Number(tokenBalRaw) / (10 ** token.decimals)).toString())
+        );
+        if (formatted > 0) {
+          netResults.push({
+            network: net.name,
+            symbol: token.symbol,
+            amount: formatted,
+            coingeckoId: token.coingeckoId,
+            contractAddress: token.address
+          });
+        }
+      }
+    }
+    return netResults;
+  });
+
+  const settled = await Promise.allSettled(promises);
+  const allHoldings = [];
+  for (const res of settled) {
+    if (res.status === 'fulfilled' && Array.isArray(res.value)) {
+      allHoldings.push(...res.value);
+    }
+  }
+
+  const coingeckoIds = [...new Set(allHoldings.map(h => h.coingeckoId))].filter(Boolean).join(',');
+  let priceMap = {};
+  if (coingeckoIds.length > 0) {
+    try {
+      const pRes = await fetchWithTimeout('https://api.coingecko.com/api/v3/simple/price?ids=' + coingeckoIds + '&vs_currencies=usd', {}, 3000);
+      priceMap = await pRes.json();
+    } catch (e) {}
+  }
+
+  let totalUsd = 0;
+  for (const h of allHoldings) {
+    const price = priceMap[h.coingeckoId]?.usd || (['USDC', 'USDT', 'DAI'].includes(h.symbol) ? 1 : 0);
+    h.priceUsd = price;
+    h.valueUsd = h.amount * price;
+    totalUsd += h.valueUsd;
+  }
+
+  walletState.tokenHoldings = allHoldings;
+  walletState.balanceUSD = totalUsd;
+  if (typeof window !== 'undefined') {
+    window.userTokenHoldings = allHoldings;
+  }
+
+  console.log('✅ Multi-chain holdings fetched for ' + address + ':', allHoldings, 'Total USD: $' + totalUsd.toFixed(2));
+
+  return { address, totalUsd, holdings: allHoldings };
+}
+
 
 async function getWalletBalance() {
   if (!walletState.provider || !walletState.address) {
@@ -564,6 +719,7 @@ if (typeof window !== 'undefined') {
   window.checkMetaMaskStatus = checkMetaMaskStatus;
   window.diagnoseMetaMask = diagnoseMetaMask;
   window.getWalletBalance = getWalletBalance;
+  window.fetchMultiChainTokenBalances = fetchMultiChainTokenBalances;
   window.switchToBaseNetwork = switchToBaseNetwork;
   window.validateNetwork = validateNetwork;
   window.verifyWalletReadiness = verifyWalletReadiness;
@@ -587,6 +743,7 @@ if (typeof module !== 'undefined' && module.exports) {
     walletState,
     validateNetwork,
     getWalletBalance,
+    fetchMultiChainTokenBalances,
     estimateGasPrice,
     estimateSwapGasCost,
     calculateSlippage,

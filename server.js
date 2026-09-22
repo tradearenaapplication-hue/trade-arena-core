@@ -10,6 +10,7 @@ const ethers = require('ethers');
 const axios = require('axios');
 const WebSocket = require('websocket').w3cwebsocket;
 const crypto = require('crypto');
+const db = require('./data/database');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -76,6 +77,94 @@ const provider = new ethers.JsonRpcProvider(RPC_URL);
 /**
  * GET /api/health - Server health check
  */
+
+/**
+ * User Account, Session & Trade Log Database Endpoints
+ */
+
+app.post('/api/user/signin', (req, res) => {
+    try {
+        const { address, provider, name, holdings, sessionData } = req.body || {};
+        if (!address) {
+            return res.status(400).json({ success: false, error: 'Wallet address required' });
+        }
+
+        const user = db.upsertUser(address, provider, name, holdings, sessionData);
+        const session = db.createSession(address, sessionData?.balance || 0);
+        const tradeLogs = db.getTradeLogs(address);
+
+        res.json({
+            success: true,
+            user,
+            session,
+            tradeLogs
+        });
+    } catch (err) {
+        console.error('Error in /api/user/signin:', err);
+        res.status(500).json({ success: false, error: 'Internal server error during sign in' });
+    }
+});
+
+app.get('/api/user/session', (req, res) => {
+    try {
+        const { address } = req.query;
+        if (!address) {
+            return res.status(400).json({ success: false, error: 'Address query parameter required' });
+        }
+
+        const user = db.getUser(address);
+        const tradeLogs = db.getTradeLogs(address);
+
+        res.json({
+            success: true,
+            user,
+            tradeLogs
+        });
+    } catch (err) {
+        console.error('Error in /api/user/session:', err);
+        res.status(500).json({ success: false, error: 'Internal server error fetching session' });
+    }
+});
+
+app.post('/api/user/tradelog', (req, res) => {
+    try {
+        const { address, agentId, botName, action, symbol, amount, pnl, details } = req.body || {};
+        if (!address) {
+            return res.status(400).json({ success: false, error: 'Wallet address required' });
+        }
+
+        const tradeLog = db.addTradeLog({
+            address, agentId, botName, action, symbol, amount, pnl, details
+        });
+
+        res.json({
+            success: true,
+            tradeLog
+        });
+    } catch (err) {
+        console.error('Error in /api/user/tradelog:', err);
+        res.status(500).json({ success: false, error: 'Internal server error recording trade log' });
+    }
+});
+
+app.get('/api/user/tradelogs', (req, res) => {
+    try {
+        const { address } = req.query;
+        if (!address) {
+            return res.status(400).json({ success: false, error: 'Address query parameter required' });
+        }
+
+        const tradeLogs = db.getTradeLogs(address);
+        res.json({
+            success: true,
+            tradeLogs
+        });
+    } catch (err) {
+        console.error('Error in /api/user/tradelogs:', err);
+        res.status(500).json({ success: false, error: 'Internal server error fetching trade logs' });
+    }
+});
+
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: Date.now() });
 });

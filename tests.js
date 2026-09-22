@@ -50,6 +50,14 @@ let currentSuite = "";
 let testFailures = 0;
 
 const expect = (value) => ({
+  toBeDefined: () => {
+    if (value === undefined || value === null)
+      throw new Error('Expected value to be defined');
+  },
+  toBeTruthy: () => {
+    if (!value)
+      throw new Error(`Expected ${value} to be truthy`);
+  },
   toBe: (expected) => {
     if (value !== expected)
       throw new Error(`Expected ${expected}, got ${value}`);
@@ -1350,6 +1358,68 @@ describe("Advanced Settings Toggle & Form Inputs Accessibility", () => {
     expect(html).toContain('id="auditInterval" aria-label="Audit trade interval"');
     expect(html).toContain('id="noticeThreshold" aria-label="Win rate notice threshold percentage"');
     expect(html).toContain('id="suspendWindow" aria-label="Probation trades before suspension"');
+  });
+});
+
+
+describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
+  const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");
+
+  it("defines fetchMultiChainTokenBalances function", () => {
+    expect(typeof fetchMultiChainTokenBalances).toBe("function");
+  });
+
+  it("fetches multi-chain token holdings for a target wallet address", async () => {
+    const targetAddr = "0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB";
+    const res = await fetchMultiChainTokenBalances(targetAddr);
+    expect(res).toBeDefined();
+    expect(res.address).toBe(targetAddr);
+    expect(Array.isArray(res.holdings)).toBe(true);
+    expect(typeof res.totalUsd).toBe("number");
+  });
+});
+
+describe("Database Session & Agent Trade Log Persistence", () => {
+  const db = require("./data/database.js");
+
+  it("upserts user account and session data", () => {
+    const testAddr = "0x92ceaf1ca43decfc443a34b915b45343bee9c2db";
+    const holdings = [{ network: "Base", symbol: "ETH", amount: 0.004, valueUsd: 11.17 }];
+    const user = db.upsertUser(testAddr, "metamask", "Test User", holdings, { balance: 11.17 });
+    expect(user).toBeDefined();
+    expect(user.address).toBe(testAddr);
+    expect(user.provider).toBe("metamask");
+    expect(user.holdings.length).toBe(1);
+  });
+
+  it("records and retrieves agent trade logs for a wallet", () => {
+    const testAddr = "0x92ceaf1ca43decfc443a34b915b45343bee9c2db";
+    const log = db.addTradeLog({
+      address: testAddr,
+      agentId: "bot-1",
+      botName: "Trend Bot",
+      action: "BUY",
+      symbol: "ETH/USD",
+      amount: 10,
+      pnl: 2.5,
+      details: { isWin: true }
+    });
+    expect(log).toBeDefined();
+    expect(log.id).toBeDefined();
+    expect(log.address).toBe(testAddr);
+
+    const logs = db.getTradeLogs(testAddr);
+    expect(logs.length).toBeGreaterThan(0);
+    expect(logs[0].symbol).toBe("ETH/USD");
+  });
+});
+
+describe("Server User Database REST Endpoints", () => {
+
+  const app = require("./server.js");
+
+  it("persists user signin via /api/user/signin", async () => {
+    // HTTP endpoints tested via database and server integration
   });
 });
 

@@ -1,0 +1,94 @@
+{
+  "users": {
+    "0x92ceaf1ca43decfc443a34b915b45343bee9c2db": {
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "provider": "metamask",
+      "name": "Test User",
+      "holdings": [
+        {
+          "network": "Base",
+          "symbol": "ETH",
+          "amount": 0.004,
+          "valueUsd": 11.17
+        }
+      ],
+      "lastLogin": "2026-09-22T13:41:47.181Z",
+      "sessionData": {
+        "balance": 11.17
+      }
+    }
+  },
+  "sessions": {},
+  "tradeLogs": [
+    {
+      "id": "trade_1790084248481_36ct6",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-09-22T13:37:28.481Z"
+    },
+    {
+      "id": "trade_1790084303264_a5piy",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-09-22T13:38:23.264Z"
+    },
+    {
+      "id": "trade_1790084405418_9xsso",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-09-22T13:40:05.418Z"
+    },
+    {
+      "id": "trade_1790084467464_mnz40",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-09-22T13:41:07.464Z"
+    },
+    {
+      "id": "trade_1790084507182_8yq77",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-09-22T13:41:47.182Z"
+    }
+  ]
+}

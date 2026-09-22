@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const DB_FILE = path.join(__dirname, 'trade_arena.json');
 
@@ -65,7 +66,7 @@ class FileDatabase {
   createSession(address, initialBalance = 0) {
     if (!address) return null;
     const cleanAddr = address.toLowerCase();
-    const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+    const sessionId = 'session_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
 
     const session = {
       id: sessionId,
@@ -90,7 +91,7 @@ class FileDatabase {
     if (!address) return null;
 
     const tradeLog = {
-      id: 'trade_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      id: 'trade_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex'),
       address: address.toLowerCase(),
       agentId: agentId || 'agent-default',
       botName: botName || 'Trade Bot',

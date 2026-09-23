@@ -888,7 +888,10 @@ function displayActionLogs() {
   }
   
   html += '</div>';
-  alert(html.replace(/<[^>]*>/g, '').substring(0, 200) + '...\n\nCheck browser console or export logs for full details');
+  const previewContainer = document.createElement('div');
+  previewContainer.innerHTML = html;
+  const previewText = (previewContainer.textContent || previewContainer.innerText || '').substring(0, 200);
+  alert(previewText + '...\n\nCheck browser console or export logs for full details');
   console.log('📋 RECENT LOGS:', logs);
 }
 

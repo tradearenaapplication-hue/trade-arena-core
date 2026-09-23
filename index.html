@@ -707,24 +707,27 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div style="display:flex;gap:8px;font-size:10px;color:var(--dim);justify-content:center;flex-wrap:wrap;text-align:center">
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
+  <div style="width:100%;max-width:440px;padding:8px 12px;background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.25);border-radius:8px;font-size:9px;color:var(--dim);line-height:1.5;text-align:center;">
+    ⚠️ <strong>NON-CUSTODIAL NOTICE:</strong> Trade Arena is a non-custodial software interface. Trading bots execute automated strategies according to user parameters. Crypto trading carries high financial risk. Past performance does not indicate future results. Not financial advice.
+  </div>
 <div class="login-card">
     <div class="login-card-hd">SIGN IN TO THE FLOOR</div>
     <div class="login-card-bd">
       <!-- Privy Embedded Wallet Login -->
-      <button class="g-btn" onclick="privyLoginGoogle()">
+      <button class="g-btn" onclick="checkGoLiveAck(privyLoginGoogle)">
         <svg class="g-icon" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         SIGN IN WITH GOOGLE
       </button>
-      <button class="g-btn" onclick="privyLoginApple()" style="background:#000;color:#fff;margin-top:4px">
+      <button class="g-btn" onclick="checkGoLiveAck(privyLoginApple)" style="background:#000;color:#fff;margin-top:4px">
         <svg class="g-icon" viewBox="0 0 384 512" style="width:20px;height:20px"><path fill="#fff" d="M318.7 268.7c-.2-1.2-.4-2.4-.4-3.6 0-23.6-19.1-42.8-42.7-42.8-12.5 0-23.6 5.4-32 14-8.4-8.6-19.6-14.1-32.1-14.1-23.5 0-42.6 19.2-42.6 42.8 0 1.2-.1 2.4-.1 3.6C106.5 282.3 173 350 256 350s149.5-67.7 149.5-151.3c0-1.2.1-2.4.1-3.6-12.4 0-23.8 5.3-32.3 14.3-8.5-9-19.9-14.3-32.4-14.3zM192 342.7c20.9-2.3 39.2-14.1 52.3-35.3-20-20.9-52.3-34.3-92.3-34.3-40.1 0-72.3 13.4-92.4 34.3 13 21.2 31.4 33 52.2 35.3 20.9 2.3 41.7-2.3 60.2-1.1z"/></svg>
         SIGN IN WITH APPLE
       </button>
       <div class="divider">— or —</div>
-      <button class="mm-btn" onclick="loginMetaMask()">
+      <button class="mm-btn" onclick="checkGoLiveAck(loginMetaMask)">
         <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
         METAMASK
       </button>
-      <button class="cb-btn" onclick="loginCoinbase()">
+      <button class="cb-btn" onclick="checkGoLiveAck(loginCoinbase)">
         <svg width="20" height="20" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#0052FF"/><path d="M24 12c-1.5 0-2.7.9-3.3 2.2l-4.3-2.6c.8-1.9 2.6-3.1 4.7-3.1 2.9 0 5.2 2.3 5.2 5.2s-2.3 5.2-5.2 5.2c-1.5 0-2.8-.6-3.8-1.6l-4.1 2.5c1.7 1.8 4.1 2.9 6.8 2.9 4.4 0 8-3.6 8-8s-3.6-8-8-8zm-1.1 10c2.5 0 4.5-2 4.5-4.5s-2-4.5-4.5-4.5-4.5 2-4.5 4.5 2 4.5 4.5 4.5z" fill="#fff"/></svg>
         COINBASE
       </button>
@@ -741,10 +744,36 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <!-- Advanced Settings (hidden by default) -->
     <div id="advancedSettings" style="display:none;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
       <div class="divider">— Advanced Settings —</div>
-      <button class="mm-btn" onclick="loginMetaMask()" style="width:100%;">
+      <button class="mm-btn" onclick="checkGoLiveAck(loginMetaMask)" style="width:100%;">
         <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
         METAMASK
       </button>
+    </div>
+
+    <!-- Go Live Acknowledgment Modal -->
+    <div id="goLiveModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10005;align-items:center;justify-content:center;padding:16px;">
+      <div style="background:var(--panel);border:2px solid var(--gold2);border-radius:14px;max-width:480px;width:100%;padding:22px;box-shadow:0 8px 32px rgba(0,0,0,0.8);color:#fff;">
+        <div style="font-family:'Bungee',display;font-size:14px;color:var(--gold2);margin-bottom:12px;letter-spacing:1px;display:flex;align-items:center;gap:8px;">
+          <span>⚠️</span> NON-CUSTODIAL & RISK ACKNOWLEDGMENT
+        </div>
+        <div style="font-size:11px;line-height:1.6;color:#ccc;margin-bottom:16px;">
+          <p style="margin-bottom:10px;">Before proceeding to Live Mode, please review and confirm the following compliance guardrails:</p>
+          <ul style="padding-left:18px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:10px;">
+            <li><strong>Non-Custodial Interface:</strong> Trade Arena is a non-custodial software interface. You maintain control of your wallet and private keys at all times.</li>
+            <li><strong>Automated Execution Risk:</strong> Trading bots execute automated strategies on your behalf based on your settings. Crypto markets are volatile and carry high risk of financial loss.</li>
+            <li><strong>No Financial Advice:</strong> Content, signals, and backtests provided do not constitute financial advice. Past performance does not guarantee future results.</li>
+            <li><strong>User Responsibility:</strong> You are solely responsible for setting appropriate risk parameters, daily loss limits, and monitoring open positions.</li>
+          </ul>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button id="goLiveConfirmBtn" onclick="confirmGoLiveAck()" style="padding:12px;background:linear-gradient(135deg,var(--gold2),#e2761b);border:none;border-radius:6px;color:#000;font-family:'Bungee',display;font-size:11px;letter-spacing:1px;cursor:pointer;font-weight:bold;">
+            I ACKNOWLEDGE & GO LIVE
+          </button>
+          <button onclick="closeGoLiveModal()" style="padding:10px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;">
+            CANCEL (REMAIN IN DEMO MODE)
+          </button>
+        </div>
+      </div>
     </div>
   </div>
   <p id="cStatus" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
@@ -1234,6 +1263,58 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         CLAIM $50 STARTING CAPITAL
       </button>
       <div id="taskCenterRows"></div>
+    </div>
+  </div>
+
+  <!-- ★ SAFETY CONTROLS (RESPONSIBLE TRADING MECHANICS) ★ -->
+  <div class="cpanel" id="safetyControlsPanel">
+    <div class="cpanel-hd" id="safetyHd" onclick="togglePanel('safety')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="safetyBody">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px">🛡️</span>
+        <span class="cpanel-title" style="color:var(--cyan)">SAFETY CONTROLS</span>
+        <span class="breaker-status bs-ok" id="safetyStatus">ACTIVE (LIMIT: $50.00)</span>
+      </div>
+      <span class="cpanel-toggle" id="safetyToggle">▼ CONFIGURE</span>
+    </div>
+    <div class="cpanel-body" id="safetyBody">
+      <div class="breaker-grid">
+        <div class="b-control" style="grid-column:1/-1">
+          <label for="dailyLossLimitInput">📉 Daily Loss Limit ($ Amount)</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="dailyLossLimitInput" value="50" min="1" max="10000" step="5" style="flex:1;">
+            <button onclick="requestDailyLossLimitIncrease()" style="padding:6px 12px;background:var(--chrome);border:1px solid var(--border);color:var(--cyan);font-family:'Bungee',display;font-size:9px;border-radius:4px;cursor:pointer;">
+              UPDATE LIMIT
+            </button>
+          </div>
+          <div class="b-val" id="dailyLossLimitVal" style="color:var(--gold);text-align:left;margin-top:4px;">
+            Effective Limit: $50.00 (Default: $50 or 10% balance)
+          </div>
+          <div id="pendingLimitNote" style="font-size:8px;color:var(--amber);margin-top:4px;display:none;">
+            ⏳ Limit increase pending 24-hour delay safety period.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:10px;margin-bottom:10px;flex-wrap:wrap;">
+        <button onclick="triggerTakeABreak(24)" style="flex:1;min-width:140px;padding:10px;font-family:'Bungee',display;font-size:10px;background:linear-gradient(135deg,var(--amber),#cc8800);border:none;border-radius:6px;color:#000;cursor:pointer;">
+          ⏸ TAKE A BREAK (24H LOCK)
+        </button>
+        <button onclick="triggerTakeABreak(168)" style="flex:1;min-width:140px;padding:10px;font-family:'Bungee',display;font-size:10px;background:linear-gradient(135deg,var(--hot),#7a001e);border:none;border-radius:6px;color:#fff;cursor:pointer;">
+          🛑 7-DAY SELF-EXCLUSION
+        </button>
+      </div>
+
+      <div id="coolingStatusBox" style="display:none;background:rgba(255,45,120,0.1);border:1px solid var(--hot);border-radius:6px;padding:10px;margin-bottom:10px;font-size:10px;color:#fff;">
+        <div style="font-family:'Bungee',display;color:var(--hot);margin-bottom:4px;">🔒 TRADING PAUSED BY SAFETY CONTROLS</div>
+        <div id="coolingStatusText" style="color:#ccc;">—</div>
+        <button id="coolingOverrideBtn" onclick="overrideCoolingOff()" style="margin-top:8px;padding:4px 10px;background:none;border:1px solid var(--dim);color:var(--dim);border-radius:4px;font-size:9px;cursor:pointer;">
+          OVERRIDE 24H BREAK
+        </button>
+      </div>
+
+      <div style="font-size:8px;color:var(--dim);line-height:1.5;background:var(--chrome);padding:8px 10px;border-radius:6px;border:1px solid var(--border);">
+        <strong>Safety Guardrails:</strong> Limit increases enforce a compulsory 24-hour cooling delay to prevent impulsive decisions during loss spirals. Hitting the daily loss limit twice within 7 days triggers an escalated, un-overrideable 7-day cool-off period.
+      </div>
     </div>
   </div>
 
@@ -2477,8 +2558,153 @@ function isGlobalBlocked() {
   if(globalKilled) return{blocked:true,reason:'EMERGENCY STOP'};
   if(currentGas>gasHardCeiling) return{blocked:true,reason:`GAS: ${currentGas} GWEI`};
   if(totalPnl<=-(startBalance*drawdownPct/100)) return{blocked:true,reason:'DAILY DRAWDOWN KILL'};
+
+  // Engine-level Safety Controls Guard
+  if (typeof tradingEngine !== 'undefined' && tradingEngine.safetyControls) {
+    const safety = tradingEngine.safetyControls.isTradeExecutionBlocked(totalPnl, startBalance);
+    if (safety.blocked) {
+      return { blocked: true, reason: `SAFETY CONTROLS: ${safety.reason}` };
+    }
+  }
+
   return{blocked:false};
 }
+
+// ══════════════════════════════════════════════════════
+// SAFETY CONTROLS UI & SESSION WARNING ENGINE
+// ══════════════════════════════════════════════════════
+let sessionStartTime = Date.now();
+let sessionWarningsFired = new Set();
+
+function requestDailyLossLimitIncrease() {
+  const inp = document.getElementById('dailyLossLimitInput');
+  const val = parseFloat(inp?.value);
+  if (isNaN(val) || val <= 0) return;
+
+  if (typeof tradingEngine !== 'undefined' && tradingEngine.safetyControls) {
+    const res = tradingEngine.safetyControls.requestLimitIncrease(val);
+    updateSafetyControlsUI();
+    if (res.immediate) {
+      alert(`Daily loss limit updated to $${val.toFixed(2)}.`);
+    } else {
+      alert(`Daily loss limit increase to $${val.toFixed(2)} requested. Enforcing 24-hour delay. Increases take effect in 24 hours.`);
+    }
+  }
+}
+
+function triggerTakeABreak(hours = 24) {
+  if (typeof tradingEngine !== 'undefined' && tradingEngine.safetyControls) {
+    tradingEngine.safetyControls.triggerTakeABreak(hours);
+    updateSafetyControlsUI();
+    if (typeof globalKill === 'function') {
+      // Pause active bots
+      bots.forEach(b => { b.auto = false; if (b.autoTimer) clearTimeout(b.autoTimer); });
+      _ghAutoOn = false;
+      const ghBtn = document.getElementById('ghAutoBtn');
+      if (ghBtn) { ghBtn.textContent = 'AUTO'; ghBtn.classList.remove('on'); }
+    }
+  }
+}
+
+function overrideCoolingOff() {
+  if (typeof tradingEngine !== 'undefined' && tradingEngine.safetyControls) {
+    const sc = tradingEngine.safetyControls;
+    if (sc.coolingEscalated) {
+      alert('Override disabled: Safety Controls escalated 7-day cool-off due to multiple loss limit breaches in 7 days.');
+      return;
+    }
+    sc.coolingUntil = 0;
+    sc.coolingReason = null;
+    updateSafetyControlsUI();
+  }
+}
+
+function updateSafetyControlsUI() {
+  if (typeof tradingEngine === 'undefined' || !tradingEngine.safetyControls) return;
+  const sc = tradingEngine.safetyControls;
+  const effLimit = sc.getEffectiveDailyLossLimit(startBalance);
+
+  const valEl = document.getElementById('dailyLossLimitVal');
+  if (valEl) valEl.textContent = `Effective Limit: $${effLimit.toFixed(2)} (Default: $50 or 10% balance)`;
+
+  const pendingNote = document.getElementById('pendingLimitNote');
+  if (pendingNote) {
+    if (sc.pendingLossLimit !== null && Date.now() < sc.limitIncreaseEffectiveAt) {
+      const remHours = Math.ceil((sc.limitIncreaseEffectiveAt - Date.now()) / 3600000);
+      pendingNote.textContent = `⏳ Increase to $${sc.pendingLossLimit.toFixed(2)} pending 24-hour safety delay (~${remHours}h remaining).`;
+      pendingNote.style.display = 'block';
+    } else {
+      pendingNote.style.display = 'none';
+    }
+  }
+
+  const statusBadge = document.getElementById('safetyStatus');
+  const box = document.getElementById('coolingStatusBox');
+  const text = document.getElementById('coolingStatusText');
+  const overrideBtn = document.getElementById('coolingOverrideBtn');
+
+  if (Date.now() < sc.coolingUntil) {
+    const remMins = Math.ceil((sc.coolingUntil - Date.now()) / 60000);
+    const remHours = (remMins / 60).toFixed(1);
+    if (statusBadge) { statusBadge.textContent = 'PAUSED (COOLING OFF)'; statusBadge.className = 'breaker-status bs-stop'; }
+    if (box) box.style.display = 'block';
+    if (text) {
+      text.textContent = sc.coolingEscalated
+        ? `Escalated 7-Day Cool-Off Active (~${remHours}h remaining). Reason: Daily loss limit reached twice in 7 days.`
+        : `Cooling-Off Active (~${remHours}h remaining). Reason: ${sc.coolingReason || 'Daily loss limit reached'}.`;
+    }
+    if (overrideBtn) {
+      overrideBtn.style.display = sc.coolingEscalated ? 'none' : 'inline-block';
+    }
+  } else {
+    if (statusBadge) { statusBadge.textContent = `ACTIVE (LIMIT: $${effLimit.toFixed(2)})`; statusBadge.className = 'breaker-status bs-ok'; }
+    if (box) box.style.display = 'none';
+  }
+}
+
+function checkSessionWarning() {
+  const elapsedMins = Math.floor((Date.now() - sessionStartTime) / 60000);
+  let targetMilestone = null;
+  if (elapsedMins >= 30 && !sessionWarningsFired.has(30) && elapsedMins < 60) targetMilestone = 30;
+  else if (elapsedMins >= 60 && !sessionWarningsFired.has(60) && elapsedMins < 90) targetMilestone = 60;
+  else if (elapsedMins >= 90 && !sessionWarningsFired.has(90) && elapsedMins < 150) targetMilestone = 90;
+  else if (elapsedMins >= 150) {
+    const bucket = Math.floor((elapsedMins - 90) / 60) * 60 + 90;
+    if (!sessionWarningsFired.has(bucket)) targetMilestone = bucket;
+  }
+
+  if (targetMilestone !== null) {
+    sessionWarningsFired.add(targetMilestone);
+    showSessionWarningBanner(elapsedMins);
+  }
+
+  updateSafetyControlsUI();
+}
+
+function showSessionWarningBanner(mins) {
+  const banner = document.getElementById('sessionWarningBanner');
+  const details = document.getElementById('sessionWarningDetails');
+  if (details) {
+    details.textContent = `Active session: ${mins} mins · Net P&L: ${(totalPnl >= 0 ? '+' : '')}$${totalPnl.toFixed(2)}`;
+  }
+  if (banner) banner.style.display = 'flex';
+}
+
+function pauseBotsFromSessionWarning() {
+  if (typeof globalAutoToggle === 'function' && _ghAutoOn) {
+    globalAutoToggle();
+  } else {
+    bots.forEach(b => { b.auto = false; if (b.autoTimer) clearTimeout(b.autoTimer); });
+  }
+  dismissSessionWarning();
+}
+
+function dismissSessionWarning() {
+  const banner = document.getElementById('sessionWarningBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+setInterval(checkSessionWarning, 10000);
 function globalKill() {
   if(!confirm('Stop all bots?')) return;
   globalKilled=true;
@@ -2575,6 +2801,38 @@ function startOverride(bot,btn){
     }
   },100);
   btn.onpointerup=btn.onpointerleave=()=>{clearInterval(overrideTimer); if(held<3000) btn.textContent='HOLD TO OVERRIDE (3s)';};
+}
+
+// ══════════════════════════════════════════════════════
+// GO LIVE GATING & COMPLIANCE ACKNOWLEDGMENT
+// ══════════════════════════════════════════════════════
+let pendingLiveLoginFn = null;
+
+function checkGoLiveAck(onAcknowledge) {
+  if (localStorage.getItem('ta_golive_ack') === 'true') {
+    if (typeof onAcknowledge === 'function') onAcknowledge();
+    return;
+  }
+  pendingLiveLoginFn = onAcknowledge;
+  const modal = document.getElementById('goLiveModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function confirmGoLiveAck() {
+  localStorage.setItem('ta_golive_ack', 'true');
+  const modal = document.getElementById('goLiveModal');
+  if (modal) modal.style.display = 'none';
+  if (typeof pendingLiveLoginFn === 'function') {
+    const fn = pendingLiveLoginFn;
+    pendingLiveLoginFn = null;
+    fn();
+  }
+}
+
+function closeGoLiveModal() {
+  pendingLiveLoginFn = null;
+  const modal = document.getElementById('goLiveModal');
+  if (modal) modal.style.display = 'none';
 }
 
 // ══════════════════════════════════════════════════════
@@ -3013,11 +3271,15 @@ function showHoldingsModal() {
     `).join('');
   }
 
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-labelledby', 'holdingsModalTitle');
+
   modal.innerHTML = `
     <div style="background:var(--panel);border:1px solid var(--gold2);border-radius:12px;width:100%;max-width:480px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,0.8);">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h3 style="margin:0;font-family:'Bungee',display;color:var(--gold2);font-size:13px;">💼 MULTI-CHAIN TOKEN HOLDINGS</h3>
-        <button onclick="document.getElementById('holdingsModal').style.display='none'" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button>
+        <h3 id="holdingsModalTitle" style="margin:0;font-family:'Bungee',display;color:var(--gold2);font-size:13px;">💼 MULTI-CHAIN TOKEN HOLDINGS</h3>
+        <button onclick="document.getElementById('holdingsModal').style.display='none'" aria-label="Close token holdings modal" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button>
       </div>
       <div style="max-height:300px;overflow-y:auto;margin-bottom:16px;">
         ${holdingsHtml}
@@ -3371,7 +3633,7 @@ function toggleBotSettings(id){
   const open=drop.classList.toggle('open');
   if(gear) {
     gear.classList.toggle('open',open);
-    gear.setAttribute('aria-expanded', open ? 'true' : 'false');
+    gear.setAttribute('aria-expanded', open);
   }
 }
 function setBotPersonality(id,val){
@@ -5348,8 +5610,12 @@ function _injectAVControls() {
 function toggleBackgroundMusic() {
   if (typeof ACOUSTIC !== 'undefined') {
     ACOUSTIC.toggleAudio();
+    const isOn = ACOUSTIC.getConfig().audio.enabled;
     const btn = document.getElementById('audioBtn');
-    if (btn) btn.classList.toggle('av-on', ACOUSTIC.getConfig().audio.enabled);
+    if (btn) {
+      btn.classList.toggle('av-on', isOn);
+      btn.setAttribute('aria-pressed', isOn);
+    }
   }
 }
 
@@ -5548,5 +5814,21 @@ Respond in JSON format:
   }
 }
 </script>
+<!-- Floating Session Time Warning Banner -->
+<div id="sessionWarningBanner" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(180deg,#110b18,var(--panel));border:2px solid var(--amber);border-radius:10px;padding:12px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.8);max-width:440px;width:90%;color:#fff;align-items:center;justify-content:space-between;gap:12px;">
+  <div>
+    <div style="font-family:'Bungee',display;font-size:11px;color:var(--amber);margin-bottom:2px;">⏱ SESSION TIME WARNING</div>
+    <div id="sessionWarningDetails" style="font-size:10px;color:#ccc;">Active session: 30 mins · Net P&L: +$0.00</div>
+  </div>
+  <div style="display:flex;gap:6px;flex-shrink:0;">
+    <button onclick="pauseBotsFromSessionWarning()" style="padding:6px 12px;background:var(--amber);color:#000;font-family:'Bungee',display;font-size:9px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;">
+      PAUSE BOTS
+    </button>
+    <button onclick="dismissSessionWarning()" style="padding:6px 10px;background:transparent;border:1px solid var(--border);color:var(--dim);font-size:9px;border-radius:4px;cursor:pointer;">
+      DISMISS
+    </button>
+  </div>
+</div>
+
 </body>
 </html>

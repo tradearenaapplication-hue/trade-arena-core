@@ -44,6 +44,7 @@ const {
   calculateFlashLoanArb,
   scanCrossDexFlashArb,
 } = require("./cross-dex-arb-scanner.js");
+const { isPathSafe } = require("./proxy.js");
 
 const tests = [];
 let currentSuite = "";
@@ -755,6 +756,33 @@ describe("Performance", () => {
   });
 });
 
+describe("Path Traversal Protection (proxy.js)", () => {
+  const baseDir = __dirname;
+
+  it("allows valid relative file paths inside baseDir", () => {
+    expect(isPathSafe(baseDir, "proxy.js")).toBe(true);
+    expect(isPathSafe(baseDir, "src/index.js")).toBe(true);
+    expect(isPathSafe(baseDir, ".jules/sentinel.md")).toBe(true);
+  });
+
+  it("blocks path traversal attempts attempting to exit baseDir", () => {
+    expect(isPathSafe(baseDir, "../package.json")).toBe(false);
+    expect(isPathSafe(baseDir, "../../etc/passwd")).toBe(false);
+    expect(isPathSafe(baseDir, "..")).toBe(false);
+  });
+
+  it("blocks absolute paths outside baseDir", () => {
+    expect(isPathSafe(baseDir, "/etc/passwd")).toBe(false);
+    expect(isPathSafe(baseDir, "/var/log/syslog")).toBe(false);
+  });
+
+  it("handles null, undefined, or empty inputs safely", () => {
+    expect(isPathSafe(baseDir, null)).toBe(false);
+    expect(isPathSafe(baseDir, undefined)).toBe(false);
+    expect(isPathSafe(baseDir, "")).toBe(false);
+  });
+});
+
 // ─────────────────────────────────────────────────────────
 // escapeHTML is defined inside index.html as a browser script
 // and is not a Node module, so we replicate the implementation
@@ -1167,10 +1195,134 @@ describe("MoonPay Webhook Security", () => {
 describe("Proxy Endpoint Security", () => {
   const fs = require("fs");
   const proxyCode = fs.readFileSync("./proxy.js", "utf8");
+  const { app: proxyApp } = require("./proxy.js");
 
   it("contains sanitized error responses for 500 status codes across proxy endpoints", () => {
     expect(proxyCode).toContain("res.status(500).json({ error: 'Internal server error' });");
     expect(proxyCode.includes("res.status(500).json({ error: error.message })")).toBe(false);
+  });
+
+  it("rejects invalid log payloads on maintenance log endpoint", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/maintenance/log"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidPayloads = [
+      {},
+      { agent: 123, message: "msg" },
+      { agent: "SENTINEL" },
+      { message: "msg" },
+      { agent: "SENTINEL", message: null },
+    ];
+
+    for (const body of invalidPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const req = { body, ip: "127.0.0.101", headers: {}, app: proxyApp };
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle(req, res, async () => {
+        await route.route.stack[1].handle(req, res);
+      });
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid log payload");
+    }
+  });
+
+  it("enforces rate limiting on excessive maintenance log requests", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/maintenance/log"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const originalAppend = fs.appendFileSync;
+    const originalMkdir = fs.mkdirSync;
+
+    try {
+      fs.appendFileSync = () => {};
+      fs.mkdirSync = () => {};
+
+      let lastStatus = 200;
+      let lastJson = null;
+
+      // Simulate sending 35 requests from ip "127.0.0.99"
+      for (let i = 0; i < 35; i++) {
+        let statusCode = 200;
+        let jsonResponse = null;
+        const req = {
+          ip: "127.0.0.99",
+          headers: {},
+          app: proxyApp,
+          body: { agent: "SENTINEL", message: "Rate limit test entry", level: "INFO" }
+        };
+        const res = {
+          setHeader: () => {},
+          status: (code) => { statusCode = code; return res; },
+          send: (data) => { jsonResponse = data; return res; },
+          json: (data) => { jsonResponse = data; return res; },
+        };
+
+        await route.route.stack[0].handle(req, res, async () => {
+          await route.route.stack[1].handle(req, res);
+        });
+
+        lastStatus = statusCode;
+        lastJson = jsonResponse;
+      }
+
+      expect(lastStatus).toBe(429);
+      expect(lastJson.error).toContain("Too many requests");
+    } finally {
+      fs.appendFileSync = originalAppend;
+      fs.mkdirSync = originalMkdir;
+    }
+  });
+
+  it("successfully logs valid maintenance entry without side effects", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/maintenance/log"
+    );
+
+    const originalAppend = fs.appendFileSync;
+    const originalMkdir = fs.mkdirSync;
+    let appendedContent = null;
+
+    try {
+      fs.appendFileSync = (_path, content) => { appendedContent = content; };
+      fs.mkdirSync = () => {};
+
+      let statusCode = 200;
+      let jsonResponse = null;
+      const req = {
+        ip: "127.0.0.100", // distinct IP
+        headers: {},
+        app: proxyApp,
+        body: { agent: "SENTINEL", message: "Test log verification message", level: "INFO" }
+      };
+      const res = {
+        setHeader: () => {},
+        status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle(req, res, async () => {
+        await route.route.stack[1].handle(req, res);
+      });
+
+      expect(statusCode).toBe(200);
+      expect(jsonResponse.success).toBe(true);
+      expect(Boolean(appendedContent)).toBe(true);
+      expect(appendedContent).toContain("Test log verification message");
+    } finally {
+      fs.appendFileSync = originalAppend;
+      fs.mkdirSync = originalMkdir;
+    }
   });
 
   it("returns generic error message on patch endpoint when an internal exception occurs", async () => {
@@ -1287,6 +1439,17 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain('aria-pressed="false"');
   });
 
+  it("defines aria-expanded and aria-controls on collapsible panel headers and bot settings gear button", () => {
+    expect(html).toContain('id="quantHd" onclick="togglePanel(\'quant\')" style="background:linear-gradient(90deg,rgba(68,136,255,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="quantBody"');
+    expect(html).toContain('id="staffHd" onclick="togglePanel(\'staff\')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="staffBody"');
+    expect(html).toContain('id="eloHd" onclick="togglePanel(\'elo\')" style="background:linear-gradient(90deg,rgba(0,255,231,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="eloBody"');
+    expect(html).toContain('id="taskHd" onclick="togglePanel(\'task\')" style="background:linear-gradient(90deg,rgba(57,255,20,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="taskBody"');
+    expect(html).toContain('id="breakerHd" onclick="togglePanel(\'breaker\')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="breakerBody"');
+    expect(html).toContain('id="auditHd" onclick="toggleAudit()" role="button" tabindex="0" aria-expanded="false" aria-controls="auditBody"');
+    expect(html).toContain('id="learnHd" onclick="toggleLearn()" role="button" tabindex="0" aria-expanded="false" aria-controls="learnBody"');
+    expect(html).toContain('aria-controls="mdrop-${bot.id}"');
+  });
+
   it("updates aria-expanded/aria-pressed in toggle JavaScript functions", () => {
     expect(html).toContain("btn.setAttribute('aria-pressed', isFleet)");
     expect(html).toContain("btn.setAttribute('aria-expanded', open)");
@@ -1294,6 +1457,7 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain("navBtn?.setAttribute('aria-expanded', isOpen)");
     expect(html).toContain("btn.setAttribute('aria-pressed', _ghAutoOn)");
     expect(html).toContain("this.setAttribute('aria-pressed', isOn)");
+    expect(html).toContain("gear.setAttribute('aria-expanded', open");
   });
 });
 
@@ -1361,6 +1525,19 @@ describe("Advanced Settings Toggle & Form Inputs Accessibility", () => {
   });
 });
 
+describe("Multi-Chain Token Holdings Modal Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines role=dialog, aria-modal, aria-labelledby, and close button aria-label on holdings modal", () => {
+    expect(html).toContain("modal.setAttribute('role', 'dialog')");
+    expect(html).toContain("modal.setAttribute('aria-modal', 'true')");
+    expect(html).toContain("modal.setAttribute('aria-labelledby', 'holdingsModalTitle')");
+    expect(html).toContain('id="holdingsModalTitle"');
+    expect(html).toContain('aria-label="Close token holdings modal"');
+  });
+});
+
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
   const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");
@@ -1412,6 +1589,23 @@ describe("Database Session & Agent Trade Log Persistence", () => {
     expect(logs.length).toBeGreaterThan(0);
     expect(logs[0].symbol).toBe("ETH/USD");
   });
+
+  it("handles non-string address and invalid types defensively without throwing", () => {
+    const invalidAddrs = [null, undefined, 12345, {}, [], true];
+
+    for (const invalidAddr of invalidAddrs) {
+      expect(db.upsertUser(invalidAddr)).toBe(null);
+      expect(db.getUser(invalidAddr)).toBe(null);
+      expect(db.createSession(invalidAddr)).toBe(null);
+      expect(db.getTradeLogs(invalidAddr)).toEqual([]);
+      expect(db.addTradeLog({ address: invalidAddr })).toBe(null);
+    }
+
+    expect(db.getSession(null)).toBe(null);
+    expect(db.getSession(123)).toBe(null);
+    expect(db.addTradeLog(null)).toBe(null);
+    expect(db.addTradeLog("not-an-object")).toBe(null);
+  });
 });
 
 describe("Server User Database REST Endpoints", () => {
@@ -1420,6 +1614,89 @@ describe("Server User Database REST Endpoints", () => {
 
   it("persists user signin via /api/user/signin", async () => {
     // HTTP endpoints tested via database and server integration
+  });
+});
+
+describe("Engine-Level Safety Controls & Responsible Trading Mechanics", () => {
+  it("enforces effective daily loss limit at the engine level", () => {
+    const engine = new TradingEngine();
+    const sc = engine.safetyControls;
+
+    // Default effective limit is $50.00
+    expect(sc.getEffectiveDailyLossLimit(10000)).toBe(50.00);
+
+    // Unblocked when P&L is above limit
+    expect(sc.isTradeExecutionBlocked(-20.00, 10000).blocked).toBe(false);
+
+    // Blocked when daily net P&L reaches or breaches limit (-$50)
+    const check = sc.isTradeExecutionBlocked(-50.00, 10000);
+    expect(check.blocked).toBe(true);
+    expect(check.reason).toBe('DAILY_LOSS_LIMIT');
+  });
+
+  it("enforces a compulsory 24-hour delay on daily loss limit increases", () => {
+    const engine = new TradingEngine();
+    const sc = engine.safetyControls;
+
+    // Lowering limit takes effect immediately
+    const lowerRes = sc.requestLimitIncrease(30.00);
+    expect(lowerRes.immediate).toBe(true);
+    expect(sc.getEffectiveDailyLossLimit(10000)).toBe(30.00);
+
+    // Increasing limit requires 24-hour delay
+    const incRes = sc.requestLimitIncrease(100.00);
+    expect(incRes.immediate).toBe(false);
+    expect(incRes.pendingLimit).toBe(100.00);
+    // Effective limit remains $30 until delay passes
+    expect(sc.getEffectiveDailyLossLimit(10000)).toBe(30.00);
+
+    // Fast-forward delay: effective limit updates to $100
+    sc.limitIncreaseEffectiveAt = Date.now() - 1000;
+    expect(sc.getEffectiveDailyLossLimit(10000)).toBe(100.00);
+  });
+
+  it("triggers Take-A-Break (24h) and 7-day self-exclusion locks", () => {
+    const engine = new TradingEngine();
+    const sc = engine.safetyControls;
+
+    sc.triggerTakeABreak(24);
+    expect(sc.coolingUntil).toBeGreaterThan(Date.now() + 23 * 3600000);
+    expect(sc.isTradeExecutionBlocked(0, 10000).blocked).toBe(true);
+    expect(sc.coolingReason).toBe('USER_TAKE_A_BREAK');
+
+    sc.triggerTakeABreak(168); // 7 days
+    expect(sc.coolingUntil).toBeGreaterThan(Date.now() + 167 * 3600000);
+    expect(sc.coolingReason).toBe('SELF_EXCLUSION_7D');
+  });
+
+  it("escalates to an un-overrideable 7-day cool-off if daily loss limit is hit twice in 7 days", () => {
+    const engine = new TradingEngine();
+    const sc = engine.safetyControls;
+
+    // Hit 1
+    sc.recordDailyLossHit();
+    expect(sc.coolingEscalated).toBe(false);
+    expect(sc.coolingReason).toBe('DAILY_LOSS_LIMIT');
+
+    // Fast forward past hit 1's 1-hour debouncing window but within 7 days
+    sc.dailyLossHits[0] = Date.now() - 7200000; // 2 hours ago
+
+    // Hit 2
+    sc.recordDailyLossHit();
+    expect(sc.coolingEscalated).toBe(true);
+    expect(sc.coolingReason).toBe('ESCALATED_7D');
+    expect(sc.coolingUntil).toBeGreaterThan(Date.now() + 6 * 24 * 3600000);
+  });
+
+  it("blocks trade execution in TradingEngine.executeTrade when Safety Controls lock is active", async () => {
+    const engine = new TradingEngine();
+    engine.safetyControls.triggerTakeABreak(24);
+
+    const bot = { id: 'bot-1', amount: 10, risk: 'Moderate (5x leverage)' };
+    const res = await engine.executeTrade(bot, { type: 'ARBITRAGE', profitMargin: 0.8, volatility: 2 });
+
+    expect(res.status).toBe('BLOCKED_SAFETY_CONTROLS');
+    expect(res.profit).toBe(0);
   });
 });
 

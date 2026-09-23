@@ -7,3 +7,7 @@
 ## 2026-09-22 - Dynamic Modal Dialog Accessibility
 **Learning:** Dynamically created modal overlays (such as `#holdingsModal`) often lack accessible dialog semantics and screen-reader labels for icon-only close buttons.
 **Action:** Always set `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` on dynamically generated overlay containers, assign an `id` to the heading, and add explicit `aria-label` attributes to close buttons (`✕`).
+
+## 2026-09-23 - Static Compliance Modal Dialog Accessibility
+**Learning:** Static overlays in HTML (such as `#goLiveModal`) that pop up prior to connecting wallet or going live often lack accessible dialog attributes.
+**Action:** Ensure all static modal containers define `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` pointing to their heading's `id`.

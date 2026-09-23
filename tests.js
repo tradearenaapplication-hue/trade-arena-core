@@ -1586,6 +1586,16 @@ describe("Multi-Chain Token Holdings Modal Accessibility", () => {
   });
 });
 
+describe("Go Live Acknowledgment Modal Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines role=dialog, aria-modal, and aria-labelledby on #goLiveModal", () => {
+    expect(html).toContain('id="goLiveModal" role="dialog" aria-modal="true" aria-labelledby="goLiveModalTitle"');
+    expect(html).toContain('id="goLiveModalTitle"');
+  });
+});
+
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
   const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");

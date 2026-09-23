@@ -1517,7 +1517,6 @@ describe("Advanced Settings Toggle & Form Inputs Accessibility", () => {
   });
 
   it("defines aria-label on form inputs missing explicit labels", () => {
-    expect(html).toContain('id="apiKeyInput" aria-label="Anthropic API Key"');
     expect(html).toContain('id="busCustomAmt" aria-label="Custom trade amount in dollars"');
     expect(html).toContain('id="auditInterval" aria-label="Audit trade interval"');
     expect(html).toContain('id="noticeThreshold" aria-label="Win rate notice threshold percentage"');
@@ -1584,6 +1583,50 @@ describe("Server User Database REST Endpoints", () => {
 
   it("persists user signin via /api/user/signin", async () => {
     // HTTP endpoints tested via database and server integration
+  });
+});
+
+describe("Server LLM Proxy, Rate Limiting, & Caching Security", () => {
+  const server = require("./server.js");
+
+  it("handles /api/ai/strategy and /api/ai/signal requests with unconfigured key fallback", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/ai/strategy"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    await route.route.stack[0].handle(
+      { body: { messages: [{ role: "user", content: "test" }] }, ip: "127.0.0.201" },
+      res,
+      async () => {
+        await route.route.stack[1].handle({ body: { messages: [{ role: "user", content: "test" }] }, ip: "127.0.0.201" }, res);
+      }
+    );
+
+    expect(jsonResponse).toBeDefined();
+    expect(jsonResponse.error).toBe("cooling_off");
+  });
+
+  it("returns aiInstrumentation in /api/health without exposing secret keys", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/health"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    let jsonResponse = null;
+    const res = { json: (data) => { jsonResponse = data; } };
+
+    route.route.stack[0].handle({}, res);
+    expect(jsonResponse.status).toBe("OK");
+    expect(jsonResponse.aiInstrumentation).toBeDefined();
+    expect(typeof jsonResponse.aiInstrumentation.totalAiCalls).toBe("number");
   });
 });
 

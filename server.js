@@ -165,8 +165,126 @@ app.get('/api/user/tradelogs', (req, res) => {
     }
 });
 
+const rateLimit = require('express-rate-limit');
+
+// Startup key check
+const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim());
+const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
+const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim());
+
+if (hasAnthropicKey || hasOpenAIKey || hasGeminiKey) {
+    console.log(`🤖 AI keys loaded (Anthropic: ${hasAnthropicKey} | OpenAI: ${hasOpenAIKey} | Gemini: ${hasGeminiKey})`);
+} else {
+    console.log('⚠️ No server AI keys configured in env; requests will fall back to deterministic strategy logic');
+}
+
+// Instrumentation
+const aiStats = {
+    totalAiCalls: 0,
+    cacheHits: 0,
+    estimatedTokenUsage: 0
+};
+
+// In-Memory 60-second Response Cache
+const aiResponseCache = new Map();
+
+function getCachedAiResponse(key) {
+    const entry = aiResponseCache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+        aiResponseCache.delete(key);
+        return null;
+    }
+    aiStats.cacheHits++;
+    return entry.response;
+}
+
+function setCachedAiResponse(key, response, ttlMs = 60000) {
+    aiResponseCache.set(key, {
+        response,
+        expiresAt: Date.now() + ttlMs
+    });
+}
+
+// Rate Limiter: 60 requests per IP per hour
+const aiRateLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: false,
+    keyGenerator: (req) => req.ip || req.headers?.['x-forwarded-for'] || '127.0.0.1',
+    handler: (req, res) => {
+        res.status(429).json({
+            error: 'cooling_off',
+            message: 'AI is cooling off — try again shortly'
+        });
+    }
+});
+
+async function handleAiLlmCall(req, res, defaultModel = 'claude-3-haiku-20240307') {
+    aiStats.totalAiCalls++;
+    const body = req.body || {};
+    const cacheKey = crypto.createHash('md5').update(JSON.stringify(body)).digest('hex');
+
+    const cached = getCachedAiResponse(cacheKey);
+    if (cached) {
+        return res.json({ ...cached, _cached: true });
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY || '';
+    if (!apiKey) {
+        return res.status(503).json({
+            error: 'cooling_off',
+            message: 'Server AI key unconfigured — falling back to deterministic strategy logic'
+        });
+    }
+
+    try {
+        const payload = {
+            model: body.model || defaultModel,
+            max_tokens: body.max_tokens || 150,
+            messages: body.messages || []
+        };
+
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            const textLen = data.content?.[0]?.text?.length || 0;
+            aiStats.estimatedTokenUsage += Math.ceil(textLen / 4) + 100;
+            setCachedAiResponse(cacheKey, data, 60000);
+            return res.status(response.status).json(data);
+        }
+
+        res.status(response.status).json(data);
+    } catch (err) {
+        console.error('LLM call error:', err.message);
+        res.status(500).json({ error: 'cooling_off', message: 'AI service temporary error' });
+    }
+}
+
+app.post('/api/ai/strategy', aiRateLimiter, (req, res) => handleAiLlmCall(req, res, 'claude-3-haiku-20240307'));
+app.post('/api/ai/signal', aiRateLimiter, (req, res) => handleAiLlmCall(req, res, 'claude-3-haiku-20240307'));
+
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'OK', timestamp: Date.now() });
+    res.json({
+        status: 'OK',
+        timestamp: Date.now(),
+        aiInstrumentation: {
+            totalAiCalls: aiStats.totalAiCalls,
+            cacheHits: aiStats.cacheHits,
+            estimatedTokenUsage: aiStats.estimatedTokenUsage
+        }
+    });
 });
 
 /**

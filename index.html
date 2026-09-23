@@ -777,11 +777,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
   </div>
   <p id="cStatus" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
-  <div class="setup-note">
-    <strong>Optional: Anthropic API Key</strong> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
-    <input type="password" id="apiKeyInput" aria-label="Anthropic API Key" placeholder="sk-ant-api03-..." style="width:100%;margin-top:5px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
-    <span style="color:var(--dim);font-size:8px">Without a key the app uses rule-based signals and still trades. Demo Mode requires no wallet or key.</span>
-  </div>
 
   <!-- Fiat Deposit Section -->
   <div id="depositSection" style="margin-top:16px;padding:12px;border-top:1px solid var(--border);">
@@ -2977,7 +2972,11 @@ async function loginMetaMask(){
 
     try {
       const balanceWei = await provider.getBalance(address);
-      const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
+      const balanceETH = parseFloat(
+        typeof ethers !== 'undefined' && ethers.utils && ethers.utils.formatEther
+          ? ethers.utils.formatEther(balanceWei)
+          : (typeof ethers !== 'undefined' && ethers.formatEther ? ethers.formatEther(balanceWei) : (Number(BigInt(balanceWei)) / 1e18).toString())
+      );
 
       // Get ETH price in USD
       const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
@@ -3932,49 +3931,56 @@ Respond ONLY with JSON:
   const pip = getAgentPip(agentType);
   const fullPrompt = agent.prompt + pip;
 
-  // Circuit breaker: skip API call if in cooldown, use fallback immediately
-  if(API_CB.isOpen()){
+  // Demo Mode uses zero authenticated LLM calls by default
+  const isDemoMode = !window.currentUserAddress || window.currentUserAddress === 'DEMO' || (document.getElementById('ghBadge')?.textContent||'').includes('DEMO');
+  if (isDemoMode) {
     return generateFallbackAgentVote(agentType, extraContext);
   }
 
-  // No key set → go straight to fallback, don't spam 401s
-  if(!getApiKey()){
+  // Circuit breaker: skip API call if in cooldown, use fallback immediately
+  if (API_CB.isOpen()) {
+    updateApiBreakerUI(true);
     return generateFallbackAgentVote(agentType, extraContext);
   }
 
   // Timeout wrapper for API call
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
+  try {
+    const res = await fetch('/api/ai/signal', {
+      method: 'POST',
       signal: controller.signal,
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': getApiKey(),
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:150,messages:[{role:'user',content:fullPrompt}]})
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 150,
+        messages: [{ role: 'user', content: fullPrompt }]
+      })
     });
-    const data=await res.json();
-    if(data.error){
+
+    if (res.status === 429 || res.status === 503) {
+      updateApiBreakerUI(true);
+      return generateFallbackAgentVote(agentType, extraContext);
+    }
+
+    const data = await res.json();
+    if (data.error) {
       API_CB.recordFailure();
-      throw new Error(data.error.message||'API error');
+      return generateFallbackAgentVote(agentType, extraContext);
     }
     clearTimeout(timeoutId);
-    const parsed=JSON.parse((data.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
+    const parsed = JSON.parse((data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim());
     API_CB.recordSuccess();
-    return{
-      vote:parsed.vote||'HOLD',
-      conviction:Math.min(Math.max(parseFloat(parsed.conviction)||0.55,0),1),
-      reasoning:parsed.reasoning||'No signal.',
-      regime:parsed.regime,
-      risk_score:parsed.risk_score,
-      momentum_score:parsed.momentum_score,
-      divergence:parsed.divergence
+    return {
+      vote: parsed.vote || 'HOLD',
+      conviction: Math.min(Math.max(parseFloat(parsed.conviction) || 0.55, 0), 1),
+      reasoning: parsed.reasoning || 'No signal.',
+      regime: parsed.regime,
+      risk_score: parsed.risk_score,
+      momentum_score: parsed.momentum_score,
+      divergence: parsed.divergence
     };
-  }catch(e){
+  } catch (e) {
     clearTimeout(timeoutId);
     API_CB.recordFailure();
     console.warn(`[Agent ${agentType}] Timeout/fail → fallback`, e.message);
@@ -4207,8 +4213,8 @@ CRITICAL: You MUST return a real trading method. NEVER return HOLD or any other 
 Respond ONLY with JSON:
 {"token":"${targetToken}","method":"SPOT LONG|SPOT SHORT|YIELD FARM|PERP LONG|PERP SHORT","reasoning":"max 65 chars","strategy_detail":"max 85 chars"}`;
 
-  // Circuit breaker: if API is in cooldown, skip synthesis and use deterministic fallback
-  if(API_CB.isOpen() || !getApiKey()){
+  // Demo Mode or API Cooldown → use deterministic fallback rotation
+  if (isDemoMode || API_CB.isOpen()) {
     const methods_long = crucibleMode ? ['SPOT LONG'] :
       bot?.personality === 'AGGRESSIVE' ? ['PERP LONG','PERP LONG','SPOT LONG'] :
       bot?.personality === 'CONSERVATIVE' ? ['SPOT LONG','YIELD FARM'] :
@@ -4219,45 +4225,57 @@ Respond ONLY with JSON:
     const method = direction === 'LONG'
       ? methods_long[Math.floor(Math.random()*methods_long.length)]
       : methods_short[Math.floor(Math.random()*methods_short.length)];
-    return{token:targetToken,method,reasoning:`${maxVotes}/4 agents agree (${bot?.personality||'BALANCED'})`,strategy_detail:'Rule-based execution.',ensemble:allResults,regime:volResult.regime||earlyRegime,polSignal};
+    return { token: targetToken, method, reasoning: `${maxVotes}/4 agents agree (${bot?.personality||'BALANCED'})`, strategy_detail: 'Rule-based execution.', ensemble: allResults, regime: volResult.regime||earlyRegime, polSignal };
   }
 
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': getApiKey(),
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:180,messages:[{role:'user',content:synthPrompt}]})
+  try {
+    const res = await fetch('/api/ai/strategy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 180,
+        messages: [{ role: 'user', content: synthPrompt }]
+      })
     });
-    const data=await res.json();
-    if(data.error){ API_CB.recordFailure(); throw new Error(data.error.message); }
-    const parsed=JSON.parse((data.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
-    API_CB.recordSuccess();
 
-    // CRITICAL: Enforce valid trading method - never allow HOLD
-    let method = parsed.method || (direction==='LONG'?'SPOT LONG':'SPOT SHORT');
-    const validMethods = crucibleMode ? ['SPOT LONG','SPOT SHORT'] : ['SPOT LONG','SPOT SHORT','YIELD FARM','PERP LONG','PERP SHORT'];
-    if(!validMethods.includes(method) || method === 'HOLD') {
-      method = direction==='LONG'?'SPOT LONG':'SPOT SHORT';
+    if (res.status === 429 || res.status === 503) {
+      updateApiBreakerUI(true);
+      const tick = document.getElementById('mtick-' + botId);
+      if (tick) tick.textContent = 'AI cooling off — running last cached strategy';
+      const method = direction === 'LONG' ? 'SPOT LONG' : 'SPOT SHORT';
+      return { token: targetToken, method, reasoning: `${maxVotes}/4 agents agree`, strategy_detail: 'Cached consensus trade.', ensemble: allResults, regime: volResult.regime || earlyRegime, polSignal };
     }
 
-    return{
-      token:parsed.token||targetToken,
-      method:method,
-      reasoning:parsed.reasoning||`${maxVotes}/4 agents agree ${direction}`,
-      strategy_detail:parsed.strategy_detail||'Ensemble consensus trade.',
-      ensemble:allResults,
-      regime:volResult.regime||'UNKNOWN',
+    const data = await res.json();
+    if (data.error) {
+      API_CB.recordFailure();
+      const method = direction === 'LONG' ? 'SPOT LONG' : 'SPOT SHORT';
+      return { token: targetToken, method, reasoning: `${maxVotes}/4 agents agree`, strategy_detail: 'Consensus trade.', ensemble: allResults, regime: volResult.regime || earlyRegime, polSignal };
+    }
+
+    const parsed = JSON.parse((data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim());
+    API_CB.recordSuccess();
+
+    let method = parsed.method || (direction === 'LONG' ? 'SPOT LONG' : 'SPOT SHORT');
+    const validMethods = crucibleMode ? ['SPOT LONG', 'SPOT SHORT'] : ['SPOT LONG', 'SPOT SHORT', 'YIELD FARM', 'PERP LONG', 'PERP SHORT'];
+    if (!validMethods.includes(method) || method === 'HOLD') {
+      method = direction === 'LONG' ? 'SPOT LONG' : 'SPOT SHORT';
+    }
+
+    return {
+      token: parsed.token || targetToken,
+      method: method,
+      reasoning: parsed.reasoning || `${maxVotes}/4 agents agree ${direction}`,
+      strategy_detail: parsed.strategy_detail || 'Ensemble consensus trade.',
+      ensemble: allResults,
+      regime: volResult.regime || 'UNKNOWN',
       polSignal
     };
-  }catch(e){
+  } catch (e) {
     API_CB.recordFailure();
-    const method=direction==='LONG'?'SPOT LONG':'SPOT SHORT';
-    return{token:targetToken,method,reasoning:`${maxVotes}/4 agents agree`,strategy_detail:'Consensus trade.',ensemble:allResults,regime:volResult.regime||'UNKNOWN'};
+    const method = direction === 'LONG' ? 'SPOT LONG' : 'SPOT SHORT';
+    return { token: targetToken, method, reasoning: `${maxVotes}/4 agents agree`, strategy_detail: 'Consensus trade.', ensemble: allResults, regime: volResult.regime || 'UNKNOWN' };
   }
 }
 

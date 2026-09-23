@@ -309,7 +309,11 @@ async function getWalletBalance() {
 
   try {
     const balanceWei = await walletState.provider.getBalance(walletState.address);
-    const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
+    const balanceETH = parseFloat(
+      typeof ethers !== 'undefined' && ethers.utils && ethers.utils.formatEther
+        ? ethers.utils.formatEther(balanceWei)
+        : (typeof ethers !== 'undefined' && ethers.formatEther ? ethers.formatEther(balanceWei) : (Number(BigInt(balanceWei)) / 1e18).toString())
+    );
 
     // Get ETH price from CoinGecko
     const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', {
@@ -365,13 +369,23 @@ async function estimateSwapGasCost(method = 'ARBITRAGE') {
 
   // Use EIP-1559 fee (maxFeePerGas)
   const gasPrice = feeData.maxFee || feeData.gasPrice;
-  const gasCostWei = gasPrice.mul(gasEstimate);
-  const gasCostETH = parseFloat(ethers.utils.formatEther(gasCostWei));
+  const gasCostWei = typeof gasPrice.mul === 'function' ? gasPrice.mul(gasEstimate) : (BigInt(gasPrice) * BigInt(gasEstimate));
+  const gasCostETH = parseFloat(
+    typeof ethers !== 'undefined' && ethers.utils && ethers.utils.formatEther
+      ? ethers.utils.formatEther(gasCostWei)
+      : (typeof ethers !== 'undefined' && ethers.formatEther ? ethers.formatEther(gasCostWei) : (Number(BigInt(gasCostWei)) / 1e18).toString())
+  );
   const gasCostUSD = gasCostETH * (walletState.balanceUSD / walletState.balanceETH || 3200);
+
+  const formattedGasPrice = parseFloat(
+    typeof ethers !== 'undefined' && ethers.utils && ethers.utils.formatUnits
+      ? ethers.utils.formatUnits(gasPrice, 'gwei')
+      : (typeof ethers !== 'undefined' && ethers.formatUnits ? ethers.formatUnits(gasPrice, 'gwei') : (Number(BigInt(gasPrice)) / 1e9).toString())
+  );
 
   return {
     gasLimit: gasEstimate,
-    gasPrice: parseFloat(ethers.utils.formatUnits(gasPrice, 'gwei')),
+    gasPrice: formattedGasPrice,
     costETH: gasCostETH,
     costUSD: gasCostUSD,
     totalGasWei: gasCostWei,

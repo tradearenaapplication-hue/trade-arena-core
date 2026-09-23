@@ -1525,6 +1525,19 @@ describe("Advanced Settings Toggle & Form Inputs Accessibility", () => {
   });
 });
 
+describe("Multi-Chain Token Holdings Modal Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines role=dialog, aria-modal, aria-labelledby, and close button aria-label on holdings modal", () => {
+    expect(html).toContain("modal.setAttribute('role', 'dialog')");
+    expect(html).toContain("modal.setAttribute('aria-modal', 'true')");
+    expect(html).toContain("modal.setAttribute('aria-labelledby', 'holdingsModalTitle')");
+    expect(html).toContain('id="holdingsModalTitle"');
+    expect(html).toContain('aria-label="Close token holdings modal"');
+  });
+});
+
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
   const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");

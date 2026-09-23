@@ -503,23 +503,22 @@ function generateModelSpecificDecision(botId, botProfile, modelName, marketData,
   return adjustedDecision;
 }
 
-// O(1) lookup map for model config and tier to avoid repeated for..in loops
-const MODEL_LOOKUP_MAP = (() => {
-  const map = {};
+function getModelConfig(modelName) {
   for (const tier in LM_ARENA_MODELS) {
-    for (const [name, config] of Object.entries(LM_ARENA_MODELS[tier])) {
-      map[name] = { config, tier };
+    if (LM_ARENA_MODELS[tier][modelName]) {
+      return LM_ARENA_MODELS[tier][modelName];
     }
   }
-  return map;
-})();
-
-function getModelConfig(modelName) {
-  return MODEL_LOOKUP_MAP[modelName]?.config || null;
+  return null;
 }
 
 function getModelTier(modelName) {
-  return MODEL_LOOKUP_MAP[modelName]?.tier || 'TIER_4';
+  for (const tier in LM_ARENA_MODELS) {
+    if (LM_ARENA_MODELS[tier][modelName]) {
+      return tier;
+    }
+  }
+  return 'TIER_4';
 }
 
 function getRandomModelForProfile(botProfile) {
@@ -665,11 +664,6 @@ async function callAIModel(marketData, bet, botId) {
 // MODEL SELECTION STRATEGIES
 // ════════════════════════════════════════════════════════════════════════════════
 
-// Lazy-cached static model candidate pools for instant selection (~20-100x speedup)
-let _eloWeightedPool = null;
-let _costEfficientTop5 = null;
-let _speedOptimalTop5 = null;
-
 const MODEL_SELECTION = {
   // Strategy 1: Round-robin through tiers
   roundRobin: (() => {
@@ -684,20 +678,20 @@ const MODEL_SELECTION = {
   })(),
 
   // Strategy 2: ELO-based selection (higher ELO more likely)
-  // Optimized: Memoize weighted pool to avoid object/array allocations and loop passes per call (~23x speedup)
   eloWeighted: () => {
-    if (!_eloWeightedPool) {
-      _eloWeightedPool = [];
-      for (const tier in LM_ARENA_MODELS) {
-        for (const [name, config] of Object.entries(LM_ARENA_MODELS[tier])) {
-          const weight = Math.floor(config.elo / 100);
-          for (let i = 0; i < weight; i++) {
-            _eloWeightedPool.push(name);
-          }
+    const allModels = [];
+
+    for (const tier in LM_ARENA_MODELS) {
+      Object.entries(LM_ARENA_MODELS[tier]).forEach(([name, config]) => {
+        // Add multiple times based on ELO (higher ELO = more likely)
+        const weight = Math.floor(config.elo / 100);
+        for (let i = 0; i < weight; i++) {
+          allModels.push(name);
         }
-      }
+      });
     }
-    return _eloWeightedPool[Math.floor(Math.random() * _eloWeightedPool.length)];
+
+    return allModels[Math.floor(Math.random() * allModels.length)];
   },
 
   // Strategy 3: Profile-optimal selection
@@ -717,36 +711,36 @@ const MODEL_SELECTION = {
   })(),
 
   // Strategy 5: Cost-efficient selection (good bang for buck)
-  // Optimized: Memoize sorted top 5 array to avoid allocation & sort overhead per call (~25x speedup)
   costEfficient: () => {
-    if (!_costEfficientTop5) {
-      const candidates = [];
-      for (const tier in LM_ARENA_MODELS) {
-        for (const [name, config] of Object.entries(LM_ARENA_MODELS[tier])) {
-          const eloPerCost = config.elo / config.costPer1kTokens;
-          candidates.push({ name, score: eloPerCost });
-        }
-      }
-      candidates.sort((a, b) => b.score - a.score);
-      _costEfficientTop5 = candidates.slice(0, 5).map(c => c.name);
+    const candidates = [];
+
+    for (const tier in LM_ARENA_MODELS) {
+      Object.entries(LM_ARENA_MODELS[tier]).forEach(([name, config]) => {
+        const eloPerCost = config.elo / config.costPer1kTokens;
+        candidates.push({ name, score: eloPerCost });
+      });
     }
-    return _costEfficientTop5[Math.floor(Math.random() * _costEfficientTop5.length)];
+
+    // Pick from top 5 cost-efficient
+    candidates.sort((a, b) => b.score - a.score);
+    const top5 = candidates.slice(0, 5);
+    return top5[Math.floor(Math.random() * top5.length)].name;
   },
 
   // Strategy 6: Speed-based selection
-  // Optimized: Memoize sorted top 5 array to avoid allocation & sort overhead per call (~20x speedup)
   speedOptimal: () => {
-    if (!_speedOptimalTop5) {
-      const candidates = [];
-      for (const tier in LM_ARENA_MODELS) {
-        for (const [name, config] of Object.entries(LM_ARENA_MODELS[tier])) {
-          candidates.push({ name, speed: config.speedMs });
-        }
-      }
-      candidates.sort((a, b) => a.speed - b.speed);
-      _speedOptimalTop5 = candidates.slice(0, 5).map(c => c.name);
+    const candidates = [];
+
+    for (const tier in LM_ARENA_MODELS) {
+      Object.entries(LM_ARENA_MODELS[tier]).forEach(([name, config]) => {
+        candidates.push({ name, speed: config.speedMs });
+      });
     }
-    return _speedOptimalTop5[Math.floor(Math.random() * _speedOptimalTop5.length)];
+
+    // Pick from fastest 5
+    candidates.sort((a, b) => a.speed - b.speed);
+    const fastest5 = candidates.slice(0, 5);
+    return fastest5[Math.floor(Math.random() * fastest5.length)].name;
   }
 };
 

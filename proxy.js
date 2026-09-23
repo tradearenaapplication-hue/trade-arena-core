@@ -20,7 +20,7 @@ app.post('/api/claude', async (req, res) => {
     res.status(response.status).json(data);
   } catch (error) {
     console.error('Proxy error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: error.message });
   }
 
 });
@@ -39,8 +39,7 @@ app.post('/api/openai', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    console.error('Proxy OpenAI error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -58,26 +57,22 @@ app.post('/api/gemini', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    console.error('Proxy Gemini error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: error.message });
   }
 });
 
 const fs = require('fs');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 
-/**
- * Helper to check if a requested path stays inside the base directory
- * Prevents path traversal vulnerabilities
- */
-function isPathSafe(baseDir, targetPath) {
-  if (!targetPath || typeof targetPath !== 'string') return false;
-  const normalizedBase = path.resolve(baseDir);
-  const resolvedTarget = path.resolve(baseDir, targetPath);
-  return resolvedTarget === normalizedBase || resolvedTarget.startsWith(normalizedBase + path.sep);
-}
+const maintenanceLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-app.post('/api/maintenance/log', (req, res) => {
+app.post('/api/maintenance/log', maintenanceLimiter, (req, res) => {
   const { agent, message, level } = req.body;
   const logDir = path.join(__dirname, '.jules');
   if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
@@ -91,21 +86,26 @@ app.post('/api/maintenance/log', (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/maintenance/patch', async (req, res) => {
-  const { filepath, patch, description } = req.body || {};
+app.post('/api/maintenance/patch', maintenanceLimiter, async (req, res) => {
+  const { filepath, patch, description } = req.body;
   try {
-    // SECURITY: Sanitize filepath to prevent Path Traversal vulnerabilities before filesystem access
     if (!filepath || typeof filepath !== 'string') {
-      return res.status(400).json({ error: 'Invalid filepath' });
+      return res.status(400).json({ error: 'Invalid filepath parameter' });
     }
-    const fullPath = path.resolve(__dirname, filepath);
-    const relative = path.relative(__dirname, fullPath);
-    if (relative.startsWith('..') || path.isAbsolute(relative)) {
-      return res.status(403).json({ error: 'Access denied: Invalid file path' });
+
+    // Security: Sanitize and prevent path traversal attacks
+    if (filepath.includes('..') || path.isAbsolute(filepath)) {
+      return res.status(403).json({ error: 'Access denied: Path traversal detected' });
     }
-    if (!fs.existsSync(fullPath)) {
-      return res.status(404).json({ error: 'File not found' });
+
+    const rootDir = path.resolve(__dirname);
+    const resolvedPath = path.resolve(rootDir, filepath);
+
+    if (!resolvedPath.startsWith(rootDir + path.sep) && resolvedPath !== rootDir) {
+      return res.status(403).json({ error: 'Access denied: Path traversal detected' });
     }
+
+    if (!fs.existsSync(resolvedPath)) throw new Error('File not found');
 
     // In a real self-healing system, we would validate the patch
     // For this implementation, we log the intent and could apply it
@@ -116,17 +116,12 @@ app.post('/api/maintenance/patch', async (req, res) => {
 
     res.json({ success: true, message: 'Patch received and logged for review' });
   } catch (error) {
-    console.error('Proxy patch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: error.message });
   }
 });
 
 const port = 3001;
-if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`🚀 Proxy server running at http://localhost:${port}`);
-    console.log('Set ANTHROPIC_API_KEY env var for Claude');
-  });
-}
-
-module.exports = { app, isPathSafe };
+app.listen(port, () => {
+  console.log(`🚀 Proxy server running at http://localhost:${port}`);
+  console.log('Set ANTHROPIC_API_KEY env var for Claude');
+});

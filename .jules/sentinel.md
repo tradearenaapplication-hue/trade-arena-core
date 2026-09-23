@@ -1,4 +1,6 @@
-## 2026-09-18 - Internal Error Details Sanitization & Ethers Provider Compatibility
-**Vulnerability:** Backend API error handlers in `server.js` were returning raw `error.message` strings to callers in 500 status responses, exposing sensitive operational details and stack information.
-**Learning:** Returning unhandled exception messages in REST API catch blocks leaks internal state. In addition, when using Ethers v6 (`^6.17.0`), `ethers.providers.JsonRpcProvider` throws a `TypeError` and should be initialized as `ethers.JsonRpcProvider`.
-**Prevention:** Always sanitize 500 HTTP error responses to return generic error messages (e.g., `'Internal server error'`), log exceptions internally, and thoroughly validate non-array/malformed JSON body inputs.
+# Sentinel Security Journal
+
+## 2026-09-21 - Path Traversal Prevention in Maintenance Proxy Endpoint
+**Vulnerability:** Unsanitized user input (`req.body.filepath`) in `/api/maintenance/patch` endpoint allowed arbitrary directory traversal using relative path sequences (`../`).
+**Learning:** Resolving file paths with `path.join(__dirname, filepath)` allows relative traversals out of the expected directory tree if `filepath` contains `../`.
+**Prevention:** Always sanitize and resolve paths using `path.resolve` and enforce boundary containment (`resolvedPath.startsWith(rootDir + path.sep) || resolvedPath === rootDir`).

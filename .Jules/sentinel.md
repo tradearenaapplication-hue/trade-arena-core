@@ -17,8 +17,3 @@
 **Vulnerability:** The `showCrucibleResults` function in `index.html` rendered the `results.mode` property directly into an `innerHTML` sink without sanitization.
 **Learning:** Even metadata fields that are expected to be internal strings can be dangerous if there is any path for user-controlled data to reach them. Template literals in `innerHTML` are a common source of XSS.
 **Prevention:** Always use the `escapeHTML` helper when rendering any string into an `innerHTML` template, or prefer safer alternatives like `textContent` for individual elements.
-
-## 2026-09-14 - [CRITICAL] Webhook Signature Authentication Bypass & Timing Attack
-**Vulnerability:** In `server.js`, `if (expectedSecret && signature !== expectedSecret)` allowed deposit webhooks to bypass signature authentication completely when `MOONPAY_WEBHOOK_SECRET` was unconfigured (falsy `''`), allowing unauthenticated attackers to trigger fake deposit confirmations and bot deployments.
-**Learning:** Checking truthiness of an environment variable before validating signatures creates a default-open fallback when configuration is missing. Standard string inequality is also vulnerable to timing side-channels.
-**Prevention:** Always require webhook secrets and signature headers to be present before accepting incoming webhooks, and use `crypto.timingSafeEqual` for constant-time signature verification.

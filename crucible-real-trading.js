@@ -183,69 +183,43 @@ const CrucibleRealTrading = {
   calculateIndicators(candles) {
     if (!candles || candles.length < 5) return null;
 
-    const len = candles.length;
+    const closes = candles.map(c => c.close);
+    const highs = candles.map(c => c.high);
+    const lows = candles.map(c => c.low);
 
-    // ⚡ OPTIMIZATION: Compute SMA directly without creating array slices or mapping closes
-    let sum5 = 0;
-    let sum10 = 0;
-    const start5 = len - 5;
-    const start10 = Math.max(0, len - 10);
-    const count10 = len - start10;
+    // Simple Moving Averages
+    const sma5 = closes.slice(-5).reduce((a, b) => a + b, 0) / 5;
+    const sma10 = closes.slice(-10).reduce((a, b) => a + b, 0) / Math.min(10, closes.length);
 
-    for (let i = start10; i < len; i++) {
-      const c = candles[i].close;
-      if (i >= start5) sum5 += c;
-      sum10 += c;
+    // RSI (Relative Strength Index) - simplified
+    const changes = [];
+    for (let i = 1; i < closes.length; i++) {
+      changes.push(closes[i] - closes[i-1]);
     }
-    const sma5 = sum5 / 5;
-    const sma10 = sum10 / count10;
-
-    // ⚡ OPTIMIZATION: Single pass for gains, losses, and return sum without temporary arrays
-    let totalGains = 0;
-    let totalLosses = 0;
-    let sumReturns = 0;
-    const numChanges = Math.max(1, len - 1);
-
-    for (let i = 1; i < len; i++) {
-      const prev = candles[i - 1].close;
-      const curr = candles[i].close;
-      const change = curr - prev;
-      if (change > 0) totalGains += change;
-      else if (change < 0) totalLosses += -change;
-
-      sumReturns += change / (prev || 1);
-    }
-
-    const gains = totalGains / numChanges;
-    const losses = totalLosses / numChanges;
+    const gains = changes.filter(c => c > 0).reduce((a, b) => a + b, 0) / Math.max(1, changes.length);
+    const losses = Math.abs(changes.filter(c => c < 0).reduce((a, b) => a + b, 0)) / Math.max(1, changes.length);
     const rs = (gains || 0.5) / (losses || 0.5);
     let rsi = 100 - (100 / (1 + rs));
     if (isNaN(rsi)) rsi = 50; // Default to neutral if calculation fails
 
     // Volatility (Standard Deviation of returns)
-    const avgReturn = sumReturns / numChanges;
-    let sumSqDiff = 0;
-    for (let i = 1; i < len; i++) {
-      const prev = candles[i - 1].close;
-      const curr = candles[i].close;
-      const ret = (curr - prev) / (prev || 1);
-      const diff = ret - avgReturn;
-      sumSqDiff += diff * diff;
+    const returns = [];
+    for (let i = 1; i < closes.length; i++) {
+      returns.push((closes[i] - closes[i-1]) / (closes[i-1] || 1));
     }
-
-    const variance = sumSqDiff / numChanges;
+    const avgReturn = returns.reduce((a, b) => a + b, 0) / Math.max(1, returns.length);
+    const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / Math.max(1, returns.length);
     let volatility = Math.sqrt(variance) * 100; // Convert to percentage
     if (isNaN(volatility) || volatility === 0) volatility = 0.5; // Default if NaN
 
     // Trend Direction (price vs SMA)
-    const currentPrice = candles[len - 1].close;
+    const currentPrice = closes[closes.length - 1];
     let trendStrength = (currentPrice - sma10) / (sma10 || 1) * 100;
     if (isNaN(trendStrength)) trendStrength = 0;
 
     // Momentum (Rate of Change)
-    const lookback = Math.min(5, len - 1);
-    const lookbackPrice = candles[len - 1 - lookback].close;
-    let momentum = ((currentPrice - lookbackPrice) / (lookbackPrice || 1)) * 100;
+    const lookback = Math.min(5, closes.length - 1);
+    let momentum = ((currentPrice - closes[closes.length - 1 - lookback]) / (closes[closes.length - 1 - lookback] || 1)) * 100;
     if (isNaN(momentum)) momentum = 0;
 
     const indicators = {

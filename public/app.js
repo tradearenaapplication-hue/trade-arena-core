@@ -711,27 +711,76 @@ window.addOnChainReceipt = function(receipt) {
   receiptEl.style.cssText = 'background:var(--chrome); border:1px solid var(--border); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:6px; margin-bottom:8px; animation:toastFadeIn 0.3s ease;';
 
   const shortHash = receipt.txHash.substring(0, 10) + '...' + receipt.txHash.substring(receipt.txHash.length - 8);
-  
-  receiptEl.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span style="font-family:'Bungee'; font-size:10px; color:var(--gold);">TX CONFIRMED</span>
-      <span style="font-size:9px; color:var(--dim);">${new Date(receipt.timestamp).toLocaleTimeString()}</span>
-    </div>
-    <div style="display:flex; gap:10px; font-size:11px;">
-      <div style="flex:1;">
-        <div style="color:var(--dim); font-size:8px; text-transform:uppercase;">Transaction Hash</div>
-        <div style="color:#fff; font-family:'Share Tech Mono',monospace;">${shortHash}</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="color:var(--dim); font-size:8px; text-transform:uppercase;">Gas Cost</div>
-        <div style="color:var(--green);">${receipt.gasCost} ETH</div>
-      </div>
-    </div>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.05);">
-      <span style="font-size:9px; color:var(--dim);">Block: ${receipt.blockNumber}</span>
-      <a href="${receipt.explorerUrl}" target="_blank" style="font-family:'Bungee'; font-size:9px; color:var(--cyan); text-decoration:none; border-bottom:1px solid var(--cyan);">VIEW ON BASESCAN ↗</a>
-    </div>
-  `;
+
+  const headerRow = document.createElement('div');
+  headerRow.style.cssText = 'display:flex; justify-content:space-between; align-items:center;';
+
+  const confirmedLabel = document.createElement('span');
+  confirmedLabel.style.cssText = "font-family:'Bungee'; font-size:10px; color:var(--gold);";
+  confirmedLabel.textContent = 'TX CONFIRMED';
+
+  const timeLabel = document.createElement('span');
+  timeLabel.style.cssText = 'font-size:9px; color:var(--dim);';
+  timeLabel.textContent = new Date(receipt.timestamp).toLocaleTimeString();
+
+  headerRow.appendChild(confirmedLabel);
+  headerRow.appendChild(timeLabel);
+
+  const detailsRow = document.createElement('div');
+  detailsRow.style.cssText = 'display:flex; gap:10px; font-size:11px;';
+
+  const hashCol = document.createElement('div');
+  hashCol.style.cssText = 'flex:1;';
+  const hashTitle = document.createElement('div');
+  hashTitle.style.cssText = 'color:var(--dim); font-size:8px; text-transform:uppercase;';
+  hashTitle.textContent = 'Transaction Hash';
+  const hashValue = document.createElement('div');
+  hashValue.style.cssText = "color:#fff; font-family:'Share Tech Mono',monospace;";
+  hashValue.textContent = shortHash;
+  hashCol.appendChild(hashTitle);
+  hashCol.appendChild(hashValue);
+
+  const gasCol = document.createElement('div');
+  gasCol.style.cssText = 'text-align:right;';
+  const gasTitle = document.createElement('div');
+  gasTitle.style.cssText = 'color:var(--dim); font-size:8px; text-transform:uppercase;';
+  gasTitle.textContent = 'Gas Cost';
+  const gasValue = document.createElement('div');
+  gasValue.style.cssText = 'color:var(--green);';
+  gasValue.textContent = `${receipt.gasCost} ETH`;
+  gasCol.appendChild(gasTitle);
+  gasCol.appendChild(gasValue);
+
+  detailsRow.appendChild(hashCol);
+  detailsRow.appendChild(gasCol);
+
+  const footerRow = document.createElement('div');
+  footerRow.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-top:4px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.05);';
+
+  const blockLabel = document.createElement('span');
+  blockLabel.style.cssText = 'font-size:9px; color:var(--dim);';
+  blockLabel.textContent = `Block: ${receipt.blockNumber}`;
+
+  const explorerLink = document.createElement('a');
+  let safeExplorerUrl = '#';
+  try {
+    const parsedUrl = new URL(String(receipt.explorerUrl), window.location.origin);
+    if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+      safeExplorerUrl = parsedUrl.href;
+    }
+  } catch (e) {}
+  explorerLink.href = safeExplorerUrl;
+  explorerLink.target = '_blank';
+  explorerLink.rel = 'noopener noreferrer';
+  explorerLink.style.cssText = "font-family:'Bungee'; font-size:9px; color:var(--cyan); text-decoration:none; border-bottom:1px solid var(--cyan);";
+  explorerLink.textContent = 'VIEW ON BASESCAN ↗';
+
+  footerRow.appendChild(blockLabel);
+  footerRow.appendChild(explorerLink);
+
+  receiptEl.appendChild(headerRow);
+  receiptEl.appendChild(detailsRow);
+  receiptEl.appendChild(footerRow);
 
   container.prepend(receiptEl);
 

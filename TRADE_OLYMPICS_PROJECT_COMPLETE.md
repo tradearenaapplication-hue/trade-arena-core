@@ -129,7 +129,7 @@ Olympics Intervention:
   5. Pre-assigned Model: claude-3.5-sonnet
   6. Override Bot Profile? NO
   7. Use Model: claude-3.5-sonnet for decision-making
-  
+
 Result: WIN, +$150.25
 
 Recording:

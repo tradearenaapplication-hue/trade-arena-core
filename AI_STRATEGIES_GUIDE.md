@@ -414,7 +414,7 @@ Before AUTO:
 After AUTO:
   Edge: 2.5% (Claude estimate)
   Auto Edge: 2.08% (Adaptive adjustment)
-  
+
 Why: Shows how strategy adapts to:
   • Your recent win rate
   • Market volatility

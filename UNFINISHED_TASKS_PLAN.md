@@ -10,12 +10,12 @@
 
 ### 2. PRIVY_MOONPAY_IMPLEMENTATION_TODO.md - TESTING
 - [ ] Test Privy login flow
-- [ ] Test MoonPay deposit flow  
+- [ ] Test MoonPay deposit flow
 - [ ] Test fallback to demo mode
 
 ### 3. PLAN.md - Music Player Enhancements
 - [ ] Add music toggle button to header
-- [ ] Implement toggleBackgroundMusic() function  
+- [ ] Implement toggleBackgroundMusic() function
 - [ ] Test background music playback
 - [ ] Enhance runCrucibleBatch() with live progress
 - [ ] Add pause/cancel controls
@@ -32,7 +32,7 @@
 
 ### PHASE 1: ACOUSTIC Integration (High Priority)
 1. Add music toggle button to header with emoji (🎵)
-2. Add volume control button to header 
+2. Add volume control button to header
 3. Wire trade execution sounds
 4. Wire win/lose sounds on trade close
 
@@ -42,7 +42,7 @@
 
 ### PHASE 3: Testing (High Priority)
 1. Verify Privy login flow works
-2. Verify MoonPay deposit flow works  
+2. Verify MoonPay deposit flow works
 3. Verify demo mode fallback
 
 ### PHASE 4: Crucible Enhancements (Medium Priority)

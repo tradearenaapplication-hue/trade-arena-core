@@ -322,7 +322,7 @@ The AI learning system is **WORKING** when:
 
 ## Let's Go! 🚀
 
-**Ready?** 
+**Ready?**
 
 Open your browser console and run:
 

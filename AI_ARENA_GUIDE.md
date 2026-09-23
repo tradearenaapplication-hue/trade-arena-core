@@ -13,7 +13,7 @@ The **AI Arena** is a tournament-based decision system where **3 AI models compe
 🔬 ANALYST       Conservative risk analyzer
    └─ Focus: Safety, real edge, downside protection
 
-⚡ TRADER        Aggressive momentum hunter  
+⚡ TRADER        Aggressive momentum hunter
    └─ Focus: Volatility, quick wins, timing
 
 🎯 STRATEGIST    Balanced market-adaptive thinker
@@ -96,9 +96,9 @@ Each model analyzes independently and proposes the **best single trade** based o
 Each proposal gets a **Vote Score** based on:
 
 ```
-Vote Score = (40% × Confidence) + 
-             (30% × Edge Quality) + 
-             (20% × Win Probability) + 
+Vote Score = (40% × Confidence) +
+             (30% × Edge Quality) +
+             (20% × Win Probability) +
              (10% × Risk-Adjusted)
 
 Score Range: 0.0 - 1.0 (higher is better)
@@ -122,7 +122,7 @@ Before the winning decision executes, it must pass:
 
 ```
 ✅ Consensus Check:    65%+ agreement required
-✅ Confidence Check:   60%+ average model confidence  
+✅ Confidence Check:   60%+ average model confidence
 ✅ Market Check:       Avoid extreme volatility (>8%)
 ✅ Sanity Check:       Valid token, method, edge
 ```
@@ -141,7 +141,7 @@ If ANY check fails → **TRADE PAUSED** with reason logged.
   "confidence": 0.85,
   "win_probability": 0.62,
   "reasoning": "Explosive uptrend momentum",
-  
+
   // Arena metadata
   "arena_tournament": {
     "all_proposals": [
@@ -217,7 +217,7 @@ Shows:
 🏆 AI ARENA LEADERBOARD
 
 🥇 TRADER       73.5% • 14W-5L
-🥈 STRATEGIST   68.2% • 13W-6L  
+🥈 STRATEGIST   68.2% • 13W-6L
 🥉 ANALYST      61.0% • 11W-7L
 ```
 
@@ -417,7 +417,7 @@ Try spinning in AUTO mode 5+ times.
 ### Q: Why does one model keep winning?
 **A:** Market conditions favor that model's style.
 - TRADER wins in trending markets
-- ANALYST wins in choppy/risky markets  
+- ANALYST wins in choppy/risky markets
 - STRATEGIST balanced winner
 
 ### Q: Can I disable the Arena?

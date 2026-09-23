@@ -13,7 +13,7 @@
 ### AFTER (WITH HFT OPTIMIZATIONS)
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────┐
-│ 👤 User Name │ $10,000 | +$0.00 today │ ⏹️ STOP ALL │ ▶️ PLAY ALL │ 🚀 HFT START │ 
+│ 👤 User Name │ $10,000 | +$0.00 today │ ⏹️ STOP ALL │ ▶️ PLAY ALL │ 🚀 HFT START │
 │ 🔵 DEMO      │                        │                           │ 🛑 HFT STOP  │
 │              │                        │                           │              │
 │              │                        │                    TRADES │ + ADD BOT    │

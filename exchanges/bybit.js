@@ -56,7 +56,7 @@ class BybitExchange {
       if (order.price && order.type === 'limit') {
         params.price = order.price;
       }
-      
+
       const result = await this.exchange.createOrder(
         order.symbol,
         order.type,
@@ -65,7 +65,7 @@ class BybitExchange {
         order.price || undefined,
         params
       );
-      
+
       return {
         id: result.id,
         symbol: result.symbol,

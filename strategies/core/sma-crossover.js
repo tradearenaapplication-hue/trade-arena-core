@@ -23,7 +23,7 @@ const info = {
  */
 function calculateSMA(data, period) {
   if (!data || data.length < period) return null;
-  
+
   const closes = data.slice(-period).map(candle => candle.close);
   const sum = closes.reduce((acc, price) => acc + price, 0);
   return sum / period;
@@ -39,12 +39,12 @@ async function execute(marketData, params = {}) {
   // Set default parameters
   const shortPeriod = params.shortPeriod || info.parameters.shortPeriod.default;
   const longPeriod = params.longPeriod || info.parameters.longPeriod.default;
-  
+
   // Validate parameters
   if (shortPeriod >= longPeriod) {
     throw new Error('Short period must be less than long period');
   }
-  
+
   // Need enough data for both MAs
   if (!marketData || marketData.length < longPeriod) {
     return {
@@ -54,11 +54,11 @@ async function execute(marketData, params = {}) {
       reason: 'Insufficient data for calculation'
     };
   }
-  
+
   // Calculate moving averages
   const smaShort = calculateSMA(marketData, shortPeriod);
   const smaLong = calculateSMA(marketData, longPeriod);
-  
+
   if (smaShort === null || smaLong === null) {
     return {
       signal: 'HOLD',
@@ -67,28 +67,28 @@ async function execute(marketData, params = {}) {
       reason: 'Unable to calculate moving averages'
     };
   }
-  
+
   // Generate signal based on crossover
   let signal = 'HOLD';
   let confidence = 0.5;
   let size = 0.1;
-  
+
   const maDifference = smaShort - smaLong;
   const maRatio = Math.abs(maDifference) / ((smaShort + smaLong) / 2);
-  
+
   // Calculate confidence based on separation of MAs (higher separation = higher confidence)
   // Max confidence when separation is 5% or more
   confidence = Math.min(0.9, 0.5 + Math.min(maRatio * 10, 0.4));
-  
+
   // Position size based on confidence
   size = 0.1 + (confidence - 0.5) * 0.2; // 0.1 to 0.2 range
-  
+
   if (smaShort > smaLong) {
     signal = 'BUY';
   } else if (smaShort < smaLong) {
     signal = 'SELL';
   }
-  
+
   return {
     signal,
     confidence: Number(confidence.toFixed(3)),

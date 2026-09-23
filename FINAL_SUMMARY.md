@@ -278,7 +278,7 @@ Dashboard loads...
 Before: Error looked like generic object, could be anything
 Now: Error says exactly "Step 4: Network switch failed - code 4001"
 
-**Before:** 
+**Before:**
 ```
 "Something broke somewhere, I don't know where or why"
 Debugging: Guess and check, could take hours

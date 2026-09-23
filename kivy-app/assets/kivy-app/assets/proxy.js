@@ -48,4 +48,3 @@ app.listen(port, () => {
   console.log(`🚀 Proxy server running at http://localhost:${port}`);
   console.log('Set ANTHROPIC_API_KEY env var for Claude');
 });
-

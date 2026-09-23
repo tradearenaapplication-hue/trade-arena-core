@@ -1,7 +1,7 @@
 /**
  * Privy Embedded Wallet Integration
  * Replaces MetaMask with no-seed-phrase wallet
- * 
+ *
  * Setup:
  * 1. Sign up at https://privy.io
  * 2. Create project, get App ID
@@ -11,8 +11,6 @@
 const PRIVY_CONFIG = {
     // Privy App ID from dashboard.privy.com
     appId: 'cmpl1hc0k00ui0djsr3qo8gg8',
-    // Privy App Secret
-    appSecret: 'privy_app_secret_2FZh6yCkySG5LiNFGKnpLj1An5gnXmsyF5mWDi2T9oX8kQb2tq6ufJb1fHhLjcNRRoJQDUQXRL2jh1WXkzYdkTTz',
     // JWKS URL for token verification
     jwksUrl: 'https://auth.privy.io/api/v1/apps/cmpl1hc0k00ui0djsr3qo8gg8/jwks.json',
     // Base mainnet ONLY - NO network dropdown
@@ -38,23 +36,23 @@ let privyConnected = false;
  */
 async function privyInit() {
     console.log('[Privy] Initializing...');
-    
+
     //动态加载 Privy SDK
     if (!window.Privy) {
         await loadPrivyScript();
     }
-    
+
     if (!window.Privy) {
         console.warn('[Privy] SDK not loaded - using fallback mode');
         return false;
     }
-    
+
     try {
         // Configure Privy
         window.Privy.configure({
             appId: PRIVY_CONFIG.appId,
         });
-        
+
         // Check for existing session
         const user = window.Privy.getUser();
         if (user) {
@@ -64,7 +62,7 @@ async function privyInit() {
             console.log('[Privy] Restored session:', privyWalletAddress);
             onPrivyLoginSuccess();
         }
-        
+
         return true;
     } catch (e) {
         console.error('[Privy] Init error:', e);
@@ -81,7 +79,7 @@ async function loadPrivyScript() {
             resolve();
             return;
         }
-        
+
         const script = document.createElement('script');
         script.src = 'https://cdn.privy.io/widget.js';
         script.async = true;
@@ -99,22 +97,22 @@ async function loadPrivyScript() {
  */
 async function privyLoginGoogle() {
     console.log('[Privy] Opening Google OAuth...');
-    
+
     if (!window.Privy) {
         // Fallback: direct Google sign-in without Privy SDK
         return privyFallbackGoogleLogin();
     }
-    
+
     try {
         // Show Privy modal for embedded login
         window.Privy.loginWithGoogle({
             // Base only - no network choice
-            chains: [{ 
+            chains: [{
                 id: PRIVY_CONFIG.chain,
-                rpcUrl: 'https://mainnet.base.org' 
+                rpcUrl: 'https://mainnet.base.org'
             }],
         });
-        
+
         // Listen for login completion
         window.Privy.on('login', (user) => {
             privyUser = user;
@@ -134,11 +132,11 @@ async function privyLoginGoogle() {
  */
 async function privyFallbackGoogleLogin() {
     console.log('[Privy] Using fallback Google login...');
-    
+
     // TODO: Replace with your Google OAuth credentials
     // For now, generate a simulated wallet address
     const mockAddress = '0x' + generateRandomAddress();
-    
+
     privyWalletAddress = mockAddress;
     privyConnected = true;
     privyUser = {
@@ -146,7 +144,7 @@ async function privyFallbackGoogleLogin() {
         name: 'Google User',
         id: 'mock-user-id'
     };
-    
+
     console.log('[Privy] Fallback login:', privyWalletAddress);
     onPrivyLoginSuccess();
 }
@@ -156,11 +154,11 @@ async function privyFallbackGoogleLogin() {
  */
 async function privyLoginApple() {
     console.log('[Privy] Opening Apple OAuth...');
-    
+
     if (!window.Privy) {
         return privyFallbackAppleLogin();
     }
-    
+
     try {
         window.Privy.loginWithApple();
         window.Privy.on('login', (user) => {
@@ -180,9 +178,9 @@ async function privyLoginApple() {
  */
 async function privyFallbackAppleLogin() {
     console.log('[Privy] Using fallback Apple login...');
-    
+
     const mockAddress = '0x' + generateRandomAddress();
-    
+
     privyWalletAddress = mockAddress;
     privyConnected = true;
     privyUser = {
@@ -190,7 +188,7 @@ async function privyFallbackAppleLogin() {
         name: 'Apple User',
         id: 'mock-apple-user-id'
     };
-    
+
     onPrivyLoginSuccess();
 }
 
@@ -207,16 +205,42 @@ function generateRandomAddress() {
 }
 
 /**
+ * UI Helpers
+ */
+function hideConnectScreen() {
+    const cs = document.getElementById('connectScreen');
+    if (cs) cs.style.display = 'none';
+}
+
+function showConnectScreen() {
+    const cs = document.getElementById('connectScreen');
+    if (cs) cs.style.display = 'flex';
+}
+
+function showMainApp() {
+    const app = document.getElementById('mainApp');
+    if (app) {
+        app.style.display = 'flex';
+        app.style.flexDirection = 'column';
+    }
+}
+
+function hideMainApp() {
+    const app = document.getElementById('mainApp');
+    if (app) app.style.display = 'none';
+}
+
+/**
  * Called when Privy login succeeds
  */
 function onPrivyLoginSuccess() {
     console.log('[Privy] Login success! Wallet:', privyWalletAddress);
     hideConnectScreen();
     showMainApp();
-    
+
     // Update UI with wallet info
     updateWalletUI();
-    
+
     // Notify app ready
     if (typeof window.onPrivyReady === 'function') {
         window.onPrivyReady(privyUser, privyWalletAddress);
@@ -232,12 +256,12 @@ function updateWalletUI() {
         // Show USD balance instead of ETH
         balanceEl.textContent = '$10,000.00';
     }
-    
+
     const userAddrEl = document.getElementById('userAddr');
     if (userAddrEl && privyWalletAddress) {
         userAddrEl.textContent = privyWalletAddress.substring(0, 6) + '...' + privyWalletAddress.substring(38);
     }
-    
+
     const networkBadge = document.getElementById('ghNetwork');
     if (networkBadge) {
         networkBadge.style.display = 'inline'; // Show "BASE" badge
@@ -266,13 +290,13 @@ async function privySignMessage(message) {
     if (!privyConnected) {
         throw new Error('Not connected');
     }
-    
+
     if (!window.Privy || !privyUser?.wallet) {
         // Fallback: simulate signature
         console.log('[Privy] Fallback sign:', message);
         return '0xsignature...';
     }
-    
+
     try {
         return await window.Privy.signMessage(message);
     } catch (e) {
@@ -289,11 +313,11 @@ function privyDisconnect() {
     privyUser = null;
     privyWalletAddress = null;
     privyConnected = false;
-    
+
     if (window.Privy) {
         window.Privy.logout();
     }
-    
+
     showConnectScreen();
     hideMainApp();
 }

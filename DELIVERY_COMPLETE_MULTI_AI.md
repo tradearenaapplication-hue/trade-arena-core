@@ -82,7 +82,7 @@ ARENA_COMPETITION.getLeaderboard();  // See model performance
 // Automatic optimal assignment per profile
 BOT_MODEL_ASSIGNMENT = {
   SCALPER: grok-3,               // Fast & aggressive
-  TREND: gpt-5-turbo,            // Pattern recognition  
+  TREND: gpt-5-turbo,            // Pattern recognition
   AGGRESSIVE: grok-3,            // Risk-taking
   CONSERVATIVE: claude-3-opus,   // Deep reasoning
   BALANCED: claude-3.5-sonnet,   // All-rounder
@@ -110,9 +110,9 @@ async function callAI(marketData, bet, botId) {
   if (typeof callAIModel === 'function') {
     try {
       const decision = await callAIModel(marketData, bet, botId);
-      const modelName = typeof getBotModelName === 'function' ? 
+      const modelName = typeof getBotModelName === 'function' ?
         getBotModelName(botId) : 'BALANCED';
-      
+
       // Log and return decision with model metadata
       return decision;
     } catch (e) {

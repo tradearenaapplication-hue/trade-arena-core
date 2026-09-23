@@ -13,7 +13,7 @@ window.addEventListener('load', () => {
   console.log('🚀 FIXED Test Runner Loaded');
   console.log('TradingEngine:', typeof TradingEngine);
   console.log('tradingEngine:', typeof tradingEngine);
-  
+
   // Use existing or create
   window.testEngine = tradingEngine || new TradingEngine();
 
@@ -23,26 +23,26 @@ window.addEventListener('load', () => {
 
   // Real tests
   console.log('🧪 Running TradingEngine tests...');
-  
+
   const engine = window.testEngine;
-  
+
   // Test 1
   engine.detectArbitrageOpportunities([{token:'WETH',volume:1000,volatility:2}]).then(opps => {
     console.log('✅ Arbitrage:', Array.isArray(opps));
   });
-  
+
   // Test 2
   const vol = engine.analyzeVolatility([2500,2510,2520]);
   console.log('✅ Volatility:', vol.trend, vol.current);
-  
+
   // Test 3
   const pos = engine.calculatePositionSize(10, 3, 5);
   console.log('✅ Position:', pos.size > 0);
-  
+
   // Test 4
   const sig = engine.generateTradeSignal({price:2500,rsi:25,volume:1000,macd:{histogram:0.5,prevHistogram:0.4},bollinger:{}});
   console.log('✅ Signal:', sig.action, sig.confidence);
-  
+
   console.log('✅ ALL TESTS PASSED - Logic verified');
 
   // Multi-AI
@@ -55,4 +55,3 @@ window.addEventListener('load', () => {
 <p>Open F12 console for output. Auto-runs all tests.</p>
 </body>
 </html>
-

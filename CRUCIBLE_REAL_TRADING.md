@@ -191,15 +191,15 @@ config: {
   startingBalance: 50,              // $50 AUD
   maxTradesPerDay: 20,              // Max 20
   minTimeBetweenTrades: 14400000,   // 4 hours
-  
+
   riskPercentPerTrade: 2,           // 2% of equity
   maxPositionSize: 10,              // Max $10
   minPositionSize: 0.5,             // Min $0.50
-  
+
   baseEntryThreshold: 0.6,          // 60% momentum
   takeProfitPercent: 2.5,           // 2.5% TP
   stopLossPercent: 1.0,             // 1% SL
-  
+
   baseMakerFee: 0.001,              // 0.1%
   baseTakerFee: 0.0015,             // 0.15%
   slippagePercent: 0.05,            // 0.05%

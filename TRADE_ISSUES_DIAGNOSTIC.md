@@ -50,4 +50,3 @@ I'll examine the code for these issues:
 ✓ Check 3: Trade timeout logic
 ✓ Check 4: API error handling
 ✓ Check 5: Balance validation before trade opens
-

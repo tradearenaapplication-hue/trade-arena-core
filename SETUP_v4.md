@@ -95,7 +95,7 @@ To trade with real funds on Base network:
 - Track all trades in global log
 ```
 
-⚠️ **Important**: 
+⚠️ **Important**:
 - Start with small bets ($1-10) to test
 - Gas costs ~$0.001 per trade
 - AI is NOT financial advice

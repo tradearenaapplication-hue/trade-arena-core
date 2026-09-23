@@ -37,7 +37,7 @@
 <button onclick="runCrucibleBatch()">▶ RUN BATCH</button>
 
 // NEW:
-<button class="crucible-run-btn" onclick="runCrucibleBatch()" 
+<button class="crucible-run-btn" onclick="runCrucibleBatch()"
   style="...transition:all 0.2s">▶ RUN BATCH</button>
 ```
 - Added CSS class `crucible-run-btn` for easy selection
@@ -59,7 +59,7 @@ const mode = document.getElementById('crucibleModeSelect')?.value || 'TEST';
 async function runCrucibleBatch() {
   const runBtn = document.querySelector('.crucible-run-btn');
   if(runBtn) runBtn.disabled = true;  // 🔴 DISABLE during run
-  
+
   try {
     // ... batch execution logic ...
   } finally {

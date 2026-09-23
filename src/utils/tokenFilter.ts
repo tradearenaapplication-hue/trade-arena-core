@@ -1,7 +1,7 @@
 /**
  * TOKEN FILTER - Stablecoin Blocklist
  * FIX for USDT momentum long signal bug
- * 
+ *
  * @version 1.0.0
  * @date 2025-01-15
  */
@@ -75,7 +75,7 @@ export function filterToken(symbol: string): {
       isBlocked: true,
     };
   }
-  
+
   return {
     vote: 'PROCEED',
     conviction: 1.0,
@@ -91,7 +91,7 @@ export function filterToken(symbol: string): {
  * @returns Validation result
  */
 export function validateTradePair(
-  baseToken: string, 
+  baseToken: string,
   quoteToken: string
 ): {
   valid: boolean;
@@ -99,7 +99,7 @@ export function validateTradePair(
   warnings: string[];
 } {
   const warnings: string[] = [];
-  
+
   // Check base token is NOT a stablecoin
   if (isStablecoin(baseToken)) {
     return {
@@ -108,12 +108,12 @@ export function validateTradePair(
       warnings: [],
     };
   }
-  
+
   // Warn if quote is not a common stablecoin (but allow it)
   if (!isStablecoinQuoteOk(quoteToken) && quoteToken !== 'BTC' && quoteToken !== 'ETH') {
     warnings.push(`Quote currency ${quoteToken} is not a common stablecoin`);
   }
-  
+
   return {
     valid: true,
     reason: 'Trade pair validated',

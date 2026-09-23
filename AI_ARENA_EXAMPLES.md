@@ -183,7 +183,7 @@ Check #4: Proposal Validity
   "reasoning": "Momentum breakout incoming fast",
   "risk_level": "HIGH",
   "target_outcome": "+$4.50 quick entry",
-  
+
   // Arena tournament metadata
   "arena_tournament": {
     "all_proposals": [
@@ -476,7 +476,7 @@ console.log(arenaState.lastTournament);
   confidence: 0.85,
   win_probability: 0.62,
   reasoning: "Momentum breakout incoming fast",
-  
+
   arena_tournament: {
     all_proposals: [
       { model: "ANALYST", emoji: "🔬", token: "ETH", vote_score: 0.68 },

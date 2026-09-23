@@ -8,7 +8,7 @@ Implementation checklist for ACOUSTIC CORE Orchestrator redesign.
 - [ ] Add Google Fonts import (Space Grotesk + JetBrains Mono)
 - [ ] Test font loading
 
-## Phase 2: Vault Display  
+## Phase 2: Vault Display
 - [ ] Create vault container HTML structure
 - [ ] Add vault CSS styling
 - [ ] Add vault JS rendering logic

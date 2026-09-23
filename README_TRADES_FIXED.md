@@ -209,7 +209,7 @@ http://localhost:8000
 ```
 ✅ Commit: a75b9c1f
 ✅ Message: 🐛 Fix: Prevent negative balance & cap costs at 50% of bet
-✅ Files: index.html + 4 doc files  
+✅ Files: index.html + 4 doc files
 ✅ Branch: main
 ✅ Status: Committed and ready
 ```
@@ -248,10 +248,9 @@ If you encounter any problems:
 
 ---
 
-**Build Date**: April 18, 2026  
-**Version**: 4.3 (Fixed)  
-**Last Commit**: a75b9c1f  
-**Status**: ✅ ALL CRITICAL BUGS FIXED  
+**Build Date**: April 18, 2026
+**Version**: 4.3 (Fixed)
+**Last Commit**: a75b9c1f
+**Status**: ✅ ALL CRITICAL BUGS FIXED
 
 You're ready to trade safely! 📈
-

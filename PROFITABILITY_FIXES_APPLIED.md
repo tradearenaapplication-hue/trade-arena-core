@@ -70,9 +70,9 @@ Added 3-stage validation before ANY trade executes:
 // If market moved DOWN, voting SHORT has EDGE
 // If market barely moved (0.5%), NEED CONVICTION >0.80 (costs will kill you)
 
-const trendAlignment = (marketMove24h > 0 && direction === 'LONG') 
+const trendAlignment = (marketMove24h > 0 && direction === 'LONG')
                     || (marketMove24h < 0 && direction === 'SHORT');
-                    
+
 // Fading trend without conviction = HOLD
 if (!trendAlignment && avgConviction < 0.80) → HOLD
 ```
@@ -144,7 +144,7 @@ Breakeven Price Moves:
 ```
 Consensus Gates Applied:
 - Random trading (2/4 votes, any conviction) = ~48% win rate
-- Conviction-gated (2 votes + 0.75+ confidence) = ~55% win rate  
+- Conviction-gated (2 votes + 0.75+ confidence) = ~55% win rate
 - Trend-aligned (following market direction) = ~58% win rate
 - All combined = Target: 58-62% win rate
 ```
@@ -179,7 +179,7 @@ After Fixes:
 **2. Added edge context to agent prompts (line ~2245)**
 ```javascript
 // Market move context tells agents when they have EDGE
-const edgeContext = marketMoveAbs > 3 
+const edgeContext = marketMoveAbs > 3
   ? `EDGE: Market moved strong. Trading WITH trend has edge.`
   : marketMoveAbs > 1.5
   ? `EDGE: Need >0.70 conviction to overcome costs.`
@@ -194,7 +194,7 @@ const edgeContext = marketMoveAbs > 3
 **4. Added trend matching validation (line ~2350)**
 ```javascript
 // PROFIT EDGE VALIDATION
-const trendAlignment = (marketMove24h > 0 && direction === 'LONG') 
+const trendAlignment = (marketMove24h > 0 && direction === 'LONG')
                     || (marketMove24h < 0 && direction === 'SHORT');
 if (!trendAlignment && avgConviction < 0.80) → HOLD
 ```
@@ -286,4 +286,3 @@ Expected: +5% to +30% profit on $10k starting balance
 - Real money trading
 
 🚀 **The app should now make money, not lose it.**
-

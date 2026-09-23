@@ -268,7 +268,7 @@ const isWin = Math.random() < winProb  // Random within range, not 50/50
 
 **Repository:** https://github.com/danhale93/Trade-Arena
 **Latest Commit:** `bbfd0b37` ✅ Production Ready
-**Files:** 
+**Files:**
 - `crucible-real-trading.js` (680 lines) - Main engine
 - `REAL_TRADING_SUCCESS.md` - Technical guide
 - `QUICK_START.md` - Beginner guide

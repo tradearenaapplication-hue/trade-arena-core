@@ -17,7 +17,7 @@ class TradingEngine {
      */
     async detectArbitrageOpportunities(marketPairs) {
         const opportunities = [];
-        
+
         for (let pair of marketPairs) {
             try {
                 // Fetch from multiple DEX APIs
@@ -58,7 +58,7 @@ class TradingEngine {
      */
     async detectFlashLoanOpportunities() {
         const opportunities = [];
-        
+
         // Check for MEV opportunities via Aave flash loans
         const flashLoanCost = 0.09; // 0.09% fee
         const loanAmount = 100; // ETH units
@@ -66,10 +66,10 @@ class TradingEngine {
         try {
             // Simulate MEV sandwich detection
             const mempool = await this.scanMempool();
-            
+
             for (let tx of mempool) {
                 const roi = await this.simulateFlashLoanStrategy(tx, loanAmount);
-                
+
                 if (roi > flashLoanCost) {
                     opportunities.push({
                         id: this.generateId(),
@@ -126,7 +126,7 @@ class TradingEngine {
         const winRate = Math.max(0.4, Math.min(0.75, historicalWinRate));
         const avgWin = 1.5;
         const avgLoss = 1.0;
-        
+
         const kellyFraction = (winRate * avgWin - (1 - winRate) * avgLoss) / avgWin;
         let positionFraction = kellyFraction * 0.25; // Use 25% of Kelly for safety
 
@@ -139,7 +139,7 @@ class TradingEngine {
         const adjustedLeverage = Math.min(leverage, Math.floor(20 / (volatility + 1)));
 
         const positionSize = capital * positionFraction * adjustedLeverage;
-        
+
         return {
             size: positionSize.toFixed(4),
             leverage: adjustedLeverage,
@@ -154,7 +154,7 @@ class TradingEngine {
      */
     generateTradeSignal(marketData) {
         const { price, volume, rsi, macd, bollinger } = marketData;
-        
+
         let signal = 0; // -1 = SELL, 0 = HOLD, 1 = BUY
         let confidence = 0;
 
@@ -217,7 +217,7 @@ class TradingEngine {
             while (session.status === 'RUNNING') {
                 // Fetch fresh market data
                 const marketData = await this.fetchMarketData(bot.strategy);
-                
+
                 let trade = null;
 
                 switch(bot.strategy) {
@@ -227,7 +227,7 @@ class TradingEngine {
                             trade = await this.executeTrade(bot, arbOpp[0]);
                         }
                         break;
-                    
+
                     case 'Flash Loan Farming':
                         const flashOpp = await this.detectFlashLoanOpportunities();
                         if (flashOpp.length > 0) {
@@ -297,7 +297,7 @@ class TradingEngine {
             // Simulate execution (in real app, would call smart contracts)
             trade.status = 'EXECUTED';
             trade.executedTime = Date.now();
-            
+
             // Simulate profit based on opportunity margin
             // opportunity.profitMargin is a percentage (e.g. 1.2 for 1.2%).
             const margin = Number(opportunity.profitMargin) || 0.5; // percent
@@ -334,11 +334,11 @@ class TradingEngine {
             // Simulate flash loan execution
             trade.status = 'EXECUTED';
             trade.executedTime = Date.now();
-            
+
             // Calculate profit after fees
             const roi = parseFloat(opportunity.expectedROI) - 0.09;
             trade.profit = (opportunity.loanAmount * roi / 100).toFixed(4);
-            
+
             trade.status = 'COMPLETED';
             trade.closedTime = Date.now();
         } catch (e) {

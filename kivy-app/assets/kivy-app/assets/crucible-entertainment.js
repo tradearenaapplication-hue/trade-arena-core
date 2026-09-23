@@ -3,7 +3,7 @@
  * ║                   CRUCIBLE TRADING ENTERTAINMENT SYSTEM                        ║
  * ║        The Stock Market as a Comedy Show (Your Jokes, Better Returns)         ║
  * ╚════════════════════════════════════════════════════════════════════════════════╝
- * 
+ *
  * Features:
  * - EXPLOSIVE animated numbers with particle effects
  * - HILARIOUS AI commentary (sarcastic, rude, silly, random)
@@ -117,7 +117,7 @@ const CrucibleEntertainment = {
     this.createUIContainer();
     this.loadSounds();
     this.setupAnimationFramework();
-    console.log('%c🎬 ENTERTAINMENT SYSTEM LOADED - GET READY FOR FIREWORKS! 🎆', 
+    console.log('%c🎬 ENTERTAINMENT SYSTEM LOADED - GET READY FOR FIREWORKS! 🎆',
       'color: #ff00ff; font-size: 20px; font-weight: bold; text-shadow: 0 0 10px #ff00ff;');
   },
 
@@ -221,7 +221,7 @@ const CrucibleEntertainment = {
           animation: bounce 0.5s ease-out, glow 1s infinite;
           pointer-events: none;
           z-index: 100001;
-          text-shadow: 
+          text-shadow:
             0 0 10px rgba(255, 255, 255, 0.8),
             0 0 20px rgba(0, 255, 255, 0.8),
             0 0 30px rgba(255, 0, 255, 0.8);
@@ -485,7 +485,7 @@ const CrucibleEntertainment = {
 
     // Initialize bot name and color
     this.initializeBotDisplay();
-    
+
     // Set up mute button state
     this.isMuted = false;
   },
@@ -495,18 +495,18 @@ const CrucibleEntertainment = {
     const botName = this.getBotName();
     const botColor = this.bots.primary.color;
     const botEmoji = this.bots.primary.emoji;
-    
+
     const botHeader = document.getElementById('bot-header');
     const botNameDiv = document.getElementById('bot-name');
     const ticker = document.getElementById('trade-ticker');
-    
+
     if (botHeader && botNameDiv) {
       botNameDiv.textContent = `${botName} ${botEmoji}`;
       botNameDiv.style.color = botColor;
       botHeader.style.borderBottomColor = botColor;
       botHeader.style.textShadow = `0 0 20px ${botColor}`;
     }
-    
+
     if (ticker) {
       ticker.style.color = botColor;
       ticker.style.borderColor = botColor;
@@ -530,7 +530,7 @@ const CrucibleEntertainment = {
     bgMusic.loop = true;
     this.bgMusic = bgMusic;
 
-    console.log('%c🎵 All sound effects loaded and ready to BLAST! 🔊', 
+    console.log('%c🎵 All sound effects loaded and ready to BLAST! 🔊',
       'color: #ffff00; font-weight: bold;');
   },
 
@@ -538,7 +538,7 @@ const CrucibleEntertainment = {
   setupAnimationFramework() {
     // CSS will handle most animations
     // This initializes the event listeners
-    console.log('%c⚡ Animation framework CHARGED and READY! ⚡', 
+    console.log('%c⚡ Animation framework CHARGED and READY! ⚡',
       'color: #00ffff; font-weight: bold;');
   },
 
@@ -565,7 +565,7 @@ const CrucibleEntertainment = {
     box.className = `commentary-box ${type}`;
     box.textContent = text;
     box.style.animation = 'slideIn 0.5s ease-out, pulse 2s infinite';
-    
+
     container.appendChild(box);
 
     setTimeout(() => box.remove(), 4000);
@@ -598,22 +598,22 @@ const CrucibleEntertainment = {
   createParticles(x, y, type = 'emoji') {
     const container = document.getElementById('crucible-entertainment');
     const particles = ['💰', '💎', '🔥', '⭐', '✨', '🚀', '🎉'];
-    
+
     for (let i = 0; i < 10; i++) {
       const particle = document.createElement('div');
       particle.className = 'particle';
       particle.textContent = particles[Math.floor(Math.random() * particles.length)];
       particle.style.left = x + 'px';
       particle.style.top = y + 'px';
-      
+
       const angle = (Math.PI * 2 * i) / 10;
       const distance = 150;
       const tx = Math.cos(angle) * distance;
       const ty = Math.sin(angle) * distance;
-      
+
       particle.style.setProperty('--tx', tx + 'px');
       particle.style.setProperty('--ty', ty + 'px');
-      
+
       container.appendChild(particle);
       setTimeout(() => particle.remove(), 1000);
     }
@@ -622,23 +622,23 @@ const CrucibleEntertainment = {
   // Countdown animation
   countdown(fromNumber = 3) {
     const container = document.getElementById('crucible-entertainment');
-    
+
     const animate = (num) => {
       if (num < 0) return;
-      
+
       const countdown = document.createElement('div');
       countdown.className = 'countdown';
       countdown.textContent = num;
       container.appendChild(countdown);
-      
+
       this.playSound('bell');
-      
+
       setTimeout(() => {
         countdown.remove();
         if (num > 0) animate(num - 1);
       }, 1000);
     };
-    
+
     animate(fromNumber);
   },
 
@@ -649,9 +649,9 @@ const CrucibleEntertainment = {
     ann.className = 'announcement';
     ann.textContent = text;
     container.appendChild(ann);
-    
+
     this.playSound('jackpot');
-    
+
     setTimeout(() => ann.remove(), duration);
   },
 
@@ -661,7 +661,7 @@ const CrucibleEntertainment = {
     const lossesDisplay = document.getElementById('losses-display');
     const balanceDisplay = document.getElementById('balance-display');
     const streakDisplay = document.getElementById('streak-display');
-    
+
     if (winsDisplay) winsDisplay.textContent = `WINS: ${wins}`;
     if (lossesDisplay) lossesDisplay.textContent = `LOSSES: ${losses}`;
     if (balanceDisplay) balanceDisplay.textContent = `$${balance.toFixed(2)}`;
@@ -678,10 +678,10 @@ const CrucibleEntertainment = {
   celebrateWin(pnl, x, y) {
     this.playSound('win');
     this.playSound('jackpot');
-    
+
     const comment = this.getCommentary('wins');
     this.showCommentary(comment, 'win');
-    
+
     this.animateNumber(pnl, x, y, 'win');
     this.createParticles(x, y);
   },
@@ -689,10 +689,10 @@ const CrucibleEntertainment = {
   // React to loss
   reactToLoss(pnl, x, y) {
     this.playSound('loss');
-    
+
     const comment = this.getCommentary('losses');
     this.showCommentary(comment, 'loss');
-    
+
     this.animateNumber(pnl, x, y, 'loss');
     this.createParticles(x, y);
   },
@@ -714,22 +714,22 @@ const CrucibleEntertainment = {
   // Deploy the Crucible trading engine
   deployTrading() {
     const deployBtn = document.getElementById('deploy-btn');
-    
+
     // Check if trading engine exists
     if (typeof runCrucibleReal !== 'function') {
       this.showCommentary('ERROR: Trading engine not loaded! 😭', 'loss');
       return;
     }
-    
+
     // Disable the deploy button to prevent multiple clicks
     deployBtn.disabled = true;
     deployBtn.textContent = '🚀 DEPLOYING...';
     deployBtn.style.opacity = '0.5';
-    
+
     // Show deployment announcement
     this.announcement('🚀 CRUCIBLE DEPLOYED! TRADING LIVE!');
     this.playSound('boom');
-    
+
     // Wait 1 second then launch
     setTimeout(() => {
       try {
@@ -748,32 +748,32 @@ const CrucibleEntertainment = {
   toggleMute() {
     this.isMuted = !this.isMuted;
     const muteBtn = document.getElementById('mute-btn');
-    
+
     if (this.isMuted) {
       // Mute all sounds
       muteBtn.textContent = '🔇 UNMUTE';
       muteBtn.classList.add('muted');
-      
+
       // Mute all audio elements
       Object.keys(this.sounds).forEach(key => {
         const audio = this.sounds[key + '_audio'];
         if (audio) audio.volume = 0;
       });
       if (this.bgMusic) this.bgMusic.volume = 0;
-      
+
       this.showCommentary('🔇 SOUND MUTED! Vibe: SILENT MODE ACTIVATED! 🤐', 'neutral');
     } else {
       // Unmute all sounds
       muteBtn.textContent = '🔊 MUTE';
       muteBtn.classList.remove('muted');
-      
+
       // Restore sound volumes
       Object.keys(this.sounds).forEach(key => {
         const audio = this.sounds[key + '_audio'];
         if (audio) audio.volume = 0.3;
       });
       if (this.bgMusic) this.bgMusic.volume = 0.1;
-      
+
       this.playSound('bell');
       this.showCommentary('🔊 SOUND RESTORED! Welcome BACK! 🎉', 'win');
     }

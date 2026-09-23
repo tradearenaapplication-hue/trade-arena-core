@@ -52,7 +52,7 @@
 
 ## Next Steps (Testing):
 - [ ] Test Privy login flow
-- [ ] Test MoonPay deposit flow  
+- [ ] Test MoonPay deposit flow
 - [ ] Test fallback to demo mode
 
 ## Configuration (Update with real keys)

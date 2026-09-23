@@ -1,19 +1,19 @@
 /**
  * COST MODEL - Full Trading Cost Model
- * 
+ *
  * Includes:
  * - $3 flat gas fee
  * - 0.15% slippage
  * - 0.05% spread
  * - 1.5x stress variant for worst-case
- * 
+ *
  * @version 1.0.0
  * @date 2025-01-15
  */
 
 export interface CostModelConfig {
   gasFee: number;        // Flat gas fee in USD
-  slippagePercent: number;  // Slippage % 
+  slippagePercent: number;  // Slippage %
   spreadPercent: number;  // Spread %
   stressMultiplier: number; // Multiplier for stress testing
 }
@@ -46,7 +46,7 @@ export const STRESS_COST_MODEL: CostModelConfig = {
 
 /**
  * Calculate costs for a trade
- * 
+ *
  * @param notional - Trade size in USD
  * @param costModel - Cost model to use
  * @returns TradeCosts breakdown
@@ -56,25 +56,25 @@ export function calculateCosts(
   costModel: CostModelConfig = DEFAULT_COST_MODEL
 ): TradeCosts {
   const { gasFee, slippagePercent, spreadPercent, stressMultiplier } = costModel;
-  
+
   // Calculate slippage cost
   const slippage = notional * slippagePercent / 100;
-  
+
   // Calculate spread cost (applies to both entry and exit)
   const spread = notional * spreadPercent / 100;
-  
+
   // Gas is flat fee (paid twice - entry + exit)
   const totalGas = gasFee * 2;
-  
+
   // Entry costs: gas + slippage + spread
   const entryCost = gasFee + slippage + spread;
-  
+
   // Exit costs: gas + slippage + spread
   const exitCost = gasFee + slippage + spread;
-  
+
   // Total round-trip cost
   const totalCost = entryCost + exitCost;
-  
+
   return {
     entryCost,
     exitCost,
@@ -88,7 +88,7 @@ export function calculateCosts(
 
 /**
  * Calculate net P&L after costs
- * 
+ *
  * @param grossPnL - P&L before costs
  * @param costs - Calculated costs
  * @returns Net P&L after costs
@@ -99,11 +99,11 @@ export function applyCosts(grossPnL: number, costs: TradeCosts): number {
 
 /**
  * Calculate break-even win rate
- * 
+ *
  * Given risk/reward ratio and costs, what win rate is needed?
- * 
+ *
  * @param winAmount - Amount won on winners
- * @param lossAmount - Amount lost on losers  
+ * @param lossAmount - Amount lost on losers
  * @param costsPerTrade - Total round-trip costs
  * @returns Break-even win rate
  */
@@ -120,29 +120,29 @@ export function calculateBreakEvenWinRate(
   // Win% * WinAmt = LossAmt - Win% * LossAmt + Costs
   // Win% * (WinAmt + LossAmt) = LossAmt + Costs
   // Win% = (LossAmt + Costs) / (WinAmt + LossAmt)
-  
+
   const total = winAmount + lossAmount;
   if (total === 0) return 0.5;
-  
+
   return (lossAmount + costsPerTrade) / total;
 }
 
 /**
  * Calculate minimum edge needed
- * 
+ *
  * Minimum win probability + edge needed to be profitable
- * 
+ *
  * @param costs - Trade costs
  * @param notional - Trade size
  * @returns Minimum win probability needed
  */
 export function calculateMinEdge(costs: TradeCosts, notional: number): number {
   if (notional === 0) return 0.5;
-  
+
   // Need to cover costs with edge
   // Edge needed = costs / notional
   const edgeNeeded = costs.totalCost / notional;
-  
+
   return edgeNeeded;
 }
 
@@ -176,8 +176,8 @@ export function createCostModel(multiplier: number = 1.0): CostModelConfig {
   if (multiplier === 1.5) {
     return { ...STRESS_COST_MODEL };
   }
-  return { 
-    ...DEFAULT_COST_MODEL, 
+  return {
+    ...DEFAULT_COST_MODEL,
     gasFee: DEFAULT_COST_MODEL.gasFee * multiplier,
     slippagePercent: DEFAULT_COST_MODEL.slippagePercent * multiplier,
     spreadPercent: DEFAULT_COST_MODEL.spreadPercent * multiplier,

@@ -22,7 +22,7 @@ async init() {
     if (this.initialized) {
       return Promise.resolve();
     }
-    
+
     // Create audio context (requires user interaction in modern browsers)
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -33,21 +33,21 @@ async init() {
     this.masterGain = this.ctx.createGain();
     this.masterGain.gain.value = 0.7;
     this.masterGain.connect(this.ctx.destination);
-    
+
     // Create reverb
     this.convolver = this.ctx.createConvolver();
     this.convolver.buffer = this.createReverbImpulse();
     this.convolver.connect(this.masterGain);
-    
+
     // Dry/wet mix
     this.dryGain = this.ctx.createGain();
     this.dryGain.gain.value = 0.6;
     this.dryGain.connect(this.masterGain);
-    
+
     this.wetGain = this.ctx.createGain();
     this.wetGain.gain.value = 0.4;
     this.wetGain.connect(this.convolver);
-    
+
     // Initialize 8 synth pads with unique sounds
     const padSounds = [
       { name: 'KICK', freq: 60, type: 'sine', decay: 0.3 },
@@ -59,7 +59,7 @@ async init() {
       { name: 'BASS', freq: 80, type: 'square', decay: 0.25 },
       { name: 'PAD', freq: 220, type: 'sine', decay: 0.8 }
     ];
-    
+
     for (let i = 0; i < 8; i++) {
       this.pads.push({
         ...padSounds[i],
@@ -70,7 +70,7 @@ async init() {
       this.pads[i].gain.connect(this.dryGain);
       this.pads[i].gain.connect(this.wetGain);
     }
-    
+
     // Initialize grid: 8 rows × 16 steps
     for (let row = 0; row < 8; row++) {
       this.grid[row] = [];
@@ -78,7 +78,7 @@ async init() {
         this.grid[row][step] = { active: false, intensity: 0, trade: null };
       }
     }
-    
+
     this.initialized = true;
     return Promise.resolve();
   }
@@ -98,32 +98,32 @@ async init() {
   // Trigger a pad sound based on trade result
   triggerPad(padIndex, intensity = 1, trade = null) {
     if (!this.initialized || !this.ctx) return;
-    
+
     const now = this.ctx.currentTime;
     const pad = this.pads[padIndex];
     if (!pad) return;
-    
+
     const osc = this.ctx.createOscillator();
     osc.type = pad.type;
     osc.frequency.setValueAtTime(pad.freq * (0.9 + Math.random() * 0.2), now);
-    
+
     const gain = this.ctx.createGain();
     const vel = intensity * 0.3;
     gain.gain.setValueAtTime(vel, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + pad.decay);
-    
+
     osc.connect(gain);
     gain.connect(pad.gain);
-    
+
     osc.start(now);
     osc.stop(now + pad.decay + 0.1);
-    
+
     // If trade info, light up the grid cell
     if (trade && this.grid[padIndex]) {
       const step = this.stepIndex;
-      this.grid[padIndex][step] = { 
-        active: true, 
-        intensity: intensity, 
+      this.grid[padIndex][step] = {
+        active: true,
+        intensity: intensity,
         trade: trade,
         timestamp: Date.now()
       };
@@ -133,7 +133,7 @@ async init() {
   // Trigger all pads for a trade event
   triggerTrade(trade) {
     if (!trade) return;
-    
+
     // Map trade outcome to pad triggers
     if (trade.isWin) {
       // Wins trigger ascending pattern
@@ -146,7 +146,7 @@ async init() {
       setTimeout(() => this.triggerPad(3, 0.8, trade), 80);  // CLAP
       setTimeout(() => this.triggerPad(7, 0.4, trade), 160); // low PAD
     }
-    
+
     // Open position triggers synth pad
     if (trade.status === 'open') {
       this.triggerPad(5, 0.7, trade); // SYNTH
@@ -156,10 +156,10 @@ async init() {
   // Sequencer playback
   start() {
     if (!this.initialized || this.isPlaying) return;
-    
+
     this.isPlaying = true;
     const intervalMs = (60000 / this.bpm) / 4;
-    
+
     this.sequencer = setInterval(() => {
       this.playStep();
     }, intervalMs);
@@ -187,18 +187,18 @@ async init() {
         }
       }
     }
-    
+
     this.stepIndex = (this.stepIndex + 1) % this.steps;
   }
 
   // Convert machine/bot to pad trigger
   triggerFromMachine(bot, result) {
     if (!bot || !result) return;
-    
+
     // Map bot ID to pad (0-7)
     const padIndex = (bot.id - 1) % 8;
     const intensity = result.isWin ? 1 : result.isWin === false ? 0.6 : 0.3;
-    
+
     this.triggerPad(padIndex, intensity, {
       botId: bot.id,
       method: result.method,
@@ -209,7 +209,7 @@ async init() {
 
   // Get the grid state for UI rendering
   getGridState() {
-    return this.grid.map((row, rowIdx) => 
+    return this.grid.map((row, rowIdx) =>
       row.map((cell, stepIdx) => ({
         row: rowIdx,
         step: stepIdx,

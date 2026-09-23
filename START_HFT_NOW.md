@@ -180,7 +180,7 @@ Vote:
   - Sentiment: ✅ YES (hype is strong)
   - Politician: ❌ NO (bad optics)
   - Risk: ✅ YES (acceptable risk)
-  
+
 Result: 4/5 vote YES → BUY decision
 Trade: "PEPE FLASH LOAN +$250"
 ```
@@ -219,7 +219,7 @@ Trade: "PEPE FLASH LOAN +$250"
 ## 🔧 Troubleshooting
 
 ### "Nothing is happening"
-**Check**: 
+**Check**:
 - Bots added? (at least 1)
 - Bets set? (each bot has amount)
 - Clicked 🚀 HFT START? (not individual bots)
@@ -283,7 +283,7 @@ Trade: "PEPE FLASH LOAN +$250"
 - Real market orders
 
 ### Q: What happens when I click 🛑 HFT STOP?
-**A**: 
+**A**:
 - All bots stop immediately
 - Pending trades complete
 - No new trades initiated
@@ -305,9 +305,9 @@ Everything is set up and ready to go. Just:
 
 ## 🚀 Let's Go!
 
-**Open**: http://localhost:8000  
-**Login**: Demo Mode  
-**Trade**: 🚀 HFT START  
+**Open**: http://localhost:8000
+**Login**: Demo Mode
+**Trade**: 🚀 HFT START
 **Enjoy**: 300-900 trades/minute! 📈
 
 ---

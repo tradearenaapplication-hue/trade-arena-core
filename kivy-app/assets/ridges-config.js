@@ -15,6 +15,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = RIDGES_CONFIG;
 }
 
-// Usage: 
+// Usage:
 // import { RIDGES_CONFIG } from './ridges-config.js';
 // console.log(RIDGES_CONFIG.agentId);

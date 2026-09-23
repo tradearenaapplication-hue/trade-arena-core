@@ -64,7 +64,7 @@ Each bot gets a **unique set of audio samples** for trade events:
 
 **Global Bell**: Rings at specific balance milestones:
 - Every $100 profit
-- Every $500 profit  
+- Every $500 profit
 - New high water mark
 - Doubled initial balance
 

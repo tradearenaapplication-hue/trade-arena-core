@@ -151,13 +151,13 @@ function addLog(message, type = 'info') {
   const entry = `[${timestamp}] ${message}`;
   logs.unshift(entry);
   console.log(entry);
-  
+
   const logEl = document.getElementById('testLog');
   if (logEl) {
     let html = '';
     logs.forEach(log => {
-      const className = log.includes('✅') ? 'log-success' : 
-                       log.includes('❌') || log.includes('Error') ? 'log-error' : 
+      const className = log.includes('✅') ? 'log-success' :
+                       log.includes('❌') || log.includes('Error') ? 'log-error' :
                        'log-entry';
       html += `<div class="${className}">${log}</div>`;
     });
@@ -179,7 +179,7 @@ function updateStatus() {
 
   const statusPanel = document.getElementById('statusPanel');
   let html = '';
-  
+
   for (const [key, value] of Object.entries(status)) {
     const valueClass = value === true || (typeof value === 'number' && value > 0) ? 'green' : value === false ? 'red' : '';
     const displayValue = typeof value === 'boolean' ? (value ? '✅ YES' : '❌ NO') : value;
@@ -189,7 +189,7 @@ function updateStatus() {
       </div>
     `;
   }
-  
+
   statusPanel.innerHTML = html;
 }
 
@@ -220,7 +220,7 @@ function testAddBot() {
     botIdCounter++;
     const botId = botIdCounter;
     bots.push({ id: botId, pnl: 0 });
-    
+
     if (tickerGraph) {
       tickerGraph.assignBotColors();
       addLog(`✅ Bot #${botId} added, color: ${tickerGraph.botColors[botId]}`, 'success');
@@ -241,10 +241,10 @@ function testRecordTrade() {
       addLog('⚠️ No bots to trade with, adding one first...', 'info');
       testAddBot();
     }
-    
+
     const botId = bots[0].id;
     const pnl = Math.random() * 100 - 50; // Random -50 to +50
-    
+
     if (tickerGraph && tickerGraph.recordTrade) {
       tickerGraph.recordTrade(botId, pnl);
       addLog(`✅ Trade recorded: Bot #${botId}, P&L: $${pnl.toFixed(2)}`, 'success');
@@ -264,23 +264,23 @@ function testMultipleTrades() {
     if (bots.length === 0) {
       testAddBot();
     }
-    
+
     // Add 2 more bots if only 1
     while (bots.length < 3) {
       botIdCounter++;
       bots.push({ id: botIdCounter, pnl: 0 });
     }
-    
+
     tickerGraph.assignBotColors();
     addLog(`✅ Now have ${bots.length} bots`, 'success');
-    
+
     // Record 10 random trades
     for (let i = 0; i < 10; i++) {
       const bot = bots[Math.floor(Math.random() * bots.length)];
       const pnl = (Math.random() * 60 - 15);
       tickerGraph.recordTrade(bot.id, pnl);
     }
-    
+
     addLog(`✅ Recorded 10 trades across ${bots.length} bots`, 'success');
     updateStatus();
   } catch (error) {

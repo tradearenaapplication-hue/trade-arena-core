@@ -95,24 +95,24 @@ Auto Mode (SMART!):
 ```
 Second 1:
   Market analyzing...
-  
+
 Second 2:
   Method selected: (depends on market)
   Edge calculated: 2.5% → 2.1% (adapted!)
   Bet sized: $10 → $8 (risk-adjusted)
-  
+
 Second 3-4:
   Reels spinning...
-  
+
 Second 5:
   Result displayed
   Pills light up
   P&L updated
   Ticker shows: Win/Loss + Market + WR%
-  
+
 Second 6-8:
   Wait before next trade
-  
+
 Second 9:
   Repeat!
 ```
@@ -127,7 +127,7 @@ You might see:
   Trade 1: [ARBIT] (stable market)
   Trade 2: [FLASH] (volatile market)
   Trade 3: [SPOT]  (trending market)
-  
+
 This is CORRECT!
 System adapting to market conditions.
 ```
@@ -138,7 +138,7 @@ You might see:
   Trade 1: [2.5%] → [2.5%] (no change)
   Trade 2: [2.0%] → [2.1%] (higher, after win)
   Trade 3: [3.0%] → [2.5%] (lower, after loss)
-  
+
 This is CORRECT!
 System managing risk.
 ```
@@ -150,7 +150,7 @@ You might see:
   Trade 2: $8 bet (after loss)
   Trade 3: $6 bet (after 2nd loss)
   Trade 4: $7 bet (after recovery)
-  
+
 This is CORRECT!
 System protecting capital.
 ```
@@ -177,7 +177,7 @@ Shows:
 ```
 In console (F12), type:
   getBotStrategyInsights(botStrategies[1])
-  
+
 Shows:
   ✓ Total trades
   ✓ Session P&L
@@ -384,7 +384,7 @@ Results after 20 trades per bot:
   Bot 4 (CONS):     +$5.75  WR: 58%
   ─────────────────────────────────
   Total:            +$24.45
-  
+
 Status: Positive! Continue...
 ```
 
@@ -398,7 +398,7 @@ Analysis:
   Bot 2 (SCALPER): 56% WR, Best: FLASH LOAN
   Bot 3 (TREND):   54% WR, Best: SPOT LONG
   Bot 4 (CONS):    61% WR, Best: ARBITRAGE
-  
+
 Best performer: Bot 4 (CONSERVATIVE)
 Worst performer: Bot 3 (TREND) - but still profitable!
 

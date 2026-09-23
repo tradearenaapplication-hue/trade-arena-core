@@ -2,6 +2,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+<<<<<<< HEAD
 # Install dependencies
 COPY package*.json ./
 RUN npm ci --production
@@ -32,3 +33,22 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Start the application
 CMD ["node", "server.js"]
+=======
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile || pnpm install || npm install
+
+# Copy application source
+COPY . .
+
+# Expose default server port
+EXPOSE 3001
+
+# Start the Express server
+CMD ["node", "server.js"]
+>>>>>>> bf749b26813ee921116b00ae8b1b9d78070a12ae

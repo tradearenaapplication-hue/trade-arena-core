@@ -16,7 +16,7 @@
   - No detailed results display
   - No auto-optimization between trades
 
-### 2. MUSIC PLAYER - Current Implementation  
+### 2. MUSIC PLAYER - Current Implementation
 - **Location**: `crucible-entertainment.js` (sounds system)
 - **State**: Implemented in entertainment module only
 - **Features Present**:
@@ -74,7 +74,7 @@ Ensure all audio systems work together:
 Improve visual feedback during batch execution:
 
 **Current**: Just runs trades silently
-**Enhanced**: 
+**Enhanced**:
 - Real-time progress counter
 - Trade-by-trade results summary
 - Running totals display
@@ -103,7 +103,7 @@ Add intelligent trade selection:
 
 **Features**:
 - Learn from previous trades
-- Skip similar methods consecutively  
+- Skip similar methods consecutively
 - Momentum-based method selection
 - Risk-adjusted position sizing
 
@@ -113,7 +113,7 @@ Add intelligent trade selection:
 Improve final results display:
 
 **Before**: Simple alert with totals
-**After**: 
+**After**:
 - Modal with detailed breakdown
 - Method-by-method analysis
 - Comparison to baselines
@@ -153,7 +153,7 @@ Improve final results display:
 ## TODO Checklist
 
 - [ ] 1. Add music toggle button to header
-- [ ] 2. Implement toggleBackgroundMusic() function  
+- [ ] 2. Implement toggleBackgroundMusic() function
 - [ ] 3. Test background music playback
 - [ ] 4. Enhance runCrucibleBatch() with live progress
 - [ ] 5. Add pause/cancel controls

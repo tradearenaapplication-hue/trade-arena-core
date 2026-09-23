@@ -26,9 +26,9 @@ SOFTWARE.
 
 ### RISK WARNING
 
-Trading cryptocurrencies and using this software involves substantial risk of 
-loss, including loss of your entire investment. This software is provided for 
-informational and educational purposes only and is not intended as investment 
+Trading cryptocurrencies and using this software involves substantial risk of
+loss, including loss of your entire investment. This software is provided for
+informational and educational purposes only and is not intended as investment
 advice or financial recommendation.
 
 ### NO FINANCIAL ADVICE
@@ -40,7 +40,7 @@ This software does not constitute:
 - Offer to buy or sell any security
 - Guarantee of profits or protection from losses
 
-The user is solely responsible for determining the appropriateness of using 
+The user is solely responsible for determining the appropriateness of using
 this software based on their own financial situation and risk tolerance.
 
 ### MARKET RISKS
@@ -133,7 +133,7 @@ For questions or concerns about this license:
 
 ### CHANGES TO LICENSE
 
-The authors reserve the right to modify this license at any time. 
+The authors reserve the right to modify this license at any time.
 Continued use of the software constitutes acceptance of any changes.
 
 ---
@@ -142,7 +142,7 @@ Continued use of the software constitutes acceptance of any changes.
 
 This software is provided "AS-IS" for experienced cryptocurrency traders only.
 You alone are responsible for all trading decisions and financial outcomes.
-Start with small amounts, understand each strategy, and only risk what you 
+Start with small amounts, understand each strategy, and only risk what you
 can afford to lose.
 
 **NOT INVESTMENT ADVICE. USE AT YOUR OWN RISK.**

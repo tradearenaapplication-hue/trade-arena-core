@@ -13,7 +13,7 @@
    - Each of 8 connection steps explained
    - Common error codes & solutions
    - Troubleshooting for each step
-   
+
 2. **METAMASK_POPUPS_GUIDE.md**
    - Visual guide to MetaMask popups
    - Which buttons to click
@@ -24,7 +24,7 @@
   - What code was changed
   - Why it was changed
   - How the new debugging works
-  
+
 - **LATEST_IMPROVEMENT.md**
   - Summary of this improvement
   - 8-step connection tracking
@@ -124,7 +124,7 @@ I've read: DO_THIS_NOW.md
 Issue: MetaMask connection fails at network switch
 Step that failed: Step 4
 Error code: 4001
-Console output: 
+Console output:
 [Step 4] ❌ Failed to switch network: User rejected request
 Error code: 4001
 ```

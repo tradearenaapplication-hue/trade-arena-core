@@ -1,6 +1,6 @@
 # Trading Logic Audit & Data-Backed Trade Verification
 
-**Date:** March 20, 2026  
+**Date:** March 20, 2026
 **Status:** AUDIT COMPLETE with critical fixes applied
 
 ---
@@ -50,7 +50,7 @@ if (marketData.avgVolume && volume > marketData.avgVolume * 1.5) {
 profitMargin: profitMargin.toFixed(2),  // Returns string "1.23"
 ```
 
-**Problem:** 
+**Problem:**
 - `toFixed()` returns a **string**, not a number
 - Later arithmetic in `executeTrade` treats it as a string
 - String multiplication/division produces unexpected results
@@ -71,13 +71,13 @@ profitMargin: Number(profitMargin.toFixed(2)),  // Ensures numeric type
 
 **Original Code:**
 ```javascript
-const simulatedProfit = 
+const simulatedProfit =
     (opportunity.profitMargin || 0.5) *  // ← Treats as multiplier, not %
-    parseFloat(trade.size) * 
+    parseFloat(trade.size) *
     0.8; // 80% success rate
 ```
 
-**Problem:** 
+**Problem:**
 - If `profitMargin = 1.2` (meaning 1.2%), code multiplies by 1.2 directly
 - Should multiply by (1.2 / 100) to convert percentage to decimal
 - Example: $10 position with 1.2% margin should yield $0.12 profit, not $9.60 (1.2 × 10)
@@ -111,7 +111,7 @@ trade.profitPercent = Number((...).toFixed(2));            // Store as number
   // In generateSignals():
   signals.entrySignal = true;  // Always generates entry signal
   signals.confidence = Math.min(100, riskDistance + momentumStrength);
-  
+
   // Ensures minimum confidence:
   if (signals.confidence < 30) {
       signals.confidence = 30; // Always at least 30%
@@ -167,7 +167,7 @@ await CrucibleRealTrading.start();
 **To improve:** Add true selective entry filters:
 ```javascript
 // Example: Only trade when RSI is extremum or momentum crosses zero
-if ((indicators.rsi < 35 || indicators.rsi > 65) && 
+if ((indicators.rsi < 35 || indicators.rsi > 65) &&
     indicators.momentum * indicators.prevMomentum < 0) {
     // Only then generate entry signal
     signals.entrySignal = true;

@@ -2,7 +2,7 @@
 
 ## Summary of What Was Built
 
-Your request was to have the ticker graph **live track each bot's actions, logging them on individual color-coded lines, and add a master auto button**. 
+Your request was to have the ticker graph **live track each bot's actions, logging them on individual color-coded lines, and add a master auto button**.
 
 ✅ **ALL FEATURES DELIVERED:**
 
@@ -167,7 +167,7 @@ Ticker legend showed:
 ```
 Ticker legend shows:
 - Bot number
-- Total P&L  
+- Total P&L
 - Win rate
 - Last 8 actions (real-time)
 - Color-coded results

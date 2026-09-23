@@ -1,7 +1,7 @@
 /**
  * AI API Integration for Trade Arena v4
  * Handles Claude API calls for trading decisions
- * 
+ *
  * Setup: Add your Anthropic API key to .env as ANTHROPIC_API_KEY
  */
 
@@ -103,7 +103,7 @@ IMPORTANT:
 
     const data = await response.json();
     const content = data.content?.[0]?.text || '{}';
-    
+
     // Clean JSON response (remove markdown code blocks if present)
     const cleanedJson = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const parsed = JSON.parse(cleanedJson);

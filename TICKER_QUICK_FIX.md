@@ -13,7 +13,7 @@
 - Works even if called before DOM ready
 - Added error checking for 2D context
 
-### 2️⃣ Placeholder Display  
+### 2️⃣ Placeholder Display
 - Shows "Start trading to see live performance" when empty
 - Grid always visible
 - Clear user feedback
@@ -44,7 +44,7 @@ Click "ADD BOT"
 
 ### Step 3: Make Trade
 ```
-Click "SPIN" 
+Click "SPIN"
 → Result appears on graph ✓
 → Legend shows badge (✅ or ❌) ✓
 ```
@@ -77,7 +77,7 @@ Bot Legend: (empty)
 │     • (dot at trade point)  │
 │  [Grid pattern]             │
 └─────────────────────────────┘
-Bot Legend: 
+Bot Legend:
   Bot #1  +$15  100% WR  ✅ +$15
 ```
 
@@ -89,7 +89,7 @@ Bot Legend:
 │  [Grid pattern]             │
 └─────────────────────────────┘
 Bot Legend:
-  Bot #1  +$38  75% WR  
+  Bot #1  +$38  75% WR
     ✅ +$12  ✅ +$15  ❌ -$8  ✅ +$19
 ```
 

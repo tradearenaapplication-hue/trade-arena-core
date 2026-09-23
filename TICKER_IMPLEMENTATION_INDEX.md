@@ -17,11 +17,11 @@ Your request was for:
 
 **How It Works:**
 ```
-Trade completes → recordTradeInTicker() → 
-tickerGraph.recordTrade() → 
-logAction() → 
-botActionLogs array updated → 
-updateLegend() → 
+Trade completes → recordTradeInTicker() →
+tickerGraph.recordTrade() →
+logAction() →
+botActionLogs array updated →
+updateLegend() →
 User sees new action badge
 ```
 
@@ -205,7 +205,7 @@ OFF State:
   Background: rgba(57,255,20,.15)
   Border: 2px solid green
   Box-shadow: none
-  
+
 ON State:
   Text: "AUTO ON"
   Background: rgba(57,255,20,.25)
@@ -301,7 +301,7 @@ Network Impact: None (local only)
 
 ✅ All Browsers
 - Chrome
-- Firefox  
+- Firefox
 - Safari
 - Edge
 
@@ -389,7 +389,7 @@ A: No, overhead is <1ms and doesn't affect trading speed.
 ## Summary
 
 ✅ **Live action tracking** - Each bot shows real-time trades
-✅ **Color-coded badges** - Green for wins, red for losses  
+✅ **Color-coded badges** - Green for wins, red for losses
 ✅ **Accurate & verifiable** - P&L amounts match exactly
 ✅ **Master auto button** - Control all bots with one click
 ✅ **Enhanced legend** - Better design with more info

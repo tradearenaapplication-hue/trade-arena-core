@@ -159,36 +159,36 @@ TIME      EVENT
 ═════════════════════════════════════════════════════════════
 
 00:00     ▶️ AUTO clicked or spinBot() called
-          
+
 00:50     📊 Market data fetched (8 top coins)
-          
+
 01:00     🏟️ Tournament starts
-          
+
 01:10     🔬 ANALYST analyzing...
 01:15     ⚡ TRADER analyzing...
 01:20     🎯 STRATEGIST analyzing...
-          
+
 02:50     🗳️ All models done, voting begins
-          
+
 02:95     📊 Vote scores calculated
           ⚡ TRADER: 0.79 ← HIGHEST
-          
+
 03:00     ✅ Execution validation gates check
           ✅ Consensus: 85%
           ✅ Confidence: 85%
           ✅ Volatility: 4.8%
           ✅ All pass!
-          
+
 03:20     💰 Trade: SOL PERP LONG approved
-          
+
 03:30     🎰 Spinner animation begins
-          
+
 05:00     WIN/LOSS determined
           Result: WIN +$44.10
-          
+
 05:20     📊 Update leaderboard
           TRADER +1 win
-          
+
 05:30     ⏰ Schedule next auto-spin
           (if AUTO still enabled)
 

@@ -50,7 +50,7 @@ const expectedAssignments = {
 if (typeof BOT_MODEL_ASSIGNMENT !== 'undefined' && BOT_MODEL_ASSIGNMENT.assignments) {
   let passed = 0;
   let failed = 0;
-  
+
   for (const [profile, expectedModel] of Object.entries(expectedAssignments)) {
     const actual = BOT_MODEL_ASSIGNMENT.assignments[profile];
     if (actual && actual.preferred === expectedModel) {
@@ -61,7 +61,7 @@ if (typeof BOT_MODEL_ASSIGNMENT !== 'undefined' && BOT_MODEL_ASSIGNMENT.assignme
       failed++;
     }
   }
-  
+
   console.log(`\nResult: ${passed}/${passed + failed} passed`);
 } else {
   console.log('❌ BOT_MODEL_ASSIGNMENT not found');
@@ -77,7 +77,7 @@ if (typeof LM_ARENA_MODELS !== 'undefined') {
     const tierModels = Object.keys(LM_ARENA_MODELS[tier]);
     totalModels += tierModels.length;
     console.log(`${tier}: ${tierModels.length} models`);
-    
+
     // Show first few models
     tierModels.slice(0, 2).forEach(modelName => {
       const config = LM_ARENA_MODELS[tier][modelName];
@@ -96,7 +96,7 @@ console.log('──────────────────────�
 if (typeof MODEL_PERSONALITY_TRAITS !== 'undefined') {
   const traits = Object.keys(MODEL_PERSONALITY_TRAITS);
   console.log(`✅ Found ${traits.length} personality types`);
-  
+
   // Show a few examples
   traits.slice(0, 3).forEach(trait => {
     const config = MODEL_PERSONALITY_TRAITS[trait];
@@ -139,13 +139,13 @@ if (typeof ARENA_COMPETITION !== 'undefined') {
   } else {
     console.log('❌ ARENA_COMPETITION.initializeModel not found');
   }
-  
+
   if (typeof ARENA_COMPETITION.recordTrade === 'function') {
     console.log('✅ ARENA_COMPETITION.recordTrade');
   } else {
     console.log('❌ ARENA_COMPETITION.recordTrade not found');
   }
-  
+
   if (typeof ARENA_COMPETITION.getLeaderboard === 'function') {
     console.log('✅ ARENA_COMPETITION.getLeaderboard');
   } else {
@@ -162,7 +162,7 @@ console.log('──────────────────────�
 if (typeof MODEL_SELECTION !== 'undefined') {
   const strategies = ['roundRobin', 'eloWeighted', 'profileOptimal', 'diverseTiers', 'costEfficient', 'speedOptimal'];
   let available = 0;
-  
+
   strategies.forEach(strategy => {
     if (typeof MODEL_SELECTION[strategy] === 'function') {
       console.log(`✅ ${strategy}`);
@@ -171,7 +171,7 @@ if (typeof MODEL_SELECTION !== 'undefined') {
       console.log(`❌ ${strategy} not found`);
     }
   });
-  
+
   console.log(`\nResult: ${available}/${strategies.length} strategies available`);
 } else {
   console.log('❌ MODEL_SELECTION not found');

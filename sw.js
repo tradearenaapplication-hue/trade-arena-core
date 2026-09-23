@@ -1,7 +1,7 @@
 /**
  * TRADE ARENA SERVICE WORKER
  * Progressive Web App offline support & caching
- * 
+ *
  * Version: 2.0
  * Updated: 2026-04-18
  */
@@ -83,14 +83,14 @@ function createOfflineFallback(request) {
   if (request.destination === 'document') {
     return caches.match('./index.html');
   }
-  
+
   // For CSS, return a minimal fallback
   if (request.destination === 'style') {
     return new Response('body { color: #fff; }', {
       headers: { 'Content-Type': 'text/css' }
     });
   }
-  
+
   // For everything else, return 404
   return new Response('Offline - Resource not available', {
     status: 404,
@@ -111,5 +111,3 @@ self.addEventListener('message', event => {
 });
 
 console.log('🚀 Trade Arena Service Worker loaded - PWA ready!');
-
-

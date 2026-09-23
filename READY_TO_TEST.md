@@ -21,7 +21,7 @@ Your app now has a **real profit edge system** implemented:
 
 ### 4. **Smart Agents** 🧠
 - Momentum: Only votes on >1% moves
-- Volatility: Skips CHOP/THIN regimes  
+- Volatility: Skips CHOP/THIN regimes
 - Sentiment: Needs 70%+ conviction for entry
 - Risk: Maintains safety vetoes
 
@@ -165,13 +165,12 @@ Result: Profits accumulate
 
 The system is now configured for profitability. All the edge-creating logic is in place:
 
-✅ Lower costs  
-✅ Trend matching  
-✅ Conviction gates  
-✅ Smart agent prompts  
-✅ Risk validation  
+✅ Lower costs
+✅ Trend matching
+✅ Conviction gates
+✅ Smart agent prompts
+✅ Risk validation
 
 **Test it. When you see >55% win rate, you're ready to scale.**
 
 Good luck! 🎯
-

@@ -79,7 +79,7 @@ Bot 1: Trade 1 ✅ → Error occurs → Bot hangs 🔴 (stuck forever)
 
 ### After
 ```
-Bot 1: Trade 1 ✅ → Error occurs → Logged to console → 
+Bot 1: Trade 1 ✅ → Error occurs → Logged to console →
        Fallback trade shown → Trade 2 scheduled ✅ → Trade 2 ✅ → ...
 ```
 

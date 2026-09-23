@@ -191,17 +191,17 @@
       <button class="synth-pad-btn" id="stopBtn" onclick="stopPlayback()">■ STOP</button>
     </div>
   </div>
-  
+
   <!-- 8 Rows × 16 Steps Grid -->
   <div class="pad-sequencer" id="padSequencer"></div>
-  
+
   <!-- BPM Control -->
   <div class="bpm-control">
     <span class="bpm-label">BPM</span>
     <input type="range" class="bpm-slider" id="bpmSlider" min="60" max="180" value="120" oninput="updateBpm(this.value)">
     <span class="bpm-value" id="bpmValue">120</span>
   </div>
-  
+
   <!-- Step Indicator -->
   <div class="step-indicator">
     <span class="step-label">STEP</span>
@@ -219,9 +219,9 @@
 function initPadGrid() {
   const grid = document.getElementById('padSequencer');
   if (!grid) return;
-  
+
   grid.innerHTML = '';
-  
+
   // Create 8 rows × 16 columns
   for (let row = 0; row < 8; row++) {
     for (let step = 0; step < 16; step++) {
@@ -260,20 +260,20 @@ function togglePlayback() {
 
 function startPlayback() {
   if (isPlaying) return;
-  
+
   isPlaying = true;
   document.getElementById('playBtn').classList.add('active');
   document.getElementById('playBtn').textContent = '⏸ PAUSE';
-  
+
   // Initialize audio engine if available
   if (window.audioEngine) {
     window.audioEngine.init().then(() => {
       window.audioEngine.start();
     });
   }
-  
+
   const intervalMs = (60000 / bpm) / 4; // 16th notes
-  
+
   playbackInterval = setInterval(() => {
     advanceStep();
   }, intervalMs);
@@ -283,16 +283,16 @@ function stopPlayback() {
   isPlaying = false;
   document.getElementById('playBtn').classList.remove('active');
   document.getElementById('playBtn').textContent = '▶ PLAY';
-  
+
   if (window.audioEngine) {
     window.audioEngine.stop();
   }
-  
+
   if (playbackInterval) {
     clearInterval(playbackInterval);
     playbackInterval = null;
   }
-  
+
   currentStep = 0;
   updateStepIndicator();
 }
@@ -301,20 +301,20 @@ function advanceStep() {
   // Flash current step column
   const cells = document.querySelectorAll('.pad-cell');
   const stepStart = currentStep;
-  
+
   for (let row = 0; row < 8; row++) {
     const cell = cells[row * 16 + stepStart];
     if (cell && cell.classList.contains('active')) {
       cell.classList.add('triggered');
       setTimeout(() => cell.classList.remove('triggered'), 150);
-      
+
       // Trigger audio if available
       if (window.audioEngine) {
         window.audioEngine.triggerPad(row, 0.7);
       }
     }
   }
-  
+
   currentStep = (currentStep + 1) % 16;
   updateStepIndicator();
 }
@@ -323,7 +323,7 @@ function updateStepIndicator() {
   const progress = (currentStep / 16) * 100;
   const stepProgress = document.getElementById('stepProgress');
   const stepCount = document.getElementById('stepCount');
-  
+
   if (stepProgress) stepProgress.style.width = progress + '%';
   if (stepCount) stepCount.textContent = currentStep + ' / 16';
 }
@@ -332,11 +332,11 @@ function updateBpm(value) {
   bpm = parseInt(value);
   const bpmValue = document.getElementById('bpmValue');
   if (bpmValue) bpmValue.textContent = value;
-  
+
   if (window.audioEngine) {
     window.audioEngine.setBpm(bpm);
   }
-  
+
   // Restart playback if running
   if (isPlaying) {
     stopPlayback();
@@ -351,14 +351,14 @@ function updateBpm(value) {
 
 function propagateTradeResult(trade) {
   if (!trade || !trade.botId) return;
-  
+
   // Map bot to row (0-7)
   const row = (trade.botId - 1) % 8;
-  
+
   // Determine which steps are active based on trade result
   const cells = document.querySelectorAll('.pad-cell');
   const steps = [];
-  
+
   if (trade.isWin) {
     // Win: activate a pattern (e.g., steps 4, 8, 12)
     steps.push(4, 8, 12);
@@ -366,7 +366,7 @@ function propagateTradeResult(trade) {
     // Loss: activate different pattern (e.g., steps 2, 6, 10, 14)
     steps.push(2, 6, 10, 14);
   }
-  
+
   // Flash the cells
   steps.forEach(step => {
     const cell = cells[row * 16 + step];
@@ -377,7 +377,7 @@ function propagateTradeResult(trade) {
       }, 800);
     }
   });
-  
+
   // Trigger audio pad
   if (window.audioEngine) {
     const intensity = trade.isWin ? 1 : 0.5;
@@ -392,7 +392,7 @@ function propagateTradeResult(trade) {
 // Initialize on load
 window.addEventListener('load', () => {
   initPadGrid();
-  
+
   // Auto-start if enabled
   if (localStorage.getItem('synthPadAutoPlay') === 'true') {
     startPlayback();

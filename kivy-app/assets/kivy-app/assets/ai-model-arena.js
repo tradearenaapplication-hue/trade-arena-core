@@ -21,7 +21,7 @@ const AI_MODELS = {
       leverageMultiplier: 1.5,
       positionSizing: 'AGGRESSIVE'
     },
-    systemPrompt: `You are an AGGRESSIVE trading AI. Your goal is to find HIGH-EDGE trades with 2%+ edge. 
+    systemPrompt: `You are an AGGRESSIVE trading AI. Your goal is to find HIGH-EDGE trades with 2%+ edge.
 You embrace volatility and are willing to take larger positions.
 Focus on: Perp trading, high-conviction shorts, leverage plays.
 Target: 3-5% wins, accept higher losses for bigger gains.
@@ -173,7 +173,7 @@ function getBotModelName(botId) {
 const ARENA_STATS = {
   // { botId: { modelName, totalPnL, tradeCount, wins, losses, winRate, avgEdge } }
   bots: {},
-  
+
   initialize() {
     for (let i = 1; i <= 10; i++) {
       const modelName = getBotModelName(i);
@@ -206,7 +206,7 @@ const ARENA_STATS = {
     bot.avgEdge = edge || 0;
     bot.avgPnL = bot.tradeCount > 0 ? (bot.totalPnL / bot.tradeCount).toFixed(2) : 0;
     bot.profitPerTrade = bot.avgPnL;
-    
+
     if (pnl > bot.maxWin) bot.maxWin = pnl;
     if (pnl < bot.maxLoss) bot.maxLoss = pnl;
   },

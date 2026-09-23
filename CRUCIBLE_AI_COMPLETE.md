@@ -272,11 +272,11 @@ AI Win Prob = (Base Prob × 0.6) + (Historical WR × 0.4)
 If Recent Win Rate > 65%:
   Volatility = LOW
   → Use tight spread strategies
-  
+
 Else if Win Rate < 45%:
   Volatility = HIGH
   → Use momentum strategies
-  
+
 Else:
   Volatility = NORMAL
   → Use balanced strategies
@@ -312,24 +312,24 @@ Else:
 
 1. **Open Browser**
    - Chrome at http://localhost:5173
-   
+
 2. **Open Console**
    - Press F12
    - Click Console tab
-   
+
 3. **Run Command**
    ```javascript
    runCrucibleAI()
    ```
-   
+
 4. **Wait 90 Seconds**
    - Watch progress every 100 trades
    - See AI metrics update
-   
+
 5. **Check Results**
    - Final report shows comprehensive stats
    - Metrics show AI learning success
-   
+
 6. **Analyze Data**
    ```javascript
    // Access results

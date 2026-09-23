@@ -1,7 +1,7 @@
 /**
  * REAL WALLET INTEGRATION MODULE
  * Trade Arena v4 • MetaMask Real Funds Trading
- * 
+ *
  * Handles:
  * - Gas fee estimation
  * - Real transaction simulation
@@ -23,7 +23,7 @@ const REAL_WALLET_CONFIG = {
     explorerUrl: 'https://basescan.org',
     nativeCurrency: 'ETH',
   },
-  
+
   gas: {
     estimatedSwapGas: 120000, // units
     estimatedFlashLoanGas: 200000,
@@ -31,19 +31,19 @@ const REAL_WALLET_CONFIG = {
     priorityFeeMultiplier: 1.1, // Add 10% for priority
     bufferMultiplier: 1.2, // Add 20% safety margin
   },
-  
+
   slippage: {
     conservative: 0.005, // 0.5%
     moderate: 0.01, // 1%
     aggressive: 0.02, // 2%
   },
-  
+
   tokens: {
     WETH: '0x4200000000000000000000000000000000000006',
     USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
     DAI: '0x50c5725949A6F0c72afAA8647BC0D4a6d7c15e50',
   },
-  
+
   trading: {
     minBetUSD: 1,
     maxBetUSD: 500,
@@ -66,6 +66,7 @@ let walletState = {
   signer: null,
   nonce: 0,
   transactions: [],
+  tokenHoldings: [],
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -88,7 +89,7 @@ if (typeof window !== 'undefined' && window.ethereum) {
         console.warn('⚠️ Error in accountsChanged listener:', e);
       }
     });
-    
+
     // Listen for network changes
     window.ethereum.on('chainChanged', (chainId) => {
       try {
@@ -101,7 +102,7 @@ if (typeof window !== 'undefined' && window.ethereum) {
         console.warn('⚠️ Error in chainChanged listener:', e);
       }
     });
-    
+
     // Listen for disconnection
     window.ethereum.on('disconnect', (error) => {
       try {
@@ -128,12 +129,12 @@ async function validateNetwork(provider) {
     const network = await provider.getNetwork();
     walletState.networkId = network.chainId;
     walletState.isCorrectNetwork = network.chainId === REAL_WALLET_CONFIG.network.id;
-    
+
     if (!walletState.isCorrectNetwork) {
       console.warn(`❌ Wrong network! Connected to chain ${network.chainId}, need ${REAL_WALLET_CONFIG.network.id}`);
       return false;
     }
-    
+
     console.log(`✅ Connected to ${REAL_WALLET_CONFIG.network.name}`);
     return true;
   } catch (e) {
@@ -146,28 +147,182 @@ async function validateNetwork(provider) {
 // BALANCE & GAS ESTIMATION
 // ═══════════════════════════════════════════════════════════
 
+
+// ═══════════════════════════════════════════════════════════
+// MULTI-CHAIN TOKEN BALANCE FETCHING
+// ═══════════════════════════════════════════════════════════
+
+async function fetchMultiChainTokenBalances(walletAddress) {
+  const address = walletAddress || walletState.address;
+  if (!address) {
+    console.warn('No wallet address available for multi-chain query');
+    return { address: null, totalUsd: 0, holdings: [] };
+  }
+
+  console.log('🔍 Fetching multi-chain token holdings for ' + address + '...');
+
+  const NETWORKS = [
+    { name: 'Base', chainId: 8453, rpc: 'https://mainnet.base.org', nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
+    { name: 'Ethereum', chainId: 1, rpc: 'https://cloudflare-eth.com', nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
+    { name: 'Arbitrum', chainId: 42161, rpc: 'https://arb1.arbitrum.io/rpc', nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
+    { name: 'Optimism', chainId: 10, rpc: 'https://mainnet.optimism.io', nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
+    { name: 'Polygon', chainId: 137, rpc: 'https://polygon-rpc.com', nativeSymbol: 'POL', coingeckoId: 'matic-network' },
+    { name: 'BSC', chainId: 56, rpc: 'https://bsc-dataseed.binance.org', nativeSymbol: 'BNB', coingeckoId: 'binancecoin' }
+  ];
+
+  const COMMON_TOKENS = {
+    8453: [
+      { symbol: 'USDC', address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals: 6, coingeckoId: 'usd-coin' },
+      { symbol: 'WETH', address: '0x4200000000000000000000000000000000000006', decimals: 18, coingeckoId: 'ethereum' },
+      { symbol: 'DAI', address: '0x50c5725949A6F0c72afAA8647BC0D4a6d7c15e50', decimals: 18, coingeckoId: 'dai' }
+    ],
+    1: [
+      { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6, coingeckoId: 'usd-coin' },
+      { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6, coingeckoId: 'tether' },
+      { symbol: 'WBTC', address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', decimals: 8, coingeckoId: 'wrapped-bitcoin' }
+    ]
+  };
+
+  const fetchWithTimeout = (url, options, timeoutMs = 3000) => {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeout = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    return fetch(url, { ...options, signal: controller ? controller.signal : undefined })
+      .finally(() => timeout && clearTimeout(timeout));
+  };
+
+  const getRpcBalance = async (rpc, addr) => {
+    try {
+      const res = await fetchWithTimeout(rpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [addr, 'latest']
+        })
+      }, 3000);
+      const data = await res.json();
+      if (data && data.result) return BigInt(data.result);
+    } catch (e) {}
+    return 0n;
+  };
+
+  const getRpcErc20Balance = async (rpc, tokenAddress, addr) => {
+    try {
+      const cleanAddress = addr.toLowerCase().replace('0x', '').padStart(64, '0');
+      const dataCall = '0x70a08231' + cleanAddress;
+      const res = await fetchWithTimeout(rpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', id: 2, method: 'eth_call', params: [{ to: tokenAddress, data: dataCall }, 'latest']
+        })
+      }, 3000);
+      const data = await res.json();
+      if (data && data.result && data.result !== '0x') return BigInt(data.result);
+    } catch (e) {}
+    return 0n;
+  };
+
+  const promises = NETWORKS.map(async (net) => {
+    const netResults = [];
+    const balWei = await getRpcBalance(net.rpc, address);
+    const nativeAmount = parseFloat(
+      typeof ethers !== 'undefined' && ethers.utils
+        ? ethers.utils.formatEther(balWei)
+        : (typeof ethers !== 'undefined' && ethers.formatEther ? ethers.formatEther(balWei) : (Number(balWei) / 1e18).toString())
+    );
+
+    if (nativeAmount > 0) {
+      netResults.push({
+        network: net.name,
+        symbol: net.nativeSymbol,
+        amount: nativeAmount,
+        coingeckoId: net.coingeckoId,
+        contractAddress: null
+      });
+    }
+
+    const tokens = COMMON_TOKENS[net.chainId] || [];
+    for (const token of tokens) {
+      const tokenBalRaw = await getRpcErc20Balance(net.rpc, token.address, address);
+      if (tokenBalRaw > 0n) {
+        const formatted = parseFloat(
+          typeof ethers !== 'undefined' && ethers.utils
+            ? ethers.utils.formatUnits(tokenBalRaw, token.decimals)
+            : (typeof ethers !== 'undefined' && ethers.formatUnits ? ethers.formatUnits(tokenBalRaw, token.decimals) : (Number(tokenBalRaw) / (10 ** token.decimals)).toString())
+        );
+        if (formatted > 0) {
+          netResults.push({
+            network: net.name,
+            symbol: token.symbol,
+            amount: formatted,
+            coingeckoId: token.coingeckoId,
+            contractAddress: token.address
+          });
+        }
+      }
+    }
+    return netResults;
+  });
+
+  const settled = await Promise.allSettled(promises);
+  const allHoldings = [];
+  for (const res of settled) {
+    if (res.status === 'fulfilled' && Array.isArray(res.value)) {
+      allHoldings.push(...res.value);
+    }
+  }
+
+  const coingeckoIds = [...new Set(allHoldings.map(h => h.coingeckoId))].filter(Boolean).join(',');
+  let priceMap = {};
+  if (coingeckoIds.length > 0) {
+    try {
+      const pRes = await fetchWithTimeout('https://api.coingecko.com/api/v3/simple/price?ids=' + coingeckoIds + '&vs_currencies=usd', {}, 3000);
+      priceMap = await pRes.json();
+    } catch (e) {}
+  }
+
+  let totalUsd = 0;
+  for (const h of allHoldings) {
+    const price = priceMap[h.coingeckoId]?.usd || (['USDC', 'USDT', 'DAI'].includes(h.symbol) ? 1 : 0);
+    h.priceUsd = price;
+    h.valueUsd = h.amount * price;
+    totalUsd += h.valueUsd;
+  }
+
+  walletState.tokenHoldings = allHoldings;
+  walletState.balanceUSD = totalUsd;
+  if (typeof window !== 'undefined') {
+    window.userTokenHoldings = allHoldings;
+  }
+
+  console.log('✅ Multi-chain holdings fetched for ' + address + ':', allHoldings, 'Total USD: $' + totalUsd.toFixed(2));
+
+  return { address, totalUsd, holdings: allHoldings };
+}
+
+
 async function getWalletBalance() {
   if (!walletState.provider || !walletState.address) {
     console.error('Provider or address not available');
     return null;
   }
-  
+
   try {
     const balanceWei = await walletState.provider.getBalance(walletState.address);
-    const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
-    
+    const balanceETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(balanceWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(balanceWei) : (Number(balanceWei) / 1e18).toString()));
+
     // Get ETH price from CoinGecko
     const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', {
       timeout: 5000
     });
     const priceData = await priceResponse.json();
     const ethPrice = priceData.ethereum?.usd || 3200;
-    
+
     walletState.balanceETH = balanceETH;
     walletState.balanceUSD = balanceETH * ethPrice;
-    
+
     console.log(`✅ Balance fetched: ${balanceETH} ETH = $${walletState.balanceUSD.toFixed(2)}`);
-    
+
     return {
       eth: balanceETH,
       usd: walletState.balanceUSD,
@@ -186,10 +341,10 @@ async function getWalletBalance() {
 
 async function estimateGasPrice() {
   if (!walletState.provider) return null;
-  
+
   try {
     const feeData = await walletState.provider.getFeeData();
-    
+
     return {
       gasPrice: feeData.gasPrice,
       baseFee: feeData.lastBaseFeePerGas,
@@ -205,18 +360,18 @@ async function estimateGasPrice() {
 async function estimateSwapGasCost(method = 'ARBITRAGE') {
   const gasEstimate = REAL_WALLET_CONFIG.gas[`estimated${method.charAt(0).toUpperCase() + method.slice(1).toLowerCase()}Gas`] || 120000;
   const feeData = await estimateGasPrice();
-  
+
   if (!feeData) return null;
-  
+
   // Use EIP-1559 fee (maxFeePerGas)
   const gasPrice = feeData.maxFee || feeData.gasPrice;
   const gasCostWei = gasPrice.mul(gasEstimate);
-  const gasCostETH = parseFloat(ethers.utils.formatEther(gasCostWei));
+  const gasCostETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(gasCostWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(gasCostWei) : (Number(gasCostWei) / 1e18).toString()));
   const gasCostUSD = gasCostETH * (walletState.balanceUSD / walletState.balanceETH || 3200);
-  
+
   return {
     gasLimit: gasEstimate,
-    gasPrice: parseFloat(ethers.utils.formatUnits(gasPrice, 'gwei')),
+    gasPrice: parseFloat(typeof ethers !== 'undefined' && ethers.utils && typeof ethers.utils.formatUnits === 'function' ? ethers.utils.formatUnits(gasPrice, 'gwei') : (typeof ethers !== 'undefined' && typeof ethers.formatUnits === 'function' ? ethers.formatUnits(gasPrice, 'gwei') : (Number(gasPrice) / 1e9).toString())),
     costETH: gasCostETH,
     costUSD: gasCostUSD,
     totalGasWei: gasCostWei,
@@ -239,18 +394,18 @@ function calculateSlippage(betUSD, volatility = 5, method = 'ARBITRAGE') {
     'PERP LONG': 0.02,
     'PERP SHORT': 0.025,
   }[method] || 0.01;
-  
+
   // Adjust for volatility (1% volatility = +0.1% slippage)
   const volatilityAdjustment = (volatility / 100) * 0.001;
-  
+
   // Adjust for bet size (larger bets = more slippage)
   const sizeMultiplier = Math.min(1 + (betUSD / 1000), 2); // Cap at 2x
-  
+
   const totalSlippagePercent = (methodSlippage + volatilityAdjustment) * sizeMultiplier;
   const slippageCapped = Math.min(totalSlippagePercent, REAL_WALLET_CONFIG.trading.maxSlippagePercent / 100);
-  
+
   const slippageUSD = betUSD * slippageCapped;
-  
+
   return {
     percent: (slippageCapped * 100).toFixed(3),
     usd: slippageUSD.toFixed(4),
@@ -265,13 +420,13 @@ function calculateSlippage(betUSD, volatility = 5, method = 'ARBITRAGE') {
 async function estimateTransactionCost(betUSD, method, volatility) {
   const gasCost = await estimateSwapGasCost(method);
   const slippage = calculateSlippage(betUSD, volatility, method);
-  
+
   if (!gasCost) return null;
-  
+
   const totalCostUSD = gasCost.costUSD + parseFloat(slippage.usd);
   const netProfitBefore = betUSD * 0.55 * 1.8; // Assume 55% win with 1.8x multiplier
   const netProfitAfter = netProfitBefore - totalCostUSD;
-  
+
   return {
     bet: betUSD,
     gasCost: gasCost.costUSD.toFixed(4),
@@ -291,13 +446,13 @@ async function estimateTransactionCost(betUSD, method, volatility) {
 async function validateSufficientBalance(betUSD) {
   const balance = await getWalletBalance();
   if (!balance) return false;
-  
+
   const gasCost = await estimateSwapGasCost();
   if (!gasCost) return false;
-  
+
   // Need bet amount + gas cost + 10% buffer
   const requiredETH = (betUSD / (balance.ethPrice || 3200)) + gasCost.costETH + 0.001; // Extra 0.001 ETH buffer
-  
+
   return {
     hasEnoughBalance: balance.eth >= requiredETH,
     balanceETH: balance.eth,
@@ -314,7 +469,7 @@ async function validateSufficientBalance(betUSD) {
 
 async function simulateRealTrade(betUSD, method, volatility, pnlMultiplier) {
   const validation = await validateSufficientBalance(betUSD);
-  
+
   if (!validation.hasEnoughBalance) {
     return {
       success: false,
@@ -322,14 +477,14 @@ async function simulateRealTrade(betUSD, method, volatility, pnlMultiplier) {
       validation: validation,
     };
   }
-  
+
   const gasCost = await estimateSwapGasCost(method);
   const slippage = calculateSlippage(betUSD, volatility, method);
-  
+
   const totalCostUSD = gasCost.costUSD + parseFloat(slippage.usd);
   const pnl = betUSD * pnlMultiplier;
   const netPnL = pnl - totalCostUSD;
-  
+
   const transaction = {
     timestamp: new Date().toISOString(),
     bot: null,
@@ -346,9 +501,9 @@ async function simulateRealTrade(betUSD, method, volatility, pnlMultiplier) {
     status: 'SIMULATED',
     txHash: null,
   };
-  
+
   walletState.transactions.push(transaction);
-  
+
   return {
     success: true,
     transaction: transaction,
@@ -365,7 +520,7 @@ async function switchToBaseNetwork() {
     console.error('MetaMask not installed');
     return false;
   }
-  
+
   try {
     // Try to switch to Base
     await window.ethereum.request({
@@ -417,7 +572,7 @@ async function verifyWalletReadiness(address, provider) {
     hasBalance: false,
     minimumBalanceMet: false,
   };
-  
+
   try {
     const balance = await getWalletBalance();
     checks.hasBalance = balance && balance.eth > 0;
@@ -425,7 +580,7 @@ async function verifyWalletReadiness(address, provider) {
   } catch (e) {
     console.error('Balance check failed:', e);
   }
-  
+
   return {
     isReady: Object.values(checks).every(v => v),
     checks: checks,
@@ -440,7 +595,7 @@ async function verifyWalletReadiness(address, provider) {
 // ═══════════════════════════════════════════════════════════
 
 function getTransactionHistory() {
-  return walletState.transactions.sort((a, b) => 
+  return walletState.transactions.sort((a, b) =>
     new Date(b.timestamp) - new Date(a.timestamp)
   );
 }
@@ -455,7 +610,7 @@ function clearTransactionHistory() {
 
 async function initializeRealWalletMode() {
   console.log('🔧 Initializing Real Wallet Integration...');
-  
+
   const checks = {
     metamaskInstalled: !!window.ethereum,
     ethersjsLoaded: typeof ethers !== 'undefined',
@@ -463,9 +618,9 @@ async function initializeRealWalletMode() {
     gasEstimationReady: Object.keys(REAL_WALLET_CONFIG.gas).length > 0,
     slippageConfigured: Object.keys(REAL_WALLET_CONFIG.slippage).length > 0,
   };
-  
+
   console.log('✅ Real Wallet Integration Status:', checks);
-  
+
   return {
     ready: Object.values(checks).every(v => v),
     details: checks,
@@ -494,7 +649,7 @@ function checkMetaMaskStatus() {
     },
     provider: walletState.provider ? 'Connected' : 'Not connected',
   };
-  
+
   console.table(status);
   return status;
 }
@@ -535,7 +690,7 @@ function diagnoseMetaMask() {
       balanceUSD: walletState.balanceUSD,
     },
   };
-  
+
   console.group('🔍 METAMASK DIAGNOSIS REPORT');
   console.log('Timestamp:', diagnosis.timestamp);
   console.group('🌐 Browser Info');
@@ -551,7 +706,7 @@ function diagnoseMetaMask() {
   console.table(diagnosis.walletConnection);
   console.groupEnd();
   console.groupEnd();
-  
+
   return diagnosis;
 }
 
@@ -564,12 +719,13 @@ if (typeof window !== 'undefined') {
   window.checkMetaMaskStatus = checkMetaMaskStatus;
   window.diagnoseMetaMask = diagnoseMetaMask;
   window.getWalletBalance = getWalletBalance;
+  window.fetchMultiChainTokenBalances = fetchMultiChainTokenBalances;
   window.switchToBaseNetwork = switchToBaseNetwork;
   window.validateNetwork = validateNetwork;
   window.verifyWalletReadiness = verifyWalletReadiness;
   window.walletState = walletState;
   window.REAL_WALLET_CONFIG = REAL_WALLET_CONFIG;
-  
+
   console.log('✅ Real Wallet Integration loaded. Available commands:');
   console.log('  → diagnoseMetaMask()');
   console.log('  → checkMetaMaskStatus()');
@@ -587,6 +743,7 @@ if (typeof module !== 'undefined' && module.exports) {
     walletState,
     validateNetwork,
     getWalletBalance,
+    fetchMultiChainTokenBalances,
     estimateGasPrice,
     estimateSwapGasCost,
     calculateSlippage,

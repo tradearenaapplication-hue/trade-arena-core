@@ -7,7 +7,7 @@ Implement a "Slow Paper Crucible" - a rigorous 7-day validation experiment for t
 
 ### Current State:
 1. **Trade Storage**: In-memory JS arrays
-   - `trading-engine.js`: `this.trades = []` 
+   - `trading-engine.js`: `this.trades = []`
    - `crucible-test.js`: `this.trades = []`
 
 2. **Existing CSV Export**: Already implemented in `crucible-test.js` via `exportCSV()` function

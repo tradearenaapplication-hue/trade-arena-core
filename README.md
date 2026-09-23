@@ -420,7 +420,7 @@ The Trade Arena platform now includes the **Crucible Real Trading Engine** - a v
 #### Status
 - ✅ **LIVE & OPERATIONAL**
 - ✅ Real CoinGecko market data
-- ✅ 60-65% win rate verified  
+- ✅ 60-65% win rate verified
 - ✅ 2.70+ profit factor (professional)
 - ✅ Complete documentation provided
 

@@ -25,7 +25,7 @@ config: {
   paperBalance: 10000,        // Starting balance
   tradeCount: 10,             // Number of trades
   tradeInterval: 2000,        // ms between trades
-  
+
   // ✨ NEW RISK MANAGEMENT ✨
   riskPerTrade: 10,           // Max loss: $10
   rewardTarget: 30,           // Min gain: $30

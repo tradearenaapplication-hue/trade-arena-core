@@ -340,7 +340,7 @@ console.table({
   Trades: bot.tradesCount,
   Session P&L: '$' + bot.sessionPnL.toFixed(2),
   Win Rate: (bot.recentPnL.filter(p=>p>0).length / bot.recentPnL.length * 100).toFixed(1) + '%',
-  Best Method: Object.keys(bot.methodBias).sort((a,b) => 
+  Best Method: Object.keys(bot.methodBias).sort((a,b) =>
     (bot.methodBias[b].avgPnL || 0) - (bot.methodBias[a].avgPnL || 0))[0]
 });
 ```

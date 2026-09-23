@@ -187,7 +187,7 @@ class ContractHelper {
         );
 
         const path = await this.getSwapPath(tokenIn, tokenOut);
-        
+
         try {
             const amounts = await router.getAmountsOut(amountIn, path);
             return amounts[amounts.length - 1]; // Return output amount

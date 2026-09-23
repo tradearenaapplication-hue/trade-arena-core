@@ -113,7 +113,7 @@ TOTAL DOCUMENTATION: 2,500+ lines
    ✅ Confidence ≥ 60%
    ✅ Volatility ≤ 8%
    ✅ All data valid
-   
+
    If any FAIL → TRADE PAUSED
    If all PASS → CONTINUE
         ↓

@@ -173,7 +173,7 @@ Legend shows:
 ✅ Green (#39ff14)
    For WINNING trades
    Shows: ✅ +$XXX
-   
+
 ❌ Red (#ff2d78)
    For LOSING trades
    Shows: ❌ -$XXX
@@ -202,7 +202,7 @@ OFF State:
   Border: 2px solid green
   Background: Subtle green tint
   Glow: None
-  
+
 ON State:
   Text: 🤖 AUTO ON
   Color: Bright green

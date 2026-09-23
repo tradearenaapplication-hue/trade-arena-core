@@ -60,9 +60,9 @@ function demoMode() {
 function loginSuccess() {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('mainApp').classList.remove('hidden');
-    
+
     document.getElementById('walletBalance').textContent = userBalance + ' ETH';
-    document.getElementById('userAddr').textContent = 
+    document.getElementById('userAddr').textContent =
         userAddress.substring(0, 6) + '...' + userAddress.substring(38);
 
     initializeApp();
@@ -138,7 +138,7 @@ function createDefaultBots() {
  */
 function switchTab(tab) {
     currentTab = tab;
-    
+
     // Hide all tabs
     document.getElementById('dashboardTab').classList.add('hidden');
     document.getElementById('botsTab').classList.add('hidden');
@@ -169,10 +169,10 @@ async function refreshDashboard() {
     document.getElementById('activeTrades').textContent = tradingEngine.trades.length;
 
     const profit24h = tradingEngine.bots.reduce((sum, b) => sum + (b.totalProfit || 0), 0);
-    document.getElementById('profit24h').textContent = 
+    document.getElementById('profit24h').textContent =
         (profit24h >= 0 ? '+' : '') + profit24h.toFixed(4) + ' ETH';
 
-    const avgWinRate = tradingEngine.bots.length > 0 
+    const avgWinRate = tradingEngine.bots.length > 0
         ? (tradingEngine.bots.reduce((sum, b) => sum + (b.winRate || 0), 0) / tradingEngine.bots.length).toFixed(0)
         : 0;
     document.getElementById('riskLevel').textContent = avgWinRate > 70 ? 'LOW' : avgWinRate > 50 ? 'MEDIUM' : 'HIGH';
@@ -192,7 +192,7 @@ async function refreshDashboard() {
 
 function displayOpportunities(opportunities) {
     const container = document.getElementById('opportunitiesContainer');
-    
+
     if (opportunities.length === 0) {
         container.innerHTML = '<div class="text-center text-gray-400 py-8">No opportunities detected</div>';
         return;
@@ -251,7 +251,7 @@ function updateMarketChart() {
 
     const labels = [];
     const data = [];
-    
+
     for (let i = 24; i >= 0; i--) {
         labels.push(i + 'h');
         const basePrice = 2500;
@@ -476,7 +476,7 @@ function createAutoBot(strategy, risk, amount) {
     tradingEngine.bots.push(newBot);
     userBalance -= amount;
     document.getElementById('walletBalance').textContent = parseFloat(userBalance).toFixed(2) + ' ETH';
-    
+
     showToast(`Slot bot "${newBot.name}" deployed!`, 'success');
     tradingEngine.executeBot(newBot);
     refreshBots();
@@ -507,7 +507,7 @@ function initCharts() {
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                y: { 
+                y: {
                     beginAtZero: false,
                     grid: { color: '#334155' },
                     ticks: { color: '#94a3b8' }
@@ -573,7 +573,7 @@ function initCharts() {
 function refreshAnalytics() {
     performanceChart.data.labels = tradingEngine.bots.map(b => b.name);
     performanceChart.data.datasets[0].data = tradingEngine.bots.map(b => b.totalProfit);
-    performanceChart.data.datasets[0].backgroundColor = tradingEngine.bots.map(b => 
+    performanceChart.data.datasets[0].backgroundColor = tradingEngine.bots.map(b =>
         b.totalProfit >= 0 ? '#00ff9d' : '#ef4444'
     );
     performanceChart.update();
@@ -617,7 +617,7 @@ function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
     toast.className = 'toast';
-    
+
     const colorMap = {
         'success': 'border-[#00ff9d] text-[#00ff9d]',
         'error': 'border-red-500 text-red-400',
@@ -626,7 +626,7 @@ function showToast(message, type = 'info') {
 
     toast.className = `toast ${colorMap[type]}`;
     toast.textContent = message;
-    
+
     container.appendChild(toast);
 
     setTimeout(() => {

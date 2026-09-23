@@ -297,7 +297,7 @@ TRADE_OLYMPICS.getLeaderboard('totalPnL')
 // Find best bracket
 TRADE_OLYMPICS.getTopBrackets(1)
 
-// Find worst bracket  
+// Find worst bracket
 TRADE_OLYMPICS.getWeakestBrackets(1)
 
 // Compare models

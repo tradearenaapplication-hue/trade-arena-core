@@ -4,7 +4,7 @@
 
 Your test results:
 - **✅ Wins:** 14 trades
-- **❌ Losses:** 6 trades  
+- **❌ Losses:** 6 trades
 - **Win Rate:** 70%
 - **Total P&L:** -$170.60 ❌ **NEGATIVE**
 
@@ -322,7 +322,7 @@ YES ✅ PROFITABLE
 5. **The "Expectancy" Formula**
    ```
    Expected Value = (Win % × Avg Win) - (Loss % × Avg Loss)
-   
+
    Your test: (0.70 × $2.88) - (0.30 × $35.15) = -$8.53 per trade
    Target: +$5 per trade minimum
    ```

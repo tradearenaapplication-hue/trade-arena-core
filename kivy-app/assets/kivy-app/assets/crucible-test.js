@@ -2,7 +2,7 @@
  * CRUCIBLE TEST SYSTEM
  * Paper trading verification with verifiable logs
  * For testing trading logic without real money
- * 
+ *
  * VERSION: 2.0 - STRICT RISK MANAGEMENT ENFORCEMENT
  * UPDATED: 2026-03-15 10:45:00
  * CACHE BUST: 1773572160000
@@ -15,7 +15,7 @@ const CrucibleTest = {
   trades: [],
   startTime: null,
   endTime: null,
-  
+
   // Test configuration
   config: {
     paperBalance: 10000,      // Starting paper balance
@@ -40,7 +40,7 @@ const CrucibleTest = {
     this.trades = [];
     this.sessionId = `crucible-${Date.now()}`;
     this.isRunning = false;
-    
+
     console.log('%c🔬 CRUCIBLE TEST INITIALIZED', 'color: #bf5fff; font-weight: bold; font-size: 14px;');
     console.log(`Session ID: ${this.sessionId}`);
     console.log(`Paper Balance: $${this.config.paperBalance}`);
@@ -105,39 +105,39 @@ const CrucibleTest = {
       sessionId: this.sessionId,
       tradeNum,
       timestamp: new Date().toISOString(),
-      
+
       // Trade parameters (simulated)
       method: this.randomTradingMethod(),
       token: this.randomToken(),
-      
+
       // ✨ NEW: RISK MANAGEMENT FIELDS ✨
       riskPerTrade: this.config.riskPerTrade,
       rewardTarget: this.config.rewardTarget,
       riskRewardRatio: this.config.riskRewardRatio,
-      
+
       // Price execution (simulated)
       entryPrice: Math.random() * 50000 + 10000,
       exitPrice: null,
       stopLossPrice: null,
       takeProfitPrice: null,
-      
+
       // Win/loss determination
       winProbability: Math.random() * 0.35 + 0.45, // 45-80% expected win rate
       tradeQualityScore: 0,
       isQualityTrade: false, // Only take if meets risk/reward criteria
-      
+
       // Result calculation
       pnl: 0,
       pnlPercent: 0,
       isWin: false,
-      
+
       // Edge metrics
       edge: Math.random() * 5 + 0.5,
       confidence: Math.random() * 0.35 + 0.5,
-      
+
       // Expected value calculation
       expectedValue: 0,
-      
+
       // Verification fields
       verified: true,
       executionQuality: 'VERIFIED',
@@ -146,18 +146,18 @@ const CrucibleTest = {
     // ✨ STEP 1: Calculate Risk/Reward Metrics
     trade.stopLossPrice = trade.entryPrice - this.config.riskPerTrade;
     trade.takeProfitPrice = trade.entryPrice + this.config.rewardTarget;
-    
+
     // Expected value: (Win% × Reward) - (Loss% × Risk)
     const lossProb = 1 - trade.winProbability;
-    trade.expectedValue = (trade.winProbability * this.config.rewardTarget) - 
+    trade.expectedValue = (trade.winProbability * this.config.rewardTarget) -
                          (lossProb * this.config.riskPerTrade);
-    
+
     // ✨ STEP 2: Evaluate Trade Quality (ENFORCE STRICT CRITERIA)
     // Only take trade if Expected Value is positive (mathematically profitable)
     const minExpectedValue = 1; // Need EV > $1 (very strict)
-    
+
     trade.isQualityTrade = trade.expectedValue > minExpectedValue;
-    
+
     // ✨ STEP 3: Simulate Trade Execution with Stop Loss & Take Profit
     const winRoll = Math.random();
     trade.isWin = winRoll < trade.winProbability;
@@ -206,7 +206,7 @@ const CrucibleTest = {
       console.log('');
       return;
     }
-    
+
     // Executed trade
     const resultEmoji = trade.isWin ? '✅ WIN +$30' : '❌ LOSS -$10';
     const resultColor = trade.isWin ? 'color: #39ff14' : 'color: #ff2d78';
@@ -231,11 +231,11 @@ const CrucibleTest = {
   // ════════════════════════════════════════════════════════════════
   generateReport() {
     const duration = ((this.endTime - this.startTime) / 1000).toFixed(2);
-    
+
     // Separate executed and skipped trades
     const executedTrades = this.trades.filter(t => !t.skipped);
     const skippedTrades = this.trades.filter(t => t.skipped);
-    
+
     const wins = executedTrades.filter(t => t.isWin).length;
     const losses = executedTrades.filter(t => !t.isWin).length;
     const winRate = executedTrades.length > 0 ? (wins / executedTrades.length * 100).toFixed(2) : 0;
@@ -248,11 +248,11 @@ const CrucibleTest = {
     // Trade statistics
     const winTrades = executedTrades.filter(t => t.isWin);
     const lossTrades = executedTrades.filter(t => !t.isWin);
-    
-    const avgWin = winTrades.length > 0 
+
+    const avgWin = winTrades.length > 0
       ? (winTrades.reduce((sum, t) => sum + t.pnl, 0) / winTrades.length).toFixed(2)
       : 0;
-    
+
     const avgLoss = lossTrades.length > 0
       ? (lossTrades.reduce((sum, t) => sum + t.pnl, 0) / lossTrades.length).toFixed(2)
       : 0;
@@ -260,13 +260,13 @@ const CrucibleTest = {
     // Profit Factor (with risk management)
     const totalWinAmount = Math.abs(winTrades.reduce((sum, t) => sum + t.pnl, 0));
     const totalLossAmount = Math.abs(lossTrades.reduce((sum, t) => sum + t.pnl, 0));
-    
+
     const profitFactor = totalLossAmount !== 0
       ? (totalWinAmount / totalLossAmount).toFixed(2)
       : (totalWinAmount > 0 ? 'Inf' : 0);
 
     // Expected Value Calculation
-    const avgExpectedValue = executedTrades.length > 0 
+    const avgExpectedValue = executedTrades.length > 0
       ? (executedTrades.reduce((sum, t) => sum + t.expectedValue, 0) / executedTrades.length).toFixed(2)
       : 0;
 
@@ -274,7 +274,7 @@ const CrucibleTest = {
     const avgEdge = executedTrades.length > 0
       ? (executedTrades.reduce((sum, t) => sum + t.edge, 0) / executedTrades.length).toFixed(2)
       : 0;
-    
+
     const avgConfidence = executedTrades.length > 0
       ? ((executedTrades.reduce((sum, t) => sum + t.confidence, 0) / executedTrades.length) * 100).toFixed(0)
       : 0;
@@ -283,17 +283,17 @@ const CrucibleTest = {
     console.log('%c════════════════════════════════════════════════════════════', 'color: #bf5fff; font-weight: bold;');
     console.log('%c🔬 CRUCIBLE TEST REPORT - STRICT RISK MANAGEMENT', 'color: #bf5fff; font-weight: bold; font-size: 16px;');
     console.log('%c════════════════════════════════════════════════════════════', 'color: #bf5fff; font-weight: bold;');
-    
+
     console.log(`\n📊 SESSION METADATA:`);
     console.log(`  Session ID: ${this.sessionId}`);
     console.log(`  Duration: ${duration}s`);
     console.log(`  Timestamp: ${new Date().toISOString()}`);
-    
+
     console.log(`\n💰 ACCOUNT RESULTS:`);
     console.log(`  Starting Balance: $${this.config.paperBalance.toFixed(2)}`);
     console.log(`  Total P&L: ${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}`);
     console.log(`  Final Balance: $${finalBalance.toFixed(2)}`);
-    console.log(`%c  Return: ${returnPercent >= 0 ? '+' : ''}${returnPercent}%`, 
+    console.log(`%c  Return: ${returnPercent >= 0 ? '+' : ''}${returnPercent}%`,
       totalPnl >= 0 ? 'color: #39ff14; font-weight: bold;' : 'color: #ff2d78; font-weight: bold;');
 
     console.log(`\n📈 EXECUTION STATISTICS:`);
@@ -308,7 +308,7 @@ const CrucibleTest = {
     console.log(`%c  Win Rate: ${winRate}%`, winRate >= 50 ? 'color: #39ff14' : 'color: #ffaa00');
     console.log(`  Avg Win: $${avgWin}`);
     console.log(`  Avg Loss: $${avgLoss}`);
-    
+
     // Profit Factor color coding
     const pfColor = profitFactor >= 1.5 ? 'color: #39ff14' : (profitFactor >= 1.0 ? 'color: #ffaa00' : 'color: #ff2d78');
     console.log(`%c  Profit Factor: ${profitFactor} ${profitFactor >= 1.5 ? '✅' : (profitFactor >= 1.0 ? '⚠️' : '❌')}`, pfColor);
@@ -326,7 +326,7 @@ const CrucibleTest = {
 
     console.log(`\n✅ VERIFICATION STATUS:`);
     const allVerified = executedTrades.every(t => t.verified);
-    console.log(`%c  All Trades Verified: ${allVerified ? '✅ YES' : '❌ NO'}`, 
+    console.log(`%c  All Trades Verified: ${allVerified ? '✅ YES' : '❌ NO'}`,
       allVerified ? 'color: #39ff14' : 'color: #ff2d78');
     console.log(`  System: Risk Management Enforced ✅`);
     console.log(`  Strategy: Only Positive EV Trades ✅`);
@@ -372,7 +372,7 @@ const CrucibleTest = {
     link.download = `crucible-test-${this.sessionId}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    
+
     console.log('✅ Test results exported to JSON');
   },
 

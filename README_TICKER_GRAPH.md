@@ -318,7 +318,7 @@ You now have:
 
 ## 🎉 That's It!
 
-Your trading application now has professional-grade performance visualization. 
+Your trading application now has professional-grade performance visualization.
 
 **Start trading and watch your bots perform in real-time! 📊🚀**
 

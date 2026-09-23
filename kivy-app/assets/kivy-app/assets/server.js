@@ -293,11 +293,11 @@ function calculateRisk(spread, amount) {
     // Risk scoring: 0-100
     // Higher spread = lower risk (more obvious arbitrage)
     let risk = Math.max(0, 100 - spread * 1000);
-    
+
     // Larger amounts = higher risk (slippage impact)
     if (amount > 10) risk += 20;
     if (amount > 50) risk += 20;
-    
+
     return Math.min(100, Math.max(0, risk));
 }
 

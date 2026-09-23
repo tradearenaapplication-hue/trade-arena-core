@@ -34,7 +34,7 @@ Features:
   ✓ Smart bet sizing
   ✓ Risk management system
   ✓ State tracking & analytics
-  
+
 Functions:
   ✓ initBotStrategy()
   ✓ analyzeMarketConditions()
@@ -181,31 +181,31 @@ BOT #1 (SCALPER) • Session Results:
   Win Rate: 58%
   Session P&L: +$125.50
   Best Method: ARBITRAGE (62% WR)
-  
+
 BOT #2 (TREND) • Session Results:
   Trades: 28
   Win Rate: 56%
   Session P&L: +$89.25
   Best Method: SPOT LONG (59% WR)
-  
+
 BOT #3 (AGGRESSIVE) • Session Results:
   Trades: 19
   Win Rate: 51%
   Session P&L: -$45.30
   Best Method: PERP LONG (54% WR)
-  
+
 BOT #4 (CONSERVATIVE) • Session Results:
   Trades: 75
   Win Rate: 62%
   Session P&L: +$156.75
   Best Method: ARBITRAGE (65% WR)
-  
+
 BOT #5 (BALANCED) • Session Results:
   Trades: 32
   Win Rate: 55%
   Session P&L: +$102.00
   Best Method: YIELD FARM (58% WR)
-  
+
 BOT #6 (NICHE) • Session Results:
   Trades: 22
   Win Rate: 54%

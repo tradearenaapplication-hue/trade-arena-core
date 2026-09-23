@@ -211,7 +211,7 @@ comp.pnlDiff  // how much ahead
 
 ### "How many brackets assigned to each model?"
 ```javascript
-Object.entries(TRADE_OLYMPICS.STANDINGS).forEach(([m, s]) => 
+Object.entries(TRADE_OLYMPICS.STANDINGS).forEach(([m, s]) =>
   console.log(`${m}: ${s.bracketsAssigned.length}`)
 )
 ```

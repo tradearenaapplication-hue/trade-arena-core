@@ -4,23 +4,23 @@
 
 ### What You Had (5 minutes ago)
 ```
-runCrucibleAI() 
-    ↓ 
-Math.random() < 0.62 ? +$30 : -$10 
-    ↓ 
-$24,880 profit (+149%) 
-    ↓ 
+runCrucibleAI()
+    ↓
+Math.random() < 0.62 ? +$30 : -$10
+    ↓
+$24,880 profit (+149%)
+    ↓
 ✗ Not real
 ```
 
 ### What You Have Now
 ```
-runCrucibleReal() 
-    ↓ 
-CoinGecko data → RSI/SMA signals → Real TP/SL 
-    ↓ 
-$50.34 profit (+0.68%) 
-    ↓ 
+runCrucibleReal()
+    ↓
+CoinGecko data → RSI/SMA signals → Real TP/SL
+    ↓
+$50.34 profit (+0.68%)
+    ↓
 ✓ Real
 ```
 

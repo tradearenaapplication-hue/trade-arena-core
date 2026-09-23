@@ -191,7 +191,7 @@ const SYSTEM_EXPLOITATIONS = {
 
 function generateBotSpecificDecision(botId, botProfile, marketData, bet, botStrategy) {
   // Each bot gets a UNIQUE decision based on their profile
-  
+
   const profileDecisions = {
     'SCALPER': generateScalperDecision,
     'TREND': generateTrendDecision,
@@ -211,13 +211,13 @@ function generateBotSpecificDecision(botId, botProfile, marketData, bet, botStra
 
 function generateScalperDecision(botId, marketData, bet, botStrategy) {
   // Scalpers: Fast in/out, tight spreads, arbitrage focused
-  
+
   const tokens = ['ETH', 'USDC', 'ARB'];
   const methods = ['ARBITRAGE', 'FLASH LOAN'];
-  
+
   // Prefer low volatility, high volume pairs
   const volatility = marketData?.[0]?.price_change_percentage_24h || 2.0;
-  
+
   if (volatility < 2) {
     // Perfect for scalping - tight spread opportunities
     return {
@@ -235,7 +235,7 @@ function generateScalperDecision(botId, marketData, bet, botStrategy) {
       botProfile: 'SCALPER'
     };
   }
-  
+
   return {
     token: 'ETH',
     token_emoji: '⚡',
@@ -254,9 +254,9 @@ function generateScalperDecision(botId, marketData, bet, botStrategy) {
 
 function generateTrendDecision(botId, marketData, bet, botStrategy) {
   // Trend followers: Momentum riders, follow market direction
-  
+
   const momentum = marketData?.reduce((sum, c) => sum + (c.price_change_percentage_24h || 0), 0) / 8 || 0;
-  
+
   if (momentum > 5) {
     // Strong bullish momentum - go long
     return {
@@ -290,7 +290,7 @@ function generateTrendDecision(botId, marketData, bet, botStrategy) {
       botProfile: 'TREND'
     };
   }
-  
+
   // Neutral momentum - yield farm
   return {
     token: 'ETH',
@@ -310,13 +310,13 @@ function generateTrendDecision(botId, marketData, bet, botStrategy) {
 
 function generateAggressiveDecision(botId, marketData, bet, botStrategy) {
   // Aggressive: High risk, high reward, exploit volatility
-  
+
   const volatility = marketData?.reduce((sum, c) => sum + Math.abs(c.price_change_percentage_24h || 0), 0) / 8 || 2;
-  
+
   if (volatility > 8) {
     // High volatility - time for aggressive plays
     const methods = ['PERP LONG', 'PERP SHORT', 'SPOT SHORT'];
-    
+
     return {
       token: 'WIF',
       token_emoji: '🔥',
@@ -332,7 +332,7 @@ function generateAggressiveDecision(botId, marketData, bet, botStrategy) {
       botProfile: 'AGGRESSIVE'
     };
   }
-  
+
   // Moderate volatility - leverage play
   return {
     token: 'ARB',
@@ -352,7 +352,7 @@ function generateAggressiveDecision(botId, marketData, bet, botStrategy) {
 
 function generateConservativeDecision(botId, marketData, bet, botStrategy) {
   // Conservative: Low risk, steady profits, capital preservation
-  
+
   return {
     token: 'USDC',
     token_emoji: '🛡️',
@@ -371,12 +371,12 @@ function generateConservativeDecision(botId, marketData, bet, botStrategy) {
 
 function generateBalancedDecision(botId, marketData, bet, botStrategy) {
   // Balanced: Mix of everything, adapt to conditions
-  
+
   const volatility = marketData?.reduce((sum, c) => sum + Math.abs(c.price_change_percentage_24h || 0), 0) / 8 || 2;
-  
+
   const methods = ['ARBITRAGE', 'SPOT LONG', 'YIELD FARM', 'FLASH LOAN'];
   const tokens = ['ETH', 'SOL', 'ARB', 'PEPE'];
-  
+
   return {
     token: tokens[Math.floor(Math.random() * tokens.length)],
     token_emoji: '⚖️',
@@ -395,7 +395,7 @@ function generateBalancedDecision(botId, marketData, bet, botStrategy) {
 
 function generateNicheDecision(botId, marketData, bet, botStrategy) {
   // Niche: NFTs and alternative strategies
-  
+
   const nicheOptions = [
     {
       token: 'BLUR',
@@ -422,9 +422,9 @@ function generateNicheDecision(botId, marketData, bet, botStrategy) {
       detail: 'Alt coin accumulation play'
     }
   ];
-  
+
   const chosen = nicheOptions[Math.floor(Math.random() * nicheOptions.length)];
-  
+
   return {
     token: chosen.token,
     token_emoji: chosen.emoji,

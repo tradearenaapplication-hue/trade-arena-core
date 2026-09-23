@@ -148,7 +148,7 @@ function updateOlympicsRankings() {
 
   rankings.forEach((model, index) => {
     const row = tbody.insertRow();
-    
+
     // Alternate row colors
     if (index % 2 === 0) {
       row.style.backgroundColor = 'rgba(15, 9, 20, 0.3)';
@@ -230,13 +230,13 @@ function updateTopBracketsTable() {
 
   topBrackets.forEach((bracket, index) => {
     const row = tbody.insertRow();
-    
+
     if (index % 2 === 0) {
       row.style.backgroundColor = 'rgba(15, 9, 20, 0.3)';
     }
 
     const medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : ''));
-    
+
     row.innerHTML = `
       <td style="padding: 8px; border-bottom: 1px solid var(--chrome); color: var(--cyan);">
         ${medal} ${bracket.bracket}
@@ -270,7 +270,7 @@ function updateWeakBracketsTable() {
 
   weakBrackets.forEach((bracket, index) => {
     const row = tbody.insertRow();
-    
+
     if (index % 2 === 0) {
       row.style.backgroundColor = 'rgba(15, 9, 20, 0.3)';
     }

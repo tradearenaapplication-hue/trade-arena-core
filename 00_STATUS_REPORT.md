@@ -217,7 +217,7 @@ The Improvement:
 ```javascript
 // Calculate if trade is mathematically profitable
 const minExpectedValue = 1; // Need EV > $1
-trade.expectedValue = (trade.winProbability * 30) 
+trade.expectedValue = (trade.winProbability * 30)
                     - ((1 - trade.winProbability) * 10);
 trade.isQualityTrade = trade.expectedValue > minExpectedValue;
 ```
@@ -246,10 +246,10 @@ const skippedTrades = this.trades.filter(t => t.skipped);
 
 // Calculate metrics only on executed trades
 const wins = executedTrades.filter(t => t.isWin).length;
-const avgWin = (winTrades.reduce((sum, t) => sum + t.pnl, 0) 
+const avgWin = (winTrades.reduce((sum, t) => sum + t.pnl, 0)
               / winTrades.length).toFixed(2); // $30.00
 
-const avgLoss = (lossTrades.reduce((sum, t) => sum + t.pnl, 0) 
+const avgLoss = (lossTrades.reduce((sum, t) => sum + t.pnl, 0)
                / lossTrades.length).toFixed(2); // -$10.00
 
 const profitFactor = totalWinAmount / totalLossAmount; // 3.0+
@@ -355,7 +355,7 @@ Your trading system's **critical profitability flaw has been fixed**.
 
 **The Solution:** Strict 3:1 risk/reward ratio with trade quality filter.
 
-**The Result (Expected):** 
+**The Result (Expected):**
 - Lower win rate (50%) but profitable
 - Profit Factor: 0.19 → 3.0+ (16x improvement)
 - Final P&L: -$170 → +$120-300 (positive!)

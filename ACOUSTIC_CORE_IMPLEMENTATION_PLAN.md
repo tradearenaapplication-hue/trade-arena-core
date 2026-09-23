@@ -17,7 +17,7 @@ This document outlines the step-by-step implementation plan for the ACOUSTIC COR
 ### 1.2 Theme Variables
 Add to existing CSS if not present:
 - --gold: #fbbf24
-- --cyan: #00ffe7  
+- --cyan: #00ffe7
 - --green: #39ff14
 
 ---
@@ -223,17 +223,17 @@ class AcousticCoreAudio {
     if (!this.ctx || this.muted) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    
+
     osc.type = type;
     osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-    
+
     const v = vol || this.volume;
     gain.gain.setValueAtTime(v * 0.3, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-    
+
     osc.connect(gain);
     gain.connect(this.ctx.destination);
-    
+
     osc.start();
     osc.stop(this.ctx.currentTime + duration);
   }
@@ -269,16 +269,16 @@ class AcousticCoreAudio {
   // Global bell at milestones
   checkMilestones(balance) {
     if (this.muted) return;
-    
+
     // Every $100 profit milestone
     const milestone100 = Math.floor(balance / 100);
     const last100 = Math.floor(this.milestones.lastBell / 100);
-    
+
     if (milestone100 > last100 && balance > this.milestones.highWaterMark - 100) {
       this.bell();
       this.milestones.lastBell = balance;
     }
-    
+
     // New high water mark
     if (balance > this.milestones.highWaterMark) {
       this.milestones.highWaterMark = balance;
@@ -337,7 +337,7 @@ function toggleAudio() {
 function updateVault(balance, startBalance = 5000) {
   const fill = Math.min((balance / startBalance) * 100, 100);
   document.getElementById('vaultFill').style.height = fill + '%';
-  document.getElementById('vaultBalance').textContent = 
+  document.getElementById('vaultBalance').textContent =
     '$' + balance.toFixed(2);
 }
 ```
@@ -357,8 +357,8 @@ function renderPadGrid() {
       </span>
     </div>`;
   }).join('');
-  
-  document.getElementById('matrixCount').textContent = 
+
+  document.getElementById('matrixCount').textContent =
     bots.length + ' ACTIVE';
 }
 
@@ -375,7 +375,7 @@ function toggleLiveMode() {
   isLiveMode = !isLiveMode;
   const vault = document.getElementById('vaultHero');
   const mode = document.getElementById('vaultMode');
-  
+
   vault.classList.toggle('live-mode', isLiveMode);
   mode.textContent = isLiveMode ? 'LIVE TRADING' : 'SHADOW MODE';
   mode.style.color = isLiveMode ? 'var(--hot)' : 'var(--gold)';
@@ -401,7 +401,7 @@ function toggleLiveMode() {
 ## Implementation Order
 
 1. **Task 1**: Add vault HTML + CSS to index.html
-2. **Task 2**: Add pad grid HTML + CSS to index.html  
+2. **Task 2**: Add pad grid HTML + CSS to index.html
 3. **Task 3**: Add AudioEngine class to new file or app.js
 4. **Task 4**: Wire vault to balance in existing JS
 5. **Task 5**: Wire pad grid to bots

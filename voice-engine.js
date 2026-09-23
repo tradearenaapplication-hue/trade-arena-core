@@ -20,13 +20,13 @@ class VOICEEngine {
       const loadVoices = () => {
         const voices = this.synth.getVoices();
         // Try to find a good English voice
-        this.voice = voices.find(v => 
+        this.voice = voices.find(v =>
           v.name.includes('Google UK English Female') ||
           v.name.includes('Microsoft Zira') ||
           v.name.includes('Samantha')
         ) || voices[0];
       };
-      
+
       if (this.synth.getVoices().length > 0) {
         loadVoices();
       } else {
@@ -38,10 +38,10 @@ class VOICEEngine {
   // Speak text
   speak(text, priority = false) {
     if (this.muted || !this.synth || !text) return;
-    
+
     // Cancel any ongoing speech
     this.synth.cancel();
-    
+
     const utterance = new SpeechSynthesisUtterance(text);
     if (this.voice) {
       utterance.voice = this.voice;
@@ -49,7 +49,7 @@ class VOICEEngine {
     utterance.volume = this.volume;
     utterance.rate = 1.1;
     utterance.pitch = 1.0;
-    
+
     this.synth.speak(utterance);
   }
 

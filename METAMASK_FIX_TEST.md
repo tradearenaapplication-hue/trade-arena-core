@@ -62,7 +62,7 @@ NEW: return { eth: 0, usd: 0, ethPrice: 3200 }  (fallback)
 **Location**: Lines 457-485
 **New Function**: `checkMetaMaskStatus()`
 **Purpose**: View wallet status anytime in console
-**Usage**: 
+**Usage**:
 ```javascript
 checkMetaMaskStatus()  // Run in browser console
 ```
@@ -187,7 +187,7 @@ After successful MetaMask login, you should see:
 ## 🐛 Common Issues & Fixes
 
 ### Issue: "MetaMask not found"
-**Test**: 
+**Test**:
 ```javascript
 console.log(window.ethereum)
 ```

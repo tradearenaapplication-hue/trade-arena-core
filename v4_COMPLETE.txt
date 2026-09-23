@@ -454,8 +454,8 @@ You now have a **fully functional AI trading platform** with:
 
 ---
 
-**Trade Arena v4**  
-*AI-Powered Multi-Bot Trading Platform*  
+**Trade Arena v4**
+*AI-Powered Multi-Bot Trading Platform*
 Built March 2026 | Status: ✅ Ready
 
 **Remember: Trade responsibly, start small, never risk more than you can afford to lose.**

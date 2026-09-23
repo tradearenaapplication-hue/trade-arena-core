@@ -67,7 +67,7 @@ Send message: "Generate Trade Arena PWA icons"
 - Drag into VS Code repo folder
 - 5 minutes total
 
-#### Option B: Design Yourself  
+#### Option B: Design Yourself
 1. Canva.com → Create → 512×512
 2. Dark background + neon text/design
 3. Download as PNG → icon-512.png
@@ -264,12 +264,12 @@ These enable:
 
 ## 🔐 Security Checklist
 
-✅ Service worker only caches GET requests  
-✅ No credentials cached automatically  
-✅ HTTPS enforced on production (Vercel auto-provides)  
-✅ API calls still require authentication  
-✅ User data not cached without explicit consent  
-✅ Manifest scope limited to app origin  
+✅ Service worker only caches GET requests
+✅ No credentials cached automatically
+✅ HTTPS enforced on production (Vercel auto-provides)
+✅ API calls still require authentication
+✅ User data not cached without explicit consent
+✅ Manifest scope limited to app origin
 
 **Your app is secure.** PWA doesn't reduce security—it enhances it with HTTPS requirement.
 
@@ -309,7 +309,7 @@ The only missing piece is those two icon files. Once you add them and deploy:
 - ✅ No app store approval needed
 - ✅ You control all distribution
 
-**Next action:** 
+**Next action:**
 1. Decide on icons (let me generate or design yourself)
 2. Add icons to repo
 3. Deploy to Vercel
@@ -318,4 +318,3 @@ The only missing piece is those two icon files. Once you add them and deploy:
 **Time to deployment: <1 hour**
 
 Ready to proceed? 🚀
-

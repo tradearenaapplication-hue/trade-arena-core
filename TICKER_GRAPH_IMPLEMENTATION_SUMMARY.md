@@ -46,7 +46,7 @@ const tickerGraph = {
   botColors,
   maxDataPoints: 50,
   botHistory: {},
-  
+
   init(),           // Initialize canvas and rendering
   assignBotColors(), // Assign colors to each bot
   recordTrade(),    // Record bot trade data
@@ -374,7 +374,7 @@ tickerGraph.reset();  // Clear all data
 ## Troubleshooting Guide
 
 ### Problem: Graph not visible
-**Solution**: 
+**Solution**:
 - Check browser console (F12)
 - Refresh page
 - Verify tickerGraphCanvas div exists

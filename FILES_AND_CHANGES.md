@@ -290,7 +290,7 @@ All tested and verified working:
 ├─ Cyan      if +1 to +5%
 ├─ Gold      if -1 to +1%
 ├─ Amber     if -5 to -1%
-└─ Red       if -5%- 
+└─ Red       if -5%-
 
 ✨ Effects
 ├─ Smooth CSS transitions

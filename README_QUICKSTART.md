@@ -104,7 +104,7 @@ Watch agent weights evolve in **SELF-LEARNING MODEL** panel:
 ```
 Example after 20 trades:
 🔥 Momentum:  1.23  (↑ rising - doing well)
-🌀 Volatility: 0.82 (↓ falling - struggling)  
+🌀 Volatility: 0.82 (↓ falling - struggling)
 🏛️ Politician: 1.0  (— stable)
 📊 Sentiment:  1.15 (↑ rising)
 🛡️ Risk:      0.95 (↓ slight drop)
@@ -134,7 +134,7 @@ Located in **CIRCUIT BREAKERS** panel:
    Disables everything immediately
    Clears all timers
    Master switch turns red
-   
+
 🟢 RESET — RESUME TRADING
    Re-enables trading
    Syncs with master switch
@@ -247,8 +247,8 @@ Default: 2 out of 4 agents
 
 ---
 
-**Status**: ✅ Ready to Trade  
-**Build**: v4.0 (Master Switch + Real-Time Balance)  
+**Status**: ✅ Ready to Trade
+**Build**: v4.0 (Master Switch + Real-Time Balance)
 **Created**: April 17, 2026
 
 Happy trading! 🚀

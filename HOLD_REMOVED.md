@@ -99,7 +99,7 @@ if (requiresExtraConfidence && avgConviction < 0.80) {
 | Trend fading | HOLD → Conservative trade | 2 |
 | **Total** | **9 lines changed** | |
 
-**Commit**: 786688ce  
+**Commit**: 786688ce
 **Message**: "🎯 Fix: Remove HOLD method, force bots to always trade"
 
 ---
@@ -123,12 +123,12 @@ When bots **can't trade confidently**, they now use **safe fallback methods**:
 
 Even with HOLD removed, the system still has **safety measures**:
 
-✅ **Balance validation** - trades rejected if insufficient funds  
-✅ **Cost capping** - max 50% of bet goes to costs  
-✅ **Auto-stop** - halts when balance < $0.10  
-✅ **Risk veto** - still blocks very risky positions (but trades safer alternative)  
-✅ **Conviction gates** - still require 75%+ for weak votes  
-✅ **Trend matching** - still validates edge before trading  
+✅ **Balance validation** - trades rejected if insufficient funds
+✅ **Cost capping** - max 50% of bet goes to costs
+✅ **Auto-stop** - halts when balance < $0.10
+✅ **Risk veto** - still blocks very risky positions (but trades safer alternative)
+✅ **Conviction gates** - still require 75%+ for weak votes
+✅ **Trend matching** - still validates edge before trading
 
 ---
 
@@ -180,19 +180,19 @@ After: Bot takes SPOT SHORT cautiously ✅
 
 ## Git Status
 
-✅ **Commit**: 786688ce  
-✅ **Message**: "🎯 Fix: Remove HOLD method, force bots to always trade"  
-✅ **Date**: April 18, 2026  
-✅ **Files**: index.html (9 lines modified)  
-✅ **Status**: Committed and pushed  
+✅ **Commit**: 786688ce
+✅ **Message**: "🎯 Fix: Remove HOLD method, force bots to always trade"
+✅ **Date**: April 18, 2026
+✅ **Files**: index.html (9 lines modified)
+✅ **Status**: Committed and pushed
 
 ---
 
 ## Server Status
 
-✅ **HTTP Server**: Running (localhost:8000)  
-✅ **Code**: Updated with HOLD removal  
-✅ **Ready**: Yes - test now!  
+✅ **HTTP Server**: Running (localhost:8000)
+✅ **Code**: Updated with HOLD removal
+✅ **Ready**: Yes - test now!
 
 ---
 
@@ -253,10 +253,9 @@ After: Bot takes SPOT SHORT cautiously ✅
 
 ---
 
-**Build Date**: April 18, 2026  
-**Version**: 4.5  
-**Commit**: 786688ce  
-**Status**: ✅ HOLD REMOVED, BOTS ALWAYS TRADE  
+**Build Date**: April 18, 2026
+**Version**: 4.5
+**Commit**: 786688ce
+**Status**: ✅ HOLD REMOVED, BOTS ALWAYS TRADE
 
 Your bots will now **never skip trades**! 🚀
-

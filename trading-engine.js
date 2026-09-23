@@ -90,6 +90,105 @@ if (typeof window !== 'undefined') {
 
 
 
+class SafetyControlsEngine {
+    constructor() {
+        this.dailyLossLimit = 50.00; // default $50.00
+        this.pendingLossLimit = null;
+        this.limitIncreaseEffectiveAt = 0; // 24-hour delay timestamp
+        this.dailyLossHits = []; // timestamps of limit breaches in last 7 days
+        this.coolingUntil = 0; // timestamp until trade execution locked
+        this.coolingReason = null;
+        this.coolingEscalated = false;
+        this.sessionStartTime = Date.now();
+        this.sessionWarningIntervals = [30, 60, 90]; // minutes
+        this.sessionWarningsShown = new Set();
+    }
+
+    getEffectiveDailyLossLimit(startingBalance = 10000) {
+        if (this.pendingLossLimit !== null && Date.now() >= this.limitIncreaseEffectiveAt) {
+            this.dailyLossLimit = this.pendingLossLimit;
+            this.pendingLossLimit = null;
+        }
+        return this.dailyLossLimit;
+    }
+
+    requestLimitIncrease(newLimit) {
+        const num = Number(newLimit);
+        if (isNaN(num) || num <= 0) return { success: false, error: 'Invalid loss limit' };
+
+        if (num <= this.dailyLossLimit) {
+            this.dailyLossLimit = num;
+            this.pendingLossLimit = null;
+            return { success: true, immediate: true, limit: num };
+        }
+
+        // Limit increase requires 24-hour delay
+        this.pendingLossLimit = num;
+        this.limitIncreaseEffectiveAt = Date.now() + (24 * 60 * 60 * 1000);
+        return {
+            success: true,
+            immediate: false,
+            currentLimit: this.dailyLossLimit,
+            pendingLimit: num,
+            effectiveAt: this.limitIncreaseEffectiveAt
+        };
+    }
+
+    recordDailyLossHit() {
+        const now = Date.now();
+        const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
+        this.dailyLossHits = this.dailyLossHits.filter(ts => ts >= sevenDaysAgo);
+
+        if (!this.dailyLossHits.some(ts => now - ts < 3600000)) {
+            this.dailyLossHits.push(now);
+        }
+
+        if (this.dailyLossHits.length >= 2) {
+            this.coolingUntil = now + (7 * 24 * 60 * 60 * 1000);
+            this.coolingReason = 'ESCALATED_7D';
+            this.coolingEscalated = true;
+        } else {
+            this.coolingUntil = Math.max(this.coolingUntil, now + (24 * 60 * 60 * 1000));
+            this.coolingReason = 'DAILY_LOSS_LIMIT';
+            this.coolingEscalated = false;
+        }
+    }
+
+    triggerTakeABreak(durationHours = 24) {
+        const now = Date.now();
+        const durationMs = Number(durationHours) * 60 * 60 * 1000;
+        this.coolingUntil = Math.max(this.coolingUntil, now + durationMs);
+        this.coolingReason = durationHours >= 168 ? 'SELF_EXCLUSION_7D' : 'USER_TAKE_A_BREAK';
+        this.coolingEscalated = false;
+        return { coolingUntil: this.coolingUntil, reason: this.coolingReason };
+    }
+
+    isTradeExecutionBlocked(dailyNetPnl = 0, startingBalance = 10000) {
+        const now = Date.now();
+        if (now < this.coolingUntil) {
+            return {
+                blocked: true,
+                reason: this.coolingReason || 'COOLING_OFF',
+                coolingUntil: this.coolingUntil,
+                escalated: this.coolingEscalated
+            };
+        }
+
+        const effectiveLimit = this.getEffectiveDailyLossLimit(startingBalance);
+        if (dailyNetPnl <= -effectiveLimit) {
+            this.recordDailyLossHit();
+            return {
+                blocked: true,
+                reason: this.coolingReason || 'DAILY_LOSS_LIMIT',
+                coolingUntil: this.coolingUntil,
+                escalated: this.coolingEscalated
+            };
+        }
+
+        return { blocked: false };
+    }
+}
+
 class TradingEngine {
 
      constructor() {
@@ -104,6 +203,8 @@ class TradingEngine {
 
          this.activeSessions = new Map();
 
+         this.safetyControls = new SafetyControlsEngine();
+
          this.riskLimits = {
 
              maxOpportunityAgeMs: 45000
@@ -116,7 +217,7 @@ class TradingEngine {
 
      }
 
-     
+
 
      // Filter out stablecoins from trading pairs
 
@@ -142,7 +243,7 @@ class TradingEngine {
 
          const opportunities = [];
 
-         
+
 
          for (let pair of filteredPairs) {
 
@@ -224,7 +325,7 @@ class TradingEngine {
 
         const opportunities = [];
 
-        
+
 
         // Check for MEV opportunities via Aave flash loans
 
@@ -240,13 +341,13 @@ class TradingEngine {
 
             const mempool = await this.scanMempool();
 
-            
+
 
             for (let tx of mempool) {
 
                 const roi = await this.simulateFlashLoanStrategy(tx, loanAmount);
 
-                
+
 
                 if (roi > flashLoanCost) {
 
@@ -294,25 +395,71 @@ class TradingEngine {
 
      * Volatility Analysis & Prediction
 
+     * Optimized: Zero-allocation loop pass over price history replacing array creation and functional reduce calls.
+
      */
 
     analyzeVolatility(priceHistory) {
 
-        const returns = [];
+        if (!priceHistory || priceHistory.length <= 1) {
 
-        for (let i = 1; i < priceHistory.length; i++) {
+            return {
 
-            returns.push((priceHistory[i] - priceHistory[i-1]) / priceHistory[i-1]);
+                current: "0.00",
+
+                forecast1h: "0.00",
+
+                forecast24h: "0.00",
+
+                trend: 'LOW',
+
+                recommendation: 'NORMAL'
+
+            };
 
         }
 
 
 
-        // Calculate standard deviation (volatility)
+        const len = priceHistory.length;
 
-        const mean = returns.reduce((a, b) => a + b) / returns.length;
+        const n = len - 1;
 
-        const variance = returns.reduce((sq, n) => sq + Math.pow(n - mean, 2)) / returns.length;
+
+
+        // Single pass mean return calculation without intermediate array allocation
+
+        let sumReturns = 0;
+
+        for (let i = 1; i < len; i++) {
+
+            const prev = priceHistory[i - 1];
+
+            sumReturns += (priceHistory[i] - prev) / prev;
+
+        }
+
+        const mean = sumReturns / n;
+
+
+
+        // Single pass variance calculation
+
+        let sumVariance = 0;
+
+        for (let i = 1; i < len; i++) {
+
+            const prev = priceHistory[i - 1];
+
+            const r = (priceHistory[i] - prev) / prev;
+
+            const diff = r - mean;
+
+            sumVariance += diff * diff;
+
+        }
+
+        const variance = sumVariance / n;
 
         const volatility = Math.sqrt(variance) * 100; // Convert to percentage
 
@@ -358,7 +505,7 @@ class TradingEngine {
 
         const avgLoss = 1.0;
 
-        
+
 
         const kellyFraction = (winRate * avgWin - (1 - winRate) * avgLoss) / avgWin;
 
@@ -384,7 +531,7 @@ class TradingEngine {
 
         const positionSize = capital * positionFraction * adjustedLeverage;
 
-        
+
 
         return {
 
@@ -414,7 +561,7 @@ class TradingEngine {
 
         const { price, volume, rsi, macd, bollinger } = marketData;
 
-        
+
 
         let signal = 0; // -1 = SELL, 0 = HOLD, 1 = BUY
 
@@ -540,7 +687,7 @@ class TradingEngine {
 
                 const marketData = await this.fetchMarketData(bot.strategy);
 
-                
+
 
                 let trade = null;
 
@@ -560,7 +707,7 @@ class TradingEngine {
 
                         break;
 
-                    
+
 
                     case 'Flash Loan Farming':
 
@@ -648,6 +795,21 @@ class TradingEngine {
 
     async executeTrade(bot, opportunity) {
 
+        const safetyCheck = this.safetyControls.isTradeExecutionBlocked(
+            this.trades.reduce((sum, t) => sum + (t.profit || 0), 0),
+            bot.amount || 10000
+        );
+        if (safetyCheck.blocked) {
+            return {
+                id: this.generateId(),
+                botId: bot.id,
+                status: 'BLOCKED_SAFETY_CONTROLS',
+                reason: safetyCheck.reason,
+                profit: 0,
+                timestamp: Date.now()
+            };
+        }
+
         const positionSize = this.calculatePositionSize(
 
             bot.amount,
@@ -722,7 +884,7 @@ class TradingEngine {
 
             trade.executedTime = Date.now();
 
-            
+
 
             // Calculate actual profit based on entry and exit prices
             let actualProfit = 0;
@@ -730,7 +892,7 @@ class TradingEngine {
                 // For long positions: profit = (exitPrice - entryPrice) * size * leverage
                 const priceDifference = parseFloat(trade.exit) - parseFloat(trade.entry);
                 actualProfit = priceDifference * parseFloat(trade.size) * parseFloat(trade.leverage);
-                
+
                 // Subtract fees (estimated)
                 const fees = Math.abs(actualProfit) * 0.001; // 0.1% fee estimate
                 actualProfit -= fees;
@@ -742,7 +904,7 @@ class TradingEngine {
 
             trade.profit = Number(actualProfit.toFixed(4));
             trade.profitPercent = trade.size > 0 ? Number(((actualProfit / parseFloat(trade.size)) * 100).toFixed(2)) : 0;
-            
+
             // Update bot's totalProfit
             const botIndex = this.bots.findIndex(b => b.id === trade.botId);
             if (botIndex !== -1) {
@@ -756,7 +918,7 @@ class TradingEngine {
 
             trade.closedTime = Date.now();
 
-            
+
 
             // ACOUSTIC CORE: Play audio on trade close
 
@@ -838,7 +1000,7 @@ class TradingEngine {
 
             trade.executedTime = Date.now();
 
-            
+
 
             // Calculate profit after fees
 
@@ -846,12 +1008,12 @@ class TradingEngine {
 
             trade.profit = (opportunity.loanAmount * roi / 100).toFixed(4);
 
-            
+
 
             trade.status = 'COMPLETED';
-            
+
             trade.closedTime = Date.now();
-            
+
             // Update bot's totalProfit
             const botIndex = this.bots.findIndex(b => b.id === trade.botId);
             if (botIndex !== -1) {
@@ -1162,5 +1324,3 @@ if (typeof module !== 'undefined' && module.exports) {
         acousticAudio
     };
 }
-
-

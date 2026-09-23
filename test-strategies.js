@@ -3,7 +3,7 @@
 /**
  * STRATEGY VALIDATION & CRUCIBLE TEST RUNNER
  * Validates all trading strategies and runs comprehensive tests
- * 
+ *
  * Usage: node test-strategies.js
  */
 
@@ -37,22 +37,22 @@ console.log(colors.bright + colors.blue + '📋 PHASE 1: VALIDATING STRATEGIES' 
 const strategiesPath = path.join(__dirname, 'ai-strategies.js');
 try {
   const strategiesContent = fs.readFileSync(strategiesPath, 'utf8');
-  
+
   // Check for invalid methods
   const invalidMethods = ['ARBITRAGE', 'FLASH LOAN', 'NFT FLIP'];
   let hasInvalid = false;
-  
+
   invalidMethods.forEach(method => {
     if (strategiesContent.includes(method)) {
       console.log(colors.red + `  ❌ FOUND INVALID METHOD: "${method}"` + colors.reset);
       hasInvalid = true;
     }
   });
-  
+
   if (!hasInvalid) {
     console.log(colors.green + '  ✅ No invalid methods found in ai-strategies.js' + colors.reset);
   }
-  
+
   // Check for valid methods
   let validCount = 0;
   VALID_METHODS.forEach(method => {
@@ -61,7 +61,7 @@ try {
     }
   });
   console.log(colors.green + `  ✅ Found ${validCount} valid method types` + colors.reset);
-  
+
 } catch (error) {
   console.log(colors.red + `  ❌ Error reading strategies: ${error.message}` + colors.reset);
   process.exit(1);
@@ -72,29 +72,29 @@ console.log('\n' + colors.bright + colors.blue + '📋 PHASE 2: VALIDATING CRUCI
 const cruciblePath = path.join(__dirname, 'crucible-test.js');
 try {
   const crucibleContent = fs.readFileSync(cruciblePath, 'utf8');
-  
+
   // Check for invalid methods
   let hasInvalid = false;
   const invalidMethods = ['ARBITRAGE', 'FLASH LOAN'];
-  
+
   invalidMethods.forEach(method => {
     if (crucibleContent.includes(`'${method}'`) || crucibleContent.includes(`"${method}"`)) {
       console.log(colors.red + `  ❌ FOUND INVALID METHOD: "${method}"` + colors.reset);
       hasInvalid = true;
     }
   });
-  
+
   if (!hasInvalid) {
     console.log(colors.green + '  ✅ No invalid methods found in crucible-test.js' + colors.reset);
   }
-  
+
   // Verify randomTradingMethod uses valid methods
   if (crucibleContent.includes("['SPOT LONG', 'SPOT SHORT', 'PERP LONG', 'PERP SHORT', 'YIELD FARM']")) {
     console.log(colors.green + '  ✅ randomTradingMethod() uses valid methods' + colors.reset);
   } else {
     console.log(colors.yellow + '  ⚠️  randomTradingMethod() may need review' + colors.reset);
   }
-  
+
 } catch (error) {
   console.log(colors.red + `  ❌ Error reading crucible-test: ${error.message}` + colors.reset);
   process.exit(1);
@@ -108,7 +108,7 @@ console.log('\n' + colors.bright + colors.blue + '📋 PHASE 3: VALIDATING BALAN
 const indexPath = path.join(__dirname, 'index.html');
 try {
   const indexContent = fs.readFileSync(indexPath, 'utf8');
-  
+
   // Check balance deduction on open
   if (indexContent.includes('balance -= bet') && indexContent.includes('balance += pos.bet + pos.netPnl')) {
     console.log(colors.green + '  ✅ Balance deduction on open: ' + colors.reset + 'balance -= bet');
@@ -117,7 +117,7 @@ try {
   } else {
     console.log(colors.red + '  ❌ Balance logic may be incorrect' + colors.reset);
   }
-  
+
 } catch (error) {
   console.log(colors.red + `  ❌ Error reading index.html: ${error.message}` + colors.reset);
   process.exit(1);
@@ -134,16 +134,16 @@ const mockTest = {
   trades: [],
   startBalance: 10000,
   finalBalance: 10000,
-  
+
   run(numTrades = 20) {
     console.log(colors.cyan + `  Starting ${numTrades} mock trades...` + colors.reset);
-    
+
     for (let i = 1; i <= numTrades; i++) {
       const bet = 100;
       const isWin = Math.random() < 0.55; // 55% win rate
       const pnl = isWin ? bet * (0.01 + Math.random() * 0.04) : -bet * (0.01 + Math.random() * 0.02);
       const method = VALID_METHODS[Math.floor(Math.random() * VALID_METHODS.length)];
-      
+
       this.trades.push({
         tradeNum: i,
         method,
@@ -151,17 +151,17 @@ const mockTest = {
         pnl,
         isWin
       });
-      
+
       this.finalBalance += pnl;
-      
+
       if (i % 5 === 0) {
         console.log(colors.cyan + `    Trade ${i}: ${method} | P&L: ${isWin ? colors.green : colors.red}${pnl > 0 ? '+' : ''}$${pnl.toFixed(2)}${colors.reset} | Balance: $${this.finalBalance.toFixed(2)}`);
       }
     }
-    
+
     return this.getResults();
   },
-  
+
   getResults() {
     const wins = this.trades.filter(t => t.isWin).length;
     const losses = this.trades.length - wins;
@@ -170,7 +170,7 @@ const mockTest = {
     const avgWin = this.trades.filter(t => t.isWin).reduce((sum, t) => sum + t.pnl, 0) / wins || 0;
     const avgLoss = Math.abs(this.trades.filter(t => !t.isWin).reduce((sum, t) => sum + t.pnl, 0)) / losses || 0;
     const profitFactor = avgWin > 0 ? (avgWin * wins) / (avgLoss * losses) : 0;
-    
+
     return {
       totalTrades: this.trades.length,
       wins,

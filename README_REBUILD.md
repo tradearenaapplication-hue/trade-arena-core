@@ -19,7 +19,7 @@ Open `index.html` in a modern web browser (Chrome, Firefox, Safari, Edge). No bu
 - **Display**: Top-right of the header showing current balance
 - **Color Coding**:
   - 🟢 **Green**: +5% or higher gain
-  - 🔵 **Cyan**: +1% to +5% gain  
+  - 🔵 **Cyan**: +1% to +5% gain
   - 🟡 **Gold**: -1% to +1% neutral
   - 🟠 **Amber**: -5% to -1% loss
   - 🔴 **Red**: -5% or worse loss
@@ -337,10 +337,10 @@ Modify `:root` colors in `<style>` to customize the look.
 
 ## 📝 License
 
-Trade Arena - AI Trading Floor Simulator  
+Trade Arena - AI Trading Floor Simulator
 Built with ❤️ for crypto traders and ML enthusiasts.
 
 ---
 
-**Version**: 4.0 (Rebuilt with Master Switch & Real-Time Balance)  
+**Version**: 4.0 (Rebuilt with Master Switch & Real-Time Balance)
 **Last Updated**: April 17, 2026

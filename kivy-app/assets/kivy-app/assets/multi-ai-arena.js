@@ -317,13 +317,13 @@ const BOT_MODEL_ASSIGNMENT = {
 const ARENA_COMPETITION = {
   // Track model performance across all bots
   modelStats: {},
-  
+
   // Initialize model stats
   initializeModel(modelName, botId, botProfile) {
     if (!this.modelStats[modelName]) {
       this.modelStats[modelName] = {
         name: modelName,
-        provider: LM_ARENA_MODELS.TIER_1[modelName]?.provider || 
+        provider: LM_ARENA_MODELS.TIER_1[modelName]?.provider ||
                  LM_ARENA_MODELS.TIER_2[modelName]?.provider ||
                  LM_ARENA_MODELS.TIER_3[modelName]?.provider ||
                  LM_ARENA_MODELS.TIER_4[modelName]?.provider ||
@@ -358,16 +358,16 @@ const ARENA_COMPETITION = {
   // Record trade result
   recordTrade(modelName, botId, result) {
     if (!this.modelStats[modelName]) return;
-    
+
     const stats = this.modelStats[modelName];
     stats.baseTrades++;
-    
+
     if (result.isWin) {
       stats.wins++;
     } else {
       stats.losses++;
     }
-    
+
     stats.totalPnL += result.pnl;
     stats.successRate = (stats.wins / stats.baseTrades * 100).toFixed(1);
     stats.trades.push({
@@ -384,7 +384,7 @@ const ARENA_COMPETITION = {
   getLeaderboard() {
     const stats = Object.values(this.modelStats)
       .sort((a, b) => b.totalPnL - a.totalPnL);
-    
+
     return stats.map((stat, idx) => ({
       rank: idx + 1,
       model: stat.name,
@@ -404,7 +404,7 @@ const ARENA_COMPETITION = {
   getBestModelForProfile(botProfile) {
     const assignment = BOT_MODEL_ASSIGNMENT.assignments[botProfile];
     if (!assignment) return 'claude-3.5-sonnet'; // Default
-    
+
     return assignment.preferred;
   }
 };
@@ -417,37 +417,37 @@ function generateModelSpecificDecision(botId, botProfile, modelName, marketData,
   // Get model configuration
   const modelConfig = getModelConfig(modelName);
   if (!modelConfig) return fallbackDecision(bet, botProfile, modelName);
-  
+
   // Get personality traits
-  const personality = BOT_MODEL_ASSIGNMENT.personalityTraits[modelConfig.personality] || 
+  const personality = BOT_MODEL_ASSIGNMENT.personalityTraits[modelConfig.personality] ||
                       BOT_MODEL_ASSIGNMENT.personalityTraits['BALANCED'];
-  
+
   // Generate base decision using profile-based engine
   const baseDecision = generateBotSpecificDecision(botId, botProfile, marketData, bet, botStrategy);
-  
+
   // Apply model-specific adjustments
   const adjustedDecision = {
     ...baseDecision,
     // Apply personality multipliers
     edge_pct: baseDecision.edge_pct * personality.edgeMultiplier,
-    win_probability: Math.max(0.35, Math.min(0.75, 
+    win_probability: Math.max(0.35, Math.min(0.75,
       baseDecision.win_probability * (personality.riskAversion < 1 ? 1.1 : 0.95)
     )),
-    
+
     // Add model identification
     aiModel: modelName,
     modelProvider: modelConfig.provider,
     modelPersonality: modelConfig.personality,
     modelElo: modelConfig.elo,
     modelTier: getModelTier(modelName),
-    
+
     // Add model reasoning
     modelReasoning: `${modelConfig.personality} approach: ${modelConfig.characteristics}`,
-    
+
     // Apply speed penalty/bonus to decision time
     decisionTimeMs: modelConfig.speedMs
   };
-  
+
   return adjustedDecision;
 }
 
@@ -472,7 +472,7 @@ function getModelTier(modelName) {
 function getRandomModelForProfile(botProfile) {
   const assignment = BOT_MODEL_ASSIGNMENT.assignments[botProfile];
   if (!assignment) return 'claude-3.5-sonnet';
-  
+
   const models = [assignment.preferred, ...assignment.alternatives];
   return models[Math.floor(Math.random() * models.length)];
 }
@@ -520,14 +520,14 @@ async function callAIModel(marketData, bet, botId) {
     // TRADE OLYMPICS: Get model assignment for this specific trade scenario
     let modelName = null;
     let olympicsBracket = null;
-    
+
     if (typeof TRADE_OLYMPICS !== 'undefined' && TRADE_OLYMPICS.getModelForTrade) {
       const olympicsAssignment = TRADE_OLYMPICS.getModelForTrade(
         decision.method,
         decision.token,
         decision.edge_pct
       );
-      
+
       if (olympicsAssignment && olympicsAssignment.isOlympics) {
         modelName = olympicsAssignment.model;
         olympicsBracket = olympicsAssignment.bracket;
@@ -537,11 +537,11 @@ async function callAIModel(marketData, bet, botId) {
     // Fallback to profile-based assignment if Trade Olympics not available
     if (!modelName) {
       if (!BOT_AI_MODELS[botId]) {
-        modelName = MODEL_SELECTION.profileOptimal ? 
-          MODEL_SELECTION.profileOptimal(botProfile) : 
+        modelName = MODEL_SELECTION.profileOptimal ?
+          MODEL_SELECTION.profileOptimal(botProfile) :
           getRandomModelForProfile(botProfile);
         BOT_AI_MODELS[botId] = modelName;
-        
+
         // Initialize arena competition tracking
         if (ARENA_COMPETITION && ARENA_COMPETITION.initializeModel) {
           ARENA_COMPETITION.initializeModel(modelName, botId, botProfile);
@@ -621,7 +621,7 @@ const MODEL_SELECTION = {
   // Strategy 2: ELO-based selection (higher ELO more likely)
   eloWeighted: () => {
     const allModels = [];
-    
+
     for (const tier in LM_ARENA_MODELS) {
       Object.entries(LM_ARENA_MODELS[tier]).forEach(([name, config]) => {
         // Add multiple times based on ELO (higher ELO = more likely)
@@ -631,7 +631,7 @@ const MODEL_SELECTION = {
         }
       });
     }
-    
+
     return allModels[Math.floor(Math.random() * allModels.length)];
   },
 
@@ -654,14 +654,14 @@ const MODEL_SELECTION = {
   // Strategy 5: Cost-efficient selection (good bang for buck)
   costEfficient: () => {
     const candidates = [];
-    
+
     for (const tier in LM_ARENA_MODELS) {
       Object.entries(LM_ARENA_MODELS[tier]).forEach(([name, config]) => {
         const eloPerCost = config.elo / config.costPer1kTokens;
         candidates.push({ name, score: eloPerCost });
       });
     }
-    
+
     // Pick from top 5 cost-efficient
     candidates.sort((a, b) => b.score - a.score);
     const top5 = candidates.slice(0, 5);
@@ -671,13 +671,13 @@ const MODEL_SELECTION = {
   // Strategy 6: Speed-based selection
   speedOptimal: () => {
     const candidates = [];
-    
+
     for (const tier in LM_ARENA_MODELS) {
       Object.entries(LM_ARENA_MODELS[tier]).forEach(([name, config]) => {
         candidates.push({ name, speed: config.speedMs });
       });
     }
-    
+
     // Pick from fastest 5
     candidates.sort((a, b) => a.speed - b.speed);
     const fastest5 = candidates.slice(0, 5);

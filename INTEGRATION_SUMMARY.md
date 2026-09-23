@@ -61,9 +61,9 @@ async function callAI(marketData, bet, botId) {
   if (typeof callAIModel === 'function') {
     try {
       const decision = await callAIModel(marketData, bet, botId);
-      const modelName = typeof getBotModelName === 'function' ? 
+      const modelName = typeof getBotModelName === 'function' ?
         getBotModelName(botId) : 'BALANCED';
-      
+
       // Log to action logger with model info...
       return decision;
     } catch (e) {

@@ -14,15 +14,15 @@ class FXEngine {
 
   init() {
     if (this.canvas) return;
-    
+
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'fx-canvas';
     this.canvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;';
     document.body.appendChild(this.canvas);
-    
+
     this.ctx = this.canvas.getContext('2d');
     this.resize();
-    
+
     window.addEventListener('resize', () => this.resize());
   }
 
@@ -35,14 +35,14 @@ class FXEngine {
   // Full screen flash
   flash(color, duration = 300) {
     if (!this.enabled) return;
-    
+
     const flash = document.createElement('div');
     flash.style.cssText = `
       position:fixed;inset:0;pointer-events:none;z-index:9998;
       background:${color};transition:opacity ${duration}ms ease;
     `;
     document.body.appendChild(flash);
-    
+
     requestAnimationFrame(() => {
       flash.style.opacity = '1';
       setTimeout(() => {
@@ -55,10 +55,10 @@ class FXEngine {
   // Screen shake
   shake(element, duration = 400) {
     if (!element || !this.enabled) return;
-    
+
     const original = element.style.transform;
     const shake = element.closest('.machine');
-    
+
     let start = Date.now();
     const anim = () => {
       const elapsed = Date.now() - start;
@@ -66,22 +66,22 @@ class FXEngine {
         element.style.transform = original || '';
         return;
       }
-      
+
       const intensity = 1 - (elapsed / duration);
       const x = (Math.random() - 0.5) * 8 * intensity;
       const y = (Math.random() - 0.5) * 8 * intensity;
       element.style.transform = `translate(${x}px, ${y}px)`;
-      
+
       requestAnimationFrame(anim);
     };
-    
+
     anim();
   }
 
   // P&L value flies up from position
   pnlFlyUp(pnl, x, y) {
     if (!this.enabled || Math.abs(pnl) < 0.10) return;
-    
+
     const el = document.createElement('div');
     const isWin = pnl > 0;
     el.textContent = (isWin ? '+' : '') + '$' + pnl.toFixed(2);
@@ -94,7 +94,7 @@ class FXEngine {
       animation:pnlFly 1.5s ease forwards;
     `;
     document.body.appendChild(el);
-    
+
     // Add keyframe if not exists
     if (!document.getElementById('fx-keyframes')) {
       const style = document.createElement('style');
@@ -107,24 +107,24 @@ class FXEngine {
       `;
       document.head.appendChild(style);
     }
-    
+
     setTimeout(() => el.remove(), 1500);
   }
 
   // Confetti burst
   confetti(x, y, count = 20) {
     if (!this.enabled) return;
-    
+
     this.init();
-    
+
     const colors = ['#ffd700', '#00ffe7', '#39ff14', '#ff2d78', '#bf5fff'];
     const particles = [];
-    
+
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
       const speed = 3 + Math.random() * 5;
       const color = colors[Math.floor(Math.random() * colors.length)];
-      
+
       particles.push({
         x: x,
         y: y,
@@ -136,24 +136,24 @@ class FXEngine {
         decay: 0.015 + Math.random() * 0.01
       });
     }
-    
+
     this.confettiParticles.push(...particles);
     this.animateConfetti();
   }
 
   animateConfetti() {
     if (!this.ctx || this.confettiParticles.length === 0) return;
-    
+
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    
+
     const remaining = [];
-    
+
     this.confettiParticles.forEach(p => {
       p.x += p.vx;
       p.y += p.vy;
       p.vy += 0.15; // gravity
       p.life -= p.decay;
-      
+
       if (p.life > 0) {
         this.ctx.fillStyle = p.color;
         this.ctx.globalAlpha = p.life;
@@ -161,9 +161,9 @@ class FXEngine {
         remaining.push(p);
       }
     });
-    
+
     this.confettiParticles = remaining;
-    
+
     if (remaining.length > 0) {
       requestAnimationFrame(() => this.animateConfetti());
     } else {
@@ -177,7 +177,7 @@ class FXEngine {
     element.style.animation = 'none';
     element.offsetHeight; // trigger reflow
     element.style.animation = 'fxPulse 0.4s ease';
-    
+
     // Add keyframe if not exists
     if (!document.getElementById('fx-pulse-key')) {
       const style = document.createElement('style');

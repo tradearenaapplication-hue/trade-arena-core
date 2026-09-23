@@ -65,7 +65,7 @@
 
 ### 3️⃣ Google Login (Already Ready)
 
-**Already Exists:** 
+**Already Exists:**
 - Google OAuth2 button & login
 - `handleGoogleCred()` function
 - Just needs Client ID configuration

@@ -325,7 +325,7 @@ Win Rate by Token:
 Best Method: FLASH LOAN
   Average P&L: +$8.50
   Win Rate: 68%
-  
+
 Worst Method: YIELD FARM
   Average P&L: +$2.10
   Win Rate: 52%

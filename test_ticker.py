@@ -10,7 +10,7 @@ import json
 
 def test_ticker_graph():
     """Test ticker graph functionality"""
-    
+
     tests = {
         "1. Check HTTP Server": lambda: check_server(),
         "2. Check JavaScript Syntax": lambda: check_js_syntax(),
@@ -18,14 +18,14 @@ def test_ticker_graph():
         "4. Test Trade Recording": lambda: test_trade_recording(),
         "5. Test Canvas Initialization": lambda: test_canvas_init(),
     }
-    
+
     print("=" * 60)
     print("🎯 TRADE ARENA TICKER GRAPH TEST SUITE")
     print("=" * 60)
-    
+
     passed = 0
     failed = 0
-    
+
     for test_name, test_func in tests.items():
         try:
             print(f"\n{test_name}...")
@@ -39,11 +39,11 @@ def test_ticker_graph():
         except Exception as e:
             print(f"❌ ERROR: {str(e)}")
             failed += 1
-    
+
     print("\n" + "=" * 60)
     print(f"RESULTS: {passed} passed, {failed} failed")
     print("=" * 60)
-    
+
     return failed == 0
 
 def check_server():

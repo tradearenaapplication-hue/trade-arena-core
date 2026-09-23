@@ -3,12 +3,12 @@
  * ║                            AI ARENA TOURNAMENT SYSTEM                          ║
  * ║  Multiple AI models compete & vote on the best trading decisions (LLM Arena)   ║
  * ╚════════════════════════════════════════════════════════════════════════════════╝
- * 
+ *
  * System: 3 AI Models battle for the best decision
  * - ANALYST: Conservative, risk analysis focus
- * - TRADER: Aggressive, momentum & opportunity focus  
+ * - TRADER: Aggressive, momentum & opportunity focus
  * - STRATEGIST: Balanced, market condition adapted
- * 
+ *
  * Decision Flow:
  * 1. All 3 models analyze market & propose trades
  * 2. Each model votes on the proposals
@@ -138,7 +138,7 @@ function noteArenaApiSuccess() {
 async function getAIModelDecision(modelType, marketData, bet, botId, botStrategy = null) {
   const model = AI_ARENA.models[modelType];
   let summary = 'No live data.';
-  
+
   if (marketData?.length) {
     summary = marketData.slice(0, 8).map(c =>
       `${c.symbol.toUpperCase()}: $${c.current_price} | 24h: ${(c.price_change_percentage_24h||0).toFixed(1)}% | Vol: $${(c.total_volume/1e6).toFixed(0)}M`
@@ -187,12 +187,12 @@ Respond ONLY with JSON, no markdown:
 }`;
 
   // Get API key from multiple possible sources
-  let apiKey = window.ANTHROPIC_API_KEY || 
-               globalThis.ANTHROPIC_API_KEY || 
-               (window.parent?.ANTHROPIC_API_KEY) || 
+  let apiKey = window.ANTHROPIC_API_KEY ||
+               globalThis.ANTHROPIC_API_KEY ||
+               (window.parent?.ANTHROPIC_API_KEY) ||
                (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') ||
                '';
-  
+
   // Fast-fail during cooldown to avoid repeated network churn
   if (isArenaApiCoolingDown()) {
     return null;
@@ -204,11 +204,11 @@ Respond ONLY with JSON, no markdown:
   } else {
     return null;
   }
-  
+
   try {
 const res = await fetch('http://localhost:3001/api/claude', {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
@@ -229,7 +229,7 @@ const res = await fetch('http://localhost:3001/api/claude', {
     const jsonStr = data.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();
     const decision = JSON.parse(jsonStr);
-    
+
     // Add vote score (used in consensus)
     decision.vote_score = calculateVoteScore(decision);
     decision.model = modelType;
@@ -255,28 +255,28 @@ const res = await fetch('http://localhost:3001/api/claude', {
 
 function calculateVoteScore(decision) {
   if (!decision) return 0;
-  
+
   // Confidence (40% weight)
   const confidence = Math.max(0.5, Math.min(0.9, decision.confidence || 0.6));
   const confScore = (confidence - 0.5) / 0.4; // Normalize to 0-1
-  
+
   // Edge (30% weight) - how profitable is this?
   const edge = Math.max(0, Math.min(10, decision.edge_pct || 2.5));
   const edgeScore = edge / 10; // Normalize to 0-1
-  
+
   // Win probability (20% weight)
   const winProb = Math.max(0.4, Math.min(0.8, decision.win_probability || 0.55));
   const winScore = (winProb - 0.4) / 0.4; // Normalize to 0-1
-  
+
   // Risk (10% weight) - penalize for high risk
   const riskPenalty = decision.risk_level === 'HIGH' ? 0.7 : (decision.risk_level === 'MEDIUM' ? 0.85 : 1.0);
-  
-  const score = 
+
+  const score =
     (confScore * 0.4) +
     (edgeScore * 0.3) +
     (winScore * 0.2) +
     (riskPenalty * 0.1);
-  
+
   return Math.max(0, Math.min(1, score));
 }
 
@@ -286,19 +286,19 @@ function calculateVoteScore(decision) {
 
 async function runAIArenaTournament(marketData, bet, botId, botStrategy = null) {
   console.log(`\n🏟️ AI ARENA TOURNAMENT STARTING for Bot #${botId}...`);
-  
+
   const startTime = Date.now();
-  
+
   // Step 1: Get decisions from all 3 models (in parallel)
   console.log('⚡ Step 1: Summoning all models...');
-  
+
   // Use allSettled to handle both resolved and rejected promises gracefully
   const settledResults = await Promise.allSettled([
     getAIModelDecision('ANALYST', marketData, bet, botId, botStrategy),
     getAIModelDecision('TRADER', marketData, bet, botId, botStrategy),
     getAIModelDecision('STRATEGIST', marketData, bet, botId, botStrategy),
   ]);
-  
+
   // Extract successful decisions
   const decisions = settledResults
     .map((result, index) => {
@@ -320,15 +320,15 @@ async function runAIArenaTournament(marketData, bet, botId, botStrategy = null) 
   // Step 2: Each model votes on all proposals (consensus voting)
   console.log('🗳️ Step 2: Models voting on each other\'s proposals...');
   const votes = await runVotingRound(decisions, marketData, bet, botId);
-  
+
   // Step 3: Tally votes and determine winner
   console.log('📊 Step 3: Tallying votes and determining consensus...');
   const consensusResult = determineConsensusWinner(decisions, votes);
-  
+
   // Step 4: Validate execution rules
   console.log('✅ Step 4: Validating execution rules...');
   const executionCheck = validateExecutionRules(consensusResult, marketData);
-  
+
   // Step 5: Generate final decision with detailed reasoning
   const finalDecision = {
     ...consensusResult.winnerDecision,
@@ -377,9 +377,9 @@ async function runVotingRound(proposals, marketData, bet, botId) {
   // Each proposal gets a vote score and confidence
   // In real system, could call Claude again to have models critique each other
   // For now, use calculated vote scores
-  
+
   const votes = {};
-  
+
   for (const proposal of proposals) {
     votes[proposal.model] = {
       proposed_by: proposal.model,
@@ -405,7 +405,7 @@ function determineConsensusWinner(proposals, votes) {
   let bestProposal = proposals[0];
   let bestScore = bestProposal.vote_score || 0;
   let totalScore = 0;
-  
+
   for (const proposal of proposals) {
     const score = proposal.vote_score || 0;
     if (score > bestScore) {
@@ -414,10 +414,10 @@ function determineConsensusWinner(proposals, votes) {
     }
     totalScore += score;
   }
-  
+
   const avgScore = totalScore / proposals.length;
   const consensusStrength = Math.max(0, Math.min(1, bestScore / Math.max(0.01, avgScore)));
-  
+
   return {
     winnerModel: bestProposal.model,
     winnerDecision: bestProposal,
@@ -433,7 +433,7 @@ function determineConsensusWinner(proposals, votes) {
 function validateExecutionRules(consensusResult, marketData) {
   const exec = AI_ARENA.execution;
   const decision = consensusResult.winnerDecision;
-  
+
   // Check 1: Consensus strength
   if (consensusResult.consensusStrength < exec.minConsensus) {
     return {
@@ -454,7 +454,7 @@ function validateExecutionRules(consensusResult, marketData) {
   if (marketData?.length > 0) {
     const volatility = marketData.slice(0, 8).map(c => Math.abs(c.price_change_percentage_24h || 0));
     const avgVolatility = volatility.reduce((a, b) => a + b, 0) / volatility.length;
-    
+
     if (avgVolatility > AI_ARENA.pause_conditions.extreme_volatility) {
       return {
         canExecute: false,
@@ -505,10 +505,10 @@ function updateModelPerformance(decision, outcome) {
       console.warn('[AI Arena] No winner found in decision:', decision);
       return;
     }
-    
+
     const winner = decision.arena_tournament.winner;
     const performance = arenaState.modelPerformance[winner];
-    
+
     // Defensive check: ensure performance object exists
     if (!performance) {
       console.warn(`[AI Arena] Performance object not found for winner: ${winner}`, {
@@ -517,20 +517,20 @@ function updateModelPerformance(decision, outcome) {
       });
       return;
     }
-    
+
     // Ensure performance has required properties
     if (typeof performance.wins !== 'number') performance.wins = 0;
     if (typeof performance.losses !== 'number') performance.losses = 0;
-    
+
     if (outcome === 'WIN') {
       performance.wins += 1;
     } else {
       performance.losses += 1;
     }
-    
+
     const total = performance.wins + performance.losses;
     performance.accuracy = (performance.wins / Math.max(1, total) * 100).toFixed(1);
-    
+
     console.log(`📈 ${winner} accuracy: ${performance.accuracy}% (${performance.wins}W/${performance.losses}L)`);
   } catch (error) {
     console.error('[AI Arena] updateModelPerformance error:', error, {
@@ -559,7 +559,7 @@ function getArenaInsights() {
       };
     })
     .sort((a, b) => b.accuracy - a.accuracy);
-  
+
   return {
     models,
     bestModel: models[0]?.name || 'BALANCED',

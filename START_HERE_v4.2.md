@@ -17,7 +17,7 @@
    ```javascript
    // In browser console:
    TradeArenaApp.getSystemStatus()
-   
+
    // Should show:
    // { master: "ON", balance: 10000, online: true, version: "v4.2" }
    ```
@@ -315,6 +315,6 @@ Your Trade Arena is now:
 
 ---
 
-**Build:** Trade Arena v4.2  
-**Status:** ✅ PRODUCTION READY  
-**Last Updated:** Latest Fixes Applied  
+**Build:** Trade Arena v4.2
+**Status:** ✅ PRODUCTION READY
+**Last Updated:** Latest Fixes Applied

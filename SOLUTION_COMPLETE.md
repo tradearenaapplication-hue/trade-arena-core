@@ -55,7 +55,7 @@ if (typeof callAIModel === 'function') {
 ```javascript
 BOT_AI_MODELS = {
   1: "grok-3",
-  2: "gpt-5-turbo", 
+  2: "gpt-5-turbo",
   3: "grok-3",
   4: "claude-3-opus",
   5: "claude-3.5-sonnet",
@@ -139,7 +139,7 @@ Each model personality adjusts:
 AGGRESSIVE personality (grok-3):
   edgeMultiplier: 1.3x    // Predicts higher profits
   riskAversion: 0.7x      // Takes more risks
-  
+
 THOUGHTFUL personality (claude-3-opus):
   edgeMultiplier: 0.9x    // Conservative profit prediction
   riskAversion: 1.3x      // Very cautious

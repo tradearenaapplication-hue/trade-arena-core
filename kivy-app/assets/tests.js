@@ -14,7 +14,7 @@ class TradingEngineMock {
     constructor() { this.bots = []; }
     generateId() { return 'mock' + Math.random(); }
     calculateRiskScore(v, p) { return Math.random()*100; }
-    
+
     analyzeVolatility(prices) {
       const returns = [];
       for (let i = 1; i < prices.length; i++) {
@@ -26,7 +26,7 @@ class TradingEngineMock {
       const trend = volatility > 5 ? 'HIGH' : volatility > 2 ? 'MEDIUM' : 'LOW';
       return { current: volatility.toFixed(2), trend, forecast1h: (volatility * 1.05).toFixed(2) };
     }
-    
+
     calculatePositionSize(capital, volatility, leverage) {
       let positionFraction = 0.02; // Base 2%
       if (volatility > 5) {
@@ -36,7 +36,7 @@ class TradingEngineMock {
       const size = capital * positionFraction * adjustedLeverage;
       return { size: size.toFixed(4), leverage: adjustedLeverage, stopLoss: (size * 0.02).toFixed(4), takeProfit: (size * 0.05).toFixed(4), riskReward: 2.5 };
     }
-    
+
     generateTradeSignal(data) {
       let signal = 0;
       if (data.rsi < 30) signal += 1;
@@ -76,9 +76,9 @@ class ArbitrageAnalyzer {
 }
 
 class FlashLoanSimulator {
-  static simulateLiquidation(debt, collateral, price) { 
+  static simulateLiquidation(debt, collateral, price) {
     const flashLoanFee = debt * 0.0009;
-    return { profit: 0.012, roi: 0.12, flashLoanFee: flashLoanFee.toFixed(4) }; 
+    return { profit: 0.012, roi: 0.12, flashLoanFee: flashLoanFee.toFixed(4) };
   }
   static simulateSandwich(amount, impact, liquidity) { return { totalProfit: 0.008, roi: 0.08 }; }
 }
@@ -98,7 +98,7 @@ const expect = (value) => ({
         return true;
     },
     toEqual: (expected) => {
-        if (JSON.stringify(value) !== JSON.stringify(expected)) 
+        if (JSON.stringify(value) !== JSON.stringify(expected))
             throw new Error(`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(value)}`);
         return true;
     },
@@ -188,7 +188,7 @@ describe('Trading Engine - Position Sizing', () => {
         const engine = new TradingEngine();
         const posLowVol = engine.calculatePositionSize(10, 2, 10);
         const posHighVol = engine.calculatePositionSize(10, 8, 10);
-        
+
         expect(parseFloat(posLowVol.size) > parseFloat(posHighVol.size)).toBe(true);
     });
 
@@ -319,7 +319,7 @@ describe('Arbitrage Analyzer', () => {
     it('should account for fees in profitability', () => {
         const profitable = ArbitrageAnalyzer.calculateArbitrage(2500, 2600, 100);
         const unprofitable = ArbitrageAnalyzer.calculateArbitrage(2500, 2501, 100);
-        
+
         expect(parseFloat(profitable.netProfit) > 0).toBe(true);
         expect(parseFloat(unprofitable.netProfit) < 0).toBe(true);
     });

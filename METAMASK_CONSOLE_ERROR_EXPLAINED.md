@@ -3,7 +3,7 @@
 ## What You Saw
 
 ```
-Error: A listener indicated an asynchronous response by returning true, 
+Error: A listener indicated an asynchronous response by returning true,
 but the message channel closed before a response was received
 ```
 
@@ -58,7 +58,7 @@ You should now see the diagnostic output without that error!
 
 **To test if app works**:
 1. Click "METAMASK / WALLET" button
-2. Does MetaMask popup appear? 
+2. Does MetaMask popup appear?
    - YES → Everything works! 🎉
    - NO → MetaMask not installed/detected
 

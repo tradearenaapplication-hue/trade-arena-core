@@ -69,12 +69,12 @@
 
 ### ACOUSTIC_CORE Integration
 - `audio-engine.js` - Must load before SFX/VOICE
-- `sfx-engine.js` - Uses window.SFX 
+- `sfx-engine.js` - Uses window.SFX
 - `fx-engine.js` - Uses window.FX
 - `voice-engine.js` - Uses window.VOICE
 - `ACOUSTIC_CORE.js` - Bridges all engines
 
-### CRUCIBLE_MODE Dependencies  
+### CRUCIBLE_MODE Dependencies
 - `trading-engine.js` - Uses existing trade logic
 - `crucible-test.js` - Can copy CSV export from
 - `index.html` - UI components ready

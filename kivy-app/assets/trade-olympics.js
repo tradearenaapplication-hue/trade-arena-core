@@ -52,7 +52,7 @@ const TRADE_OLYMPICS = {
    */
   initialize() {
     const models = [];
-    
+
     // Collect all 12 models
     if (typeof LM_ARENA_MODELS !== 'undefined') {
       for (const tier in LM_ARENA_MODELS) {
@@ -74,7 +74,7 @@ const TRADE_OLYMPICS = {
         for (let e = 0; e < numEdges; e++) {
           const bracket = `${this.METHODS[m]}_${this.TOKENS[t]}_${this.EDGE_TIERS[e].name}`;
           const assignedModel = models[modelIndex % numModels];
-          
+
           this.BRACKETS[bracket] = {
             method: this.METHODS[m],
             token: this.TOKENS[t],
@@ -178,7 +178,7 @@ const TRADE_OLYMPICS = {
       bracketInfo.losses++;
     }
     bracketInfo.totalPnL += result.pnl || 0;
-    bracketInfo.winRate = bracketInfo.trades > 0 ? 
+    bracketInfo.winRate = bracketInfo.trades > 0 ?
       (bracketInfo.wins / bracketInfo.trades) : 0;
     bracketInfo.avgEdge = (bracketInfo.avgEdge + (result.edge || 0)) / 2;
     bracketInfo.avgPnL = bracketInfo.totalPnL / bracketInfo.trades;
@@ -253,7 +253,7 @@ const TRADE_OLYMPICS = {
   getSummary() {
     const totalTrades = Object.values(this.STANDINGS)
       .reduce((sum, model) => sum + model.totalTrades, 0);
-    
+
     const totalPnL = Object.values(this.STANDINGS)
       .reduce((sum, model) => sum + model.totalPnL, 0);
 
@@ -395,12 +395,12 @@ const TRADE_OLYMPICS = {
 
   _logBracketAssignments() {
     console.log('\n[Trade Olympics] Bracket Assignments:');
-    
+
     for (const modelName in this.STANDINGS) {
       const standing = this.STANDINGS[modelName];
       console.log(`\n  ${modelName} (ELO: ${standing.elo})`);
       console.log(`    Assigned Brackets: ${standing.bracketsAssigned.length}`);
-      
+
       // Show sample brackets
       standing.bracketsAssigned.slice(0, 3).forEach(bracket => {
         console.log(`      • ${bracket}`);

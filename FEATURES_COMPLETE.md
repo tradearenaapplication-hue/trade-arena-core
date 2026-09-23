@@ -195,7 +195,7 @@ function setupApp({ name, avatar, badge, walletAddress, isAppWallet }) { ... }
 function stopAllBots() {
   globalAutoStopped = true;
   pausedBots.clear();
-  
+
   bots.forEach(bot => {
     if (bot.auto) {
       pausedBots.add(bot.id);
@@ -204,7 +204,7 @@ function stopAllBots() {
       // Update UI...
     }
   });
-  
+
   // Update master buttons...
 }
 ```
@@ -215,12 +215,12 @@ function createWallet() {
   const wallet = ethers.Wallet.createRandom();
   const address = wallet.address;
   const mnemonic = wallet.mnemonic.phrase;
-  
+
   // Save to localStorage
   localStorage.setItem('appWallet', JSON.stringify({
     address, privateKey: wallet.privateKey, mnemonic
   }));
-  
+
   // Show confirmation modal with wallet details...
   // Setup app with wallet...
 }

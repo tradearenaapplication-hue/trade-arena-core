@@ -84,9 +84,9 @@
 
 2. **ai-arena.js** - Enhanced key retrieval
    ```javascript
-   let apiKey = window.ANTHROPIC_API_KEY || 
-               globalThis.ANTHROPIC_API_KEY || 
-               (window.parent?.ANTHROPIC_API_KEY) || 
+   let apiKey = window.ANTHROPIC_API_KEY ||
+               globalThis.ANTHROPIC_API_KEY ||
+               (window.parent?.ANTHROPIC_API_KEY) ||
                (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '');
    ```
 
@@ -212,8 +212,8 @@ Your trading system is:
 
 ---
 
-**Status Verified:** 2026-03-15 18:00:39  
-**Session Duration:** 30+ seconds of continuous trading  
-**Trades Executed:** 10+ successful trades  
-**Cumulative P&L:** +$720  
+**Status Verified:** 2026-03-15 18:00:39
+**Session Duration:** 30+ seconds of continuous trading
+**Trades Executed:** 10+ successful trades
+**Cumulative P&L:** +$720
 **System Health:** 🟢 EXCELLENT

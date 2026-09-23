@@ -10,7 +10,7 @@ Your Crucible mode now has a **complete control panel** for batch trading:
 
 ### 1. **Mode Selector**
 ```
-Mode: [TEST ▼] 
+Mode: [TEST ▼]
      - TEST (no API, simulated)
      - REAL (live prices)
      - ENTERTAINMENT (just for fun)
@@ -60,11 +60,11 @@ P&L: +$2.30 (4.60%)
 
 The **RUN BATCH** function:
 
-✅ **Auto-selects bots** - picks available bots randomly  
-✅ **Runs trades sequentially** - one after another  
-✅ **Stops on broke** - halts if balance < $0.10  
-✅ **Updates progress** - shows status while running  
-✅ **Reports results** - final P&L summary  
+✅ **Auto-selects bots** - picks available bots randomly
+✅ **Runs trades sequentially** - one after another
+✅ **Stops on broke** - halts if balance < $0.10
+✅ **Updates progress** - shows status while running
+✅ **Reports results** - final P&L summary
 
 ---
 
@@ -77,9 +77,9 @@ The **RUN BATCH** function:
 | Run Batch Button | HTML/UI | 1 line |
 | runCrucibleBatch() | JavaScript | 40 lines |
 
-**Total Changes**: 51 lines  
-**File**: `index.html`  
-**Commit**: 6f3ec92d  
+**Total Changes**: 51 lines
+**File**: `index.html`
+**Commit**: 6f3ec92d
 
 ---
 
@@ -187,19 +187,19 @@ Result: Waits for one to finish, continues
 
 ## Git Status
 
-✅ **Commit**: 6f3ec92d  
-✅ **Message**: "✨ Enhance: Crucible UI with mode selector, trade count, and batch runner"  
-✅ **Date**: April 18, 2026  
-✅ **Files**: index.html (51 lines added)  
+✅ **Commit**: 6f3ec92d
+✅ **Message**: "✨ Enhance: Crucible UI with mode selector, trade count, and batch runner"
+✅ **Date**: April 18, 2026
+✅ **Files**: index.html (51 lines added)
 
 ---
 
 ## Server Status
 
-✅ **HTTP Server**: Running (localhost:8000)  
-✅ **Port**: 8000  
-✅ **Code**: Updated with Crucible UI  
-✅ **Ready**: Yes, test now!  
+✅ **HTTP Server**: Running (localhost:8000)
+✅ **Port**: 8000
+✅ **Code**: Updated with Crucible UI
+✅ **Ready**: Yes, test now!
 
 ---
 
@@ -222,10 +222,9 @@ Your Crucible mode is now **fully featured** with:
 
 ---
 
-**Build Date**: April 18, 2026  
-**Version**: 4.4  
-**Commit**: 6f3ec92d  
-**Status**: ✅ CRUCIBLE UI COMPLETE  
+**Build Date**: April 18, 2026
+**Version**: 4.4
+**Commit**: 6f3ec92d
+**Status**: ✅ CRUCIBLE UI COMPLETE
 
 Ready to run batch trades! 📈
-

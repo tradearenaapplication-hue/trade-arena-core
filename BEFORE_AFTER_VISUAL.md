@@ -10,7 +10,7 @@ BEFORE (Broken System):
    This doesn't make sense... 70% wins but LOSING money?
 
 AFTER (Fixed System):
-   Trading: ████████░░░░░░░░░░ (50% Win Rate)  
+   Trading: ████████░░░░░░░░░░ (50% Win Rate)
    Winning: +$120-300 ✅
 
    Fewer trades, but PROFITABLE!
@@ -110,7 +110,7 @@ Opportunity → Execute Trade → Random Outcome
                 ↓                  ↓
            Always Yes          Win: $2-5
                             Loss: -$30-50
-                              
+
 Result: -$170 ❌
 ```
 
@@ -120,7 +120,7 @@ Opportunity → Calculate EV → Quality Check → Execute/Skip
                 ↓              ↓                ↓
               Math          Is EV > $1?    If Yes: +$30/-$10
                                           If No: Skip trade
-                              
+
 Result: +$120-300 ✅
 ```
 
@@ -140,7 +140,7 @@ Wins are tiny!
 Ratio: -35:3 ❌ (Losing!)
 ```
 
-### AFTER  
+### AFTER
 ```
 Enforced 3:1 Ratio:
 
@@ -170,7 +170,7 @@ AFTER: Only quality trades
 │  └─ Ratio: 3:1 ✅
 └─ Result: +$120 ✅
 
-By skipping 8 bad trades, 
+By skipping 8 bad trades,
 we avoid ~$140 more in losses!
 ```
 
@@ -303,7 +303,7 @@ THE LESSON:
 
 ## 🚀 Ready to Test!
 
-Everything is implemented and committed. 
+Everything is implemented and committed.
 
 **Now run the test and verify the fix actually works:**
 
@@ -311,7 +311,7 @@ Everything is implemented and committed.
 runCrucibleTest(20, 1500)
 ```
 
-**Then check if the numbers match expectations.** 
+**Then check if the numbers match expectations.**
 
 If they do: ✅ **FIX IS VERIFIED & WORKING!**
 

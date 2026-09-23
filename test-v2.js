@@ -58,7 +58,7 @@ try {
     winRate: 60.0,
     executed: 10
   };
-  
+
   // Test JSON export (this would normally trigger a download, but we'll just check if it runs)
   console.log(`✅ exportResults function exists and is callable`);
 } catch (error) {

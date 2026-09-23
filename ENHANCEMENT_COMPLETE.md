@@ -37,12 +37,12 @@ In auto mode, each trade:
 ```
 Every Trade:
   Market analysis → Method selection → Edge calculation → Bet sizing
-  
+
 Example:
   STABLE market? → ARBITRAGE (tight spreads)
   VOLATILE market? → FLASH LOAN (capture moves)
   TRENDING UP? → SPOT LONG (ride momentum)
-  
+
 Edge adapts based on:
   • Your recent win rate
   • Market volatility
@@ -177,7 +177,7 @@ Market detects TRENDING_UP:
   → SCALPER bot picks ARBITRAGE (spreads)
   → TREND bot picks SPOT LONG (momentum)
   → CONSERVATIVE bot picks ARBITRAGE (safe)
-  
+
 Each profile adapts method to conditions!
 ```
 
@@ -210,7 +210,7 @@ System pauses trading if:
   • Session loss > profile max drawdown
   • Market crash detected
   • Wallet balance insufficient
-  
+
 Resume: Manual spin or auto-resets after cool-off
 ```
 
@@ -223,11 +223,11 @@ Resume: Manual spin or auto-resets after cool-off
 ```
 Trade 1: STABLE → ARBITRAGE, edge 2.5%, bet $4
          WIN +$6.40
-         
+
 Trade 2: VOLATILE → FLASH LOAN, edge 2.2%, bet $4
          LOSS -$2
          After loss: reduce bet to $2.8
-         
+
 Trade 3: TRENDING_UP → SPOT LONG, edge 2.8%, bet $3
          WIN +$5.40
          Recovered loss + gained

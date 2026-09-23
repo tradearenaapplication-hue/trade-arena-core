@@ -1,7 +1,7 @@
 /**
  * MoonPay Fiat On-Ramp Integration
  * Converts fiat → USDC on Base without user seeing blockchain complexity
- * 
+ *
  * Setup:
  * 1. Sign up at https://www.moonpay.com
  * 2. Get API keys from dashboard
@@ -34,10 +34,10 @@ let pendingDeposit = null;
  */
 function moonpayInit() {
     console.log('[MoonPay] Initializing...');
-    
+
     // Load MoonPay SDK if available
     loadMoonPayScript();
-    
+
     return {
         isConfigured: !!MOONPAY_CONFIG.apiKey && !MOONPAY_CONFIG.apiKey.startsWith('YOUR_'),
         defaultAmount: MOONPAY_CONFIG.defaultAmount,
@@ -54,7 +54,7 @@ async function loadMoonPayScript() {
             resolve();
             return;
         }
-        
+
         const script = document.createElement('script');
         script.src = 'https://cdn.moonpay.com/widget/v2.js';
         script.async = true;
@@ -73,16 +73,16 @@ async function loadMoonPayScript() {
  */
 function moonpayBuyCrypto(walletAddress, amount) {
     console.log('[MoonPay] Opening buy widget...', { walletAddress, amount });
-    
+
     const addr = walletAddress || getPrivyAddress();
     if (!addr) {
         console.error('[MoonPay] No wallet address');
         showToast('Please sign in first', 'error');
         return;
     }
-    
+
     const buyAmount = amount || MOONPAY_CONFIG.defaultAmount;
-    
+
     // If MoonPay widget SDK is available, use it
     if (window.MoonPayWidget) {
         openMoonPayWidget(addr, buyAmount);
@@ -116,17 +116,17 @@ function openMoonPayWidget(amount, currency = 'usdc') {
         showNetworkSelector: false,
         redirectURL: window.location.origin,
     });
-    
+
     widget.on('complete', (transaction) => {
         console.log('[MoonPay] Transaction complete:', transaction);
         handleDepositSuccess(transaction);
     });
-    
+
     widget.on('failed', (error) => {
         console.error('[MoonPay] Transaction failed:', error);
         showToast('Deposit failed. Please try again.', 'error');
     });
-    
+
     widget.show();
 }
 
@@ -147,12 +147,12 @@ function openMoonPayDirect(walletAddress, amount) {
         showBuy: 'true',
         showCheckoutNavigation: 'false',
     });
-    
+
     const url = `${baseUrl}?${params.toString()}`;
-    
+
     // Open in new tab
     window.open(url, '_blank');
-    
+
     // Show pending status
     showPendingDeposit(walletAddress, amount);
 }
@@ -174,10 +174,10 @@ function showPendingDeposit(walletAddress, amount) {
         timestamp: Date.now(),
         status: 'pending',
     };
-    
+
     // Show toast
     showToast(`Deposit ${amount} USDC initiated. Wallet: ${walletAddress.slice(0, 6)}...`, 'info');
-    
+
     // Update UI to show pending
     const statusEl = document.getElementById('cStatus');
     if (statusEl) {
@@ -190,22 +190,22 @@ function showPendingDeposit(walletAddress, amount) {
  */
 function handleDepositSuccess(walletAddress) {
     console.log('[MoonPay] Deposit success!', { walletAddress });
-    
+
     // Get amount from pending deposit
     const amount = pendingDeposit?.amount || MOONPAY_CONFIG.defaultAmount;
-    
+
     // Clear pending
     pendingDeposit = null;
-    
+
     // Show success
     showToast(`✅ ${amount} USDC deposited! Starting bots...`, 'success');
-    
+
     // Update balance
     updateBalanceDisplay(amount);
-    
+
     // Trigger bot deployment
     deployBotsAfterDeposit(amount);
-    
+
     // Update status
     const statusEl = document.getElementById('cStatus');
     if (statusEl) {
@@ -222,7 +222,7 @@ function getFeeBreakdown(amount) {
     const moonPayFee = amount * 0.035; // 3.5% average
     const networkFee = MOONPAY_CONFIG.networkFee;
     const total = amount + moonPayFee + networkFee;
-    
+
     return {
         baseAmount: amount,
         moonPayFee: moonPayFee,
@@ -240,7 +240,7 @@ function updateBalanceDisplay(usdcAmount) {
     if (balanceEl) {
         balanceEl.textContent = '$' + usdcAmount.toFixed(2);
     }
-    
+
     const ghBalance = document.getElementById('ghBalance');
     if (ghBalance) {
         ghBalance.textContent = '$' + usdcAmount.toFixed(2);
@@ -252,17 +252,17 @@ function updateBalanceDisplay(usdcAmount) {
  */
 function deployBotsAfterDeposit(amount) {
     console.log('[MoonPay] Deploying bots with', amount, 'USDC...');
-    
+
     // Auto-add bot with deposit amount
     if (typeof window.addBot === 'function') {
         window.addBot();
     }
-    
+
     // Auto-start trading
     if (typeof window.globalAutoToggle === 'function') {
         window.globalAutoToggle();
     }
-    
+
     // Navigate to bots tab
     if (typeof window.switchTab === 'function') {
         window.switchTab('bots');
@@ -276,16 +276,16 @@ function deployBotsAfterDeposit(amount) {
 async function handleMoonPayWebhook(req, res) {
     const body = req.body;
     const signature = req.headers['x-moonpay-signature'];
-    
+
     // Verify webhook signature
     if (!verifyMoonPaySignature(body, signature)) {
         console.error('[MoonPay] Invalid webhook signature');
         res.status(401).json({ error: 'Invalid signature' });
         return;
     }
-    
+
     const { status, cryptoTransactionHash, amount, walletAddress } = body;
-    
+
     if (status === 'completed' || status === 'confirmed') {
         console.log('[MoonPay] Webhook: deposit confirmed', { amount, walletAddress });
         onMoonPayDepositSuccess({ amount, walletAddress, hash: cryptoTransactionHash });
@@ -308,7 +308,7 @@ function verifyMoonPaySignature(body, signature) {
     if (MOONPAY_CONFIG.secretKey.startsWith('YOUR_')) {
         return true;
     }
-    
+
     try {
         const crypto = require('crypto');
         const hmac = crypto.createHmac('sha256', MOONPAY_CONFIG.secretKey);
@@ -332,13 +332,13 @@ function getNetworkFeeDisplay() {
  */
 function moonpaySellCrypto(walletAddress, amount) {
     console.log('[MoonPay] Opening sell widget...');
-    
+
     const addr = walletAddress || getPrivyAddress();
     if (!addr) {
         showToast('Please connect wallet first', 'error');
         return;
     }
-    
+
     const baseUrl = 'https://sell.moonpay.com';
     const params = new URLSearchParams({
         apiKey: MOONPAY_CONFIG.apiKey,
@@ -347,7 +347,7 @@ function moonpaySellCrypto(walletAddress, amount) {
         walletAddress: addr,
         amount: amount,
     });
-    
+
     window.open(`${baseUrl}?${params.toString()}`, '_blank');
 }
 

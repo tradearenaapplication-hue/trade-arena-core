@@ -2728,7 +2728,7 @@ async function loginMetaMask(){
         holdings = res.holdings;
       } else {
         const balanceWei = await provider.getBalance(address);
-        const balanceETH = parseFloat(ethers.utils ? ethers.utils.formatEther(balanceWei) : ethers.formatEther(balanceWei));
+        const balanceETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(balanceWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(balanceWei) : (Number(balanceWei) / 1e18).toString()));
         const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
         const priceData = await priceResponse.json();
         const ethPrice = priceData?.ethereum?.usd || 3200;
@@ -2806,7 +2806,7 @@ window.getWalletBalanceUSD = async function() {
       balanceUSD = res.totalUsd;
     } else if (walletState.provider) {
       const balanceWei = await walletState.provider.getBalance(address);
-      const balanceETH = parseFloat(ethers.utils ? ethers.utils.formatEther(balanceWei) : ethers.formatEther(balanceWei));
+      const balanceETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(balanceWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(balanceWei) : (Number(balanceWei) / 1e18).toString()));
       const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
       const priceData = await priceResponse.json();
       const ethPrice = priceData?.ethereum?.usd || 3200;

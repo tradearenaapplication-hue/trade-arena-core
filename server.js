@@ -165,6 +165,11 @@ app.get('/api/user/tradelogs', (req, res) => {
     }
 });
 
+
+app.get('/api/status/connections', (req, res) => {
+    res.json({ success: true, status: 'OK', activeConnections: 1, timestamp: Date.now() });
+});
+
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: Date.now() });
 });

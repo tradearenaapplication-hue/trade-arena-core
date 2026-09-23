@@ -294,16 +294,16 @@ var BalanceUpdater = window.BalanceUpdater || class {
 
   startMonitoring() {
     setInterval(() => {
+      this.updateBalance();
       try {
-        this.updateBalance();
         this.updateTickerDisplay();
       } catch (e) {
-        console.warn("[BalanceUpdater] Error:", e);
+        console.warn("[BalanceUpdater] Ticker Error:", e);
       }
     }, this.updateInterval);
   }
 
-  updateBalance() {
+  async updateBalance() {
     const balEl = document.getElementById("ghBalance");
     if (!balEl) return;
 
@@ -316,57 +316,189 @@ var BalanceUpdater = window.BalanceUpdater || class {
       );
     }
 
-    // Get realised balance
-    const realisedBalance = typeof balance !== "undefined" ? balance : 0;
+    // Determine starting balance for color logic
     const startingBalance =
       typeof startBalance !== "undefined" ? startBalance : 0;
-    const displayBalance = realisedBalance + unrealisedPnl;
 
-    // Store history
-    this.balanceHistory.push({
-      timestamp: Date.now(),
-      balance: displayBalance,
-      realised: realisedBalance,
-      unrealised: unrealisedPnl,
-    });
+    // Check if wallet is connected via MetaMask
+    if (typeof window !== "undefined" && window.ethereum) {
+      try {
+        // 1. Retrieve the active MetaMask account
+        const accounts = await window.ethereum.request({
+          method: "eth_accounts",
+        });
+        if (accounts.length === 0) {
+          balEl.style.transition = "color 0.2s ease, text-shadow 0.2s ease";
+          balEl.style.color = "var(--dim)";
+          balEl.textContent = "CONNECT WALLET";
+          balEl.style.textShadow = "none";
+          this.lastDisplayBalance = 0;
 
-    if (this.balanceHistory.length > this.maxHistory) {
-      this.balanceHistory.shift();
-    }
+          // Still update P&L display with local values if available
+          const pnlEl = document.getElementById("ghPnl");
+          if (pnlEl) {
+            const totalPnlValue =
+              typeof totalPnl !== "undefined" ? totalPnl : 0;
+            const displayPnL = totalPnlValue + unrealisedPnl;
+            pnlEl.textContent =
+              (displayPnL >= 0 ? "+" : "") +
+              "$" +
+              displayPnL.toFixed(2) +
+              (unrealisedPnl !== 0 ? " (live)" : " today");
+            pnlEl.className = "gh-pnl " + (displayPnL >= 0 ? "pnl-pos" : "pnl-neg");
+            pnlEl.style.color = displayPnL >= 0 ? "var(--green)" : "var(--hot)";
+            pnlEl.style.transition = "color 0.2s ease";
+          }
+          return;
+        }
 
-    // Determine color based on profit/loss
-    const color = this.getBalanceColor(displayBalance, startingBalance);
+        // 2. Fetch balance in Hexadecimal Wei
+        const balanceHex = await window.ethereum.request({
+          method: "eth_getBalance",
+          params: [accounts[0], "latest"],
+        });
 
-    // Update balance display with smooth transition
-    balEl.style.transition = "color 0.2s ease, text-shadow 0.2s ease";
-    balEl.style.color = color;
-    balEl.textContent = "$" + displayBalance.toFixed(2);
+        // 3. Convert Hex Wei to Decimal Ether (1 ETH = 10^18 Wei)
+        const ethBalance = Number(BigInt(balanceHex)) / 1e18;
 
-    // Add glow effect when unrealised P&L exists
-    if (unrealisedPnl !== 0) {
-      balEl.style.textShadow =
-        unrealisedPnl > 0
-          ? "0 0 10px rgba(57,255,20,0.5)"
-          : "0 0 10px rgba(255,45,120,0.5)";
+        // 4. Get ETH price for USD conversion
+        let ethPrice = 3200;
+        if (typeof getLivePrice === "function") {
+          try {
+            const livePrice = await getLivePrice("ETH");
+            if (livePrice) ethPrice = livePrice;
+          } catch (pErr) {
+            console.warn("[BalanceUpdater] Price fetch failed, using fallback:", pErr);
+          }
+        }
+
+        // 5. Calculate realised balance in USD
+        const realisedBalance = ethBalance * ethPrice;
+
+        // Combine with unrealised P&L
+        const displayBalance = realisedBalance + unrealisedPnl;
+
+        // Store history
+        this.balanceHistory.push({
+          timestamp: Date.now(),
+          balance: displayBalance,
+          realised: realisedBalance,
+          unrealised: unrealisedPnl,
+        });
+
+        if (this.balanceHistory.length > this.maxHistory) {
+          this.balanceHistory.shift();
+        }
+
+        // Determine color based on profit/loss
+        const color = this.getBalanceColor(displayBalance, startingBalance);
+
+        // Update balance display with smooth transition
+        balEl.style.transition = "color 0.2s ease, text-shadow 0.2s ease";
+        balEl.style.color = color;
+        balEl.textContent =
+          ethBalance.toFixed(6) +
+          " ETH ($" +
+          displayBalance.toFixed(2) +
+          ")";
+
+        // Add glow effect when unrealised P&L exists
+        if (unrealisedPnl !== 0) {
+          balEl.style.textShadow =
+            unrealisedPnl > 0
+              ? "0 0 10px rgba(57,255,20,0.5)"
+              : "0 0 10px rgba(255,45,120,0.5)";
+        } else {
+          balEl.style.textShadow = "none";
+        }
+
+        this.lastDisplayBalance = displayBalance;
+
+        // Update P&L display
+        const pnlEl = document.getElementById("ghPnl");
+        if (pnlEl) {
+          const totalPnlValue = typeof totalPnl !== "undefined" ? totalPnl : 0;
+          const displayPnL = totalPnlValue + unrealisedPnl;
+          pnlEl.textContent =
+            (displayPnL >= 0 ? "+" : "") +
+            "$" +
+            displayPnL.toFixed(2) +
+            (unrealisedPnl !== 0 ? " (live)" : " today");
+          pnlEl.className = "gh-pnl " + (displayPnL >= 0 ? "pnl-pos" : "pnl-neg");
+          pnlEl.style.color = displayPnL >= 0 ? "var(--green)" : "var(--hot)";
+          pnlEl.style.transition = "color 0.2s ease";
+        }
+      } catch (e) {
+        console.warn("[BalanceUpdater] MetaMask Sync Error:", e);
+
+        // Fallback to local balance if MetaMask request fails
+        const realisedBalance = typeof balance !== "undefined" ? balance : 0;
+        const displayBalance = realisedBalance + unrealisedPnl;
+
+        const color = this.getBalanceColor(displayBalance, startingBalance);
+        balEl.style.transition = "color 0.2s ease, text-shadow 0.2s ease";
+        balEl.style.color = color;
+        balEl.textContent = "$" + displayBalance.toFixed(2);
+        balEl.style.textShadow =
+          unrealisedPnl !== 0
+            ? unrealisedPnl > 0
+              ? "0 0 10px rgba(57,255,20,0.5)"
+              : "0 0 10px rgba(255,45,120,0.5)"
+            : "none";
+
+        this.lastDisplayBalance = displayBalance;
+      }
     } else {
-      balEl.style.textShadow = "none";
-    }
+      // Fallback: Use local balance variable when no web3 provider
+      const realisedBalance = typeof balance !== "undefined" ? balance : 0;
+      const displayBalance = realisedBalance + unrealisedPnl;
 
-    this.lastDisplayBalance = displayBalance;
+      // Store history
+      this.balanceHistory.push({
+        timestamp: Date.now(),
+        balance: displayBalance,
+        realised: realisedBalance,
+        unrealised: unrealisedPnl,
+      });
 
-    // Update P&L display
-    const pnlEl = document.getElementById("ghPnl");
-    if (pnlEl) {
-      const totalPnlValue = typeof totalPnl !== "undefined" ? totalPnl : 0;
-      const displayPnL = totalPnlValue + unrealisedPnl;
-      pnlEl.textContent =
-        (displayPnL >= 0 ? "+" : "") +
-        "$" +
-        displayPnL.toFixed(2) +
-        (unrealisedPnl !== 0 ? " (live)" : " today");
-      pnlEl.className = "gh-pnl " + (displayPnL >= 0 ? "pnl-pos" : "pnl-neg");
-      pnlEl.style.color = displayPnL >= 0 ? "var(--green)" : "var(--hot)";
-      pnlEl.style.transition = "color 0.2s ease";
+      if (this.balanceHistory.length > this.maxHistory) {
+        this.balanceHistory.shift();
+      }
+
+      // Determine color based on profit/loss
+      const color = this.getBalanceColor(displayBalance, startingBalance);
+
+      // Update balance display with smooth transition
+      balEl.style.transition = "color 0.2s ease, text-shadow 0.2s ease";
+      balEl.style.color = color;
+      balEl.textContent = "$" + displayBalance.toFixed(2);
+
+      // Add glow effect when unrealised P&L exists
+      if (unrealisedPnl !== 0) {
+        balEl.style.textShadow =
+          unrealisedPnl > 0
+            ? "0 0 10px rgba(57,255,20,0.5)"
+            : "0 0 10px rgba(255,45,120,0.5)";
+      } else {
+        balEl.style.textShadow = "none";
+      }
+
+      this.lastDisplayBalance = displayBalance;
+
+      // Update P&L display
+      const pnlEl = document.getElementById("ghPnl");
+      if (pnlEl) {
+        const totalPnlValue = typeof totalPnl !== "undefined" ? totalPnl : 0;
+        const displayPnL = totalPnlValue + unrealisedPnl;
+        pnlEl.textContent =
+          (displayPnL >= 0 ? "+" : "") +
+          "$" +
+          displayPnL.toFixed(2) +
+          (unrealisedPnl !== 0 ? " (live)" : " today");
+        pnlEl.className = "gh-pnl " + (displayPnL >= 0 ? "pnl-pos" : "pnl-neg");
+        pnlEl.style.color = displayPnL >= 0 ? "var(--green)" : "var(--hot)";
+        pnlEl.style.transition = "color 0.2s ease";
+      }
     }
   }
 

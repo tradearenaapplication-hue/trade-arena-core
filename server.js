@@ -170,6 +170,96 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
+ * Safety Controls Engine State (Server-Side)
+ */
+let serverSafetyState = {
+    dailyLossLimit: 50.00,
+    pendingLossLimit: null,
+    limitIncreaseEffectiveAt: 0,
+    dailyLossHits: [],
+    coolingUntil: 0,
+    coolingReason: null,
+    coolingEscalated: false
+};
+
+function getServerEffectiveDailyLossLimit(startingBalance = 10000) {
+    if (serverSafetyState.pendingLossLimit !== null && Date.now() >= serverSafetyState.limitIncreaseEffectiveAt) {
+        serverSafetyState.dailyLossLimit = serverSafetyState.pendingLossLimit;
+        serverSafetyState.pendingLossLimit = null;
+    }
+    return serverSafetyState.dailyLossLimit;
+}
+
+app.get('/api/safety-controls', (req, res) => {
+    res.json({
+        success: true,
+        safetyControls: {
+            ...serverSafetyState,
+            effectiveLimit: getServerEffectiveDailyLossLimit()
+        }
+    });
+});
+
+app.post('/api/safety-controls/update', (req, res) => {
+    try {
+        const { action, newLimit, durationHours } = req.body || {};
+        if (action === 'requestLimitIncrease') {
+            const num = Number(newLimit);
+            if (isNaN(num) || num <= 0) {
+                return res.status(400).json({ success: false, error: 'Invalid limit amount' });
+            }
+            if (num <= serverSafetyState.dailyLossLimit) {
+                serverSafetyState.dailyLossLimit = num;
+                serverSafetyState.pendingLossLimit = null;
+                return res.json({ success: true, immediate: true, limit: num });
+            }
+            serverSafetyState.pendingLossLimit = num;
+            serverSafetyState.limitIncreaseEffectiveAt = Date.now() + (24 * 60 * 60 * 1000);
+            return res.json({
+                success: true,
+                immediate: false,
+                currentLimit: serverSafetyState.dailyLossLimit,
+                pendingLimit: num,
+                effectiveAt: serverSafetyState.limitIncreaseEffectiveAt
+            });
+        }
+
+        if (action === 'triggerTakeABreak') {
+            const hours = Number(durationHours) || 24;
+            const now = Date.now();
+            serverSafetyState.coolingUntil = Math.max(serverSafetyState.coolingUntil, now + (hours * 60 * 60 * 1000));
+            serverSafetyState.coolingReason = hours >= 168 ? 'SELF_EXCLUSION_7D' : 'USER_TAKE_A_BREAK';
+            serverSafetyState.coolingEscalated = false;
+            return res.json({ success: true, coolingUntil: serverSafetyState.coolingUntil, reason: serverSafetyState.coolingReason });
+        }
+
+        res.status(400).json({ success: false, error: 'Unknown action' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+app.post('/api/claude', async (req, res) => {
+    try {
+        const apiKey = process.env.ANTHROPIC_API_KEY || '';
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify(req.body)
+        });
+        const data = await response.json();
+        res.status(response.status).json(data);
+    } catch (error) {
+        console.error('Claude API proxy error:', error);
+        res.status(500).json({ error: 'Internal server error proxying Claude request' });
+    }
+});
+
+/**
  * GET /api/deployments - Recent deposit-triggered deployment events
  */
 app.get('/api/deployments', (req, res) => {

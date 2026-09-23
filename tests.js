@@ -1587,6 +1587,89 @@ describe("Server User Database REST Endpoints", () => {
   });
 });
 
+describe("Engine-Level Safety Controls & Responsible Trading Mechanics", () => {
+  it("enforces effective daily loss limit at the engine level", () => {
+    const engine = new TradingEngine();
+    const sc = engine.safetyControls;
+
+    // Default effective limit is $50.00
+    expect(sc.getEffectiveDailyLossLimit(10000)).toBe(50.00);
+
+    // Unblocked when P&L is above limit
+    expect(sc.isTradeExecutionBlocked(-20.00, 10000).blocked).toBe(false);
+
+    // Blocked when daily net P&L reaches or breaches limit (-$50)
+    const check = sc.isTradeExecutionBlocked(-50.00, 10000);
+    expect(check.blocked).toBe(true);
+    expect(check.reason).toBe('DAILY_LOSS_LIMIT');
+  });
+
+  it("enforces a compulsory 24-hour delay on daily loss limit increases", () => {
+    const engine = new TradingEngine();
+    const sc = engine.safetyControls;
+
+    // Lowering limit takes effect immediately
+    const lowerRes = sc.requestLimitIncrease(30.00);
+    expect(lowerRes.immediate).toBe(true);
+    expect(sc.getEffectiveDailyLossLimit(10000)).toBe(30.00);
+
+    // Increasing limit requires 24-hour delay
+    const incRes = sc.requestLimitIncrease(100.00);
+    expect(incRes.immediate).toBe(false);
+    expect(incRes.pendingLimit).toBe(100.00);
+    // Effective limit remains $30 until delay passes
+    expect(sc.getEffectiveDailyLossLimit(10000)).toBe(30.00);
+
+    // Fast-forward delay: effective limit updates to $100
+    sc.limitIncreaseEffectiveAt = Date.now() - 1000;
+    expect(sc.getEffectiveDailyLossLimit(10000)).toBe(100.00);
+  });
+
+  it("triggers Take-A-Break (24h) and 7-day self-exclusion locks", () => {
+    const engine = new TradingEngine();
+    const sc = engine.safetyControls;
+
+    sc.triggerTakeABreak(24);
+    expect(sc.coolingUntil).toBeGreaterThan(Date.now() + 23 * 3600000);
+    expect(sc.isTradeExecutionBlocked(0, 10000).blocked).toBe(true);
+    expect(sc.coolingReason).toBe('USER_TAKE_A_BREAK');
+
+    sc.triggerTakeABreak(168); // 7 days
+    expect(sc.coolingUntil).toBeGreaterThan(Date.now() + 167 * 3600000);
+    expect(sc.coolingReason).toBe('SELF_EXCLUSION_7D');
+  });
+
+  it("escalates to an un-overrideable 7-day cool-off if daily loss limit is hit twice in 7 days", () => {
+    const engine = new TradingEngine();
+    const sc = engine.safetyControls;
+
+    // Hit 1
+    sc.recordDailyLossHit();
+    expect(sc.coolingEscalated).toBe(false);
+    expect(sc.coolingReason).toBe('DAILY_LOSS_LIMIT');
+
+    // Fast forward past hit 1's 1-hour debouncing window but within 7 days
+    sc.dailyLossHits[0] = Date.now() - 7200000; // 2 hours ago
+
+    // Hit 2
+    sc.recordDailyLossHit();
+    expect(sc.coolingEscalated).toBe(true);
+    expect(sc.coolingReason).toBe('ESCALATED_7D');
+    expect(sc.coolingUntil).toBeGreaterThan(Date.now() + 6 * 24 * 3600000);
+  });
+
+  it("blocks trade execution in TradingEngine.executeTrade when Safety Controls lock is active", async () => {
+    const engine = new TradingEngine();
+    engine.safetyControls.triggerTakeABreak(24);
+
+    const bot = { id: 'bot-1', amount: 10, risk: 'Moderate (5x leverage)' };
+    const res = await engine.executeTrade(bot, { type: 'ARBITRAGE', profitMargin: 0.8, volatility: 2 });
+
+    expect(res.status).toBe('BLOCKED_SAFETY_CONTROLS');
+    expect(res.profit).toBe(0);
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

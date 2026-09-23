@@ -1,0 +1,159 @@
+# Docker ignore file for Trade Arena
+# Files and directories to exclude from Docker build
+
+# Node.js
+node_modules/
+*.log
+logs/
+.env
+.env.example
+.env.local
+.env.production
+
+# Build artifacts
+dist/
+build/
+public/arena-react-bundle.js
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# OS
+Thumbs.db
+
+# Logs and caches
+logs/
+.cache/
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE backup files
+*.bak
+*.orig
+
+# Coverage reports
+coverage/
+.nyc_output
+
+# Dependencies
+node_modules/
+
+# Testing
+coverage/
+.vscode-test/
+
+# Build
+dist/
+*.bundle.js
+
+# Uploads and generated files
+uploads/
+.generated/
+
+# Environment variables
+.env*
+
+# API keys and secrets
+*.key
+*.pem
+*.p12
+*.crt
+
+# IDE cache
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Windows
+transient
+
+# Other
+*.log
+*.sql
+*.sqlite
+*.db
+
+# Python files (if any)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.tmp
+
+# Directory for instrumented libs to avoid loading them in production
+dist/
+
+# Editor directories and files
+.vscode/
+.idea/
+
+# Temporary files
+*~
+*.swp
+*.swo
+
+# Debug files
+*.map
+
+# Build artifacts
+dist/
+*.bundle.js
+
+# Node module directories
+node_modules/
+jspm_packages/
+
+# TypeScript cache
+ts-cache/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# parcel-cache
+.parcel-cache
+
+# Editor settings
+.vscode/
+
+# macOS system files
+.DS_Store
+
+# Temporary files
+*~

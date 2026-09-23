@@ -2,7 +2,18 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 app.use(express.json());
-app.use(cors({ origin: '*' }));
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173'
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  }
+}));
 
 app.post('/api/claude', async (req, res) => {
   try {

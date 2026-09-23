@@ -1,8 +1,36 @@
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 const app = express();
-app.use(express.json());
-app.use(cors({ origin: '*' }));
+
+// Security middleware
+app.use(helmet()); // Security headers
+app.use(express.json({ limit: '100kb' }));
+
+// Rate limiting middleware
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests from this IP, please try again later.' }
+});
+app.use('/api/', limiter);
+
+// CORS configuration with specific origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000', 'https://tradearena.com'];
+app.use(cors({
+    origin: function(origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            return callback(new Error('The CORS policy for this site does not allow access from this origin.'), false);
+        }
+        return callback(null, true);
+    },
+    credentials: true
+}));
 
 app.post('/api/claude', async (req, res) => {
   try {

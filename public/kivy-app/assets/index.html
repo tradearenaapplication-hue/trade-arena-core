@@ -546,7 +546,9 @@ let botStrategies = {}; // bot ID -> strategy state mapping
 let botCounter = 0;
 
 // Session tracking for paper trading verification
-window.sessionId = 'SES-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+const sessionRandomBytes = window.crypto.getRandomValues(new Uint8Array(8));
+const sessionRandomSuffix = Array.from(sessionRandomBytes, b => b.toString(16).padStart(2, '0')).join('');
+window.sessionId = 'SES-' + Date.now() + '-' + sessionRandomSuffix;
 let tradingStartTime = null;
 let totalTradesExecuted = 0;
 
@@ -886,7 +888,10 @@ function displayActionLogs() {
   }
   
   html += '</div>';
-  alert(html.replace(/<[^>]*>/g, '').substring(0, 200) + '...\n\nCheck browser console or export logs for full details');
+  const previewContainer = document.createElement('div');
+  previewContainer.innerHTML = html;
+  const previewText = (previewContainer.textContent || previewContainer.innerText || '').substring(0, 200);
+  alert(previewText + '...\n\nCheck browser console or export logs for full details');
   console.log('📋 RECENT LOGS:', logs);
 }
 

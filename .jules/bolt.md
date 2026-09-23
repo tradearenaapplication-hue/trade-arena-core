@@ -25,3 +25,7 @@
 ## 2026-09-22 - Use Object.create(null) for Fast In-Place Property Aggregations
 **Learning:** When optimizing high-frequency scanning loops by replacing `Map` instances or array accumulator arrays with plain JS object property lookups (`outcomeStats`), using standard object literal `{}` introduces prototype property collision risks (e.g. keys like `"toString"` or `"constructor"` matching `Object.prototype`). Using `Object.create(null)` eliminates prototype lookup overhead and collision bugs while achieving ~1.8x faster execution speed.
 **Action:** In high-frequency scanning and aggregation routines, use `Object.create(null)` when grouping metrics by string key to prevent prototype property collisions.
+
+## 2026-09-23 - Suppress Repetitive I/O and Rendering During Batch Tournament Iterations
+**Learning:** In tournament simulation loops like `runEloTournament` in `trade-olympics.js`, calling `recordMatch()` on every match triggered synchronous JSON serialization (`localStorage.setItem`) and DOM query/re-rendering on every match iteration (150-300 calls per tournament). Suppressing intermediate persist and render calls during the batch loop using a `{ silent: true }` option and executing them once upon tournament completion yielded a ~56x execution speedup (484ms -> 8.5ms).
+**Action:** When executing batch updates or tournament simulations over series of records, accept a `silent` option to suppress intermediate storage serialization and DOM updates until the entire batch finishes.

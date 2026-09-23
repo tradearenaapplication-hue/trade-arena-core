@@ -855,11 +855,22 @@ window.appendServerLog = function(entry) {
     const ts = new Date(entry.timestamp).toLocaleTimeString();
     
     logRow.style.cssText = 'display:flex; gap:8px; align-items:flex-start; word-break:break-all; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:2px;';
-    logRow.innerHTML = `
-        <span style="color:var(--dim); font-size:8px;">[${ts}]</span>
-        <span style="color:${color}; font-weight:bold; font-size:8px;">[${entry.level}]</span>
-        <span style="color:#e2e8f0; flex:1;">${escapeHTML(entry.message)}</span>
-    `;
+
+    const timeSpan = document.createElement('span');
+    timeSpan.style.cssText = 'color:var(--dim); font-size:8px;';
+    timeSpan.textContent = `[${ts}]`;
+
+    const levelSpan = document.createElement('span');
+    levelSpan.style.cssText = `color:${color}; font-weight:bold; font-size:8px;`;
+    levelSpan.textContent = `[${entry.level}]`;
+
+    const messageSpan = document.createElement('span');
+    messageSpan.style.cssText = 'color:#e2e8f0; flex:1;';
+    messageSpan.textContent = entry.message == null ? '' : String(entry.message);
+
+    logRow.appendChild(timeSpan);
+    logRow.appendChild(levelSpan);
+    logRow.appendChild(messageSpan);
 
     consoleEl.appendChild(logRow);
     

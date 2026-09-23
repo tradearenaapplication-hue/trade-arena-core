@@ -1,10 +1,28 @@
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
+const fs = require('fs');
+const path = require('path');
+
 const app = express();
 app.use(express.json());
 app.use(cors({ origin: '*' }));
 
-app.post('/api/claude', async (req, res) => {
+/**
+ * Rate limiter middleware for AI proxy endpoints
+ * Prevents API key quota exhaustion and DoS attacks
+ */
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => req.ip || req.headers?.['x-forwarded-for'] || '127.0.0.1',
+  message: { error: 'Too many AI requests, please try again later' }
+});
+
+app.post('/api/claude', aiLimiter, async (req, res) => {
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -25,7 +43,7 @@ app.post('/api/claude', async (req, res) => {
 
 });
 
-app.post('/api/openai', async (req, res) => {
+app.post('/api/openai', aiLimiter, async (req, res) => {
   // For GPT models
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -44,7 +62,7 @@ app.post('/api/openai', async (req, res) => {
   }
 });
 
-app.post('/api/gemini', async (req, res) => {
+app.post('/api/gemini', aiLimiter, async (req, res) => {
   try {
     const model = req.body.model || 'gemini-1.5-flash';
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
@@ -62,10 +80,6 @@ app.post('/api/gemini', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-const fs = require('fs');
-const path = require('path');
-const rateLimit = require('express-rate-limit');
 
 /**
  * Helper to check if a requested path stays inside the base directory

@@ -6,6 +6,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const ethers = require('ethers');
 const axios = require('axios');
 const WebSocket = require('websocket').w3cwebsocket;
@@ -13,6 +14,20 @@ const crypto = require('crypto');
 const db = require('./data/database');
 
 const app = express();
+
+/**
+ * Rate limiter middleware for AI proxy endpoints
+ * Prevents API key quota exhaustion and DoS attacks
+ */
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => req.ip || req.headers?.['x-forwarded-for'] || '127.0.0.1',
+  message: { error: 'Too many AI requests, please try again later' }
+});
 const PORT = process.env.PORT || 3001;
 
 // Middleware
@@ -239,7 +254,7 @@ app.post('/api/safety-controls/update', (req, res) => {
     }
 });
 
-app.post('/api/claude', async (req, res) => {
+app.post('/api/claude', aiLimiter, async (req, res) => {
     try {
         const apiKey = process.env.ANTHROPIC_API_KEY || '';
         const response = await fetch('https://api.anthropic.com/v1/messages', {

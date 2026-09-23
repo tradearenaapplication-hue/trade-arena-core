@@ -99,4 +99,3 @@ I propose:
    - [ ] Show global status?
 
 Or just say **"Build all three with your recommended approach!"** and I'll implement them now 🚀
-

@@ -33,7 +33,7 @@ In browser console:
 // Toggle SFX
 ACOUSTIC.toggleSFX();
 
-// Toggle FX  
+// Toggle FX
 ACOUSTIC.toggleFX();
 
 // Toggle VOICE
@@ -68,7 +68,7 @@ const CONFIG = {
 
 After login, visible in header:
 - 🔊/🔇 - SFX toggle
-- ✨ - FX toggle  
+- ✨ - FX toggle
 - 🗣️/🤐 - Voice toggle
 - 🎹 - Synth pad toggle
 
@@ -106,7 +106,7 @@ After login, visible in header:
 Required in index.html (load order):
 1. jQuery (if used)
 2. audio-engine.js
-3. sfx-engine.js  
+3. sfx-engine.js
 4. fx-engine.js
 5. voice-engine.js
 6. ACOUSTIC_CORE.js

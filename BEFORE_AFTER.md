@@ -256,7 +256,7 @@ Manual Spin:
   Display edge: 2.5%
   User selects bet: $10
   Use $10 bet
-  
+
 Auto Spin (just repeats):
   Same process, every 3-8 seconds
   No adjustments

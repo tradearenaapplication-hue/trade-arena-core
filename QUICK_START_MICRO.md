@@ -43,8 +43,8 @@ Your Trade-Arena is now configured for **$50 balance with $0.10-$5.00 bets**.
 
 ## 📊 Profitability
 
-**50 Trades**: 2.8% ROI (+$1.40 gain)  
-**100 Trades**: 5.6% ROI (+$2.80 gain)  
+**50 Trades**: 2.8% ROI (+$1.40 gain)
+**100 Trades**: 5.6% ROI (+$2.80 gain)
 **Win Rate**: 55-60% (from historical testing)
 
 ---
@@ -83,4 +83,3 @@ Your Trade-Arena is now configured for **$50 balance with $0.10-$5.00 bets**.
 ✅ **Ready to Trade**
 
 Go to http://localhost:8000 now! 🎰
-

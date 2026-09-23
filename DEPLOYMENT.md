@@ -23,7 +23,7 @@
   ]
 }
 
-# --- OR --- 
+# --- OR ---
 
 # Heroku Configuration (Procfile)
 web: node server.js
@@ -79,13 +79,13 @@ jobs:
 server {
     listen 80;
     server_name tradearena.com www.tradearena.com;
-    
+
     location / {
         root /var/www/tradearena;
         try_files $uri $uri/ /index.html;
         index index.html index.htm;
     }
-    
+
     location /api/ {
         proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
@@ -94,7 +94,7 @@ server {
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
     }
-    
+
     # SSL certificate
     listen 443 ssl;
     ssl_certificate /etc/letsencrypt/live/tradearena.com/fullchain.pem;
@@ -118,25 +118,25 @@ function rateLimit(req, res, next) {
     const limit = 100; // requests per minute
     const ip = req.ip;
     const now = Date.now();
-    
+
     if (!rateLimitStore[ip]) {
         rateLimitStore[ip] = { count: 0, resetTime: now + 60000 };
     }
-    
+
     const store = rateLimitStore[ip];
     if (now > store.resetTime) {
         store.count = 0;
         store.resetTime = now + 60000;
     }
-    
+
     store.count++;
     res.set('X-RateLimit-Limit', limit);
     res.set('X-RateLimit-Remaining', Math.max(0, limit - store.count));
-    
+
     if (store.count > limit) {
         return res.status(429).json({ error: 'Rate limit exceeded' });
     }
-    
+
     next();
 }
 

@@ -30,11 +30,11 @@
   - Import regime detector from `regime.ts`
   - Import cost model from `costmodel.ts`
   - Import token filter from `tokenFilter.ts`
-  
+
 - [ ] **Task 3.2**: Implement dual modes
   - `LIVE` mode: Real-time regime detection + paper trading
   - `HISTORICAL` mode: Backtest on 90 days ETH/BTC 5m candles
-  
+
 - [ ] **Task 3.3**: Trade execution logic
   - Generate 50 trades per regime minimum (150 total)
   - Apply entry/exit logic based on regime
@@ -45,7 +45,7 @@
   - Random baseline (seeded coin flip)
   - Always Long baseline
   - Momentum baseline (prior 5m candle direction)
-  
+
 - [ ] **Task 4.2**: Run baselines at identical timestamps
   - Use same trade timestamps as regime strategy
   - Compare results fairly
@@ -55,11 +55,11 @@
   - JSON export with cryptographic hash
   - CSV export for Excel
   - Tamper-resistant metadata
-  
+
 - [ ] **Task 5.2**: Create `src/ui/regime-crucible-ui.ts`
   - Button to trigger regime analysis
   - Results display panel
-  
+
 - [ ] **Task 5.3**: Wire into `index.html`
   - Add button to Quant Report section
 
@@ -68,7 +68,7 @@
 - [ ] Profit factor ≥ 1.2
 - [ ] Max drawdown < 15%
 - [ ] Beat Random baseline
-- [ ] Beat Momentum baseline  
+- [ ] Beat Momentum baseline
 - [ ] At 1.5x stress costs: profit factor ≥ 1.0
 - [ ] Must pass ≥ 2 of 3 regimes
 

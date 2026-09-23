@@ -132,7 +132,7 @@
 2. Login (Google/MetaMask)
 3. Click "ADD BOT" 3+ times
 4. Click SPIN button 10+ times
-5. Observe: 
+5. Observe:
    - Chart shows multiple colored lines
    - Each line represents a bot
    - Legend shows P&L and win rate

@@ -149,7 +149,7 @@ NICHE → neural-shadow          (Creative)
 PRECISION (gpt-5): 1.0x edge, 1.2x risk aversion
 AGGRESSIVE (grok-3): 1.3x edge, 0.7x risk aversion
 BALANCED (claude-3.5): 1.0x edge, 1.0x risk aversion
-ANALYTICAL, COLLABORATIVE, THOUGHTFUL, STEADY, 
+ANALYTICAL, COLLABORATIVE, THOUGHTFUL, STEADY,
 PRAGMATIC, CREATIVE, CURIOUS, SYSTEMATIC
 ```
 

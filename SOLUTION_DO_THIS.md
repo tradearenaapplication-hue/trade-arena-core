@@ -150,7 +150,7 @@ After completing ONE of the options above:
 
 **Pick your situation**:
 
-1. **"I don't have MetaMask"** 
+1. **"I don't have MetaMask"**
    → Go to [metamask.io](https://metamask.io) and install
 
 2. **"I'm in private/incognito mode"**

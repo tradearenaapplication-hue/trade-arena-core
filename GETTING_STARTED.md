@@ -286,7 +286,7 @@ console.log(botStrategies)
 
 // Get summary for each bot
 Object.values(botStrategies).forEach(b => {
-  const wr = (b.recentPnL.filter(p => p > 0).length / 
+  const wr = (b.recentPnL.filter(p => p > 0).length /
               Math.max(1, b.recentPnL.length) * 100).toFixed(0);
   console.log(`Bot ${b.botId} (${b.profile}): ${b.tradesCount} trades, $${b.sessionPnL.toFixed(2)} P&L, ${wr}% WR`);
 });
@@ -457,7 +457,7 @@ Before starting session:
 ```
 Track which methods work best per bot:
   console.log(botStrategies[1].methodBias)
-  
+
 If ARBITRAGE has 70% win rate:
   Create more SCALPER bots (prefer ARBITRAGE)
 If PERP LONG has 40% win rate:

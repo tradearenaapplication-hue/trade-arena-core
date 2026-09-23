@@ -352,7 +352,7 @@ Real prices, volumes, and changes from **CoinGecko API**. No API key required, c
 const MAX_BOTS = 6;  // → 4, 8, 10, etc
 
 // Change initial balance
-balance = 0;  // → 5000, 50000, etc
+balance = 10000;  // → 5000, 50000, etc
 
 // Add more trading methods
 METHODS.push({e:'🚀', l:'LAUNCHPAD'});
@@ -454,8 +454,8 @@ You now have a **fully functional AI trading platform** with:
 
 ---
 
-**Trade Arena v4**  
-*AI-Powered Multi-Bot Trading Platform*  
+**Trade Arena v4**
+*AI-Powered Multi-Bot Trading Platform*
 Built March 2026 | Status: ✅ Ready
 
 **Remember: Trade responsibly, start small, never risk more than you can afford to lose.**

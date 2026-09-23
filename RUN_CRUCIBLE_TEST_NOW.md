@@ -89,7 +89,7 @@ Test Duration: 20 trades × 1500ms
   Losing Trades: 8
   Win Rate: 60%
   Profit Factor: 2.34
-  
+
 📊 DETAILED METRICS:
   Average Win: +$89.45
   Average Loss: -$45.23
@@ -347,7 +347,7 @@ exportCrucibleCSV()
 **Solution:** Refresh page (Ctrl+R), wait 2 seconds, try again
 
 ### Test stops early
-**Solution:** 
+**Solution:**
 1. Check console for error messages
 2. Refresh page
 3. Run smaller test: `runCrucibleTest(10, 2000)`

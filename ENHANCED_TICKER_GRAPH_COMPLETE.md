@@ -132,9 +132,9 @@ let masterAutoEnabled = false  // Track master auto state
 
 **New Button:**
 ```html
-<button class="master-ctrl-btn" id="masterAutoBtn" 
-  onclick="toggleMasterAuto()" 
-  title="Master control for all bot auto modes" 
+<button class="master-ctrl-btn" id="masterAutoBtn"
+  onclick="toggleMasterAuto()"
+  title="Master control for all bot auto modes"
   style="background:rgba(57,255,20,.15);border:2px solid var(--green);color:var(--green);font-weight:700">
   🤖 AUTO OFF
 </button>
@@ -307,6 +307,6 @@ The enhanced ticker graph is **ready for use**:
 
 ---
 
-**Status:** ✅ COMPLETE & TESTED  
-**Date:** 2024-03-14  
+**Status:** ✅ COMPLETE & TESTED
+**Date:** 2024-03-14
 **Version:** 4.0 (Enhanced Ticker Graph)

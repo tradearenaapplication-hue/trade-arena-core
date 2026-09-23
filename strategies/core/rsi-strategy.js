@@ -1,6 +1,6 @@
 /**
  * Relative Strength Index (RSI) Strategy
- * A momentum oscillator strategy that generates buy signals when RSI is oversold (< 30) 
+ * A momentum oscillator strategy that generates buy signals when RSI is oversold (< 30)
  * and sell signals when RSI is overbought (> 70)
  */
 
@@ -23,29 +23,26 @@ const info = {
  * @returns {number} RSI value (0-100)
  */
 function calculateRSI(data, period) {
-  if (!data) return null;
-  const len = data.length;
-  if (len < period + 1) return null;
-  
-  // ⚡ Bolt Optimization: Single-pass manual loop over closing prices with O(1) auxiliary space.
-  // Caches data length and boundaries, avoids expensive Math.abs calls using inline subtraction,
-  // and eliminates redundant divisions by period in RS calculation (gains/losses ratio is identical to avgGain/avgLoss ratio).
+  if (!data || data.length < period + 1) return null;
+
   let gains = 0;
   let losses = 0;
-  
-  const start = len - period;
-  for (let i = start; i < len; i++) {
-    const change = data[i].close - data[i - 1].close;
+
+  for (let i = data.length - period; i < data.length; i++) {
+    const change = data[i].close - data[i-1].close;
     if (change >= 0) {
       gains += change;
     } else {
-      losses -= change;
+      losses += Math.abs(change);
     }
   }
-  
-  if (losses === 0) return 100;
-  
-  const rs = gains / losses;
+
+  const avgGain = gains / period;
+  const avgLoss = losses / period;
+
+  if (avgLoss === 0) return 100;
+
+  const rs = avgGain / avgLoss;
   return 100 - (100 / (1 + rs));
 }
 
@@ -60,12 +57,12 @@ async function execute(marketData, params = {}) {
   const rsiPeriod = params.rsiPeriod || info.parameters.rsiPeriod.default;
   const oversold = params.oversold || info.parameters.oversold.default;
   const overbought = params.overbought || info.parameters.overbought.default;
-  
+
   // Validate parameters
   if (oversold >= overbought) {
     throw new Error('Oversold threshold must be less than overbought threshold');
   }
-  
+
   // Need enough data for RSI calculation
   if (!marketData || marketData.length < rsiPeriod + 1) {
     return {
@@ -75,10 +72,10 @@ async function execute(marketData, params = {}) {
       reason: 'Insufficient data for RSI calculation'
     };
   }
-  
+
   // Calculate RSI
   const rsi = calculateRSI(marketData, rsiPeriod);
-  
+
   if (rsi === null) {
     return {
       signal: 'HOLD',
@@ -87,12 +84,12 @@ async function execute(marketData, params = {}) {
       reason: 'Unable to calculate RSI'
     };
   }
-  
+
   // Generate signal based on RSI levels
   let signal = 'HOLD';
   let confidence = 0.5;
   let size = 0.1;
-  
+
   if (rsi < oversold) {
     signal = 'BUY';
     // Confidence increases as RSI goes further below oversold threshold
@@ -106,7 +103,7 @@ async function execute(marketData, params = {}) {
     confidence = Math.min(0.9, 0.6 + distance * 0.3);
     size = 0.1 + (confidence - 0.5) * 0.2;
   }
-  
+
   return {
     signal,
     confidence: Number(confidence.toFixed(3)),

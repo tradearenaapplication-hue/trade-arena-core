@@ -296,7 +296,7 @@ runCrucibleTest(20, 1500)
 
 // 2. Review console output (your metrics)
 // WIN RATE: 60% ✅
-// P&L: +$480 ✅  
+// P&L: +$480 ✅
 // PROFIT FACTOR: 2.14 ✅
 
 // 3. Export results

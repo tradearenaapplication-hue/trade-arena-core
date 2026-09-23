@@ -264,20 +264,20 @@ Timeline: Day 1 of Trading
 10:15 AM - 100 Trades Executed
   Trade 1: Bot #1 ARBITRAGE BTC 0.8% edge → WIN
     → Records to: ARBITRAGE_BTC_SMALL (gpt-5-turbo)
-  
+
   Trade 2: Bot #3 PERP_LONG ETH 2.5% edge → WIN
     → Records to: PERP_LONG_ETH_MEDIUM (claude-3.5-sonnet)
-  
+
   Trade 3: Bot #2 YIELD_FARM SOL 1.2% edge → LOSS
     → Records to: YIELD_FARM_SOL_SMALL (grok-3)
-  
+
   ... 97 more trades across various brackets
 
 11:00 AM - Check Olympics Leaderboard
   🥇 gpt-5-turbo: 12 bracket wins, 87.2% average win rate
   🥈 claude-3.5-sonnet: 11 bracket wins, 85.1% average win rate
   🥉 grok-3: 10 bracket wins, 82.4% average win rate
-  
+
   Top bracket: ARBITRAGE_BTC_SMALL (+$5,230 P&L)
   Weakest bracket: YIELD_FARM_ARB_MICRO (-$150 P&L)
 

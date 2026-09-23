@@ -23,7 +23,7 @@
 When you click "AUTO":
 ```
 OLD: Claude AI picks token + method, fixed bet size
-NEW: 
+NEW:
   ✓ Market analysis (volatility, volume, condition)
   ✓ Strategic method selection (market-aware)
   ✓ Adaptive edge calculation (based on performance)

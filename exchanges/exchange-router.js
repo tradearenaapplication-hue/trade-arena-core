@@ -16,10 +16,10 @@ class ExchangeRouter {
       okx: new OKXExchange(),
       kraken: new KrakenExchange()
     };
-    
+
     // Exchange priority order (can be configured)
     this.priority = ['binance', 'bybit', 'okx', 'kraken'];
-    
+
     // Track exchange health status
     this.healthStatus = {};
     this.priority.forEach(exchange => {
@@ -29,10 +29,10 @@ class ExchangeRouter {
         failureCount: 0
       };
     });
-    
+
     // Health check interval (5 minutes)
     this.healthCheckInterval = 5 * 60 * 1000;
-    
+
     // Start health check timer
     this.startHealthChecks();
   }
@@ -44,7 +44,7 @@ class ExchangeRouter {
     setInterval(() => {
       this.checkAllExchangesHealth();
     }, this.healthCheckInterval);
-    
+
     // Initial health check
     this.checkAllExchangesHealth();
   }
@@ -77,7 +77,7 @@ class ExchangeRouter {
     try {
       // Simple health check - fetch ticker for a major pair
       await exchange.fetchTicker('BTC/USDT');
-      
+
       this.healthStatus[exchangeName] = {
         isHealthy: true,
         lastCheck: Date.now(),
@@ -86,7 +86,7 @@ class ExchangeRouter {
       return true;
     } catch (error) {
       console.warn(`Health check failed for ${exchangeName}:`, error.message);
-      
+
       this.healthStatus[exchangeName] = {
         isHealthy: false,
         lastCheck: Date.now(),
@@ -103,15 +103,15 @@ class ExchangeRouter {
    */
   getHealthiestExchange(preferredExchange) {
     // If preferred exchange is specified and healthy, use it
-    if (preferredExchange && 
-        this.exchanges[preferredExchange] && 
+    if (preferredExchange &&
+        this.exchanges[preferredExchange] &&
         this.healthStatus[preferredExchange]?.isHealthy) {
       return this.exchanges[preferredExchange];
     }
 
     // Otherwise, go through priority list and return first healthy exchange
     for (const exchangeName of this.priority) {
-      if (this.exchanges[exchangeName] && 
+      if (this.exchanges[exchangeName] &&
           this.healthStatus[exchangeName]?.isHealthy) {
         return this.exchanges[exchangeName];
       }
@@ -129,7 +129,7 @@ class ExchangeRouter {
    */
   async fetchTicker(symbol, preferredExchange) {
     let lastError = null;
-    
+
     // Try exchanges in order of preference/health
     const exchangeOrder = [...this.priority];
     if (preferredExchange) {
@@ -154,18 +154,18 @@ class ExchangeRouter {
       } catch (error) {
         console.warn(`fetchTicker failed on ${exchangeName}:`, error.message);
         lastError = error;
-        
+
         // Update health status
         this.healthStatus[exchangeName].failureCount += 1;
         if (this.healthStatus[exchangeName].failureCount >= 3) {
           this.healthStatus[exchangeName].isHealthy = false;
         }
-        
+
         // Continue to next exchange
         continue;
       }
     }
-    
+
     // If all exchanges failed, throw the last error
     throw new Error(`All exchanges failed to fetch ticker for ${symbol}. Last error: ${lastError.message}`);
   }
@@ -178,7 +178,7 @@ class ExchangeRouter {
    */
   async placeOrder(order, preferredExchange) {
     let lastError = null;
-    
+
     // Try exchanges in order of preference/health
     const exchangeOrder = [...this.priority];
     if (preferredExchange) {
@@ -203,18 +203,18 @@ class ExchangeRouter {
       } catch (error) {
         console.warn(`placeOrder failed on ${exchangeName}:`, error.message);
         lastError = error;
-        
+
         // Update health status
         this.healthStatus[exchangeName].failureCount += 1;
         if (this.healthStatus[exchangeName].failureCount >= 3) {
           this.healthStatus[exchangeName].isHealthy = false;
         }
-        
+
         // Continue to next exchange
         continue;
       }
     }
-    
+
     // If all exchanges failed, throw the last error
     throw new Error(`All exchanges failed to place order. Last error: ${lastError.message}`);
   }
@@ -226,7 +226,7 @@ class ExchangeRouter {
    */
   async fetchBalance(preferredExchange) {
     let lastError = null;
-    
+
     // Try exchanges in order of preference/health
     const exchangeOrder = [...this.priority];
     if (preferredExchange) {
@@ -251,18 +251,18 @@ class ExchangeRouter {
       } catch (error) {
         console.warn(`fetchBalance failed on ${exchangeName}:`, error.message);
         lastError = error;
-        
+
         // Update health status
         this.healthStatus[exchangeName].failureCount += 1;
         if (this.healthStatus[exchangeName].failureCount >= 3) {
           this.healthStatus[exchangeName].isHealthy = false;
         }
-        
+
         // Continue to next exchange
         continue;
       }
     }
-    
+
     // If all exchanges failed, throw the last error
     throw new Error(`All exchanges failed to fetch balance. Last error: ${lastError.message}`);
   }
@@ -278,7 +278,7 @@ class ExchangeRouter {
    */
   async fetchOHLCV(symbol, timeframe = '1h', limit = 100, since, preferredExchange) {
     let lastError = null;
-    
+
     // Try exchanges in order of preference/health
     const exchangeOrder = [...this.priority];
     if (preferredExchange) {
@@ -303,18 +303,18 @@ class ExchangeRouter {
       } catch (error) {
         console.warn(`fetchOHLCV failed on ${exchangeName}:`, error.message);
         lastError = error;
-        
+
         // Update health status
         this.healthStatus[exchangeName].failureCount += 1;
         if (this.healthStatus[exchangeName].failureCount >= 3) {
           this.healthStatus[exchangeName].isHealthy = false;
         }
-        
+
         // Continue to next exchange
         continue;
       }
     }
-    
+
     // If all exchanges failed, throw the last error
     throw new Error(`All exchanges failed to fetch OHLCV for ${symbol}. Last error: ${lastError.message}`);
   }

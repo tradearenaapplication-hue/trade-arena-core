@@ -26,7 +26,7 @@ Your MetaMask integration login has been **completely fixed and enhanced** with:
 ```
 Function: loginMetaMask()
 Changes:
-  ✅ Better account request: window.ethereum.request() 
+  ✅ Better account request: window.ethereum.request()
   ✅ Explicit validation: if (!accounts || accounts.length === 0)
   ✅ User-friendly messages at each step
   ✅ Error code detection (4001, -32602, etc.)

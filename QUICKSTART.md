@@ -218,7 +218,7 @@ Option 3: Demo Mode
 ### "Insufficient Balance"
 ```
 Problem: Error when creating bot
-Solution: 
+Solution:
 - Check ETH balance in MetaMask
 - Add more ETH to wallet
 - Try smaller amount

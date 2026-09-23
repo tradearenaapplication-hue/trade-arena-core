@@ -283,15 +283,14 @@ vercel --prod
 - All costs <0.2% per trade
 - Zero errors in functionality
 
-**Ready to test?** 
+**Ready to test?**
 Open http://localhost:8000 and run Crucible Mode!
 
 ---
 
-**Build date**: April 18, 2026  
-**Commit**: dd697c58  
-**Status**: ✅ PRODUCTION READY  
-**Test Time**: 2 minutes for 50 trades  
+**Build date**: April 18, 2026
+**Commit**: dd697c58
+**Status**: ✅ PRODUCTION READY
+**Test Time**: 2 minutes for 50 trades
 
 Good luck! 🚀
-

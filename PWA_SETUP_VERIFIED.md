@@ -76,7 +76,7 @@ All required PWA meta tags are present:
 <!-- Service Worker Registration -->
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(err => 
+    navigator.serviceWorker.register('./sw.js').catch(err =>
       console.log('SW registration failed:', err)
     );
   }

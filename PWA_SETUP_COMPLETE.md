@@ -132,7 +132,7 @@ Send them this message:
 
 Then open it like a normal app—no browser needed!
 
-The AI trading system will be running live trades 
+The AI trading system will be running live trades
 in demo mode. Watch the 5-agent ensemble in action.
 ```
 
@@ -167,7 +167,7 @@ in demo mode. Watch the 5-agent ensemble in action.
 7. Can use offline (will show cached demo data)
 
 **For Android users:**
-1. They visit your deployed URL  
+1. They visit your deployed URL
 2. Chrome shows "Install" prompt automatically
 3. They tap "Install"
 4. App installs to home screen
@@ -248,7 +248,7 @@ in demo mode. Watch the 5-agent ensemble in action.
 **Q: "Install button doesn't appear"**
 A: Check that manifest.json is valid (can test on webmanifest.org)
 
-**Q: "Service worker won't register"**  
+**Q: "Service worker won't register"**
 A: Might need HTTPS. Vercel auto-provides this. Local testing should work at localhost.
 
 **Q: "Icons don't show"**
@@ -297,4 +297,3 @@ caches.keys().then(names => names.forEach(n => {
 The infrastructure is solid. Your app will feel native. Users can install without app stores.
 
 **Want me to generate the icons now?** I'll make them match your neon design perfectly.
-

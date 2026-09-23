@@ -77,7 +77,7 @@ Updates after each trade!
 Each model proposes a trade. Best proposal wins based on:
 
 ```
-Vote Score = 
+Vote Score =
   40% × (Model Confidence) +
   30% × (Profit Potential) +
   20% × (Win Probability) +
@@ -126,7 +126,7 @@ console.log(getArenaInsights());
 **ANALYST's Proposal:**
 ```
 Token: ETH
-Method: ARBITRAGE  
+Method: ARBITRAGE
 Edge: 2.3%
 Confidence: 72%
 Vote Score: 0.68 ⭐⭐⭐
@@ -135,7 +135,7 @@ Vote Score: 0.68 ⭐⭐⭐
 **TRADER's Proposal:**
 ```
 Token: SOL
-Method: PERP LONG  
+Method: PERP LONG
 Edge: 4.5%
 Confidence: 85%
 Vote Score: 0.79 ⭐⭐⭐⭐ ← WINNER!

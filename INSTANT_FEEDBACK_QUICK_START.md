@@ -107,9 +107,9 @@ Open the app and:
 
 ---
 
-**Build:** v4.3  
-**Feature:** Instant Feedback  
-**Status:** ✅ LIVE  
-**Feel:** ⚡ SNAPPY & INSTANT  
+**Build:** v4.3
+**Feature:** Instant Feedback
+**Status:** ✅ LIVE
+**Feel:** ⚡ SNAPPY & INSTANT
 
 Enjoy the speed! 🚀

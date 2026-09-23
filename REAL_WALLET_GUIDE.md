@@ -125,7 +125,7 @@ Connects to:
   - Your actual MetaMask wallet
   - Base network blockchain
   - CoinGecko for ETH price
-  
+
 Updates:
   - Every trade
   - Every spin
@@ -149,7 +149,7 @@ Formula: slippage_pct = base_pct + (volatility * 0.001) * size_multiplier
 Examples:
   Conservative trade + low volatility
     = 0.5% slippage
-  
+
   Aggressive trade + high volatility + large bet
     = 2.0% slippage (capped at max)
 ```
@@ -161,7 +161,7 @@ Before each trade, system checks:
   ✅ Can cover bet amount
   ✅ Can cover gas fees
   ✅ Has safety buffer (0.001 ETH)
-  
+
 If insufficient:
   ❌ Trade blocked
   ⚠️ Message shows what's missing
@@ -180,7 +180,7 @@ Tracks every trade:
   - Gross P&L
   - Net P&L (after fees)
   - Outcome (WIN/LOSS)
-  
+
 Access: walletState.transactions (in console)
 Clear: clearTransactionHistory()
 ```
@@ -333,7 +333,7 @@ You save: $0.002-0.05 per trade vs demo assumption
 Based on our AI:
   Expected win rate: 55% (as designed)
   Expected loss rate: 45%
-  
+
 Over 100 trades:
   55 wins at avg 1.8x = +$990
   45 losses at avg -0.55x = -$247.50

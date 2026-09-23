@@ -1,7 +1,7 @@
 # 🎮 CRUCIBLE CONTROL PANEL - QUICK REFERENCE
 
-**Status:** 🟢 LIVE & READY  
-**Date:** March 16, 2026  
+**Status:** 🟢 LIVE & READY
+**Date:** March 16, 2026
 **Commit:** 8ac6b692
 
 ---
@@ -279,6 +279,6 @@ Your control panel includes:
 
 ---
 
-**Status:** 🟢 LIVE  
-**Latest Commit:** 8ac6b692  
+**Status:** 🟢 LIVE
+**Latest Commit:** 8ac6b692
 **Ready to deploy!**

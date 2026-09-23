@@ -10,7 +10,7 @@ Your **Trade Olympics System** is complete, tested, and ready to use!
 
 ### Core System (3 Files)
 ✅ **trade-olympics.js** - 647 lines, production-ready
-✅ **multi-ai-arena.js** - Updated with Olympics integration  
+✅ **multi-ai-arena.js** - Updated with Olympics integration
 ✅ **index.html** - Updated with script reference
 
 ### Documentation (11 Files)
@@ -99,7 +99,7 @@ TRADE_OLYMPICS.getLeaderboard('totalPnL')
 ## ✨ KEY FEATURES
 
 ✅ **Fair Distribution** - Each model gets 40 brackets
-✅ **Same Scenarios** - Same trade method → Same model  
+✅ **Same Scenarios** - Same trade method → Same model
 ✅ **Scientific** - Direct head-to-head comparison possible
 ✅ **Automatic** - Zero setup, records every trade
 ✅ **Real-Time** - Leaderboard updates instantly

@@ -40,7 +40,7 @@ async function callAI(marketData, bet, botId) {
 
 **Call Stack:**
 ```
-Bot.spin() → await callAI() 
+Bot.spin() → await callAI()
   → typeof callAIModel check → YES
     → await callAIModel(marketData, bet, botId)
       → Get bot profile

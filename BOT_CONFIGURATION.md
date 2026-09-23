@@ -1,7 +1,7 @@
 # 🤖 BOT CONFIGURATION GUIDE
 
-**Version:** 1.0  
-**Status:** 🟢 LIVE & CUSTOMIZABLE  
+**Version:** 1.0
+**Status:** 🟢 LIVE & CUSTOMIZABLE
 **Last Updated:** March 16, 2026
 
 ---
@@ -201,7 +201,7 @@ The system includes a list of default names if you want **randomization**:
 ```javascript
 getBotName() {
   const names = [
-    'ARIA', 'NOVA', 'VIBE', 'PIXEL', 'NEON', 
+    'ARIA', 'NOVA', 'VIBE', 'PIXEL', 'NEON',
     'SAGE', 'IRIS', 'ZARA', 'LUNA', 'ECHO'
   ];
   return names[Math.floor(Math.random() * names.length)];
@@ -315,7 +315,7 @@ Your trading bot now has:
 
 ---
 
-**Questions?** Edit the bot config and refresh your browser!  
+**Questions?** Edit the bot config and refresh your browser!
 **Want more bots?** You can expand the `bots` object to add more personalities!
 
 ### 🤖 Advanced: AI Model Assignment (New!)
@@ -340,5 +340,5 @@ Your trading bot now has:
 
 **Leaderboard:** `ARENA_COMPETITION.getLeaderboard()` → Track Ridges vs Claude/GPT!
 
-**Status:** 🟢 READY TO ROCK  
+**Status:** 🟢 READY TO ROCK
 **Last Updated:** March 16, 2026 w/ Ridges integration

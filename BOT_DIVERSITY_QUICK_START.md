@@ -144,7 +144,7 @@ The ticker updates every 2-4 seconds with one of:
 
 1. **Latest Trade** (if bot has traded):
    - Shows actual trade info with live time counter
-   
+
 2. **Generic Scanning Message** (if waiting for first trade):
    - "📡 SCANNING LIVE PRICES…"
    - "🧠 AGENTS DELIBERATING…"
@@ -194,9 +194,9 @@ The ticker updates every 2-4 seconds with one of:
 
 ---
 
-**Status:** ✅ READY  
-**Personalities:** 5 types  
-**Tracking:** Real-time  
-**Diversity:** Enabled  
+**Status:** ✅ READY
+**Personalities:** 5 types
+**Tracking:** Real-time
+**Diversity:** Enabled
 
 Enjoy watching diverse bots trade! 🎯

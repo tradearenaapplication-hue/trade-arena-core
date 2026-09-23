@@ -63,7 +63,7 @@ const tickerGraph = {
   botColors: {},
   maxDataPoints: 50,
   botHistory: {}, // { botId: [{timestamp, pnl, cumulative}] }
-  
+
   init() { /* ... initialization code ... */ },
   assignBotColors() { /* ... color assignment code ... */ },
   recordTrade(botId, pnl) { /* ... trade recording code ... */ },
@@ -149,11 +149,11 @@ function setupApp({ name, avatar, badge, walletAddress, isAppWallet }) {
 **Changed from:**
 ```javascript
   // Log with complete trade details for verification
-  addToGlobalLog({ 
-    botId: id, 
-    token: decision.token, 
-    method: decision.method, 
-    pnl, 
+  addToGlobalLog({
+    botId: id,
+    token: decision.token,
+    method: decision.method,
+    pnl,
     isWin,
     // Paper trading verification data
     bet: actualBet,
@@ -172,11 +172,11 @@ function setupApp({ name, avatar, badge, walletAddress, isAppWallet }) {
 **Changed to:**
 ```javascript
   // Log with complete trade details for verification
-  addToGlobalLog({ 
-    botId: id, 
-    token: decision.token, 
-    method: decision.method, 
-    pnl, 
+  addToGlobalLog({
+    botId: id,
+    token: decision.token,
+    method: decision.method,
+    pnl,
     isWin,
     // Paper trading verification data
     bet: actualBet,
@@ -189,7 +189,7 @@ function setupApp({ name, avatar, badge, walletAddress, isAppWallet }) {
     timestamp: new Date().toISOString(),
     sessionId: window.sessionId || 'session-' + Date.now()
   });
-  
+
   // Record trade in performance ticker graph
   recordTradeInTicker(id, pnl);
 }
@@ -259,7 +259,7 @@ index.html
       ├─ draw()
       ├─ updateLegend()
       └─ reset()
-      
+
       Plus helper functions:
       ├─ initTickerGraph()
       └─ recordTradeInTicker()

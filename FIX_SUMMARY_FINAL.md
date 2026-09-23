@@ -9,7 +9,7 @@
 - Your test: 70% win rate, but lost -$170.60
 - Reason: Wins $2.88 avg, losses -$35.15 avg (12x bigger!)
 
-### Solution  
+### Solution
 - Implemented 3:1 Risk/Reward Ratio
 - Stop losses: -$10 max
 - Take profits: +$30 min

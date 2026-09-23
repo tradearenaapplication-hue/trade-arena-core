@@ -92,7 +92,7 @@ In console, check:
 // Should return: true
 !!window.ethereum
 
-// Should return: true  
+// Should return: true
 window.ethereum?.isMetaMask
 
 // Should return: true

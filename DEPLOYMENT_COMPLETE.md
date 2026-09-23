@@ -141,7 +141,7 @@ Test Duration: 20 trades × 1500ms (~32 seconds)
   Total Trades: 20
   Winning Trades: 12 (60%)
   Losing Trades: 8 (40%)
-  
+
 💹 PROFITABILITY:
   Profit Factor: 2.34
   Average Win: +$89.45

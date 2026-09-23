@@ -66,7 +66,7 @@ Visit **[metamask.io](https://metamask.io)** and install the browser extension.
 ## 🔧 Troubleshooting
 
 ### Problem: "MetaMask not found"
-**Solution**: 
+**Solution**:
 - Install MetaMask from [metamask.io](https://metamask.io)
 - Refresh the page
 - Check browser extension icon
@@ -120,7 +120,7 @@ console.log(REAL_WALLET_CONFIG.network)
 
 ### Expected Output:
 ```
-✅ 
+✅
 {
   metamaskInstalled: true,
   isMetaMask: true,

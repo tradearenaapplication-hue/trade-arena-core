@@ -40,7 +40,7 @@ Ratio: 3:1 (profitable!)
 ### 1. New Configuration
 ```javascript
 riskPerTrade: 10,          // Max loss per trade
-rewardTarget: 30,          // Min profit per trade  
+rewardTarget: 30,          // Min profit per trade
 riskRewardRatio: 3,        // 3:1 reward-to-risk
 minWinProbability: 0.40,   // Only trade if ≥40% chance to win
 ```
@@ -146,7 +146,7 @@ After running the test, look for:
 
 ## Summary
 
-**Your system was mathematically broken before.** 
+**Your system was mathematically broken before.**
 
 Now it's **mathematically guaranteed to be profitable** if you achieve:
 - ✅ Any win rate above 25%

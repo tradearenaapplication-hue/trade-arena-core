@@ -1,51 +1,41 @@
 {
   "name": "trade-arena",
-  "version": "4.3.40",
+  "version": "4.0.0",
   "description": "Multi-AI Trading Arena with Ridges Integration",
   "main": "server.js",
-  "engines": {
-    "node": ">=22.18.0"
-  },
-  "packageManager": "pnpm@9.12.0",
   "scripts": {
-    "start": "node server.js",
-    "start:balanced": "node --max-semi-space-size=64 --max-old-space-size=2048 server.js",
-    "start:hft": "node --max-semi-space-size=256 --max-old-space-size=4096 --nouse-idle-notification --incremental-marking server.js",
-    "dev": "node server.js",
-    "test": "node tests.js",
     "proxy": "node proxy.js",
     "serve": "npx serve .",
-    "build": "esbuild public/src/main.tsx --bundle --outfile=public/arena-react-bundle.js --minify --sourcemap --loader:.tsx=tsx --loader:.jsx=jsx",
-    "postinstall": "pnpm run build"
+    "dev": "concurrently \"npm run proxy\" \"npm run serve\"",
+    "test": "node tests.js",
+    "start": "node server.js"
   },
   "dependencies": {
-    "@biconomy/abstractjs": "^1.2.5",
-    "@biconomy/account": "^4.5.7",
-    "@metamask/agent-wallet": "6.1.0",
-    "@privy-io/react-auth": "^3.37.0",
-    "@stripe/stripe-js": "^9.13.0",
-    "aes-js": "^4.0.0-beta.5",
-    "async-mutex": "^0.5.0",
-    "axios": "1.18.1",
-    "ccxt": "^4.5.71",
+    "axios": "^1.18.0",
+    "body-parser": "^1.20.6",
+    "ccxt": "^4.2.77",
     "cors": "^2.8.5",
-    "dotenv": "^17.4.2",
-    "esbuild": "^0.28.1",
-    "ethers": "6.17.0",
-    "express": "5.2.1",
-    "express-rate-limit": "^8.6.2",
-    "path-to-regexp": "^8.4.2",
-    "prom-client": "^15.1.3",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.8",
-    "semver": "^7.8.5",
-    "viem": "^2.55.11",
-    "websocket": "^1.0.35",
-    "ws": "^8.21.3",
-    "zod": "3.25.76"
+    "dotenv": "^16.6.1",
+    "ethers": "^6.17.0",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.7.0",
+    "qs": "^6.16.0",
+    "shell-quote": "^1.9.0",
+    "websocket": "^1.0.35"
   },
   "devDependencies": {
-    "concurrently": "^10.0.4",
-    "playwright": "^1.62.0"
+    "concurrently": "^8.2.2"
+  },
+  "overrides": {
+    "qs": "^6.16.0",
+    "body-parser": "^1.20.6",
+    "shell-quote": "^1.9.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "qs": "^6.16.0",
+      "body-parser": "^1.20.6",
+      "shell-quote": "^1.9.0"
+    }
   }
 }

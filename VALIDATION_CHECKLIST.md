@@ -285,7 +285,7 @@ VERIFY UPDATES:
 **Verify:** Each trade's P&L, accumulated sum, no missed trades
 
 ### Exports don't work
-**Try:** 
+**Try:**
 1. Check browser console
 2. Try different format (JSON vs CSV)
 3. Check file download permissions

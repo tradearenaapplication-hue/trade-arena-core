@@ -7,7 +7,7 @@
 - [ ] Create src/validation/costmodel.ts - Full cost model + 1.5x stress variant
 - [ ] Create src/utils/tokenFilter.ts - Stablecoin blocklist filter
 
-### Phase 2: Data Layer  
+### Phase 2: Data Layer
 - [ ] Create src/data/coingecko.ts - OHLCV fetching + caching to /data/cache/
 - [ ] Implement historical mode: 90 days ETH/BTC 5m candles
 
@@ -32,7 +32,7 @@
 - [ ] Profit factor ≥ 1.2
 - [ ] Max drawdown < 15%
 - [ ] Beat Random baseline
-- [ ] Beat Momentum baseline  
+- [ ] Beat Momentum baseline
 - [ ] At 1.5x stress costs: profit factor ≥ 1.0
 - [ ] Must pass ≥ 2 of 3 regimes
 

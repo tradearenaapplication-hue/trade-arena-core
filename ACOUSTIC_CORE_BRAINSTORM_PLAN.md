@@ -39,7 +39,7 @@ Current index.html has dark mode but needs:
 #### 1.3 Navigation
 - Three screens (already planned):
   - [x] Execution (Arena)
-  - [x] Auditor (Market Bridge)  
+  - [x] Auditor (Market Bridge)
   - [x] Settings (System)
 
 ---
@@ -165,16 +165,16 @@ class AudioEngine {
     if (!this.ctx || this.muted) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    
+
     osc.type = type;
     osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-    
+
     gain.gain.setValueAtTime(this.volume * 0.3, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-    
+
     osc.connect(gain);
     gain.connect(this.ctx.destination);
-    
+
     osc.start();
     osc.stop(this.ctx.currentTime + duration);
   }
@@ -220,7 +220,7 @@ const baseFreq = 440 + pitchOffset;
 #### Connect to Existing Logic
 - [ ] Bot IDs from existing trading engine
 - [ ] Open positions tracking
-- [ ] P&L calculation  
+- [ ] P&L calculation
 - [ ] Button handlers
 - [ ] Balance sync
 - [ ] Market price feed

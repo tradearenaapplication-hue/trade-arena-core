@@ -82,7 +82,7 @@ The new console output will show **exactly** which step fails. This tells us:
 ### 2. Share the Console Output
 ```
 Copy everything from console starting with:
-"MetaMask detected!" 
+"MetaMask detected!"
 through to the error message
 ```
 

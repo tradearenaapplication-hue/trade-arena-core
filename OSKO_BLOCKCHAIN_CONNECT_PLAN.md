@@ -62,7 +62,7 @@ Add to index.html style section:
 function openOskoRamp(type) {
   const s = document.getElementById('cStatus');
   if(!s) return;
-  
+
   // Use public Ramp URL (works without app ID for demo)
   // This opens Ramp's hosted widget
   let url;
@@ -80,7 +80,7 @@ function openOskoRamp(type) {
     url = `https://sell.ramp.network/?ref=tradearena&cryptoAsset=ETH&walletAddress=${window.ethereum.selectedAddress}`;
     s.innerHTML = '💵 Opening OSKO Off-Ramp...<br><span style="font-size:9px;color:var(--dim)">Sell ETH, receive USD to bank</span>';
   }
-  
+
   // Open in new tab
   window.open(url, '_blank');
 }
@@ -92,13 +92,13 @@ function openOskoRamp(type) {
 async function loginCoinbase() {
   const s = document.getElementById('cStatus');
   if(!s) return;
-  
+
   // Check for Coinbase Wallet injected
   if(!window.coinbaseWalletExtension) {
     s.innerHTML = '❌ Coinbase Wallet not installed<br><a href="https://www.coinbase.com/wallet" target="_blank" style="color:var(--cyan)">Install →</a>';
     return;
   }
-  
+
   try {
     const accounts = await window.coinbaseWalletExtension.request({ method: 'eth_requestAccounts' });
     if(accounts?.length) {

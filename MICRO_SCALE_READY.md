@@ -267,4 +267,3 @@ Your system is now **fully configured for micro-scale trading**.
 **Expected outcome**: Positive P&L (+$0.50 to +$2.00) in <2 minutes.
 
 Good luck! 📈
-

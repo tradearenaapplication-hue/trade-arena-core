@@ -164,7 +164,7 @@ const topBrackets = TRADE_OLYMPICS.getTopBrackets(10);
 
 // Returns top 10 brackets by total P&L:
 // [
-//   { bracket: 'ARBITRAGE_BTC_SMALL', model: 'gpt-5-turbo', 
+//   { bracket: 'ARBITRAGE_BTC_SMALL', model: 'gpt-5-turbo',
 //     wins: 145, losses: 23, totalPnL: $12,450, winRate: 0.863, ... },
 //   ...
 // ]
@@ -235,7 +235,7 @@ const summary = TRADE_OLYMPICS.getSummary();
 if (decision.isOlympicsMatch) {
   const bracket = decision.olympicsBracket;
   const model = decision.aiModel;
-  
+
   // Show: "🏅 ARBITRAGE_BTC_SMALL • gpt-5-turbo"
   botCard.innerHTML += `
     <div style="color: gold;">
@@ -250,14 +250,14 @@ if (decision.isOlympicsMatch) {
 ```html
 <div id="olympics-leaderboard" class="panel">
   <h3>🏅 Trade Olympics Leaderboard</h3>
-  
+
   <!-- Summary Stats -->
   <div class="stats">
     <div>Total Brackets: <span id="total-brackets">480</span></div>
     <div>Total Trades: <span id="total-trades">0</span></div>
     <div>Total P&L: <span id="total-pnl">$0</span></div>
   </div>
-  
+
   <!-- Rankings Table -->
   <table id="olympics-rankings">
     <tr>
@@ -271,7 +271,7 @@ if (decision.isOlympicsMatch) {
     </tr>
     <!-- Populated by JavaScript -->
   </table>
-  
+
   <!-- Best Brackets Tab -->
   <div class="tabs">
     <button onclick="showTopBrackets()">Top Brackets</button>
@@ -287,10 +287,10 @@ setInterval(() => {
   const summary = TRADE_OLYMPICS.getSummary();
   document.getElementById('total-trades').textContent = summary.totalTrades;
   document.getElementById('total-pnl').textContent = '$' + summary.totalPnL.toLocaleString();
-  
+
   const rankings = TRADE_OLYMPICS.getLeaderboard('totalPnL');
   const table = document.getElementById('olympics-rankings');
-  
+
   rankings.forEach(model => {
     const row = table.insertRow();
     row.innerHTML = `

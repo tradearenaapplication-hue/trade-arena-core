@@ -110,8 +110,8 @@ await provider.send('eth_requestAccounts', []);
 
 ### After ✅
 ```javascript
-const accounts = await window.ethereum.request({ 
-  method: 'eth_requestAccounts' 
+const accounts = await window.ethereum.request({
+  method: 'eth_requestAccounts'
 });
 if (!accounts || accounts.length === 0) {
   // Handle case, show error

@@ -261,28 +261,28 @@ print(f"Avg P&L: ${avg_pnl:.2f}")
 ## 🎯 Key Features
 
 ### Completeness
-✅ Captures all trade data  
-✅ Includes AI reasoning  
-✅ Records entry/exit prices  
-✅ Tracks probabilities  
+✅ Captures all trade data
+✅ Includes AI reasoning
+✅ Records entry/exit prices
+✅ Tracks probabilities
 
 ### Accuracy
-✅ Millisecond timestamps  
-✅ Verified calculations  
-✅ Consistent session tracking  
-✅ No data loss  
+✅ Millisecond timestamps
+✅ Verified calculations
+✅ Consistent session tracking
+✅ No data loss
 
 ### Usability
-✅ One-click access  
-✅ Multiple export formats  
-✅ Instant stats popup  
-✅ Live header display  
+✅ One-click access
+✅ Multiple export formats
+✅ Instant stats popup
+✅ Live header display
 
 ### Verifiability
-✅ Unique session ID  
-✅ Full audit trail  
-✅ Checksum integrity  
-✅ Historical records  
+✅ Unique session ID
+✅ Full audit trail
+✅ Checksum integrity
+✅ Historical records
 
 ---
 

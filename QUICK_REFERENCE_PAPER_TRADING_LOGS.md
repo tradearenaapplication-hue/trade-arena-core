@@ -4,12 +4,12 @@
 
 Your app now logs **every trade with complete verification data**:
 
-✅ Entry/exit prices  
-✅ Bet amounts & multipliers  
-✅ Win probabilities  
-✅ AI reasoning  
-✅ Exact timestamps  
-✅ Session ID tracking  
+✅ Entry/exit prices
+✅ Bet amounts & multipliers
+✅ Win probabilities
+✅ AI reasoning
+✅ Exact timestamps
+✅ Session ID tracking
 
 ---
 
@@ -224,14 +224,14 @@ Hover over any trade to see full details (edge %, probability, reasoning).
 
 ## ✨ Features
 
-✅ **Complete Data** - Every trade fully logged  
-✅ **Timestamped** - Millisecond precision  
-✅ **Auditable** - Full verification trail  
-✅ **Exportable** - Multiple formats  
-✅ **Verifiable** - Checksum & integrity  
-✅ **Session ID** - Track sessions uniquely  
-✅ **Live Display** - Real-time metrics  
-✅ **Analysis Ready** - CSV for Excel/Sheets  
+✅ **Complete Data** - Every trade fully logged
+✅ **Timestamped** - Millisecond precision
+✅ **Auditable** - Full verification trail
+✅ **Exportable** - Multiple formats
+✅ **Verifiable** - Checksum & integrity
+✅ **Session ID** - Track sessions uniquely
+✅ **Live Display** - Real-time metrics
+✅ **Analysis Ready** - CSV for Excel/Sheets
 
 ---
 

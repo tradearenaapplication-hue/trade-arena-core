@@ -335,6 +335,6 @@ Ready to use! 🚀
 
 ---
 
-**Cooldown Settings v5** 
+**Cooldown Settings v5**
 *Trading protection system*
 *March 12, 2026*

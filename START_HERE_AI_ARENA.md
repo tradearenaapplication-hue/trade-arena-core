@@ -5,7 +5,7 @@
 **New to the AI Arena system?**
 
 1. Read: **README_AI_ARENA.md** (5 minutes)
-2. Read: **AI_ARENA_QUICK_START.md** (5 minutes) 
+2. Read: **AI_ARENA_QUICK_START.md** (5 minutes)
 3. Refresh page (F5) and click **▶️ AUTO** on any bot
 4. Done! You're trading with tournaments! ✅
 
@@ -51,15 +51,15 @@
   - Winner selection process
   - Execution validation
   - Final result
-  
+
 - Real Tournament #2: Choppy Market (±1-2%)
   - Market affects model performance
   - Lower consensus example
-  
+
 - Real Tournament #3: Extreme Volatility (+8%)
   - Trade paused by safety gates
   - Why validation blocked execution
-  
+
 - Leaderboard evolution over 20 trades
 - Console output samples
 - **Best for:** Seeing real examples with data
@@ -140,7 +140,7 @@
 
 **Models:**
 - 🔬 ANALYST: Conservative, good in choppy markets
-- ⚡ TRADER: Aggressive, good in bullish markets  
+- ⚡ TRADER: Aggressive, good in bullish markets
 - 🎯 STRATEGIST: Balanced, good everywhere
 
 **How It Works:**
@@ -202,7 +202,7 @@ console.log(arenaState.tournamentHistory);
 ### Before:
 ❌ Single AI model
 ❌ Sometimes wrong
-❌ No visibility  
+❌ No visibility
 ❌ No performance tracking
 ❌ Single point of failure
 

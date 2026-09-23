@@ -7,7 +7,7 @@ Your trading bot ticker graph now has **two major enhancements:**
 ### 1. 📊 Live Action Tracking
 Each bot displays its recent trades in real-time:
 - **Green badges** (`✅ +$150`) for winning trades
-- **Red badges** (`❌ -$50`) for losing trades  
+- **Red badges** (`❌ -$50`) for losing trades
 - **Last 8 trades** shown for each bot
 - **Accurate P&L amounts** that match results
 
@@ -112,10 +112,10 @@ Below Performance Graph:
 ```
 Click SPIN on Bot #1
   → Legend shows: ✅ +$150
-  
+
 Click SPIN on Bot #1 again
   → Legend shows: ✅ +$75  ✅ +$150
-  
+
 Click SPIN on Bot #2
   → Legend shows: ❌ -$50  (Bot #2 lost)
 ```
@@ -125,7 +125,7 @@ Click SPIN on Bot #2
 Click 🤖 AUTO OFF button
   → Button glows green "AUTO ON"
   → All bots start trading
-  
+
 Watch legend update in real-time:
   Bot #1: ✅ +$150 ✅ +$75 ❌ -$25 ✅ +$100
   Bot #2: ❌ -$50 ✅ +$125 ✅ +$175 ❌ -$75
@@ -137,7 +137,7 @@ Watch legend update in real-time:
 Click 🤖 AUTO ON button
   → All bots stop auto-trading
   → Button dims to "AUTO OFF"
-  
+
 Click 🤖 AUTO OFF again
   → All bots resume auto-trading
   → Watch new actions appear

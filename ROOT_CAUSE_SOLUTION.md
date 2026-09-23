@@ -157,8 +157,8 @@ If STILL not working → Uninstall and reinstall MetaMask
 
 ## 🎊 Bottom Line
 
-**Your app works perfectly!** 
-**You just need MetaMask!** 
+**Your app works perfectly!**
+**You just need MetaMask!**
 
 Go install it from **[metamask.io](https://metamask.io)** and come back!
 

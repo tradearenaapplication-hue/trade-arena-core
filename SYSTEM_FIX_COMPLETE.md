@@ -301,7 +301,7 @@ Yes! Run: `runCrucibleTest(20, 1500)` 🚀
 
 ## Next Steps
 
-1. **Test the system** 
+1. **Test the system**
    - Open F12 console
    - Run `runCrucibleTest(20, 1500)`
    - Watch the trades execute

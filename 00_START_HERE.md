@@ -225,7 +225,7 @@ Branch: main
 Repository: https://github.com/danhale93/Trade-Arena
 
 Message:
-fix: Implement risk management with 3:1 ratio - 
+fix: Implement risk management with 3:1 ratio -
 Stop losses and take profit enforcement
 
 Changes:

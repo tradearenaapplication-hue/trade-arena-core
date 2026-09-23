@@ -34,7 +34,7 @@ console.log(window.ethereum)
 2. Do you see a **fox icon** 🦊?
 
 **If YES**: Go to Step 4
-**If NO**: 
+**If NO**:
    - Click puzzle piece 🧩 icon (extensions)
    - Find MetaMask
    - Click pin to make visible

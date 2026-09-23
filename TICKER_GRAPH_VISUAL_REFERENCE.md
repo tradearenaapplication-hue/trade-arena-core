@@ -32,7 +32,7 @@
 ### 1. Y-Axis (Vertical)
 ```
    P&L Scale ↑
-   
+
    $1000 ─ Top label (highest profit)
     $750 │
     $500 │ Grid line
@@ -97,11 +97,11 @@ Trade 5:  +$75   (cumulative: +$200)
 
 Chart View:
    $200 ┤                    ●  ← Latest (larger circle)
-   $175 ┤            ●  
+   $175 ┤            ●
    $150 ┤      ●──●──────●
-   $125 ┤                 
-   $100 ┤                    
-    $50 ┤   ● 
+   $125 ┤
+   $100 ┤
+    $50 ┤   ●
       $0 ├──────────────────
         0   1   2   3   4   5
 
@@ -157,7 +157,7 @@ Colors help distinguish:
 POSITIVE P&L (Green text):
 🟢 Bot #3  +$250  72%
            ↑ Green color
-           
+
 NEGATIVE P&L (Red text):
 🔴 Bot #2  -$100  45%
            ↑ Red color
@@ -414,7 +414,7 @@ Future features:
    $200┤        ╱──╱         ╲
    $100┤    ╱──╱               ╲──
      $0├───╱
-        
+
 
 Indicators:
 ✅ Generally upward trend
@@ -449,7 +449,7 @@ Indicators:
   -$200┤       ╲╲
   -$300┤        ╲╲
   -$400┤         ╲╲
-       
+
 
 Indicators:
 ❌ Steady downtrend

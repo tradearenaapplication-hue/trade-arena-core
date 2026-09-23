@@ -8,7 +8,7 @@ Navigate to: **http://localhost:8000**
 ### Step 2: Add 6 Bots (One Per Profile)
 Click "ADD BOT" six times and set each profile:
 1. Bot #1 → Profile: **SCALPER**
-2. Bot #2 → Profile: **TREND**  
+2. Bot #2 → Profile: **TREND**
 3. Bot #3 → Profile: **AGGRESSIVE**
 4. Bot #4 → Profile: **CONSERVATIVE**
 5. Bot #5 → Profile: **BALANCED**

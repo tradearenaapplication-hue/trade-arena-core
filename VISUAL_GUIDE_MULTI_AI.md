@@ -207,7 +207,7 @@ SCALPER         TREND          AGGRESSIVE
    └─→ grok-3     └─→ gpt-5      └─→ grok-3
     FAST/RISKY    SMART/PATTERN  RISK-TAKING
    (400ms)       (800ms)         (400ms)
-   
+
 CONSERVATIVE    BALANCED        NICHE
    │              │              │
    └─→ claude-op  └─→ claude-3.5 └─→ neural-sh

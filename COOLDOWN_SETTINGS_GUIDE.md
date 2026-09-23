@@ -10,7 +10,7 @@
 └─ Adjustable Cooldown Levels:
    ├─ Loss Trigger: When to activate (default 15 losses)
    ├─ Level 1: 30 minutes cooldown
-   ├─ Level 2: 2 hours cooldown  
+   ├─ Level 2: 2 hours cooldown
    └─ Level 3: 48 hours cooldown
 ```
 

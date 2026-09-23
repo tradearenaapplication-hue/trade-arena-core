@@ -97,7 +97,7 @@ let hftMetrics = {
    ├─ Set all bots.auto = true
    ├─ Trigger scheduleAutoSpin() for each bot
    └─ Each bot operates on independent 400-1200ms timer
-   
+
 2. Each bot independently:
    ├─ Fetch market data (CoinGecko)
    ├─ Run AI Arena tournament (5 agents voting)
@@ -105,7 +105,7 @@ let hftMetrics = {
    ├─ Log to globalLog
    ├─ hftMetrics.recordTrade() - increment TPM
    ├─ Schedule next trade in 400-1200ms
-   
+
 3. Global header updates:
    └─ TRADES/MIN counter refreshes
 ```
@@ -115,17 +115,17 @@ let hftMetrics = {
   - Manages individual bot timing
   - 400-1200ms random delay for variation
   - Prevents trade clustering
-  
+
 - **enableBatchTrading()**: Line 1116-1126
   - Activates all bots at once
   - Updates all bot UI states
   - Launches scheduleAutoSpin for each
-  
+
 - **disableBatchTrading()**: Line 1128-1137
   - Atomic stop for all bots
   - Clears all pending timers
   - Resets all bot UI states
-  
+
 - **hftMetrics Object**: Lines 426-441
   - Tracks trade timestamps in 60-second window
   - Calculates current TPM
@@ -235,4 +235,3 @@ let hftMetrics = {
 - ✅ All features tested and integrated
 
 **The app is now ready for high-frequency trading operations!** 🚀📈
-

@@ -14,7 +14,7 @@
 
 ### User Data Stored After Login
 - name: from Google profile
-- email: from Google profile  
+- email: from Google profile
 - avatar: profile picture from Google
 - badge: '🔵 GOOGLE' provider indicator
 
@@ -53,24 +53,24 @@ Add to index.html script section:
 // OSKO On-Ramp (Buy Crypto)
 async function openOnRamp() {
   const s = document.getElementById('cStatus'); if(!s) return;
-  
+
   // Options: Ramp, MoonPay, Transak
   // Using Ramp.network as primary (most widely supported)
   const RAMP_APP_ID = 'YOUR_RAMP_APP_ID'; // Get from ramp.network
-  
+
   // Build checkout URL with user email if available
-  let checkoutUrl = `https://buy.ramp.network/?` + 
+  let checkoutUrl = `https://buy.ramp.network/?` +
     `appId=${RAMP_APP_ID}&` +
     `swapAsset=ETH&` +
     `swapAmount=100&` + // default $100
     `fiatCurrency=USD&` +
     ` fiatValueMultiplier=1`;
-    
+
   // If user logged in via Google, pass email for KYC
   if (window._userEmail) {
     checkoutUrl += `&userEmail=${encodeURIComponent(window._userEmail)}`;
   }
-  
+
   // Open in new window/tab
   window.open(checkoutUrl, '_blank');
   s.textContent='💳 Opening on-ramp... Complete purchase and return here.';
@@ -79,26 +79,26 @@ async function openOnRamp() {
 // OSKO Off-Ramp (Sell Crypto)
 async function openOffRamp() {
   const s = document.getElementById('cStatus'); if(!s) return;
-  
+
   // Off-ramp via Ramp (same app, different mode)
   const address = window.ethereum?.selectedAddress;
-  
+
   if (!address && !window._walletAddress) {
     s.textContent='❌ Connect wallet first to sell crypto';
     // Prompt to connect wallet
     loginMetaMask();
     return;
   }
-  
+
   const sellAddress = address || window._walletAddress;
-  
+
   // Ramp sell URL
   let sellUrl = `https://sell.ramp.network/?` +
     `appId=${RAMP_APP_ID}&` +
     `cryptoAsset=ETH&` +
     `fiatCurrency=USD&` +
     `walletAddress=${sellAddress}`;
-    
+
   window.open(sellUrl, '_blank');
   s.textContent='💵 Opening off-ramp... Complete sale and return here.';
 }
@@ -118,10 +118,10 @@ Modify `handleGoogleLoginResponse` to store email globally:
 ```javascript
 function handleGoogleLoginResponse(response){
   // ... existing code ...
-  
+
   window._userEmail = decodedPayload.email;
   window._googleAvatar = decodedPayload.picture;
-  
+
   // Setup app with user data
   const userData = {
     name: decodedPayload.name || decodedPayload.email.split('@')[0],
@@ -130,7 +130,7 @@ function handleGoogleLoginResponse(response){
     badge: '🔵 GOOGLE',
     provider: 'google'
   };
-  
+
   setupApp(userData);
 }
 ```
@@ -141,7 +141,7 @@ OSKO Providers to Evaluate:
    - Supports 150+ countries
    - Instant ETH delivery
    - App ID required (free registration)
-   
+
 2. **MoonPay** - moonpay.com
    - Higher limits available
    - Requires KYC for higher amounts
@@ -202,7 +202,7 @@ Add openOnRamp() and openOffRamp() functions
 - [ ] Register for Ramp.network app ID
 - [ ] Add CSS for ramp buttons
 - [ ] Add buy/sell buttons to login card
-- [ ] Implement openOnRamp() function  
+- [ ] Implement openOnRamp() function
 - [ ] Implement openOffRamp() function
 - [ ] Store Google email for KYC pre-fill
 - [ ] Test on-ramp flow with testnet

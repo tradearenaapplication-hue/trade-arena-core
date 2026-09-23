@@ -148,7 +148,7 @@ Each log should contain:
 
 ### Success Log
 ```
-✅ SUCCESS | TRADING | (timestamp) 
+✅ SUCCESS | TRADING | (timestamp)
 Trade completed
 {token: "ETH", pnl: 150.50, isWin: true}
 ```

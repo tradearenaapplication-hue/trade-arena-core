@@ -408,7 +408,7 @@ Google Login (Blue):
 ```
 LOGIN SCREEN
 ├─ Google Login (🔵)
-├─ MetaMask Login (🦊)  
+├─ MetaMask Login (🦊)
 ├─ Demo Mode (🎮)
 └─ Create Wallet (🔐) ← NEW! ✨
 

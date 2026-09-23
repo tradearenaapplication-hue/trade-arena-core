@@ -19,7 +19,7 @@
 ### Core PWA Infrastructure
 ```
 ✅ index.html          — Updated with PWA meta tags & SW registration
-✅ manifest.json       — App metadata, icons, display settings  
+✅ manifest.json       — App metadata, icons, display settings
 ✅ sw.js               — Service worker with network-first caching
 ```
 
@@ -60,7 +60,7 @@
 - **Location:** Place in repo root (same level as index.html)
 
 ### File 2: icon-512.png
-- **Size:** 512 × 512 pixels  
+- **Size:** 512 × 512 pixels
 - **Format:** PNG image
 - **Color:** Same design, larger
 - **Purpose:** Desktop icons, high-DPI displays
@@ -211,7 +211,7 @@ Concurrent with deployment:
 ```
 STEP 1: Add Icons
 ├─ Option A: Ask me to generate
-├─ Option B: Design yourself  
+├─ Option B: Design yourself
 ├─ Option C: Use SVG fallback
 └─ Time: 5-30 minutes
 
@@ -261,11 +261,11 @@ STEP 3: Share with Beta Users
 
 ## 🔐 Security: Your App is Safe
 
-✅ **HTTPS Required** — Vercel auto-provides SSL  
-✅ **No Credentials Cached** — Only GET requests cached  
-✅ **User Data Protected** — Auth tokens never cached  
-✅ **API Calls Secure** — Still require authentication  
-✅ **Scope Limited** — PWA only controls its origin  
+✅ **HTTPS Required** — Vercel auto-provides SSL
+✅ **No Credentials Cached** — Only GET requests cached
+✅ **User Data Protected** — Auth tokens never cached
+✅ **API Calls Secure** — Still require authentication
+✅ **Scope Limited** — PWA only controls its origin
 
 PWA makes your app **more secure**, not less. It enforces HTTPS and provides sandboxing.
 
@@ -381,4 +381,3 @@ Why This Matters:
 ```
 
 **Let's ship it.** 🚀
-

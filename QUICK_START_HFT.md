@@ -21,7 +21,7 @@
 ## 📊 Performance Expectations
 
 - **With 3 bots**: 150-450 trades/min
-- **With 6 bots**: 300-900 trades/min  
+- **With 6 bots**: 300-900 trades/min
 - **With 12 bots**: 600-1800 trades/min
 
 Each bot trades every 400-1200ms with AI decisions.

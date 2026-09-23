@@ -23,7 +23,7 @@ All bots now make **UNIQUE decisions** based on their individual strategies, and
 Created `advanced-bot-engine.js` with **6 unique decision generators**:
 
 1. **SCALPER** - Fast arbitrage trades, tight spreads
-2. **TREND** - Momentum following, directional plays  
+2. **TREND** - Momentum following, directional plays
 3. **AGGRESSIVE** - High leverage, high reward
 4. **CONSERVATIVE** - Capital preservation, steady profits
 5. **BALANCED** - Mix of everything, adaptive
@@ -194,7 +194,7 @@ Risk: Medium (reversal risk)
 **2. Price Oracle Attacks (DyDx)**
 - Flash borrow to manipulate prices
 - Execute trades at distorted prices
-- Repay loan + profit  
+- Repay loan + profit
 - Profit: 6% potential (EXTREME RISK)
 
 **3. Arbitrage Boosting (BALANCER)**
@@ -304,7 +304,7 @@ Now detects bot profile and calls `generateBotSpecificDecision()`:
 async function callAI(marketData, bet, botId) {
   const bot = bots.find(b => b.id === botId);
   const botProfile = bot?.profile || 'BALANCED';
-  
+
   // Use advanced engine for UNIQUE decisions per profile
   if (typeof generateBotSpecificDecision === 'function') {
     const decision = generateBotSpecificDecision(botId, botProfile, marketData, bet, botStrategies[botId]);
@@ -438,10 +438,10 @@ Check: Bot profiles set correctly?
 
 ## Summary
 
-✅ **Problem:** All bots made identical trades  
+✅ **Problem:** All bots made identical trades
 ✅ **Solution:** Profile-based decision engine with 6 unique strategies
 
-✅ **Problem:** No result tracking  
+✅ **Problem:** No result tracking
 ✅ **Solution:** Comprehensive logging system already operational
 
 ✅ **Added:** Market fundamentals integration

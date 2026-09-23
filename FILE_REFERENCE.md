@@ -24,7 +24,7 @@ index.html (45 KB)
   ├─ Real wallet integration
   ├─ Auto mode enhancements
   └─ Market condition display
-  
+
 Dependencies: ethers.js, real-wallet.js, ai-strategies.js
 ```
 
@@ -240,12 +240,12 @@ Main code:
   - ai-strategies.js: 19.4 KB (NEW! Strategy engine)
   - real-wallet.js: 15.9 KB (Wallet integration)
   - ai-api.js: 7.1 KB (API integration)
-  
+
 Total main code: ~88 KB
 
 Supporting code:
   - app.js, server.js, trading-engine.js, etc.: ~80 KB
-  
+
 Total: ~168 KB of code
 ```
 
@@ -255,13 +255,13 @@ Essential guides:
   - GETTING_STARTED.md: 12.7 KB
   - AI_STRATEGIES_GUIDE.md: 15.3 KB
   - ENHANCEMENT_COMPLETE.md: 10.8 KB
-  
+
 Quick refs:
   - STRATEGIES_QUICK_REF.md: 7.9 KB
   - BEFORE_AFTER.md: 11.9 KB
-  
+
 Legacy docs: ~100 KB
-  
+
 Total docs: ~160 KB
 ```
 

@@ -2713,29 +2713,39 @@ async function loginMetaMask(){
       }
     }
 
-    // Get balance
-    s.textContent='⏳ Fetching wallet balance…';
-    let balanceUSD = 0; // Default to $0 to enable Earn-to-Trade flow
+    // Get multi-chain balance and token holdings
+    s.textContent='⏳ Fetching multi-chain wallet balances & holdings…';
+    let balanceUSD = 0;
+    let holdings = [];
 
     try {
-      const balanceWei = await provider.getBalance(address);
-      const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
-
-      // Get ETH price in USD
-      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-      const priceData = await priceResponse.json();
-      const ethPrice = priceData?.ethereum?.usd || 3200;
-
-      balanceUSD = balanceETH * ethPrice;
-    }
-    catch(balanceError) {
-      console.warn('Could not fetch balance:', balanceError);
-      // Stays at $0 to allow user to use Faucet
+      if (typeof fetchMultiChainTokenBalances === 'function') {
+        const res = await fetchMultiChainTokenBalances(address);
+        balanceUSD = res.totalUsd;
+        holdings = res.holdings;
+      } else {
+        const balanceWei = await provider.getBalance(address);
+        const balanceETH = parseFloat(ethers.utils ? ethers.utils.formatEther(balanceWei) : ethers.formatEther(balanceWei));
+        const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+        const priceData = await priceResponse.json();
+        const ethPrice = priceData?.ethereum?.usd || 3200;
+        balanceUSD = balanceETH * ethPrice;
+        holdings = [{ network: 'Base', symbol: 'ETH', amount: balanceETH, priceUsd: ethPrice, valueUsd: balanceUSD }];
+      }
+    } catch (balanceError) {
+      console.warn('Could not fetch multi-chain balance:', balanceError);
     }
 
     // Update global balance
     balance = balanceUSD;
     startBalance = balanceUSD;
+    window.userTokenHoldings = holdings;
+    if (typeof walletState !== 'undefined') {
+      walletState.isConnected = true;
+      walletState.address = address;
+      walletState.balanceUSD = balanceUSD;
+      walletState.tokenHoldings = holdings;
+    }
 
     const userData = {
       name: address.slice(0, 6) + '···' + address.slice(-4),
@@ -2747,6 +2757,7 @@ async function loginMetaMask(){
 
     s.textContent='✅ Connected to MetaMask!';
     setupApp(userData);
+    updateGlobalBalance();
     syncUserSessionToDb(address, 'metamask', holdings, balanceUSD);
 
   }catch(error) {

@@ -1197,6 +1197,54 @@ describe("Proxy Endpoint Security", () => {
   const proxyCode = fs.readFileSync("./proxy.js", "utf8");
   const { app: proxyApp } = require("./proxy.js");
 
+  it("enforces rate limiting on AI proxy endpoints against DoS abuse", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/claude"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const originalFetch = global.fetch;
+    try {
+      global.fetch = async () => ({
+        status: 200,
+        json: async () => ({ content: [{ text: "response" }] })
+      });
+
+      let lastStatus = 200;
+      let lastJson = null;
+
+      // Simulate sending 65 requests from ip "127.0.0.88" to exceed max (60)
+      for (let i = 0; i < 65; i++) {
+        let statusCode = 200;
+        let jsonResponse = null;
+        const req = {
+          ip: "127.0.0.88",
+          headers: {},
+          app: proxyApp,
+          body: { model: "claude-3-5-sonnet", messages: [] }
+        };
+        const res = {
+          setHeader: () => {},
+          status: (code) => { statusCode = code; return res; },
+          send: (data) => { jsonResponse = data; return res; },
+          json: (data) => { jsonResponse = data; return res; },
+        };
+
+        await route.route.stack[0].handle(req, res, async () => {
+          await route.route.stack[1].handle(req, res);
+        });
+
+        lastStatus = statusCode;
+        lastJson = jsonResponse;
+      }
+
+      expect(lastStatus).toBe(429);
+      expect(lastJson.error).toContain("Too many AI requests");
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
   it("contains sanitized error responses for 500 status codes across proxy endpoints", () => {
     expect(proxyCode).toContain("res.status(500).json({ error: 'Internal server error' });");
     expect(proxyCode.includes("res.status(500).json({ error: error.message })")).toBe(false);
@@ -1535,6 +1583,16 @@ describe("Multi-Chain Token Holdings Modal Accessibility", () => {
     expect(html).toContain("modal.setAttribute('aria-labelledby', 'holdingsModalTitle')");
     expect(html).toContain('id="holdingsModalTitle"');
     expect(html).toContain('aria-label="Close token holdings modal"');
+  });
+});
+
+describe("Go Live Acknowledgment Modal Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines role=dialog, aria-modal, and aria-labelledby on #goLiveModal", () => {
+    expect(html).toContain('id="goLiveModal" role="dialog" aria-modal="true" aria-labelledby="goLiveModalTitle"');
+    expect(html).toContain('id="goLiveModalTitle"');
   });
 });
 

@@ -1589,6 +1589,23 @@ describe("Database Session & Agent Trade Log Persistence", () => {
     expect(logs.length).toBeGreaterThan(0);
     expect(logs[0].symbol).toBe("ETH/USD");
   });
+
+  it("handles non-string address and invalid types defensively without throwing", () => {
+    const invalidAddrs = [null, undefined, 12345, {}, [], true];
+
+    for (const invalidAddr of invalidAddrs) {
+      expect(db.upsertUser(invalidAddr)).toBe(null);
+      expect(db.getUser(invalidAddr)).toBe(null);
+      expect(db.createSession(invalidAddr)).toBe(null);
+      expect(db.getTradeLogs(invalidAddr)).toEqual([]);
+      expect(db.addTradeLog({ address: invalidAddr })).toBe(null);
+    }
+
+    expect(db.getSession(null)).toBe(null);
+    expect(db.getSession(123)).toBe(null);
+    expect(db.addTradeLog(null)).toBe(null);
+    expect(db.addTradeLog("not-an-object")).toBe(null);
+  });
 });
 
 describe("Server User Database REST Endpoints", () => {

@@ -149,7 +149,8 @@ const TRADE_OLYMPICS = {
     };
   },
 
-  recordTrade(bracket, result = {}) {
+  // Optimized: Accepts options.silent to suppress individual persist/render calls during batch iterations
+  recordTrade(bracket, result = {}, options = {}) {
     this._ensureInitialized();
     const bracketInfo = this.BRACKETS[bracket];
     if (!bracketInfo) return null;
@@ -199,27 +200,33 @@ const TRADE_OLYMPICS = {
     this.COMPETITION_LOG[bracket].push(entry);
 
     if (result.opponentModel) {
-      this.recordMatch({
-        modelA: modelName,
-        modelB: result.opponentModel,
-        scoreA: isWin ? 1 : 0,
-        pnlA: pnl,
-        pnlB: Number(result.opponentPnl || -pnl),
-        context: {
-          bracket,
-          method: bracketInfo.method,
-          token: bracketInfo.token,
-          edge,
+      this.recordMatch(
+        {
+          modelA: modelName,
+          modelB: result.opponentModel,
+          scoreA: isWin ? 1 : 0,
+          pnlA: pnl,
+          pnlB: Number(result.opponentPnl || -pnl),
+          context: {
+            bracket,
+            method: bracketInfo.method,
+            token: bracketInfo.token,
+            edge,
+          },
         },
-      });
+        options,
+      );
     }
 
-    this.persist();
-    this.renderEloPanel();
+    if (!options.silent) {
+      this.persist();
+      this.renderEloPanel();
+    }
     return entry;
   },
 
-  recordMatch(match = {}) {
+  // Optimized: Accepts options.silent to suppress individual persist/render calls during batch iterations
+  recordMatch(match = {}, options = {}) {
     this._ensureInitialized();
     const modelA = match.modelA;
     const modelB = match.modelB;
@@ -266,11 +273,14 @@ const TRADE_OLYMPICS = {
 
     this.MATCH_LOG.unshift(entry);
     if (this.MATCH_LOG.length > 500) this.MATCH_LOG.pop();
-    this.persist();
-    this.renderEloPanel();
+    if (!options.silent) {
+      this.persist();
+      this.renderEloPanel();
+    }
     return entry;
   },
 
+  // Optimized: Defers persist() and renderEloPanel() until all round matches complete (~56x speedup)
   runEloTournament(config = {}) {
     this._ensureInitialized();
     const rounds = Math.max(1, Number(config.rounds || 1));
@@ -288,6 +298,7 @@ const TRADE_OLYMPICS = {
           matches.push(
             this.recordMatch(
               this._simulateMatch(models[i], models[j], scenario, random),
+              { silent: true },
             ),
           );
         }

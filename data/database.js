@@ -39,18 +39,18 @@ class FileDatabase {
   }
 
   upsertUser(address, provider, name, holdings, sessionData) {
-    if (!address || typeof address !== 'string') return null;
+    if (!address) return null;
     const cleanAddr = address.toLowerCase();
     const existing = this.data.users[cleanAddr] || {};
 
     const updatedUser = {
       ...existing,
       address: cleanAddr,
-      provider: typeof provider === 'string' ? provider : (existing.provider || 'unknown'),
-      name: typeof name === 'string' ? name : (existing.name || cleanAddr),
-      holdings: Array.isArray(holdings) ? holdings : (existing.holdings || []),
+      provider: provider || existing.provider || 'unknown',
+      name: name || existing.name || cleanAddr,
+      holdings: holdings || existing.holdings || [],
       lastLogin: new Date().toISOString(),
-      sessionData: (sessionData && typeof sessionData === 'object') ? sessionData : (existing.sessionData || {})
+      sessionData: sessionData || existing.sessionData || {}
     };
 
     this.data.users[cleanAddr] = updatedUser;
@@ -59,12 +59,12 @@ class FileDatabase {
   }
 
   getUser(address) {
-    if (!address || typeof address !== 'string') return null;
+    if (!address) return null;
     return this.data.users[address.toLowerCase()] || null;
   }
 
   createSession(address, initialBalance = 0) {
-    if (!address || typeof address !== 'string') return null;
+    if (!address) return null;
     const cleanAddr = address.toLowerCase();
     const sessionId = 'session_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
 
@@ -73,7 +73,7 @@ class FileDatabase {
       address: cleanAddr,
       startedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      balance: typeof initialBalance === 'number' && !isNaN(initialBalance) ? initialBalance : 0,
+      balance: initialBalance,
       status: 'ACTIVE'
     };
 
@@ -83,25 +83,23 @@ class FileDatabase {
   }
 
   getSession(sessionId) {
-    if (!sessionId || typeof sessionId !== 'string') return null;
     return this.data.sessions[sessionId] || null;
   }
 
   addTradeLog(tradeData) {
-    if (!tradeData || typeof tradeData !== 'object') return null;
     const { address, agentId, botName, action, symbol, amount, pnl, details } = tradeData;
-    if (!address || typeof address !== 'string') return null;
+    if (!address) return null;
 
     const tradeLog = {
       id: 'trade_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex'),
       address: address.toLowerCase(),
-      agentId: typeof agentId === 'string' ? agentId : 'agent-default',
-      botName: typeof botName === 'string' ? botName : 'Trade Bot',
-      action: typeof action === 'string' ? action : 'TRADE',
-      symbol: typeof symbol === 'string' ? symbol : 'ETH/USD',
-      amount: typeof amount === 'number' && !isNaN(amount) ? amount : 0,
-      pnl: typeof pnl === 'number' && !isNaN(pnl) ? pnl : 0,
-      details: (details && typeof details === 'object') ? details : {},
+      agentId: agentId || 'agent-default',
+      botName: botName || 'Trade Bot',
+      action: action || 'TRADE',
+      symbol: symbol || 'ETH/USD',
+      amount: amount || 0,
+      pnl: pnl || 0,
+      details: details || {},
       timestamp: new Date().toISOString()
     };
 
@@ -111,13 +109,12 @@ class FileDatabase {
   }
 
   getTradeLogs(address, limit = 100) {
-    if (!address || typeof address !== 'string') return [];
+    if (!address) return [];
     const cleanAddr = address.toLowerCase();
-    const safeLimit = typeof limit === 'number' && limit > 0 ? limit : 100;
     return this.data.tradeLogs
-      .filter(log => log && log.address === cleanAddr)
+      .filter(log => log.address === cleanAddr)
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-      .slice(0, safeLimit);
+      .slice(0, limit);
   }
 }
 

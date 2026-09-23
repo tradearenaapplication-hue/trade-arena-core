@@ -65,65 +65,22 @@ app.post('/api/gemini', async (req, res) => {
 
 const fs = require('fs');
 const path = require('path');
-const rateLimit = require('express-rate-limit');
 
-/**
- * Helper to check if a requested path stays inside the base directory
- * Prevents path traversal vulnerabilities
- */
-function isPathSafe(baseDir, targetPath) {
-  if (!targetPath || typeof targetPath !== 'string') return false;
-  const normalizedBase = path.resolve(baseDir);
-  const resolvedTarget = path.resolve(baseDir, targetPath);
-  return resolvedTarget === normalizedBase || resolvedTarget.startsWith(normalizedBase + path.sep);
-}
+app.post('/api/maintenance/log', (req, res) => {
+  const { agent, message, level } = req.body;
+  const logDir = path.join(__dirname, '.jules');
+  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
 
-/**
- * Rate limiter middleware for filesystem endpoints
- * Prevents Denial of Service (DoS) and brute-force abuse on file system endpoints
- */
-const maintenanceLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: false,
-  keyGenerator: (req) => req.ip || req.headers?.['x-forwarded-for'] || '127.0.0.1',
-  message: { error: 'Too many requests, please try again later' }
+  const logFile = agent === 'SENTINEL' ? 'sentinel.md' : 'maintenance.md';
+  const logPath = path.join(logDir, logFile);
+
+  const entry = `\n## ${new Date().toISOString()} - [${level || 'INFO'}] ${agent}\n${message}\n`;
+  fs.appendFileSync(logPath, entry);
+
+  res.json({ success: true });
 });
 
-app.post('/api/maintenance/log', maintenanceLimiter, (req, res) => {
-  try {
-    const { agent, message, level } = req.body || {};
-    // SECURITY: Validate inputs to prevent crashes and null pointer dereferences
-    if (!agent || typeof agent !== 'string' || !message || typeof message !== 'string') {
-      return res.status(400).json({ success: false, error: 'Invalid log payload' });
-    }
-
-    const logDir = path.join(__dirname, '.jules');
-    if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
-
-    const safeAgent = agent.toUpperCase() === 'SENTINEL' ? 'SENTINEL' : 'MAINTENANCE';
-    const logFile = safeAgent === 'SENTINEL' ? 'sentinel.md' : 'maintenance.md';
-
-    // SECURITY: Ensure log destination is within the target directory
-    if (!isPathSafe(logDir, logFile)) {
-      return res.status(403).json({ success: false, error: 'Access denied: Invalid log path' });
-    }
-
-    const logPath = path.join(logDir, logFile);
-    const safeLevel = (typeof level === 'string' && level.trim()) ? level.trim().toUpperCase() : 'INFO';
-    const entry = `\n## ${new Date().toISOString()} - [${safeLevel}] ${safeAgent}\n${message}\n`;
-    fs.appendFileSync(logPath, entry);
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Proxy log error:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-});
-
-app.post('/api/maintenance/patch', maintenanceLimiter, async (req, res) => {
+app.post('/api/maintenance/patch', async (req, res) => {
   const { filepath, patch, description } = req.body || {};
   try {
     // SECURITY: Sanitize filepath to prevent Path Traversal vulnerabilities before filesystem access
@@ -144,7 +101,7 @@ app.post('/api/maintenance/patch', maintenanceLimiter, async (req, res) => {
     console.log(`[Developer Agent] Patch requested for ${filepath}: ${description}`);
 
     // Simple overwrite for this demo-scale self-healing
-    // fs.writeFileSync(resolvedPath, patch);
+    // fs.writeFileSync(fullPath, patch);
 
     res.json({ success: true, message: 'Patch received and logged for review' });
   } catch (error) {
@@ -154,11 +111,7 @@ app.post('/api/maintenance/patch', maintenanceLimiter, async (req, res) => {
 });
 
 const port = 3001;
-if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`🚀 Proxy server running at http://localhost:${port}`);
-    console.log('Set ANTHROPIC_API_KEY env var for Claude');
-  });
-}
-
-module.exports = { app, isPathSafe };
+app.listen(port, () => {
+  console.log(`🚀 Proxy server running at http://localhost:${port}`);
+  console.log('Set ANTHROPIC_API_KEY env var for Claude');
+});

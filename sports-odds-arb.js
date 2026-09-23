@@ -30,90 +30,52 @@ function oddsToProbability(odds, format = "american") {
   return americanToProbability(odds);
 }
 
-/**
- * Optimized: Calculates fair probabilities and removes vig in direct loops.
- * Accepts optional defaultFormat to avoid mapping intermediate objects before invocation.
- * Multiplies by invOverround (1/overround) in a single pass over valid outcomes (~1.8x speedup).
- */
-function removeVig(outcomes, defaultFormat = "american") {
-  if (!Array.isArray(outcomes) || outcomes.length === 0) return [];
+function removeVig(outcomes) {
+  const implied = outcomes
+    .map((outcome) => ({
+      ...outcome,
+      impliedProbability:
+        outcome.impliedProbability ?? oddsToProbability(outcome.price, outcome.format || "american"),
+    }))
+    .filter((outcome) => Number.isFinite(outcome.impliedProbability) && outcome.impliedProbability > 0);
 
-  const len = outcomes.length;
-  const validOutcomes = [];
-  let overround = 0;
-
-  for (let i = 0; i < len; i++) {
-    const outcome = outcomes[i];
-    const impliedProbability =
-      outcome.impliedProbability ?? oddsToProbability(outcome.price, outcome.format || defaultFormat);
-
-    if (Number.isFinite(impliedProbability) && impliedProbability > 0) {
-      overround += impliedProbability;
-      validOutcomes.push({
-        ...outcome,
-        impliedProbability,
-      });
-    }
-  }
-
+  const overround = implied.reduce((sum, outcome) => sum + outcome.impliedProbability, 0);
   if (overround <= 0) return [];
 
-  const resultCount = validOutcomes.length;
-  const result = new Array(resultCount);
-  const invOverround = 1 / overround;
-  for (let i = 0; i < resultCount; i++) {
-    const item = validOutcomes[i];
-    result[i] = {
-      ...item,
-      fairProbability: item.impliedProbability * invOverround,
-      overround,
-    };
-  }
-
-  return result;
+  return implied.map((outcome) => ({
+    ...outcome,
+    fairProbability: outcome.impliedProbability / overround,
+    overround,
+  }));
 }
 
-/**
- * Optimized: Eliminates intermediate .map() array projections per bookmaker before removeVig.
- * Accumulates outcome probabilities in-place ({ sum, count }) rather than allocating arrays and calling .reduce().
- */
 function normalizeSportsbookEvent(event, marketKey = "h2h", oddsFormat = "american") {
   const eventId = event.id || `${event.home_team || "home"}-${event.away_team || "away"}`;
-  const outcomeStats = Object.create(null);
-  const bookmakers = event.bookmakers || [];
-  const bookCount = bookmakers.length;
+  const byOutcome = new Map();
 
-  for (let b = 0; b < bookCount; b++) {
-    const bookmaker = bookmakers[b];
-    const markets = bookmaker.markets || [];
-    let market = null;
-    for (let m = 0; m < markets.length; m++) {
-      if (markets[m].key === marketKey) {
-        market = markets[m];
-        break;
-      }
-    }
-    if (!market || !market.outcomes) continue;
+  for (const bookmaker of event.bookmakers || []) {
+    const market = (bookmaker.markets || []).find((item) => item.key === marketKey);
+    if (!market) continue;
 
-    const fairOutcomes = removeVig(market.outcomes, oddsFormat);
+    const fairOutcomes = removeVig(
+      (market.outcomes || []).map((outcome) => ({
+        name: outcome.name,
+        price: outcome.price,
+        format: oddsFormat,
+        bookmaker: bookmaker.key || bookmaker.title,
+      })),
+    );
 
-    for (let o = 0; o < fairOutcomes.length; o++) {
-      const outcome = fairOutcomes[o];
-      const name = outcome.name;
-      const stats = outcomeStats[name];
-      if (stats) {
-        stats.sum += outcome.fairProbability;
-        stats.count++;
-      } else {
-        outcomeStats[name] = { sum: outcome.fairProbability, count: 1 };
-      }
+    for (const outcome of fairOutcomes) {
+      if (!byOutcome.has(outcome.name)) byOutcome.set(outcome.name, []);
+      byOutcome.get(outcome.name).push(outcome.fairProbability);
     }
   }
 
   const fairProbabilities = {};
-  for (const name in outcomeStats) {
-    const stats = outcomeStats[name];
-    fairProbabilities[name] = stats.sum / stats.count;
+  for (const [outcome, probabilities] of byOutcome.entries()) {
+    fairProbabilities[outcome] =
+      probabilities.reduce((sum, probability) => sum + probability, 0) / probabilities.length;
   }
 
   return {
@@ -123,7 +85,7 @@ function normalizeSportsbookEvent(event, marketKey = "h2h", oddsFormat = "americ
     homeTeam: event.home_team,
     awayTeam: event.away_team,
     fairProbabilities,
-    booksUsed: bookCount,
+    booksUsed: event.bookmakers?.length || 0,
   };
 }
 
@@ -154,10 +116,6 @@ function calculatePredictionMarketEdge(fairProbability, market, config = {}) {
   };
 }
 
-/**
- * Optimized: Populates eventById Map in a single indexed loop pass.
- * Eliminates intermediate array allocations from .map() projections over sportsbook events and tuple pairs.
- */
 function findSportsPredictionEdges({
   sportsbookEvents = [],
   predictionMarkets = [],
@@ -168,12 +126,10 @@ function findSportsPredictionEdges({
   now = Date.now(),
 } = {}) {
   const cfg = { ...DEFAULT_SPORTS_ARB_CONFIG, ...config };
-  const eventById = new Map();
-
-  for (let i = 0; i < sportsbookEvents.length; i++) {
-    const norm = normalizeSportsbookEvent(sportsbookEvents[i], marketKey, oddsFormat);
-    eventById.set(norm.eventId, norm);
-  }
+  const normalizedEvents = sportsbookEvents.map((event) =>
+    normalizeSportsbookEvent(event, marketKey, oddsFormat),
+  );
+  const eventById = new Map(normalizedEvents.map((event) => [event.eventId, event]));
   const opportunities = [];
 
   for (const market of predictionMarkets) {

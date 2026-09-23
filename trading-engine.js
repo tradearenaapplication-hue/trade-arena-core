@@ -90,6 +90,105 @@ if (typeof window !== 'undefined') {
 
 
 
+class SafetyControlsEngine {
+    constructor() {
+        this.dailyLossLimit = 50.00; // default $50.00
+        this.pendingLossLimit = null;
+        this.limitIncreaseEffectiveAt = 0; // 24-hour delay timestamp
+        this.dailyLossHits = []; // timestamps of limit breaches in last 7 days
+        this.coolingUntil = 0; // timestamp until trade execution locked
+        this.coolingReason = null;
+        this.coolingEscalated = false;
+        this.sessionStartTime = Date.now();
+        this.sessionWarningIntervals = [30, 60, 90]; // minutes
+        this.sessionWarningsShown = new Set();
+    }
+
+    getEffectiveDailyLossLimit(startingBalance = 10000) {
+        if (this.pendingLossLimit !== null && Date.now() >= this.limitIncreaseEffectiveAt) {
+            this.dailyLossLimit = this.pendingLossLimit;
+            this.pendingLossLimit = null;
+        }
+        return this.dailyLossLimit;
+    }
+
+    requestLimitIncrease(newLimit) {
+        const num = Number(newLimit);
+        if (isNaN(num) || num <= 0) return { success: false, error: 'Invalid loss limit' };
+
+        if (num <= this.dailyLossLimit) {
+            this.dailyLossLimit = num;
+            this.pendingLossLimit = null;
+            return { success: true, immediate: true, limit: num };
+        }
+
+        // Limit increase requires 24-hour delay
+        this.pendingLossLimit = num;
+        this.limitIncreaseEffectiveAt = Date.now() + (24 * 60 * 60 * 1000);
+        return {
+            success: true,
+            immediate: false,
+            currentLimit: this.dailyLossLimit,
+            pendingLimit: num,
+            effectiveAt: this.limitIncreaseEffectiveAt
+        };
+    }
+
+    recordDailyLossHit() {
+        const now = Date.now();
+        const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
+        this.dailyLossHits = this.dailyLossHits.filter(ts => ts >= sevenDaysAgo);
+
+        if (!this.dailyLossHits.some(ts => now - ts < 3600000)) {
+            this.dailyLossHits.push(now);
+        }
+
+        if (this.dailyLossHits.length >= 2) {
+            this.coolingUntil = now + (7 * 24 * 60 * 60 * 1000);
+            this.coolingReason = 'ESCALATED_7D';
+            this.coolingEscalated = true;
+        } else {
+            this.coolingUntil = Math.max(this.coolingUntil, now + (24 * 60 * 60 * 1000));
+            this.coolingReason = 'DAILY_LOSS_LIMIT';
+            this.coolingEscalated = false;
+        }
+    }
+
+    triggerTakeABreak(durationHours = 24) {
+        const now = Date.now();
+        const durationMs = Number(durationHours) * 60 * 60 * 1000;
+        this.coolingUntil = Math.max(this.coolingUntil, now + durationMs);
+        this.coolingReason = durationHours >= 168 ? 'SELF_EXCLUSION_7D' : 'USER_TAKE_A_BREAK';
+        this.coolingEscalated = false;
+        return { coolingUntil: this.coolingUntil, reason: this.coolingReason };
+    }
+
+    isTradeExecutionBlocked(dailyNetPnl = 0, startingBalance = 10000) {
+        const now = Date.now();
+        if (now < this.coolingUntil) {
+            return {
+                blocked: true,
+                reason: this.coolingReason || 'COOLING_OFF',
+                coolingUntil: this.coolingUntil,
+                escalated: this.coolingEscalated
+            };
+        }
+
+        const effectiveLimit = this.getEffectiveDailyLossLimit(startingBalance);
+        if (dailyNetPnl <= -effectiveLimit) {
+            this.recordDailyLossHit();
+            return {
+                blocked: true,
+                reason: this.coolingReason || 'DAILY_LOSS_LIMIT',
+                coolingUntil: this.coolingUntil,
+                escalated: this.coolingEscalated
+            };
+        }
+
+        return { blocked: false };
+    }
+}
+
 class TradingEngine {
 
      constructor() {
@@ -103,6 +202,8 @@ class TradingEngine {
          this.opportunities = [];
 
          this.activeSessions = new Map();
+
+         this.safetyControls = new SafetyControlsEngine();
 
          this.riskLimits = {
 
@@ -693,6 +794,21 @@ class TradingEngine {
      */
 
     async executeTrade(bot, opportunity) {
+
+        const safetyCheck = this.safetyControls.isTradeExecutionBlocked(
+            this.trades.reduce((sum, t) => sum + (t.profit || 0), 0),
+            bot.amount || 10000
+        );
+        if (safetyCheck.blocked) {
+            return {
+                id: this.generateId(),
+                botId: bot.id,
+                status: 'BLOCKED_SAFETY_CONTROLS',
+                reason: safetyCheck.reason,
+                profit: 0,
+                timestamp: Date.now()
+            };
+        }
 
         const positionSize = this.calculatePositionSize(
 

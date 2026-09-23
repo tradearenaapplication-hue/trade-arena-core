@@ -2678,8 +2678,12 @@ async function loginMetaMask(){
 
     const address = accounts[0];
 
-    // Create provider
+    // Create provider & signer
     const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+
+    // Store in localStorage for session persistence
+    localStorage.setItem('ta_wallet_address', address);
 
     // Switch to Base Mainnet (optional, but recommended)
     s.textContent='⏳ Verifying network…';
@@ -2690,7 +2694,6 @@ async function loginMetaMask(){
       });
     }
     catch(switchError) {
-      // Chain doesn't exist, add it
       if(switchError.code === 4902) {
         try {
           await window.ethereum.request({
@@ -2736,13 +2739,15 @@ async function loginMetaMask(){
       console.warn('Could not fetch multi-chain balance:', balanceError);
     }
 
-    // Update global balance
+    // Update global balance and walletState
     balance = balanceUSD;
     startBalance = balanceUSD;
     window.userTokenHoldings = holdings;
     if (typeof walletState !== 'undefined') {
       walletState.isConnected = true;
       walletState.address = address;
+      walletState.provider = provider;
+      walletState.signer = signer;
       walletState.balanceUSD = balanceUSD;
       walletState.tokenHoldings = holdings;
     }
@@ -2758,6 +2763,7 @@ async function loginMetaMask(){
     s.textContent='✅ Connected to MetaMask!';
     setupApp(userData);
     updateGlobalBalance();
+    refreshSettingsUI();
     syncUserSessionToDb(address, 'metamask', holdings, balanceUSD);
 
   }catch(error) {
@@ -2773,6 +2779,99 @@ async function loginMetaMask(){
   }
 }
 
+window.handleMetaMaskConnect = loginMetaMask;
+
+function refreshSettingsUI() {
+  const el = document.getElementById('settingsWalletStatus') || document.getElementById('walletConnStatus');
+  if (el) {
+    if (typeof walletState !== 'undefined' && walletState.isConnected && walletState.address) {
+      const addr = walletState.address;
+      const shortAddr = addr.slice(0, 6) + '...' + addr.slice(-4);
+      const bal = (walletState.balanceUSD || 0).toFixed(2);
+      el.innerHTML = '<span style="color:var(--green)">🟢 Connected (' + shortAddr + ') - $' + bal + ' USD</span>';
+    } else {
+      el.innerHTML = '<span style="color:var(--hot)">🔴 Not connected</span>';
+    }
+  }
+}
+window.refreshSettingsUI = refreshSettingsUI;
+
+window.getWalletBalanceUSD = async function() {
+  if (typeof walletState === 'undefined' || !walletState.address) return 0;
+  try {
+    const address = walletState.address;
+    let balanceUSD = 0;
+    if (typeof fetchMultiChainTokenBalances === 'function') {
+      const res = await fetchMultiChainTokenBalances(address);
+      balanceUSD = res.totalUsd;
+    } else if (walletState.provider) {
+      const balanceWei = await walletState.provider.getBalance(address);
+      const balanceETH = parseFloat(ethers.utils ? ethers.utils.formatEther(balanceWei) : ethers.formatEther(balanceWei));
+      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+      const priceData = await priceResponse.json();
+      const ethPrice = priceData?.ethereum?.usd || 3200;
+      balanceUSD = balanceETH * ethPrice;
+    }
+    walletState.balanceUSD = balanceUSD;
+    balance = balanceUSD;
+    updateGlobalBalance();
+    refreshSettingsUI();
+    return balanceUSD;
+  } catch (e) {
+    console.warn('getWalletBalanceUSD error:', e);
+    return walletState.balanceUSD || 0;
+  }
+};
+
+async function autoReconnectWallet() {
+  const storedAddress = localStorage.getItem('ta_wallet_address');
+  if (!storedAddress || !window.ethereum) return;
+
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+    if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === storedAddress.toLowerCase()) {
+      const address = accounts[0];
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      if (typeof walletState !== 'undefined') {
+        walletState.isConnected = true;
+        walletState.address = address;
+        walletState.provider = provider;
+        walletState.signer = signer;
+      }
+
+      const userData = {
+        name: address.slice(0, 6) + '···' + address.slice(-4),
+        address: address,
+        avatar: null,
+        badge: '🦊 METAMASK',
+        provider: 'metamask'
+      };
+
+      setupApp(userData);
+      await window.getWalletBalanceUSD();
+      console.log('✅ Silent wallet reconnect successful:', address);
+    } else {
+      localStorage.removeItem('ta_wallet_address');
+      if (typeof walletState !== 'undefined') {
+        walletState.isConnected = false;
+        walletState.address = null;
+      }
+    }
+  } catch (e) {
+    // Try/catch prevents broadcast channel or RPC init exceptions during boot from blocking page render
+    console.warn('Silent wallet reconnect exception during boot:', e.message);
+  }
+}
+
+if (typeof window !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', autoReconnectWallet);
+  } else {
+    autoReconnectWallet();
+  }
+}
 function loginDemo(){
   try{ setupApp({name:'DEMO PLAYER', avatar:null, badge:'🎮 DEMO'}); }
 catch(e){ const s=document.getElementById('cStatus'); if(s) s.textContent='❌ '+e.message; console.error('Demo error:',e); }

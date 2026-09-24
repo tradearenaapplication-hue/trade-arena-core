@@ -3,6 +3,19 @@
  * Trade Arena v4 • Engagement & Onboarding
  */
 
+/**
+ * Helper to escape HTML and prevent XSS
+ */
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 const TASK_CONFIG = {
     initialFaucetAmount: 50,
     tasks: [
@@ -94,12 +107,12 @@ function renderTaskCenter() {
 
     container.innerHTML = taskState.tasks.map(task => `
         <div class="task-row" style="display:flex; align-items:center; gap:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; margin-bottom:5px; border:1px solid ${task.completed ? 'var(--green)' : 'var(--border)'}">
-            <div style="font-size:20px">${task.icon}</div>
+            <div style="font-size:20px">${escapeHTML(task.icon)}</div>
             <div style="flex:1">
-                <div style="font-size:11px; font-weight:bold; color:${task.completed ? 'var(--green)' : 'white'}">${task.label}</div>
-                <div style="font-size:8px; color:var(--dim)">REWARD: $${task.reward}</div>
+                <div style="font-size:11px; font-weight:bold; color:${task.completed ? 'var(--green)' : 'white'}">${escapeHTML(task.label)}</div>
+                <div style="font-size:8px; color:var(--dim)">REWARD: $${Number(task.reward)}</div>
             </div>
-            <button onclick="completeTask('${task.id}')" ${task.completed ? 'disabled' : ''} style="padding:5px 10px; border-radius:4px; border:none; background:${task.completed ? 'var(--dim)' : 'var(--cyan)'}; color:black; font-family:'Bungee'; font-size:9px; cursor:pointer">
+            <button data-task-id="${escapeHTML(task.id)}" onclick="completeTask(this.getAttribute('data-task-id'))" ${task.completed ? 'disabled' : ''} style="padding:5px 10px; border-radius:4px; border:none; background:${task.completed ? 'var(--dim)' : 'var(--cyan)'}; color:black; font-family:'Bungee'; font-size:9px; cursor:pointer">
                 ${task.completed ? 'DONE' : 'GO'}
             </button>
         </div>

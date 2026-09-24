@@ -1596,6 +1596,57 @@ describe("Go Live Acknowledgment Modal Accessibility", () => {
   });
 });
 
+describe("Task Center XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const taskCenterCode = fs.readFileSync("task-center.js", "utf8");
+
+  it("uses escapeHTML when rendering task fields in renderTaskCenter", () => {
+    expect(taskCenterCode).toContain("escapeHTML(task.icon)");
+    expect(taskCenterCode).toContain("escapeHTML(task.label)");
+    expect(taskCenterCode).toContain("escapeHTML(task.id)");
+  });
+
+  it("uses data-task-id and getAttribute to prevent inline JS attribute unescaping XSS", () => {
+    expect(taskCenterCode).toContain('data-task-id="${escapeHTML(task.id)}"');
+    expect(taskCenterCode).toContain("completeTask(this.getAttribute('data-task-id'))");
+  });
+
+  it("escapes malicious XSS payloads in task label and id", () => {
+    const escapeHTML = (str) => {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const maliciousTask = {
+      id: "task'<script>alert('xss')</script>",
+      label: "<img src=x onerror=alert('xss')>",
+      icon: "<svg onload=alert(1)>",
+      reward: 10,
+      completed: false
+    };
+
+    const renderedLabel = escapeHTML(maliciousTask.label);
+    const renderedId = escapeHTML(maliciousTask.id);
+    const renderedIcon = escapeHTML(maliciousTask.icon);
+
+    expect(renderedLabel.includes("<")).toBe(false);
+    expect(renderedLabel.includes(">")).toBe(false);
+    expect(renderedLabel).toContain("&lt;img src=x onerror=alert(&#039;xss&#039;)&gt;");
+
+    expect(renderedId.includes("<")).toBe(false);
+    expect(renderedId.includes("'")).toBe(false);
+    expect(renderedId).toContain("task&#039;&lt;script&gt;alert(&#039;xss&#039;)&lt;/script&gt;");
+
+    expect(renderedIcon.includes("<")).toBe(false);
+    expect(renderedIcon).toContain("&lt;svg onload=alert(1)&gt;");
+  });
+});
+
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
   const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");

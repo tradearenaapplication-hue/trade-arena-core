@@ -1596,6 +1596,19 @@ describe("Go Live Acknowledgment Modal Accessibility", () => {
   });
 });
 
+describe("Global Escape Key Modal & Overlay Dismissal Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines Escape key event listener for modal and overlay dismissal", () => {
+    expect(html).toContain("if (e.key === 'Escape' || e.key === 'Esc')");
+    expect(html).toContain("document.getElementById('voiceAgentModal')");
+    expect(html).toContain("document.getElementById('goLiveModal')");
+    expect(html).toContain("document.getElementById('holdingsModal')");
+    expect(html).toContain("document.getElementById('busPanel')");
+  });
+});
+
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
   const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");

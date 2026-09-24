@@ -5509,13 +5509,55 @@ function toggleBackgroundMusic() {
   }
 }
 
-// Global keyboard listener for collapsible panels
+// Global keyboard listener for collapsible panels & modal dismissal
 document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    const voiceModal = document.getElementById('voiceAgentModal');
+    if (voiceModal && voiceModal.classList.contains('open')) {
+      if (typeof toggleVoiceAgent === 'function') toggleVoiceAgent();
+      return;
+    }
+    const goLiveModal = document.getElementById('goLiveModal');
+    if (goLiveModal && goLiveModal.style.display !== 'none' && goLiveModal.style.display !== '') {
+      if (typeof closeGoLiveModal === 'function') closeGoLiveModal();
+      return;
+    }
+    const holdingsModal = document.getElementById('holdingsModal');
+    if (holdingsModal && holdingsModal.style.display !== 'none') {
+      holdingsModal.style.display = 'none';
+      return;
+    }
+    const busPanel = document.getElementById('busPanel');
+    if (busPanel && busPanel.classList.contains('open')) {
+      if (typeof toggleBusPanel === 'function') toggleBusPanel();
+      return;
+    }
+    const openResults = document.querySelectorAll('.m-result.show');
+    if (openResults.length > 0) {
+      openResults.forEach(r => r.classList.remove('show'));
+      return;
+    }
+    const openDropdowns = document.querySelectorAll('.m-dropdown.open');
+    if (openDropdowns.length > 0) {
+      openDropdowns.forEach(d => {
+        d.classList.remove('open');
+        const id = d.id.replace('mdrop-', '');
+        const gear = document.getElementById('mgear-' + id);
+        if (gear) {
+          gear.classList.remove('open');
+          gear.setAttribute('aria-expanded', 'false');
+        }
+      });
+      return;
+    }
+  }
+
   if (e.key === 'Enter' || e.key === ' ') {
     const target = e.target;
-    if (target.classList.contains('cpanel-hd') ||
+    if (target && target.classList && (
+        target.classList.contains('cpanel-hd') ||
         target.classList.contains('audit-hd') ||
-        target.classList.contains('learn-hd')) {
+        target.classList.contains('learn-hd'))) {
       e.preventDefault();
       target.click();
     }

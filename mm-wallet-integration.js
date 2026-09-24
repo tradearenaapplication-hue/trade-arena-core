@@ -10,7 +10,7 @@
  * - Real-time wallet state sync
  */
 
-const { execSync, spawn } = require('child_process');
+const { execFileSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -38,21 +38,11 @@ class MMAgentWalletIntegration {
    */
   checkMMAvailability() {
     try {
-      // On Windows, need to run .cmd files through cmd.exe
-      const isWindows = process.platform === 'win32';
-      let command;
-      
-      if (isWindows) {
-        command = `"${this.mmPath}" doctor --json`;
-      } else {
-        command = `${this.mmPath} doctor --json`;
-      }
-      
-      const result = execSync(command, { 
+      const result = execFileSync(this.mmPath, ['doctor', '--json'], {
         encoding: 'utf8',
         timeout: 10000,
         stdio: ['ignore', 'pipe', 'ignore'],
-        shell: isWindows
+        shell: false
       });
       const doctor = JSON.parse(result);
       return doctor.ok && doctor.data.authenticated && doctor.data.initialized;
@@ -63,18 +53,35 @@ class MMAgentWalletIntegration {
   }
 
   /**
+   * Validate CLI arguments to prevent shell/control-character injection
+   */
+  validateMMArgs(args) {
+    if (!Array.isArray(args)) {
+      throw new Error('Invalid mm args: expected array');
+    }
+
+    const unsafePattern = /[\r\n\0;&|`$<>]/;
+    for (const arg of args) {
+      if (typeof arg !== 'string') {
+        throw new Error('Invalid mm arg: expected string');
+      }
+      if (unsafePattern.test(arg)) {
+        throw new Error(`Unsafe mm argument rejected: ${arg}`);
+      }
+    }
+  }
+
+  /**
      * Execute mm command and parse JSON output
      */
     async executeMMCommand(args) {
       return new Promise((resolve, reject) => {
-        // On Windows, need to run .cmd files through cmd.exe
-        const isWindows = process.platform === 'win32';
-        const command = isWindows ? 'cmd.exe' : this.mmPath;
-        const spawnArgs = isWindows ? ['/c', this.mmPath, ...args, '--json'] : [...args, '--json'];
+        this.validateMMArgs(args);
+        const spawnArgs = [...args, '--json'];
       
-        const child = spawn(command, spawnArgs, {
+        const child = spawn(this.mmPath, spawnArgs, {
           stdio: ['ignore', 'pipe', 'pipe'],
-          shell: isWindows // Use shell on Windows for .cmd files
+          shell: false
         });
 
         let stdout = '';

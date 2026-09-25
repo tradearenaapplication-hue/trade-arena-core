@@ -1467,6 +1467,56 @@ describe("Proxy Endpoint Security", () => {
 describe("Server Error Handling & Input Validation Security", () => {
   const server = require("./server.js");
 
+  it("rejects invalid arbitrage analysis requests", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/analyze/arbitrage"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidPayloads = [
+      {},
+      { tokens: "not-an-array" },
+      { tokens: ["ETH"] },
+      { tokens: Array(51).fill("ETH") },
+      { tokens: ["ETH", 123] },
+      { tokens: ["ETH", "   "] },
+      { tokens: ["ETH", "USDC"], amount: -100 },
+      { tokens: ["ETH", "USDC"], amount: "invalid" },
+    ];
+
+    for (const body of invalidPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle({ body }, res);
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.success).toBe(false);
+      expect(jsonResponse.error).toBe("Invalid arbitrage parameters");
+    }
+  });
+
+  it("accepts valid arbitrage analysis requests", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/analyze/arbitrage"
+    );
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    await route.route.stack[0].handle({ body: { tokens: ["ETH", "USDC"], amount: 500 } }, res);
+    expect(statusCode).toBe(200);
+    expect(jsonResponse.success).toBe(true);
+    expect(Array.isArray(jsonResponse.opportunities)).toBe(true);
+  });
+
   it("sanitizes 500 error responses and does not leak internal error messages", async () => {
     const route = server._router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/analyze/volatility"

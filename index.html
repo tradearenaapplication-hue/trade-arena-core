@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js" defer></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 /* Security Headers and CSP */
@@ -876,6 +876,46 @@ a, button, input, select, textarea {
   }
 </script>
 
+<!-- Ethers v6 Helper - ensures formatEther/formatUnits work correctly -->
+<script>
+  window.EthersHelper = {
+    formatEther: (wei) => {
+      if (!window.ethers) return (Number(wei) / 1e18).toString();
+      try {
+        return window.ethers.formatEther ? window.ethers.formatEther(wei) : 
+               (window.ethers.utils?.formatEther ? window.ethers.utils.formatEther(wei) : (Number(wei) / 1e18).toString());
+      } catch { return (Number(wei) / 1e18).toString(); }
+    },
+    formatUnits: (wei, unit) => {
+      if (!window.ethers) return (Number(wei) / 1e18).toString();
+      try {
+        return window.ethers.formatUnits ? window.ethers.formatUnits(wei, unit) : 
+               (window.ethers.utils?.formatUnits ? window.ethers.utils.formatUnits(wei, unit) : (Number(wei) / 1e18).toString());
+      } catch { return (Number(wei) / 1e18).toString(); }
+    },
+    parseEther: (eth) => {
+      if (!window.ethers) return BigInt(Math.floor(Number(eth) * 1e18));
+      try {
+        return window.ethers.parseEther ? window.ethers.parseEther(String(eth)) : 
+               (window.ethers.utils?.parseEther ? window.ethers.utils.parseEther(String(eth)) : BigInt(Math.floor(Number(eth) * 1e18)));
+      } catch { return BigInt(Math.floor(Number(eth) * 1e18)); }
+    },
+    parseUnits: (value, unit) => {
+      if (!window.ethers) return BigInt(Math.floor(Number(value) * 1e18));
+      try {
+        return window.ethers.parseUnits ? window.ethers.parseUnits(String(value), unit) : 
+               (window.ethers.utils?.parseUnits ? window.ethers.utils.parseUnits(String(value), unit) : BigInt(Math.floor(Number(value) * 1e18)));
+      } catch { return BigInt(Math.floor(Number(value) * 1e18)); }
+    }
+  };
+  
+  // Backwards compatibility for existing code
+  window.formatEther = window.EthersHelper.formatEther;
+  window.formatUnits = window.EthersHelper.formatUnits;
+  window.parseEther = window.EthersHelper.parseEther;
+  window.parseUnits = window.EthersHelper.parseUnits;
+</script>
+
 </head>
 <body>
 <div class="edge"></div>
@@ -1036,6 +1076,10 @@ a, button, input, select, textarea {
     <div style="margin-right:4px;text-align:right;flex-shrink:0">
       <div class="gh-balance" id="ghBalance" style="transition:color .3s">$10,000.00</div>
       <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
+      <!-- Live on-chain wallet value. Kept separate from ghBalance (the
+           trading balance) so a sync never appears to change P&L. -->
+      <div id="walletChainValue" title="Live on-chain wallet value"
+           style="font-size:9px;color:var(--cyan);display:none">$0.00</div>
     </div>
     <!-- countdown + open trade tally -->
     <div class="gh-ticker" id="ghTicker" style="display:none">
@@ -3114,119 +3158,59 @@ function handleGoogleLoginResponse(response){
 async function loginMetaMask(){
   const s=document.getElementById('cStatus'); if(!s) return;
 
+  if (!WalletCore.hasWallet()) {
+    s.innerHTML='<span style="color:var(--hot)">❌ MetaMask not detected</span><br><small style="color:var(--dim);margin-top:8px;display:block">Install MetaMask: <a href="https://metamask.io" target="_blank" style="color:var(--cyan)">metamask.io →</a></small>';
+    return;
+  }
+
   try{
-    // Check if MetaMask is installed
-    if(!window.ethereum){
-      s.innerHTML='<span style="color:var(--hot)">❌ MetaMask not detected</span><br><small style="color:var(--dim);margin-top:8px;display:block">Install MetaMask: <a href="https://metamask.io" target="_blank" style="color:var(--cyan)">metamask.io →</a></small>';
-      return;
-    }
-
     s.textContent='⏳ Connecting MetaMask wallet…';
+    await WalletCore.connect();
 
-    // Request account access
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    if (!accounts || accounts.length === 0) {
-      s.textContent='❌ No accounts selected in MetaMask';
-      return;
-    }
+    const address = WalletCore.state.address;
+    const holdings = WalletCore.state.holdings || [];
+    const balanceUSD = WalletCore.state.usdBalance || 0;
 
-    const address = accounts[0];
-
-    // Create provider & signer
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-
-    // Store in localStorage for session persistence
+    // Persist session
     localStorage.setItem('ta_wallet_address', address);
+    localStorage.setItem('ta_provider', 'metamask');
+    localStorage.setItem('ta_session_provider', 'metamask');
 
-    // Switch to Base Mainnet (optional, but recommended)
-    s.textContent='⏳ Verifying network…';
-    try {
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x2105' }] // Base Mainnet
-      });
-    }
-    catch(switchError) {
-      if(switchError.code === 4902) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: '0x2105',
-              chainName: 'Base Mainnet',
-              rpcUrls: ['https://mainnet.base.org'],
-              nativeCurrency: {
-                name: 'Ethereum',
-                symbol: 'ETH',
-                decimals: 18
-              },
-              blockExplorerUrls: ['https://basescan.org']
-            }]
-          });
-        } catch(addError) {
-          console.warn('Could not add Base chain:', addError);
-        }
-      }
-    }
+    const chainNote = WalletCore.state.isCorrectChain
+      ? 'Base Mainnet'
+      : `⚠️ on ${WalletCore.state.chainName} - switch to Base for trading`;
 
-    // Get multi-chain balance and token holdings
-    s.textContent='⏳ Fetching multi-chain wallet balances & holdings…';
-    let balanceUSD = 0;
-    let holdings = [];
+    s.innerHTML=`<div style="text-align:left">
+      <div>✅ Connected to MetaMask!</div>
+      <div style="font-size:10px;color:var(--dim);margin-top:4px">
+        ${address.slice(0,6)}...${address.slice(-4)} · $${balanceUSD.toFixed(2)}
+      </div>
+      <div style="font-size:10px;color:var(--dim)">${chainNote}</div>
+    </div>`;
 
-    try {
-      if (typeof fetchMultiChainTokenBalances === 'function') {
-        const res = await fetchMultiChainTokenBalances(address);
-        balanceUSD = res.totalUsd;
-        holdings = res.holdings;
-      } else {
-        const balanceWei = await provider.getBalance(address);
-        const balanceETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(balanceWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(balanceWei) : (Number(balanceWei) / 1e18).toString()));
-        const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-        const priceData = await priceResponse.json();
-        const ethPrice = priceData?.ethereum?.usd || 3200;
-        balanceUSD = balanceETH * ethPrice;
-        holdings = [{ network: 'Base', symbol: 'ETH', amount: balanceETH, priceUsd: ethPrice, valueUsd: balanceUSD }];
-      }
-    } catch (balanceError) {
-      console.warn('Could not fetch multi-chain balance:', balanceError);
-    }
-
-    // Update global balance and walletState
-    balance = balanceUSD;
-    startBalance = balanceUSD;
-    window.userTokenHoldings = holdings;
-    if (typeof walletState !== 'undefined') {
-      walletState.isConnected = true;
-      walletState.address = address;
-      walletState.provider = provider;
-      walletState.signer = signer;
-      walletState.balanceUSD = balanceUSD;
-      walletState.tokenHoldings = holdings;
-    }
-
-    const userData = {
+    setupApp({
       name: address.slice(0, 6) + '···' + address.slice(-4),
       address: address,
       avatar: null,
       badge: '🦊 METAMASK',
       provider: 'metamask'
-    };
+    });
 
-    s.textContent='✅ Connected to MetaMask!';
-    setupApp(userData);
-    updateGlobalBalance();
-    refreshSettingsUI();
-    syncUserSessionToDb(address, 'metamask', holdings, balanceUSD);
+    // Keep the displayed wallet balance fresh without touching trading state.
+    WalletCore.startPolling();
+    if (typeof syncUserSessionToDb === 'function') syncUserSessionToDb(address, 'metamask', holdings, balanceUSD);
+    if (typeof syncLearningStateFromDb === 'function') syncLearningStateFromDb(address);
 
   }catch(error) {
     console.error('MetaMask connection error:', error);
-
     if(error.code === 4001) {
       s.textContent='❌ Connection rejected by user';
     } else if(error.code === -32002) {
       s.textContent='❌ MetaMask request already pending';
+    } else if(error.code === 'NO_WALLET') {
+      s.textContent='❌ MetaMask not detected';
+    } else if(error.code === 'NO_ACCOUNTS') {
+      s.textContent='❌ No accounts selected in MetaMask';
     } else {
       s.textContent='❌ MetaMask Error: '+(error.message||'Connection failed');
     }
@@ -3237,44 +3221,109 @@ window.handleMetaMaskConnect = loginMetaMask;
 
 function refreshSettingsUI() {
   const el = document.getElementById('settingsWalletStatus') || document.getElementById('walletConnStatus');
-  if (el) {
-    if (typeof walletState !== 'undefined' && walletState.isConnected && walletState.address) {
-      const addr = walletState.address;
-      const shortAddr = addr.slice(0, 6) + '...' + addr.slice(-4);
-      const bal = (walletState.balanceUSD || 0).toFixed(2);
-      el.innerHTML = '<span style="color:var(--green)">🟢 Connected (' + shortAddr + ') - $' + bal + ' USD</span>';
-    } else {
-      el.innerHTML = '<span style="color:var(--hot)">🔴 Not connected</span>';
-    }
+  if (!el) return;
+  // WalletCore is authoritative; fall back to the legacy walletState mirror.
+  const st = (typeof WalletCore !== 'undefined' && WalletCore.state.connected && WalletCore.state.address)
+    ? WalletCore.state
+    : (typeof walletState !== 'undefined' && walletState.isConnected && walletState.address ? walletState : null);
+
+  if (!st) {
+    el.innerHTML = '<span style="color:var(--hot)">🔴 Not connected</span>';
+    return;
   }
+
+  const shortAddr = st.address.slice(0, 6) + '...' + st.address.slice(-4);
+  const bal = Number(st.balanceUSD || st.usdBalance || 0).toFixed(2);
+  const chain = WalletCore && WalletCore.state.chainId
+    ? ` · ${WalletCore.state.chainName}`
+    : '';
+  el.innerHTML = '<span style="color:var(--green)">🟢 Connected (' + shortAddr + ') - $' + bal + ' USD' + chain + '</span>';
 }
 window.refreshSettingsUI = refreshSettingsUI;
 
-window.getWalletBalanceUSD = async function() {
-  if (typeof walletState === 'undefined' || !walletState.address) return 0;
-  try {
-    const address = walletState.address;
-    let balanceUSD = 0;
-    if (typeof fetchMultiChainTokenBalances === 'function') {
-      const res = await fetchMultiChainTokenBalances(address);
-      balanceUSD = res.totalUsd;
-    } else if (walletState.provider) {
-      const balanceWei = await walletState.provider.getBalance(address);
-      const balanceETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(balanceWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(balanceWei) : (Number(balanceWei) / 1e18).toString()));
-      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-      const priceData = await priceResponse.json();
-      const ethPrice = priceData?.ethereum?.usd || 3200;
-      balanceUSD = balanceETH * ethPrice;
-    }
-    walletState.balanceUSD = balanceUSD;
-    balance = balanceUSD;
+/**
+ * Bridge invoked by WalletCore whenever a balance sync completes.
+ *
+ * `initial` is true only on a fresh connect or an account switch. That is the
+ * ONLY time we seed the trading balance from the wallet. On routine refreshes
+ * the on-chain balance is displayed but never written back into `balance` or
+ * `startBalance` - previously every refresh overwrote the user's live trading
+ * balance and reset the P&L baseline, which also re-armed the drawdown
+ * circuit breaker.
+ */
+window.TA_syncWalletBalance = function({ usdBalance, ethBalance, holdings, address, initial }) {
+  window.userTokenHoldings = holdings || [];
+
+  if (initial && !Number.isNaN(usdBalance) && usdBalance > 0) {
+    balance = usdBalance;
+    startBalance = usdBalance;
+    totalPnl = 0;
+    if (typeof updateGlobalBalance === 'function') updateGlobalBalance();
+  } else if (typeof updateGlobalBalance === 'function') {
+    // Keep the header P&L consistent without reassigning the trading balance.
     updateGlobalBalance();
-    refreshSettingsUI();
-    return balanceUSD;
-  } catch (e) {
-    console.warn('getWalletBalanceUSD error:', e);
-    return walletState.balanceUSD || 0;
   }
+
+  // Surface the true on-chain figure separately so it is always visible,
+  // even when it differs from the (P&L-adjusted) trading balance.
+  const el = document.getElementById('walletChainValue') || document.getElementById('walletUsdValue');
+  if (el) {
+    el.textContent = '🔗 $' + Number(usdBalance || 0).toFixed(2);
+    el.style.display = 'block';
+  }
+
+  // Network badge: show only once we know which chain the wallet is on.
+  const net = document.getElementById('ghNetwork');
+  if (net && typeof WalletCore !== 'undefined' && WalletCore.state.chainId) {
+    const s = WalletCore.state;
+    net.textContent = s.isCorrectChain ? 'BASE' : String(s.chainName || '').toUpperCase();
+    net.style.display = 'inline-block';
+    net.style.color = s.isCorrectChain ? 'var(--cyan)' : 'var(--gold)';
+    net.title = s.isCorrectChain
+      ? 'Connected to Base Mainnet'
+      : `Connected to ${s.chainName} - switch to Base to trade`;
+  }
+};
+
+/** Wallet-side disconnect / account change notifications. */
+window.TA_onWalletDisconnected = function(reason) {
+  WalletCore.stopPolling();
+  localStorage.removeItem('ta_wallet_address');
+  localStorage.removeItem('ta_provider');
+  localStorage.removeItem('ta_session_provider');
+  const el = document.getElementById('walletChainValue');
+  if (el) el.style.display = 'none';
+  const net = document.getElementById('ghNetwork');
+  if (net) net.style.display = 'none';
+  refreshSettingsUI();
+  console.warn('[TradeArena] wallet disconnected:', reason);
+};
+
+window.TA_onWalletAccountChanged = function(address) {
+  localStorage.setItem('ta_wallet_address', address);
+  if (typeof setupApp === 'function') {
+    setupApp({
+      name: address.slice(0, 6) + '···' + address.slice(-4),
+      address: address,
+      avatar: null,
+      badge: '🦊 METAMASK',
+      provider: 'metamask'
+    });
+  }
+  WalletCore.startPolling();
+  console.info('[TradeArena] switched to account', address);
+};
+
+/**
+ * Returns the current on-chain wallet value in USD and refreshes it.
+ * Note: this deliberately does NOT write into `balance` / `startBalance` -
+ * that is handled by TA_syncWalletBalance on an initial connect only.
+ */
+window.getWalletBalanceUSD = async function() {
+  if (typeof WalletCore === 'undefined' || !WalletCore.state.address) return 0;
+  const res = await WalletCore.sync({ initial: false });
+  refreshSettingsUI();
+  return res ? res.totalUsd : (WalletCore.state.usdBalance || 0);
 };
 
 async function autoReconnectWallet() {
@@ -3311,42 +3360,37 @@ async function autoReconnectWallet() {
   }
 
   // Handle MetaMask auto-reconnect
-  if (!window.ethereum) return;
+  if (typeof WalletCore === 'undefined' || !WalletCore.hasWallet()) return;
 
   try {
-    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-    if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === storedAddress.toLowerCase()) {
-      const address = accounts[0];
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-
-      if (typeof walletState !== 'undefined') {
-        walletState.isConnected = true;
-        walletState.address = address;
-        walletState.provider = provider;
-        walletState.signer = signer;
-      }
-
-      const userData = {
-        name: address.slice(0, 6) + '···' + address.slice(-4),
-        address: address,
-        avatar: null,
-        badge: '🦊 METAMASK',
-        provider: 'metamask'
-      };
-
-      setupApp(userData);
-      await window.getWalletBalanceUSD();
-      // Sync learning state from backend on reconnect
-      syncLearningStateFromDb(address);
-      console.log('✅ Silent wallet reconnect successful:', address);
-    } else {
+    // Only resume if the wallet is still authorised for the same account.
+    const res = await WalletCore.silentReconnect(storedAddress);
+    if (!res) {
       localStorage.removeItem('ta_wallet_address');
       if (typeof walletState !== 'undefined') {
         walletState.isConnected = false;
         walletState.address = null;
       }
+      refreshSettingsUI();
+      return;
     }
+
+    const address = res.address;
+    const userData = {
+      name: address.slice(0, 6) + '···' + address.slice(-4),
+      address: address,
+      avatar: null,
+      badge: '🦊 METAMASK',
+      provider: 'metamask'
+    };
+
+    setupApp(userData);
+    // `initial: true` so a returning wallet user gets their real balance
+    // seeded into the trading account rather than the placeholder default.
+    await WalletCore.sync({ initial: true });
+    WalletCore.startPolling();
+    if (typeof syncLearningStateFromDb === 'function') syncLearningStateFromDb(address);
+    console.log('✅ Silent wallet reconnect successful:', address);
   } catch (e) {
     console.warn('Silent wallet reconnect exception during boot:', e.message);
   }
@@ -3417,90 +3461,35 @@ async function nativeMetaMaskLogin(){
   const s=document.getElementById('cStatus'); if(!s) return;
   
   try{
-    // Check if MetaMask is installed and available
-    if(!window.ethereum || !window.ethereum.isMetaMask){ 
-      s.innerHTML='<span style="color:var(--hot)">⚠️ MetaMask not detected</span><br><button onclick="nativeMetaMaskLogin()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:#000;cursor:pointer">RETRY NATIVE LOGIN</button>'; 
+    // Accept any injected EIP-1193 wallet, not only MetaMask-branded ones.
+    if (typeof WalletCore === 'undefined' || !WalletCore.hasWallet()) {
+      s.innerHTML='<span style="color:var(--hot)">⚠️ No wallet detected</span><br><button onclick="nativeMetaMaskLogin()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:#000;cursor:pointer">RETRY NATIVE LOGIN</button>'; 
       return; 
     }
     
     s.textContent='⏳ Native MetaMask Login…';
-    
-    // Direct MetaMask wallet connection using ethers.js for native integration
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    
-    // Request wallet connection
-    const address = await signer.getAddress();
-    
-    s.textContent='⏳ Verifying Trade Arena network…';
-    
-    // Auto-switch to Base Mainnet for real trading (8453)
-    try {
-      await provider.send('wallet_switchEthereumChain', [{ chainId: '0x2105' }]);
-    } catch(switchError) {
-      if(switchError.code === 4902) {
-        try {
-          await provider.send('wallet_addEthereumChain', [{
-            chainId: '0x2105',
-            chainName: 'Base Mainnet',
-            rpcUrls: ['https://mainnet.base.org'],
-            nativeCurrency: {
-              name: 'Ethereum',
-              symbol: 'ETH',
-              decimals: 18
-            },
-            blockExplorerUrls: ['https://basescan.org']
-          }]);
-        } catch(addError) {
-          console.warn('Could not add Base network:', addError);
-        }
-      }
-    }
-    
-    // Get real wallet balance with multiple token support
-    s.textContent='⏳ Fetching native MetaMask balance…';
-    
-    // Fetch native ETH balance
-    let ethBalance = '0';
-    let usdValue = '$0.00';
-    let tokens = [];
-    
-    try {
-      const balanceWei = await provider.getBalance(address);
-      ethBalance = parseFloat(ethers.utils.formatEther(balanceWei)).toFixed(6);
-      
-      // Get real-time ETH price
-      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,usd-coin,wrapped-eth&vs_currencies=usd');
-      const priceData = await priceResponse.json();
-      const ethPrice = priceData?.ethereum?.usd || 3200;
-      const usdcPrice = priceData?.['usd-coin']?.usd || 1;
-      const wethPrice = priceData?.['wrapped-eth']?.usd || ethPrice;
-      
-      usdValue = `$${(parseFloat(ethBalance) * ethPrice).toFixed(2)}`;
-      
-      // Add supported tokens
-      tokens = [
-        { symbol: 'ETH', balance: ethBalance, value: `$${(parseFloat(ethBalance) * ethPrice).toFixed(2)}`, icon: '⟠' },
-        { symbol: 'USDC', balance: '1250.00', value: '$1,250.00', icon: '💵' },
-        { symbol: 'WETH', balance: '0.20', value: `$${(0.20 * wethPrice).toFixed(2)}`, icon: '🦊' }
-      ];
-      
-    } catch(balanceError) {
-      console.warn('Balance fetch failed, using fallback:', balanceError);
-      ethBalance = '0.5';
-      usdValue = '$2,450.00';
-      tokens = [
-        { symbol: 'ETH', balance: '0.5', value: '$2,450.00', icon: '⟠' },
-        { symbol: 'USDC', balance: '1250.00', value: '$1,250.00', icon: '💵' },
-        { symbol: 'WETH', balance: '0.20', value: '$980.00', icon: '🦊' }
-      ];
-    }
-    
-    // Update global Trade Arena balance
-    const usdValueNum = parseFloat(usdValue.replace('$', '').replace(/,/g, '')) || 0;
-    balance = usdValueNum || 2450;
-    startBalance = balance;
-    totalPnl = 0;
+
+    // Delegates to WalletCore, which builds the provider/signer using the
+    // API matching the loaded ethers major version, switches to Base and
+    // performs a real multi-chain balance sync.
+    await WalletCore.connect();
+
+    const address   = WalletCore.state.address;
+    const ethBalance = WalletCore.state.ethBalance || 0;
+    const balanceUSD = WalletCore.state.usdBalance || 0;
+    const holdings   = WalletCore.state.holdings || [];
+    const chainName  = WalletCore.state.chainName;
+    const usdValue   = `$${balanceUSD.toFixed(2)}`;
+
+    // Render only real, on-chain data. The previous version showed hardcoded
+    // "USDC 1250 / WETH 0.20 / $2,450" figures whenever a read failed, making
+    // an unfunded wallet look funded.
+    const holdingRows = holdings.length
+      ? holdings.map(h => `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim)">
+            <span>${h.network} · ${h.symbol}</span>
+            <span>${Number(h.amount).toFixed(4)} ($${Number(h.valueUsd||0).toFixed(2)})</span>
+          </div>`).join('')
+      : '<div style="font-size:10px;color:var(--dim)">No token balances found on scanned networks.</div>';
     
     // Setup app with native MetaMask user data
     const userData = {
@@ -3517,16 +3506,16 @@ async function nativeMetaMaskLogin(){
         <div style="margin-bottom:8px"><strong>🔗 Native MetaMask Connected!</strong></div>
         <div style="font-size:11px;color:var(--dim);margin-bottom:4px">Address: <code style="color:var(--cyan)">${address}</code></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;padding:8px;background:var(--chrome);border-radius:6px;">
-          <div><span style="color:var(--green);font-weight:600;">💰 ETH:</span> <span style="color:#fff;">${ethBalance}</span></div>
+          <div><span style="color:var(--green);font-weight:600;">💰 ETH:</span> <span style="color:#fff;">${ethBalance.toFixed(6)}</span></div>
           <div><span style="color:var(--cyan);font-weight:600;">💵 USD:</span> <span style="color:var(--gold);">${usdValue}</span></div>
         </div>
+        <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:8px">${holdingRows}</div>
         <div style="margin-top:8px;font-size:10px;color:var(--dim);">
-          <div>📊 Real MetaMask Balance Display Active</div>
-          <div>🌐 Base Mainnet Network: 0x2105</div>
-          <div>⚡ Native Connection: Direct ethers.js integration</div>
+          <div>📊 Live on-chain balance active</div>
+          <div>🌐 Network: ${chainName}${WalletCore.state.isCorrectChain ? '' : ' (switch to Base to trade)'}</div>
         </div>
         <button onclick="nativeMetaMaskLogin()" style="margin-top:12px;padding:6px 12px;background:var(--green);border:none;border-radius:4px;color:#000;cursor:pointer;width:100%;">
-          🔄 RECONNECT NATIVE WALLET
+          🔄 RECONNECT WALLET
         </button>
       </div>
     `;
@@ -3537,18 +3526,12 @@ async function nativeMetaMaskLogin(){
     localStorage.setItem('ta_wallet_address', address);
     localStorage.setItem('ta_provider', 'metamask-native');
     localStorage.setItem('ta_session_provider', 'metamask-native');
-    if (typeof walletState !== 'undefined') {
-      walletState.isConnected = true;
-      walletState.address = address;
-      walletState.provider = provider;
-      walletState.signer = signer;
-      walletState.balanceUSD = parseFloat(usdValue.replace('$', '')) || 0;
-    }
     window.currentUserAddress = address;
-    if (typeof updateGlobalBalance === 'function') updateGlobalBalance();
+    // Balance/startBalance are seeded by TA_syncWalletBalance during connect().
+    WalletCore.startPolling();
     if (typeof refreshSettingsUI === 'function') refreshSettingsUI();
     if (typeof syncUserSessionToDb === 'function') {
-      syncUserSessionToDb(address, 'metamask-native', tokens, parseFloat(usdValue.replace('$', '')) || 0);
+      syncUserSessionToDb(address, 'metamask-native', holdings, balanceUSD);
     }
     if (typeof syncLearningStateToDb === 'function') {
       syncLearningStateToDb(address);
@@ -3560,12 +3543,15 @@ async function nativeMetaMaskLogin(){
   } catch(error) {
     console.error('Native MetaMask connection error:', error);
     
+    const retry = '<br><button onclick="nativeMetaMaskLogin()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:#000;cursor:pointer">TRY AGAIN NATIVE</button>';
     if(error.code === 4001) {
-      s.innerHTML='<span style="color:var(--hot)">❌ Connection rejected by user</span><br><button onclick="nativeMetaMaskLogin()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:#000;cursor:pointer">TRY AGAIN NATIVE</button>';
+      s.innerHTML='<span style="color:var(--hot)">❌ Connection rejected by user</span>'+retry;
     } else if(error.code === -32002) {
-      s.innerHTML='<span style="color:var(--hot)">⚠️ MetaMask request already pending</span><br><button onclick="nativeMetaMaskLogin()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:#000;cursor:pointer">RETRY NATIVE</button>';
+      s.innerHTML='<span style="color:var(--hot)">⚠️ MetaMask request already pending</span>'+retry;
+    } else if(error.code === 'NO_WALLET') {
+      s.innerHTML='<span style="color:var(--hot)">⚠️ No wallet detected</span>'+retry;
     } else {
-      s.innerHTML='<span style="color:var(--hot)">❌ Native MetaMask Error: '+(error.message||'Connection failed')+'</span><br><button onclick="nativeMetaMaskLogin()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:#000;cursor:pointer">TRY AGAIN NATIVE</button>';
+      s.innerHTML='<span style="color:var(--hot)">❌ Native MetaMask Error: '+(error.message||'Connection failed')+'</span>'+retry;
     }
   }
 }
@@ -6186,6 +6172,10 @@ document.addEventListener('keydown', function(e) {
 
 </script>
 <script src="app-rebuild.js" defer></script>
+<!-- Wallet: WalletCore is the single source of truth for connection + balance sync.
+     It MUST load before real-wallet.js so walletState exists for the legacy mirrors. -->
+<script src="wallet-core.js" defer></script>
+<script src="real-wallet.js" defer></script>
 <!-- ACOUSTIC Audio-Visual Engines -->
 <script src="sfx-engine.js" defer></script>
 <script src="fx-engine.js" defer></script>

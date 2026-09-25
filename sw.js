@@ -6,7 +6,7 @@
  * Updated: 2026-04-18
  */
 
-const CACHE_VERSION = 'trade-arena-v3';
+const CACHE_VERSION = 'trade-arena-v4';
 const CRITICAL_ASSETS = [
   './',
   './index.html',

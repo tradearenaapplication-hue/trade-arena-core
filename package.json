@@ -9,6 +9,7 @@
     "proxy": "node proxy.js",
     "serve": "npx serve .",
     "test": "node tests.js",
+    "test:wallet": "node scripts/wallet-integration-test.js",
     "wallet:setup": "node mm-wallet-setup.js",
     "wallet:check": "mm doctor --json",
     "wallet:balances": "mm wallet balance --chain-ids 8453,42161,10 --json",

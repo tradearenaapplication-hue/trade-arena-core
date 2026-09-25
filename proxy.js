@@ -180,7 +180,7 @@ app.post('/api/maintenance/patch', maintenanceLimiter, async (req, res) => {
   }
 });
 
-const port = 3001;
+const port = process.env.PORT || 8080;
 if (require.main === module) {
   app.listen(port, () => {
     console.log(`🚀 Proxy server running at http://localhost:${port}`);

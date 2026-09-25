@@ -6,6 +6,23 @@
 const isBrowser = typeof window !== 'undefined';
 const ethers = isBrowser ? window.ethers : require('ethers');
 
+// Ethers v5/v6 compatibility helpers
+const formatEther = (wei) => {
+  if (!ethers) return (Number(wei) / 1e18).toString();
+  try {
+    return ethers.formatEther ? ethers.formatEther(wei) : 
+           (ethers.utils?.formatEther ? ethers.utils.formatEther(wei) : (Number(wei) / 1e18).toString());
+  } catch { return (Number(wei) / 1e18).toString(); }
+};
+
+const formatUnits = (wei, unit) => {
+  if (!ethers) return (Number(wei) / 1e18).toString();
+  try {
+    return ethers.formatUnits ? ethers.formatUnits(wei, unit) : 
+           (ethers.utils?.formatUnits ? ethers.utils.formatUnits(wei, unit) : (Number(wei) / 1e18).toString());
+  } catch { return (Number(wei) / 1e18).toString(); }
+};
+
 // Base Configuration for Real Trading
 const REAL_WALLET_CONFIG = {
   network: {
@@ -59,7 +76,7 @@ async function getWalletBalance() {
   if (!walletState.provider || !walletState.address) return null;
   try {
     const balance = await walletState.provider.getBalance(walletState.address);
-    walletState.balanceETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(balance) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(balance) : (Number(balance) / 1e18).toString()));
+    walletState.balanceETH = parseFloat(formatEther(balance));
     // Mock price for now
     walletState.balanceUSD = walletState.balanceETH * 3200;
     return { eth: walletState.balanceETH, usd: walletState.balanceUSD };

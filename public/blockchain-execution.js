@@ -3,6 +3,15 @@
  * Handles actual MetaMask transaction signing and on-chain execution on Base Mainnet (8453) with Ethers v6
  */
 
+// Ethers v5/v6 compatibility helper
+const formatEther = (wei) => {
+  if (!window.ethers) return (Number(wei) / 1e18).toString();
+  try {
+    return window.ethers.formatEther ? window.ethers.formatEther(wei) : 
+           (window.ethers.utils?.formatEther ? window.ethers.utils.formatEther(wei) : (Number(wei) / 1e18).toString());
+  } catch { return (Number(wei) / 1e18).toString(); }
+};
+
 async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
   console.log('[executeRealSwap] Starting...', { betUSD, tokenIn, tokenOut, method });
   
@@ -85,7 +94,7 @@ async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
     const gasUsed = receipt.gasUsed;
     const effectiveGasPrice = receipt.gasPrice || gasPriceEst;
     const transactionFeeWei = gasUsed * effectiveGasPrice;
-    const transactionFeeETH = typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(transactionFeeWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(transactionFeeWei) : (Number(transactionFeeWei) / 1e18).toString());
+    const transactionFeeETH = formatEther(transactionFeeWei);
 
     const receiptData = {
       success: true,

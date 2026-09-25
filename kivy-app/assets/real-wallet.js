@@ -225,11 +225,7 @@ async function fetchMultiChainTokenBalances(walletAddress) {
   const promises = NETWORKS.map(async (net) => {
     const netResults = [];
     const balWei = await getRpcBalance(net.rpc, address);
-    const nativeAmount = parseFloat(
-      typeof ethers !== 'undefined' && ethers.utils
-        ? ethers.utils.formatEther(balWei)
-        : (typeof ethers !== 'undefined' && ethers.formatEther ? ethers.formatEther(balWei) : (Number(balWei) / 1e18).toString())
-    );
+    const nativeAmount = parseFloat(formatEther(balWei));
 
     if (nativeAmount > 0) {
       netResults.push({
@@ -245,11 +241,7 @@ async function fetchMultiChainTokenBalances(walletAddress) {
     for (const token of tokens) {
       const tokenBalRaw = await getRpcErc20Balance(net.rpc, token.address, address);
       if (tokenBalRaw > 0n) {
-        const formatted = parseFloat(
-          typeof ethers !== 'undefined' && ethers.utils
-            ? ethers.utils.formatUnits(tokenBalRaw, token.decimals)
-            : (typeof ethers !== 'undefined' && ethers.formatUnits ? ethers.formatUnits(tokenBalRaw, token.decimals) : (Number(tokenBalRaw) / (10 ** token.decimals)).toString())
-        );
+        const formatted = parseFloat(formatUnits(tokenBalRaw, token.decimals));
         if (formatted > 0) {
           netResults.push({
             network: net.name,
@@ -309,7 +301,7 @@ async function getWalletBalance() {
 
   try {
     const balanceWei = await walletState.provider.getBalance(walletState.address);
-    const balanceETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(balanceWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(balanceWei) : (Number(balanceWei) / 1e18).toString()));
+    const balanceETH = parseFloat(formatEther(balanceWei));
 
     // Get ETH price from CoinGecko
     const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', {
@@ -366,12 +358,12 @@ async function estimateSwapGasCost(method = 'ARBITRAGE') {
   // Use EIP-1559 fee (maxFeePerGas)
   const gasPrice = feeData.maxFee || feeData.gasPrice;
   const gasCostWei = gasPrice.mul(gasEstimate);
-  const gasCostETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(gasCostWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(gasCostWei) : (Number(gasCostWei) / 1e18).toString()));
+  const gasCostETH = parseFloat(formatEther(gasCostWei));
   const gasCostUSD = gasCostETH * (walletState.balanceUSD / walletState.balanceETH || 3200);
 
   return {
     gasLimit: gasEstimate,
-    gasPrice: parseFloat(typeof ethers !== 'undefined' && ethers.utils && typeof ethers.utils.formatUnits === 'function' ? ethers.utils.formatUnits(gasPrice, 'gwei') : (typeof ethers !== 'undefined' && typeof ethers.formatUnits === 'function' ? ethers.formatUnits(gasPrice, 'gwei') : (Number(gasPrice) / 1e9).toString())),
+    gasPrice: parseFloat(formatUnits(gasPrice, 'gwei')),
     costETH: gasCostETH,
     costUSD: gasCostUSD,
     totalGasWei: gasCostWei,

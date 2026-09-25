@@ -39,9 +39,9 @@ async function connectWallet() {
         }
 
         // Fetch balance
-        userBalance = ethers.utils.formatEther(
-            await provider.getBalance(userAddress)
-        );
+        userBalance = ethers.formatEther ?
+            ethers.formatEther(await provider.getBalance(userAddress)) :
+            ethers.utils.formatEther(await provider.getBalance(userAddress));
 
         loginSuccess();
     } catch (error) {

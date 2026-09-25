@@ -10,7 +10,8 @@ class FileDatabase {
     this.data = {
       users: {},
       sessions: {},
-      tradeLogs: []
+      tradeLogs: [],
+      userState: {}
     };
     this.init();
   }
@@ -21,12 +22,23 @@ class FileDatabase {
         const fileContent = fs.readFileSync(this.dbFile, 'utf8');
         if (fileContent.trim()) {
           this.data = JSON.parse(fileContent);
+          // Ensure all required fields exist (for backward compatibility)
+          if (!this.data.userState) this.data.userState = {};
+          if (!this.data.tradeLogs) this.data.tradeLogs = [];
+          if (!this.data.users) this.data.users = {};
+          if (!this.data.sessions) this.data.sessions = {};
         }
       } else {
         this.save();
       }
     } catch (err) {
       console.warn('Database initialization warning:', err.message);
+      this.data = {
+        users: {},
+        sessions: {},
+        tradeLogs: [],
+        userState: {}
+      };
     }
   }
 
@@ -118,6 +130,24 @@ class FileDatabase {
       .filter(log => log && log.address === cleanAddr)
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
       .slice(0, safeLimit);
+  }
+
+  saveUserState(address, state) {
+    if (!address || typeof address !== 'string') return null;
+    const cleanAddr = address.toLowerCase();
+    this.data.userState[cleanAddr] = {
+      address: cleanAddr,
+      state: (state && typeof state === 'object') ? state : {},
+      updatedAt: new Date().toISOString()
+    };
+    this.save();
+    return this.data.userState[cleanAddr];
+  }
+
+  getUserState(address) {
+    if (!address || typeof address !== 'string') return null;
+    const cleanAddr = address.toLowerCase();
+    return this.data.userState[cleanAddr] || null;
   }
 }
 

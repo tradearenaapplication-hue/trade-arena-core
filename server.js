@@ -6,17 +6,13 @@ const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
 const axios = require('axios');
-<<<<<<< HEAD
-=======
-const WebSocket = require('websocket').w3cwebsocket;
-const crypto = require('crypto');
 const db = require('./data/database');
->>>>>>> bf749b26813ee921116b00ae8b1b9d78070a12ae
+const ethers = require('ethers');
+const WebSocket = require('websocket').w3cwebsocket;
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-<<<<<<< HEAD
 // ===== SECURITY HEADERS =====
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -24,7 +20,7 @@ app.use((req, res, next) => {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'self'; style-src 'self';");
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.privy.io https://js.hcaptcha.com https://hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.coingecko.com https://api.0x.org https://mainnet.base.org https://*.alchemyapi.io https://auth.privy.io https://explorer-api.walletconnect.com https://9cc5aa622a7b.w.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
     next();
 });
 
@@ -175,13 +171,6 @@ app.use(validateRequest);
 // Apply error handling middleware
 app.use(errorHandler);
 
-// ===== HEALTH CHECK =====
-app.get('/health', (req, res) => {
-=======
-// Middleware
-app.use(cors());
-app.use(express.json());
-
 // Serve static files from root directory
 app.use(express.static(__dirname));
 
@@ -228,6 +217,36 @@ function queueBotDeployment(deposit) {
     deploymentEvents.unshift(event);
     if (deploymentEvents.length > 50) deploymentEvents.pop();
     return event;
+}
+
+/**
+ * Helper: fetch CoinGecko price for a symbol
+ */
+async function fetchCoinGeckoPrice(symbol) {
+    const coinMap = {
+        'WETH': 'ethereum',
+        'ETH': 'ethereum',
+        'USDC': 'usd-coin',
+        'ARB': 'arbitrum',
+        'OP': 'optimism',
+        'BTC': 'bitcoin',
+        'SOL': 'solana',
+        'ADA': 'cardano',
+        'XRP': 'ripple'
+    };
+    const coinId = coinMap[symbol];
+    if (!coinId) return null;
+
+    try {
+        const resp = await axios.get(
+            `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`,
+            { timeout: 5000 }
+        );
+        return resp.data?.[coinId]?.usd || null;
+    } catch (e) {
+        console.warn(`[Price] Failed to fetch ${symbol}:`, e.message);
+        return null;
+    }
 }
 
 // Initialize provider
@@ -328,9 +347,56 @@ app.get('/api/user/tradelogs', (req, res) => {
     }
 });
 
+app.get('/api/user/state/:address', (req, res) => {
+    try {
+        const { address } = req.params;
+        if (!address) {
+            return res.status(400).json({ success: false, error: 'Address parameter required' });
+        }
+        const userState = db.getUserState(address);
+        res.json({
+            success: true,
+            userState: userState ? userState.state : null
+        });
+    } catch (err) {
+        console.error('Error in /api/user/state:', err);
+        res.status(500).json({ success: false, error: 'Internal server error fetching user state' });
+    }
+});
+
+app.post('/api/user/state/:address', (req, res) => {
+    try {
+        const { address } = req.params;
+        const { state } = req.body || {};
+        if (!address) {
+            return res.status(400).json({ success: false, error: 'Address parameter required' });
+        }
+        const savedState = db.saveUserState(address, state || {});
+        res.json({
+            success: true,
+            userState: savedState
+        });
+    } catch (err) {
+        console.error('Error in /api/user/state POST:', err);
+        res.status(500).json({ success: false, error: 'Internal server error saving user state' });
+    }
+});
+
 
 app.get('/api/status/connections', (req, res) => {
     res.json({ success: true, status: 'OK', activeConnections: 1, timestamp: Date.now() });
+});
+
+// ===== HEALTH CHECK =====
+app.get('/health', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Trade Arena server is running',
+        timestamp: new Date().toISOString(),
+        status: 'healthy',
+        version: '4.0.0',
+        environment: process.env.NODE_ENV || 'development'
+    });
 });
 
 app.get('/api/health', (req, res) => {
@@ -431,76 +497,67 @@ app.post('/api/claude', async (req, res) => {
  * GET /api/deployments - Recent deposit-triggered deployment events
  */
 app.get('/api/deployments', (req, res) => {
->>>>>>> bf749b26813ee921116b00ae8b1b9d78070a12ae
     res.json({
         success: true,
-        message: 'Trade Arena server is running',
-        timestamp: new Date().toISOString(),
-        status: 'healthy',
-        version: '4.0.0',
-        environment: process.env.NODE_ENV || 'development'
+        deployments: deploymentEvents,
+        count: deploymentEvents.length
     });
 });
 
-// ===== WALLET STATUS =====
-app.get('/api/wallet/status', (req, res) => {
-    res.json({
-        success: true,
-        message: 'MetaMask wallet status retrieved successfully',
-        wallet: {
-            connected: false,
-            address: null,
-            chainId: '0x64',
-            balance: '0',
-            network: 'Base Mainnet (8453)',
-            timestamp: new Date().toISOString()
-        },
-        networks: [
-            { id: '0x64', name: 'Base Mainnet', chainId: '8453' },
-            { id: '0xa4b1', name: 'Arbitrum One', chainId: '42161' },
-            { id: '0xa', name: 'Ethereum Mainnet', chainId: '1' }
-        ]
-    });
-});
-
-// ===== WALLET BALANCE =====
-app.get('/api/wallet/balance', async (req, res) => {
+app.post('/api/deployments/webhook', (req, res) => {
     try {
-<<<<<<< HEAD
-        const { address, chainId } = req.query;
-        
-        if (!address) {
-            return res.status(400).json({
-                success: false,
-                error: 'Bad Request',
-                message: 'Wallet address is required'
-            });
-        }
-        
-        const mockBalance = {
-            balance: '0.5 ETH',
-            usdValue: '$2,450',
-            tokens: [
-                { symbol: 'ETH', balance: '0.5', value: '$2,450' },
-                { symbol: 'USDC', balance: '1250', value: '$1,250' },
-                { symbol: 'WETH', balance: '0.2', value: '$980' }
-            ],
-            timestamp: new Date().toISOString()
-        };
-        
-        res.json({
-            success: true,
-            message: 'Wallet balance retrieved successfully',
-            balance: mockBalance,
-            chainId: chainId || '0x64'
-        });
-    } catch (error) {
-        errorHandler(error, req, res, next);
-=======
         const signature = req.headers['x-moonpay-signature'];
         const expectedSecret = process.env.MOONPAY_WEBHOOK_SECRET || '';
 
         // Security: Require valid webhook secret & signature, compared in constant time
+        if (!expectedSecret || !signature || !safeCompare(signature, expectedSecret)) {
+            return res.status(401).json({ success: false, error: 'Invalid or unconfigured webhook signature' });
+        }
+
+        const payload = req.body || {};
+        const status = String(payload.status || payload.state || '').toLowerCase();
+        const amount = Number(payload.amount || payload.cryptoAmount || payload.fiatAmount || 0);
+        const currency = String(payload.currency || payload.cryptoCurrency || 'USDC').toUpperCase();
+        const destination = payload.walletAddress || payload.address || payload.destinationAddress || '';
+        const reference = payload.transactionId || payload.id || payload.reference || null;
+
+        const isConfirmed = ['completed', 'complete', 'confirmed', 'succeeded', 'success'].includes(status);
+
+        if (!isConfirmed) {
+            return res.json({
+                success: true,
+                received: true,
+                ignored: true,
+                reason: 'Deposit not confirmed yet'
+            });
+        }
+
+        const deployment = queueBotDeployment({
+            reference,
+            currency,
+            amount,
+            destination,
+            source: 'moonpay',
+            confirmedAt: Date.now()
+        });
+
+        res.json({
+            success: true,
+            received: true,
+            deployment,
+            message: 'Deposit confirmed and deployment queued'
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// ===== ALIAS: /api/webhooks/moonpay/deposit =====
+app.post('/api/webhooks/moonpay/deposit', (req, res) => {
+    try {
+        const signature = req.headers['x-moonpay-signature'];
+        const expectedSecret = process.env.MOONPAY_WEBHOOK_SECRET || '';
+
         if (!expectedSecret || !signature || !safeCompare(signature, expectedSecret)) {
             return res.status(401).json({ success: false, error: 'Invalid or unconfigured webhook signature' });
         }
@@ -723,47 +780,69 @@ app.post('/api/flash-loan/simulate', async (req, res) => {
         res.json({ success: true, opportunity });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal server error' });
->>>>>>> bf749b26813ee921116b00ae8b1b9d78070a12ae
+    }
+});
+
+// ===== WALLET STATUS =====
+app.get('/api/wallet/status', (req, res) => {
+    res.json({
+        success: true,
+        message: 'MetaMask wallet status retrieved successfully',
+        wallet: {
+            connected: false,
+            address: null,
+            chainId: '0x64',
+            balance: '0',
+            network: 'Base Mainnet (8453)',
+            timestamp: new Date().toISOString()
+        },
+        networks: [
+            { id: '0x64', name: 'Base Mainnet', chainId: '8453' },
+            { id: '0xa4b1', name: 'Arbitrum One', chainId: '42161' },
+            { id: '0xa', name: 'Ethereum Mainnet', chainId: '1' }
+        ]
+    });
+});
+
+// ===== WALLET BALANCE =====
+app.get('/api/wallet/balance', async (req, res) => {
+    try {
+        const { address, chainId } = req.query;
+        
+        if (!address) {
+            return res.status(400).json({
+                success: false,
+                error: 'Bad Request',
+                message: 'Wallet address is required'
+            });
+        }
+        
+        const mockBalance = {
+            balance: '0.5 ETH',
+            usdValue: '$2,450',
+            tokens: [
+                { symbol: 'ETH', balance: '0.5', value: '$2,450' },
+                { symbol: 'USDC', balance: '1250', value: '$1,250' },
+                { symbol: 'WETH', balance: '0.2', value: '$980' }
+            ],
+            timestamp: new Date().toISOString()
+        };
+        
+        res.json({
+            success: true,
+            message: 'Wallet balance retrieved successfully',
+            balance: mockBalance,
+            chainId: chainId || '0x64'
+        });
+    } catch (error) {
+        errorHandler(error, req, res, next);
     }
 });
 
 // ===== SWAP TOKENS =====
 app.post('/api/wallet/swap', async (req, res) => {
     try {
-<<<<<<< HEAD
-        const { fromToken, toToken, amount, slippage, deadline } = req.body;
-        
-        if (!fromToken || !toToken || !amount) {
-            return res.status(400).json({
-                success: false,
-                error: 'Bad Request',
-                message: 'Missing required swap parameters'
-            });
-        }
-        
-        const swapResult = {
-            transaction: {
-                to: '0x1234567890123456789012345678901234567890',
-                data: '0x' + 'mock_data_here',
-                gasLimit: '300000',
-                gasPrice: '20000000000',
-                value: '0',
-                chainId: '0x64',
-                nonce: Math.floor(Math.random() * 1000)
-            },
-            quote: {
-                fromToken,
-                toToken,
-                fromAmount: amount,
-                toAmount: (parseFloat(amount) * 0.98).toString(),
-                gasCost: '0.001',
-                route: ['router']
-            },
-            slippage: slippage || '0.5',
-            deadline: deadline || Math.floor(Date.now() / 1000) + 3600,
-            timestamp: new Date().toISOString()
-=======
-        const { fromToken, toToken, amount, slippage } = req.body || {};
+        const { fromToken, toToken, amount, slippage, deadline } = req.body || {};
 
         const numAmount = Number(amount);
         const numSlippage = slippage !== undefined ? Number(slippage) : 0.005;
@@ -781,49 +860,101 @@ app.post('/api/wallet/swap', async (req, res) => {
         const gasUsed = Math.random() * 150000 + 50000; // 50k - 200k gas
         const gasCost = gasUsed * 0.001; // Simplified (real would use current gas price)
 
-        const result = {
-            success: true,
-            swap: {
-                from: { token: fromToken, amount: numAmount.toFixed(4) },
-                to: { token: toToken, amount: expectedOutput.toFixed(4) },
-                exchange: 'Uniswap V3',
-                slippage: `${(numSlippage * 100).toFixed(2)}%`,
-                gasUsed: gasUsed.toFixed(0),
-                gasCost: gasCost.toFixed(4),
-                timestamp: Date.now()
-            },
-            txHash: '0x' + crypto.randomBytes(32).toString('hex')
->>>>>>> bf749b26813ee921116b00ae8b1b9d78070a12ae
+        const swapResult = {
+            from: { token: fromToken, amount: numAmount.toFixed(4) },
+            to: { token: toToken, amount: expectedOutput.toFixed(4) },
+            exchange: 'Uniswap V3',
+            slippage: `${(numSlippage * 100).toFixed(2)}%`,
+            gasUsed: gasUsed.toFixed(0),
+            gasCost: gasCost.toFixed(4),
+            timestamp: Date.now()
         };
         
         res.json({
             success: true,
-            message: 'Swap quoted successfully',
             swap: swapResult,
-            estimatedTime: '5-10 seconds'
+            txHash: '0x' + crypto.randomBytes(32).toString('hex')
         });
     } catch (error) {
-<<<<<<< HEAD
         errorHandler(error, req, res, next);
-=======
-        res.status(500).json({ success: false, error: 'Internal server error' });
->>>>>>> bf749b26813ee921116b00ae8b1b9d78070a12ae
+    }
+});
+
+// ===== ALIAS: /api/execute/swap =====
+app.post('/api/execute/swap', async (req, res) => {
+    try {
+        const { fromToken, toToken, amount, slippage } = req.body || {};
+
+        const numAmount = Number(amount);
+        const numSlippage = slippage !== undefined ? Number(slippage) : 0.005;
+
+        if (!fromToken || typeof fromToken !== 'string' ||
+            !toToken || typeof toToken !== 'string' ||
+            isNaN(numAmount) || numAmount <= 0 ||
+            isNaN(numSlippage) || numSlippage < 0 || numSlippage > 1) {
+            return res.status(400).json({ success: false, error: 'Invalid swap parameters' });
+        }
+
+        const expectedOutput = numAmount * (1 - numSlippage);
+        const gasUsed = Math.random() * 150000 + 50000;
+        const gasCost = gasUsed * 0.001;
+
+        const swapResult = {
+            from: { token: fromToken, amount: numAmount.toFixed(4) },
+            to: { token: toToken, amount: expectedOutput.toFixed(4) },
+            exchange: 'Uniswap V3',
+            slippage: `${(numSlippage * 100).toFixed(2)}%`,
+            gasUsed: gasUsed.toFixed(0),
+            gasCost: gasCost.toFixed(4),
+            timestamp: Date.now()
+        };
+
+        res.json({
+            success: true,
+            swap: swapResult,
+            txHash: '0x' + crypto.randomBytes(32).toString('hex')
+        });
+    } catch (error) {
+        errorHandler(error, req, res, next);
     }
 });
 
 // ===== ADD TOKEN =====
 app.post('/api/wallet/tokens', async (req, res) => {
     try {
-<<<<<<< HEAD
-        const { tokenAddress, tokenSymbol, tokenDecimals, tokenImage } = req.body;
-        
-        if (!tokenAddress || !tokenSymbol) {
-            return res.status(400).json({
-                success: false,
-                error: 'Bad Request',
-                message: 'Token address and symbol are required'
-            });
-=======
+        const { name, strategy, riskLevel, initialCapital, userAddress } = req.body || {};
+
+        const numCapital = Number(initialCapital);
+        if (!name || typeof name !== 'string' || !name.trim() ||
+            !strategy || typeof strategy !== 'string' ||
+            !riskLevel || typeof riskLevel !== 'string' ||
+            isNaN(numCapital) || numCapital <= 0) {
+            return res.status(400).json({ success: false, error: 'Invalid bot creation parameters' });
+        }
+
+        const bot = {
+            id: generateId(),
+            name: name.trim(),
+            strategy,
+            riskLevel,
+            initialCapital: numCapital,
+            userAddress: typeof userAddress === 'string' ? userAddress : null,
+            status: 'ACTIVE',
+            created: Date.now(),
+            trades: [],
+            totalProfit: 0,
+            config: generateBotConfig(strategy, riskLevel)
+        };
+
+        res.json({ success: true, bot });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// ===== ALIAS: /api/bot/create =====
+app.post('/api/bot/create', async (req, res) => {
+    try {
         const { name, strategy, riskLevel, initialCapital, userAddress } = req.body || {};
 
         const numCapital = Number(initialCapital);
@@ -865,31 +996,15 @@ app.get('/api/market/prices', async (req, res) => {
         for (const symbol of symbols) {
             const price = await fetchCoinGeckoPrice(symbol);
             if (price) prices[symbol] = price;
->>>>>>> bf749b26813ee921116b00ae8b1b9d78070a12ae
         }
-        
-        const newToken = {
-            id: crypto.randomBytes(8).toString('hex'),
-            address: tokenAddress,
-            symbol: tokenSymbol,
-            decimals: tokenDecimals || 18,
-            image: tokenImage || `https://assets.coingecko.com/coins/images/${tokenSymbol.toLowerCase()}.png`,
-            chainId: '0x64',
-            verified: true,
-            addedAt: new Date().toISOString()
-        };
-        
+
         res.json({
             success: true,
-            message: 'Token added successfully',
-            token: newToken
+            prices,
+            timestamp: Date.now()
         });
     } catch (error) {
-<<<<<<< HEAD
-        errorHandler(error, req, res, next);
-=======
         res.status(500).json({ success: false, error: 'Internal server error' });
->>>>>>> bf749b26813ee921116b00ae8b1b9d78070a12ae
     }
 });
 
@@ -1026,24 +1141,34 @@ app.get('/api/wallet/transactions', (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// ===== START SERVER =====
-const server = app.listen(PORT, () => {
-    console.log(`🚀 Trade Arena Server Started`);
-    console.log(`📍 Server running on port ${PORT}`);
-    console.log(`🏗️ Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`⏰ Started at: ${new Date().toISOString()}`);
-    console.log(`🔧 Available endpoints:`);
-    console.log(`   GET    /health - Server health check`);
-    console.log(`   GET    /api/wallet/status - MetaMask wallet status`);
-    console.log(`   GET    /api/wallet/balance - Get wallet balance`);
-    console.log(`   POST   /api/wallet/swap - Swap tokens`);
-    console.log(`   POST   /api/wallet/tokens - Add token to wallet`);
-    console.log(`   GET    /api/wallet/networks - Get supported networks`);
-    console.log(`   GET    /api/wallet/transactions - Get transaction history`);
-    console.log(`\n✅ MetaMask integration with real funds trading ready!\n`);
-});
-=======
+// ===== BOT CONFIG GENERATION =====
+const configs = {
+    'Arbitrage Detection': {
+        name: 'Arbitrage Detection Bot',
+        strategy: 'ARBITRAGE',
+        params: { minSpread: 0.5, maxSlippage: 0.01, gasLimit: 500000 },
+        risk: 0.5
+    },
+    'Momentum Trading': {
+        name: 'Momentum Bot',
+        strategy: 'MOMENTUM',
+        params: { trendThreshold: 0.02, holdingPeriod: 3600, stopLoss: 0.05 },
+        risk: 0.7
+    },
+    'Mean Reversion': {
+        name: 'Mean Reversion Bot',
+        strategy: 'REVERSION',
+        params: { rsiPeriod: 14, rsiOverbought: 70, rsiOversold: 30, stdDevThreshold: 2.0 },
+        risk: 0.6
+    },
+    'Risk Par Parity': {
+        name: 'Risk Parity Bot',
+        strategy: 'RISK_PARITY',
+        params: { targetVolatility: 0.15, rebalancingFrequency: 3600, maxAllocation: 0.25 },
+        risk: 0.8
+    }
+};
+
 function calculateRisk(spread, amount) {
     // Risk scoring: 0-100
     // Higher spread = lower risk (more obvious arbitrage)
@@ -1055,24 +1180,8 @@ function calculateRisk(spread, amount) {
 
     return Math.min(100, Math.max(0, risk));
 }
->>>>>>> bf749b26813ee921116b00ae8b1b9d78070a12ae
 
-// ===== GRACEFUL SHUTDOWN =====
-process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down gracefully');
-    server.close(() => {
-        console.log('Process terminated');
-    });
-});
-
-<<<<<<< HEAD
-process.on('SIGINT', () => {
-    console.log('SIGINT received, shutting down gracefully');
-    server.close(() => {
-        console.log('Process terminated');
-    });
-});
-=======
+function generateBotConfig(strategy, riskLevel) {
     const config = configs[strategy] || configs['Arbitrage Detection'];
 
     // Apply risk adjustments
@@ -1092,16 +1201,47 @@ function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-/**
- * Start Server
- */
-if (require.main === module) {
-    app.listen(PORT, () => {
-        console.log(`🤖 Trade Arena Backend running on port ${PORT}`);
-        console.log(`📊 Market analysis: http://localhost:${PORT}/api/health`);
+// ===== START SERVER =====
+const server = app.listen(PORT, () => {
+    console.log(`🚀 Trade Arena Server Started`);
+    console.log(`📍 Server running on port ${PORT}`);
+    console.log(`🏗️ Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`⏰ Started at: ${new Date().toISOString()}`);
+    console.log(`🔧 Available endpoints:`);
+    console.log(`   GET    /health - Server health check`);
+    console.log(`   GET    /api/wallet/status - MetaMask wallet status`);
+    console.log(`   GET    /api/wallet/balance - Get wallet balance`);
+    console.log(`   POST   /api/wallet/swap - Swap tokens`);
+    console.log(`   POST   /api/wallet/tokens - Add token to wallet`);
+    console.log(`   GET    /api/wallet/networks - Get supported networks`);
+    console.log(`   GET    /api/wallet/transactions - Get transaction history`);
+    console.log(`   POST   /api/user/signin - Sign in user`);
+    console.log(`   GET    /api/user/session - Get user session`);
+    console.log(`   POST   /api/user/tradelog - Record trade log`);
+    console.log(`   GET    /api/user/tradelogs - Get trade logs`);
+    console.log(`   GET    /api/user/state/:address - Get user learning state`);
+    console.log(`   POST   /api/user/state/:address - Save user learning state`);
+    console.log(`   POST   /api/analyze/arbitrage - Detect arbitrage`);
+    console.log(`   POST   /api/analyze/volatility - Volatility prediction`);
+    console.log(`   POST   /api/flash-loan/simulate - Flash loan simulation`);
+    console.log(`   POST   /api/deployments/webhook - MoonPay webhook`);
+    console.log(`\n✅ Trade Arena server ready!\n`);
+});
+
+// ===== GRACEFUL SHUTDOWN =====
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    server.close(() => {
+        console.log('Process terminated');
     });
-}
->>>>>>> bf749b26813ee921116b00ae8b1b9d78070a12ae
+});
+
+process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down gracefully');
+    server.close(() => {
+        console.log('Process terminated');
+    });
+});
 
 module.exports = app;
 

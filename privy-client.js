@@ -238,13 +238,30 @@ function onPrivyLoginSuccess() {
     hideConnectScreen();
     showMainApp();
 
-    // Update UI with wallet info
-    updateWalletUI();
+    // Persist Privy session to localStorage
+    if (privyWalletAddress) {
+        localStorage.setItem('ta_wallet_address', privyWalletAddress);
+        localStorage.setItem('ta_provider', 'privy');
+        localStorage.setItem('ta_session_provider', 'privy');
+    }
 
     // Notify app ready
     if (typeof window.onPrivyReady === 'function') {
         window.onPrivyReady(privyUser, privyWalletAddress);
     }
+
+    // Sync session to backend database
+    if (typeof window.syncUserSessionToDb === 'function' && privyWalletAddress) {
+        window.syncUserSessionToDb(privyWalletAddress, 'privy', [], 0);
+    }
+
+    // Sync learning state to backend
+    if (typeof window.syncLearningStateToDb === 'function') {
+        window.syncLearningStateToDb(privyWalletAddress);
+    }
+
+    // Update UI with wallet info
+    updateWalletUI();
 }
 
 /**

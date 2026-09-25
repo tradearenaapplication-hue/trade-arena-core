@@ -93,7 +93,6 @@ app.post('/api/gemini', async (req, res) => {
 
 const fs = require('fs');
 const path = require('path');
-const rateLimit = require('express-rate-limit');
 
 /**
  * Helper to check if a requested path stays inside the base directory

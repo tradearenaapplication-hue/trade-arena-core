@@ -59,7 +59,7 @@ async function getWalletBalance() {
   if (!walletState.provider || !walletState.address) return null;
   try {
     const balance = await walletState.provider.getBalance(walletState.address);
-    walletState.balanceETH = parseFloat(ethers.formatEther(balance));
+    walletState.balanceETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(balance) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(balance) : (Number(balance) / 1e18).toString()));
     // Mock price for now
     walletState.balanceUSD = walletState.balanceETH * 3200;
     return { eth: walletState.balanceETH, usd: walletState.balanceUSD };

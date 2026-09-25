@@ -85,7 +85,7 @@ async function executeRealSwap(betUSD, tokenIn, tokenOut, method) {
     const gasUsed = receipt.gasUsed;
     const effectiveGasPrice = receipt.gasPrice || gasPriceEst;
     const transactionFeeWei = gasUsed * effectiveGasPrice;
-    const transactionFeeETH = ethers.formatEther(transactionFeeWei);
+    const transactionFeeETH = typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(transactionFeeWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(transactionFeeWei) : (Number(transactionFeeWei) / 1e18).toString());
 
     const receiptData = {
       success: true,

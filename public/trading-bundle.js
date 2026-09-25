@@ -1561,7 +1561,7 @@ async function getWalletBalance() {
 
   try {
     const balanceWei = await walletState.provider.getBalance(walletState.address);
-    const balanceETH = parseFloat(ethers.formatEther(balanceWei));
+    const balanceETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(balanceWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(balanceWei) : (Number(balanceWei) / 1e18).toString()));
 
     // Get ETH price from CoinGecko
     const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', {
@@ -1618,12 +1618,12 @@ async function estimateSwapGasCost(method = 'ARBITRAGE') {
   // Use EIP-1559 fee (maxFeePerGas)
   const gasPrice = feeData.maxFee || feeData.gasPrice;
   const gasCostWei = gasPrice.mul(gasEstimate);
-  const gasCostETH = parseFloat(ethers.formatEther(gasCostWei));
+  const gasCostETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(gasCostWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(gasCostWei) : (Number(gasCostWei) / 1e18).toString()));
   const gasCostUSD = gasCostETH * (walletState.balanceUSD / walletState.balanceETH || 3200);
 
   return {
     gasLimit: gasEstimate,
-    gasPrice: parseFloat(ethers.formatUnits(gasPrice, 'gwei')),
+    gasPrice: parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatUnits === "function" ? ethers.utils.formatUnits(gasPrice, 'gwei') : (typeof ethers !== "undefined" && typeof ethers.formatUnits === "function" ? ethers.formatUnits(gasPrice, 'gwei') : (Number(gasPrice) / 1e9).toString())),
     costETH: gasCostETH,
     costUSD: gasCostUSD,
     totalGasWei: gasCostWei,
@@ -2047,7 +2047,7 @@ async function getWalletBalanceUSD() {
                 console.warn('[RealWallet] Price fetch failed, using fallback:', pErr);
             }
         }
-        const balanceETH = parseFloat(ethers.formatEther(ethBalance));
+        const balanceETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(ethBalance) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(ethBalance) : (Number(ethBalance) / 1e18).toString()));
         let balanceUSD = balanceETH * ethPrice;
 
         // Fetch USDC balance (6 decimals, ~$1 USD)
@@ -2065,7 +2065,7 @@ async function getWalletBalanceUSD() {
             } catch (dErr) {
                 console.warn('[RealWallet] USDC decimals fetch failed, using default 6:', dErr);
             }
-            const usdcBalance = parseFloat(ethers.formatUnits(usdcRaw, usdcDecimals));
+            const usdcBalance = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatUnits === "function" ? ethers.utils.formatUnits(usdcRaw, usdcDecimals) : (typeof ethers !== "undefined" && typeof ethers.formatUnits === "function" ? ethers.formatUnits(usdcRaw, usdcDecimals) : (Number(usdcRaw) / (10 ** usdcDecimals)).toString()));
             // USDC is a stablecoin ~$1, but try getLivePrice first, fallback to 1.0
             let usdcPrice = 1.0;
             if (typeof getLivePrice === 'function') {

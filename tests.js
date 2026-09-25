@@ -754,6 +754,58 @@ describe("Performance", () => {
 
     expect(Date.now() - start).toBeLessThan(150);
   });
+
+  it("skips DOM innerHTML assignment when bot pad states are unchanged (renderPadGrid benchmark)", () => {
+    const { renderPadGrid, tradingEngine } = require("./trading-engine.js");
+    let innerHTMLWrites = 0;
+
+    const mockPadGrid = {
+      _innerHTML: "",
+      childElementCount: 0,
+      set innerHTML(val) {
+        innerHTMLWrites++;
+        this._innerHTML = val;
+        this.childElementCount = 3;
+      },
+      get innerHTML() {
+        return this._innerHTML;
+      }
+    };
+
+    const originalDocument = global.document;
+    global.document = {
+      getElementById: (id) => {
+        if (id === "padGrid") return mockPadGrid;
+        if (id === "matrixCount") return {};
+        return null;
+      }
+    };
+
+    tradingEngine.bots = [
+      { id: "bot-1", totalProfit: 15.5 },
+      { id: "bot-2", totalProfit: -2.3 },
+      { id: "bot-3", totalProfit: 0.0 }
+    ];
+
+    try {
+      // First call renders HTML
+      renderPadGrid();
+      expect(innerHTMLWrites).toBe(1);
+
+      // 1000 subsequent calls with identical state are skipped by dirty checking
+      const start = Date.now();
+      for (let i = 0; i < 1000; i++) {
+        renderPadGrid();
+      }
+      const elapsed = Date.now() - start;
+
+      expect(innerHTMLWrites).toBe(1); // 0 extra DOM writes
+      expect(elapsed).toBeLessThan(50); // fast skip
+    } finally {
+      if (originalDocument !== undefined) global.document = originalDocument;
+      else delete global.document;
+    }
+  });
 });
 
 describe("Path Traversal Protection (proxy.js)", () => {

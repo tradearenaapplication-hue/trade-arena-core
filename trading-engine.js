@@ -8,11 +8,17 @@
 
 
 
-// ACOUSTIC CORE: UI Update Functions
+// ACOUSTIC CORE: UI Update Functions - Cached/Dirty-Checked State
+let _lastVaultState = { balance: null, startBalance: null };
+let _lastPadGridState = null;
 
 function updateVaultDisplay(balance, startBalance = 10000) {
 
     if (typeof document === 'undefined') return;
+
+    if (_lastVaultState.balance === balance && _lastVaultState.startBalance === startBalance) return;
+    _lastVaultState.balance = balance;
+    _lastVaultState.startBalance = startBalance;
 
     const vaultFill = document.getElementById('vaultFill');
 
@@ -40,10 +46,21 @@ function renderPadGrid() {
 
     if (!grid) return;
 
-    const bots = window.bots || tradingEngine.bots;
+    const bots = (typeof window !== 'undefined' && window.bots) || tradingEngine.bots || [];
 
-    grid.innerHTML = bots.map((bot, i) => {
+    // Fast state hashing to skip redundant array mappings & innerHTML writes if state unchanged
+    let stateKey = '';
+    for (let i = 0; i < bots.length; i++) {
+        const bot = bots[i];
+        stateKey += `${bot.id}:${bot.totalProfit || bot.pnl || 0};`;
+    }
 
+    if (_lastPadGridState === stateKey && grid.childElementCount === bots.length) return;
+    _lastPadGridState = stateKey;
+
+    let html = '';
+    for (let i = 0; i < bots.length; i++) {
+        const bot = bots[i];
         const agentId = String(i + 1).padStart(2, '0');
 
         const pnl = parseFloat(bot.totalProfit || bot.pnl || 0);
@@ -52,15 +69,16 @@ function renderPadGrid() {
 
         const padState = pnl > 0 ? 'pad-hit' : pnl < 0 ? 'pad-miss' : i < 3 ? 'pad-active' : '';
 
-        return `<div class="pad ${padState}" id="pad-${bot.id}">
+        html += `<div class="pad ${padState}" id="pad-${bot.id}">
 
           <span class="pad-agent-id">AG-${agentId}</span>
 
           <span class="pad-pnl ${pnlClass}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>
 
         </div>`;
+    }
 
-    }).join('');
+    grid.innerHTML = html;
 
     const count = document.getElementById('matrixCount');
 
@@ -1321,6 +1339,8 @@ if (typeof module !== 'undefined' && module.exports) {
         TradingEngine,
         AcousticCoreAudio,
         tradingEngine,
-        acousticAudio
+        acousticAudio,
+        updateVaultDisplay,
+        renderPadGrid
     };
 }

@@ -13,3 +13,7 @@
 ## 2026-10-14 - Redundant DOM Matrix Redraws in Acoustic Core Pad Grid Updates
 **Learning:** `renderPadGrid` in `trading-engine.js` was executing `.map().join()` string building and full `grid.innerHTML` overwrites on every timer tick regardless of whether bot P&L states had actually changed. In a multi-bot live environment, this caused frequent layout recalcs and DOM churn.
 **Action:** Implement lightweight state hashing across entity values (`${bot.id}:${pnl};`) to perform fast scalar dirty checking. Return early to bypass string concatenation and DOM `innerHTML` assignments when values are identical.
+
+## 2026-11-02 - Multi-Pass Array Reduces in Bot Decision Cycles
+**Learning:** High-frequency decision engines (`generateModelSpecificDecision` in `ai-model-arena.js` and profile generators in `advanced-bot-engine.js`) were running multiple separate `.reduce()` passes over `marketData` arrays on every decision cycle to compute scalar metrics like volatility and momentum.
+**Action:** Consolidate array metrics calculations into single-pass indexed `for` loops with scalar accumulators to eliminate redundant array iterations and closure allocations per trade decision.

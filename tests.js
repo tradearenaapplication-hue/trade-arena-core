@@ -1559,6 +1559,11 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain("this.setAttribute('aria-pressed', isOn)");
     expect(html).toContain("gear.setAttribute('aria-expanded', open");
   });
+
+  it("dynamically updates titles on header bot buttons in _syncHeaderBotBtns", () => {
+    expect(html).toContain("add.title = isFull ? `Maximum bot limit reached (${MAX_BOTS} bots)` : `Add bot (Bot #${bots.length + 1})`");
+    expect(html).toContain("rem.title = isEmpty ? 'No bots to remove' : `Remove last bot (Bot #${bots[bots.length - 1].id})`");
+  });
 });
 
 describe("Collapsible Control Panel Accessibility", () => {

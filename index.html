@@ -3275,8 +3275,16 @@ function removeLastBot(){
 function _syncHeaderBotBtns(){
   const add=document.getElementById('ghAddBtn');
   const rem=document.getElementById('ghRemoveBtn');
-  if(add) add.disabled=bots.length>=MAX_BOTS;
-  if(rem) rem.disabled=bots.length===0;
+  if(add){
+    const isFull = bots.length >= MAX_BOTS;
+    add.disabled = isFull;
+    add.title = isFull ? `Maximum bot limit reached (${MAX_BOTS} bots)` : `Add bot (Bot #${bots.length + 1})`;
+  }
+  if(rem){
+    const isEmpty = bots.length === 0;
+    rem.disabled = isEmpty;
+    rem.title = isEmpty ? 'No bots to remove' : `Remove last bot (Bot #${bots[bots.length - 1].id})`;
+  }
   // keep legacy button in sync if still present
   const legacy=document.getElementById('addBotBtn');
   if(legacy) legacy.disabled=bots.length>=MAX_BOTS;

@@ -1080,6 +1080,8 @@ a, button, input, select, textarea {
            trading balance) so a sync never appears to change P&L. -->
       <div id="walletChainValue" title="Live on-chain wallet value"
            style="font-size:9px;color:var(--cyan);display:none">$0.00</div>
+      <button id="taLogoutBtn" onclick="logout()"
+              style="margin-top:3px;font-size:8px;padding:2px 7px;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:4px;cursor:pointer">LOG OUT</button>
     </div>
     <!-- countdown + open trade tally -->
     <div class="gh-ticker" id="ghTicker" style="display:none">
@@ -3313,6 +3315,80 @@ window.TA_onWalletAccountChanged = function(address) {
   WalletCore.startPolling();
   console.info('[TradeArena] switched to account', address);
 };
+
+/**
+ * Log out: clear the session, drop the wallet connection and return to the
+ * connect screen.
+ *
+ * Note this revokes the *app* session only. MetaMask keeps its own site
+ * permission, so reconnecting is a single click and does not re-prompt.
+ */
+function logout() {
+  try {
+    // Stop the background balance poller before tearing state down.
+    if (typeof WalletCore !== 'undefined' && WalletCore.stopPolling) WalletCore.stopPolling();
+
+    // Clear in-app session keys. ta_demo_* is intentionally left alone so a
+    // demo balance survives a logout/login round-trip.
+    ['ta_wallet_address', 'ta_provider', 'ta_session_provider'].forEach((k) => {
+      try { localStorage.removeItem(k); } catch (e) {}
+    });
+
+    // Reset wallet + in-memory trading state to defaults.
+    if (typeof WalletCore !== 'undefined' && WalletCore.disconnect) WalletCore.disconnect();
+    if (typeof walletState !== 'undefined') {
+      walletState.isConnected = false;
+      walletState.address = null;
+      walletState.provider = null;
+      walletState.signer = null;
+      walletState.balanceUSD = 0;
+      walletState.tokenHoldings = [];
+    }
+    window.currentUserAddress = null;
+    window.userTokenHoldings = [];
+    balance = 50;
+    startBalance = 50;
+    totalPnl = 0;
+
+    // Hide wallet-only header chrome.
+    const wcv = document.getElementById('walletChainValue');
+    if (wcv) wcv.style.display = 'none';
+    const net = document.getElementById('ghNetwork');
+    if (net) net.style.display = 'none';
+    const status = document.getElementById('cStatus');
+    if (status) status.textContent = 'Logged out.';
+
+    // Return to the connect screen.
+    const cs = document.getElementById('connectScreen');
+    const app = document.getElementById('mainApp');
+    if (cs) cs.style.display = 'flex';
+    if (app) app.style.display = 'none';
+
+    // Stop trading activity so no bots keep running after logout.
+    // Done inline rather than via globalKill(), which prompts for confirmation.
+    try {
+      bots.forEach((b) => {
+        b.auto = false;
+        if (b.autoTimer) clearTimeout(b.autoTimer);
+        const btn = document.getElementById('mauto-' + b.id);
+        const card = document.getElementById('bot-' + b.id);
+        if (btn) { btn.textContent = 'AUTO'; btn.classList.remove('on'); }
+        if (card) card.classList.remove('auto-on');
+      });
+      _ghAutoOn = false;
+      const ghBtn = document.getElementById('ghAutoBtn');
+      if (ghBtn) { ghBtn.textContent = 'AUTO'; ghBtn.classList.remove('on'); }
+      globalKilled = true;
+      checkGlobalBreakers();
+    } catch (e) { console.warn('logout: stopping bots failed', e); }
+
+    refreshSettingsUI();
+    console.info('[TradeArena] logged out.');
+  } catch (e) {
+    console.error('Logout failed:', e);
+  }
+}
+window.logout = logout;
 
 /**
  * Returns the current on-chain wallet value in USD and refreshes it.

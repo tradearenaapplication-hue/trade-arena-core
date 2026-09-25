@@ -817,6 +817,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div style="margin-right:4px;text-align:right;flex-shrink:0">
       <div class="gh-balance" id="ghBalance" style="transition:color .3s">$10,000.00</div>
       <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
+      <!-- Live on-chain value, kept separate from the trading balance -->
+      <div id="walletChainValue" title="Live on-chain wallet value"
+           style="font-size:9px;color:var(--cyan);display:none">$0.00</div>
+      <button id="taLogoutBtn" onclick="logout()"
+              style="margin-top:3px;font-size:8px;padding:2px 7px;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:4px;cursor:pointer">LOG OUT</button>
     </div>
     <!-- countdown + open trade tally -->
     <div class="gh-ticker" id="ghTicker" style="display:none">
@@ -2661,110 +2666,41 @@ async function loginMetaMask(){
   const s=document.getElementById('cStatus'); if(!s) return;
 
   try{
-    // Check if MetaMask is installed
-    if(!window.ethereum){
+    if (typeof WalletCore === 'undefined' || !WalletCore.hasWallet()){
       s.innerHTML='<span style="color:var(--hot)">❌ MetaMask not detected</span><br><small style="color:var(--dim);margin-top:8px;display:block">Install MetaMask: <a href="https://metamask.io" target="_blank" style="color:var(--cyan)">metamask.io →</a></small>';
       return;
     }
 
     s.textContent='⏳ Connecting MetaMask wallet…';
 
-    // Request account access
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    if (!accounts || accounts.length === 0) {
-      s.textContent='❌ No accounts selected in MetaMask';
-      return;
-    }
+    // WalletCore picks the correct ethers API for the loaded version
+    // (this bundle runs ethers 5.x; the web build runs 6.x).
+    await WalletCore.connect();
 
-    const address = accounts[0];
+    const address = WalletCore.state.address;
+    const holdings = WalletCore.state.holdings || [];
+    const balanceUSD = WalletCore.state.usdBalance || 0;
 
-    // Create provider & signer
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-
-    // Store in localStorage for session persistence
     localStorage.setItem('ta_wallet_address', address);
+    localStorage.setItem('ta_provider', 'metamask');
+    localStorage.setItem('ta_session_provider', 'metamask');
 
-    // Switch to Base Mainnet (optional, but recommended)
-    s.textContent='⏳ Verifying network…';
-    try {
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x2105' }] // Base Mainnet
-      });
-    }
-    catch(switchError) {
-      if(switchError.code === 4902) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: '0x2105',
-              chainName: 'Base Mainnet',
-              rpcUrls: ['https://mainnet.base.org'],
-              nativeCurrency: {
-                name: 'Ethereum',
-                symbol: 'ETH',
-                decimals: 18
-              },
-              blockExplorerUrls: ['https://basescan.org']
-            }]
-          });
-        } catch(addError) {
-          console.warn('Could not add Base chain:', addError);
-        }
-      }
-    }
+    s.innerHTML=`<div style="text-align:left">
+      <div>✅ Connected to MetaMask!</div>
+      <div style="font-size:10px;color:var(--dim);margin-top:4px">
+        ${address.slice(0,6)}...${address.slice(-4)} · $${balanceUSD.toFixed(2)}
+      </div>
+    </div>`;
 
-    // Get multi-chain balance and token holdings
-    s.textContent='⏳ Fetching multi-chain wallet balances & holdings…';
-    let balanceUSD = 0;
-    let holdings = [];
-
-    try {
-      if (typeof fetchMultiChainTokenBalances === 'function') {
-        const res = await fetchMultiChainTokenBalances(address);
-        balanceUSD = res.totalUsd;
-        holdings = res.holdings;
-      } else {
-        const balanceWei = await provider.getBalance(address);
-        const balanceETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(balanceWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(balanceWei) : (Number(balanceWei) / 1e18).toString()));
-        const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-        const priceData = await priceResponse.json();
-        const ethPrice = priceData?.ethereum?.usd || 3200;
-        balanceUSD = balanceETH * ethPrice;
-        holdings = [{ network: 'Base', symbol: 'ETH', amount: balanceETH, priceUsd: ethPrice, valueUsd: balanceUSD }];
-      }
-    } catch (balanceError) {
-      console.warn('Could not fetch multi-chain balance:', balanceError);
-    }
-
-    // Update global balance and walletState
-    balance = balanceUSD;
-    startBalance = balanceUSD;
-    window.userTokenHoldings = holdings;
-    if (typeof walletState !== 'undefined') {
-      walletState.isConnected = true;
-      walletState.address = address;
-      walletState.provider = provider;
-      walletState.signer = signer;
-      walletState.balanceUSD = balanceUSD;
-      walletState.tokenHoldings = holdings;
-    }
-
-    const userData = {
+    setupApp({
       name: address.slice(0, 6) + '···' + address.slice(-4),
       address: address,
       avatar: null,
       badge: '🦊 METAMASK',
       provider: 'metamask'
-    };
+    });
 
-    s.textContent='✅ Connected to MetaMask!';
-    setupApp(userData);
-    updateGlobalBalance();
-    refreshSettingsUI();
-    syncUserSessionToDb(address, 'metamask', holdings, balanceUSD);
+    WalletCore.startPolling();
 
   }catch(error) {
     console.error('MetaMask connection error:', error);
@@ -2773,6 +2709,10 @@ async function loginMetaMask(){
       s.textContent='❌ Connection rejected by user';
     } else if(error.code === -32002) {
       s.textContent='❌ MetaMask request already pending';
+    } else if(error.code === 'NO_WALLET') {
+      s.textContent='❌ MetaMask not detected';
+    } else if(error.code === 'NO_ACCOUNTS') {
+      s.textContent='❌ No accounts selected in MetaMask';
     } else {
       s.textContent='❌ MetaMask Error: '+(error.message||'Connection failed');
     }
@@ -2796,69 +2736,140 @@ function refreshSettingsUI() {
 }
 window.refreshSettingsUI = refreshSettingsUI;
 
-window.getWalletBalanceUSD = async function() {
-  if (typeof walletState === 'undefined' || !walletState.address) return 0;
-  try {
-    const address = walletState.address;
-    let balanceUSD = 0;
-    if (typeof fetchMultiChainTokenBalances === 'function') {
-      const res = await fetchMultiChainTokenBalances(address);
-      balanceUSD = res.totalUsd;
-    } else if (walletState.provider) {
-      const balanceWei = await walletState.provider.getBalance(address);
-      const balanceETH = parseFloat(typeof ethers !== "undefined" && ethers.utils && typeof ethers.utils.formatEther === "function" ? ethers.utils.formatEther(balanceWei) : (typeof ethers !== "undefined" && typeof ethers.formatEther === "function" ? ethers.formatEther(balanceWei) : (Number(balanceWei) / 1e18).toString()));
-      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-      const priceData = await priceResponse.json();
-      const ethPrice = priceData?.ethereum?.usd || 3200;
-      balanceUSD = balanceETH * ethPrice;
-    }
-    walletState.balanceUSD = balanceUSD;
-    balance = balanceUSD;
-    updateGlobalBalance();
-    refreshSettingsUI();
-    return balanceUSD;
-  } catch (e) {
-    console.warn('getWalletBalanceUSD error:', e);
-    return walletState.balanceUSD || 0;
+/**
+ * Bridge invoked by WalletCore when a sync completes.
+ * Only an `initial` sync (fresh connect or account switch) may seed the
+ * trading balance; routine refreshes must not clobber live P&L.
+ */
+window.TA_syncWalletBalance = function({ usdBalance, holdings, initial }) {
+  window.userTokenHoldings = holdings || [];
+  if (initial && !Number.isNaN(usdBalance) && usdBalance > 0) {
+    balance = usdBalance;
+    startBalance = usdBalance;
+    totalPnl = 0;
   }
+  if (typeof updateGlobalBalance === 'function') updateGlobalBalance();
+
+  const el = document.getElementById('walletChainValue');
+  if (el) {
+    el.textContent = '🔗 $' + Number(usdBalance || 0).toFixed(2);
+    el.style.display = 'block';
+  }
+  const net = document.getElementById('ghNetwork');
+  if (net && typeof WalletCore !== 'undefined' && WalletCore.state.chainId) {
+    const s = WalletCore.state;
+    net.textContent = s.isCorrectChain ? 'BASE' : String(s.chainName || '').toUpperCase();
+    net.style.display = 'inline-block';
+  }
+};
+
+window.TA_onWalletDisconnected = function() {
+  WalletCore.stopPolling();
+  localStorage.removeItem('ta_wallet_address');
+  localStorage.removeItem('ta_provider');
+  localStorage.removeItem('ta_session_provider');
+  const el = document.getElementById('walletChainValue');
+  if (el) el.style.display = 'none';
+  const net = document.getElementById('ghNetwork');
+  if (net) net.style.display = 'none';
+  refreshSettingsUI();
+};
+
+/**
+ * Log out: clear the session, drop the wallet connection and return to the
+ * connect screen. Revokes the app session only - MetaMask keeps its own site
+ * permission, so reconnecting is a single click.
+ */
+function logout() {
+  try {
+    if (typeof WalletCore !== 'undefined' && WalletCore.stopPolling) WalletCore.stopPolling();
+
+    // ta_demo_* is intentionally preserved so a demo balance survives.
+    ['ta_wallet_address', 'ta_provider', 'ta_session_provider'].forEach((k) => {
+      try { localStorage.removeItem(k); } catch (e) {}
+    });
+
+    if (typeof WalletCore !== 'undefined' && WalletCore.disconnect) WalletCore.disconnect();
+    if (typeof walletState !== 'undefined') {
+      walletState.isConnected = false;
+      walletState.address = null;
+      walletState.provider = null;
+      walletState.signer = null;
+      walletState.balanceUSD = 0;
+      walletState.tokenHoldings = [];
+    }
+    window.currentUserAddress = null;
+    window.userTokenHoldings = [];
+    balance = 50;
+    startBalance = 50;
+    totalPnl = 0;
+
+    const wcv = document.getElementById('walletChainValue');
+    if (wcv) wcv.style.display = 'none';
+    const net = document.getElementById('ghNetwork');
+    if (net) net.style.display = 'none';
+    const status = document.getElementById('cStatus');
+    if (status) status.textContent = 'Logged out.';
+
+    const cs = document.getElementById('connectScreen');
+    const app = document.getElementById('mainApp');
+    if (cs) cs.style.display = 'flex';
+    if (app) app.style.display = 'none';
+
+    // Stop all bots so nothing trades in the background after logout.
+    try {
+      bots.forEach((b) => {
+        b.auto = false;
+        if (b.autoTimer) clearTimeout(b.autoTimer);
+        const btn = document.getElementById('mauto-' + b.id);
+        const card = document.getElementById('bot-' + b.id);
+        if (btn) { btn.textContent = 'AUTO'; btn.classList.remove('on'); }
+        if (card) card.classList.remove('auto-on');
+      });
+      _ghAutoOn = false;
+      const ghBtn = document.getElementById('ghAutoBtn');
+      if (ghBtn) { ghBtn.textContent = 'AUTO'; ghBtn.classList.remove('on'); }
+      globalKilled = true;
+      checkGlobalBreakers();
+    } catch (e) { console.warn('logout: stopping bots failed', e); }
+
+    refreshSettingsUI();
+    console.info('[TradeArena] logged out.');
+  } catch (e) {
+    console.error('Logout failed:', e);
+  }
+}
+window.logout = logout;
+
+window.getWalletBalanceUSD = async function() {
+  if (typeof WalletCore === 'undefined' || !WalletCore.state.address) return 0;
+  const res = await WalletCore.sync({ initial: false });
+  refreshSettingsUI();
+  return res ? res.totalUsd : (WalletCore.state.usdBalance || 0);
 };
 
 async function autoReconnectWallet() {
   const storedAddress = localStorage.getItem('ta_wallet_address');
-  if (!storedAddress || !window.ethereum) return;
+  if (!storedAddress) return;
+  if (typeof WalletCore === 'undefined' || !WalletCore.hasWallet()) return;
 
   try {
-    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-    if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === storedAddress.toLowerCase()) {
-      const address = accounts[0];
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-
-      if (typeof walletState !== 'undefined') {
-        walletState.isConnected = true;
-        walletState.address = address;
-        walletState.provider = provider;
-        walletState.signer = signer;
-      }
-
-      const userData = {
-        name: address.slice(0, 6) + '···' + address.slice(-4),
-        address: address,
-        avatar: null,
-        badge: '🦊 METAMASK',
-        provider: 'metamask'
-      };
-
-      setupApp(userData);
-      await window.getWalletBalanceUSD();
-      console.log('✅ Silent wallet reconnect successful:', address);
-    } else {
+    const res = await WalletCore.silentReconnect(storedAddress);
+    if (!res) {
       localStorage.removeItem('ta_wallet_address');
-      if (typeof walletState !== 'undefined') {
-        walletState.isConnected = false;
-        walletState.address = null;
-      }
+      return;
     }
+    const address = res.address;
+    setupApp({
+      name: address.slice(0, 6) + '···' + address.slice(-4),
+      address: address,
+      avatar: null,
+      badge: '🦊 METAMASK',
+      provider: 'metamask'
+    });
+    await WalletCore.sync({ initial: true });
+    WalletCore.startPolling();
+    console.log('✅ Silent wallet reconnect successful:', address);
   } catch (e) {
     // Try/catch prevents broadcast channel or RPC init exceptions during boot from blocking page render
     console.warn('Silent wallet reconnect exception during boot:', e.message);
@@ -5368,6 +5379,9 @@ document.addEventListener('keydown', function(e) {
 
 </script>
 <script src="app-rebuild.js" defer></script>
+<!-- Wallet: WalletCore is the single source of truth for connection + balance sync. -->
+<script src="wallet-core.js" defer></script>
+<script src="real-wallet.js" defer></script>
 <!-- ACOUSTIC Audio-Visual Engines -->
 <script src="sfx-engine.js" defer></script>
 <script src="fx-engine.js" defer></script>

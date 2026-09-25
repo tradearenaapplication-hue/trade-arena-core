@@ -785,6 +785,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <div class="gh-balance" id="ghBalance" style="transition:color .3s">$0.00</div>
       </div>
       <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
+      <!-- Live on-chain value, kept separate from the trading balance so a
+           background balance refresh never looks like a P&L change. -->
+      <div id="walletChainValue" title="Live on-chain wallet value"
+           style="font-size:9px;color:var(--cyan);display:none">$0.00</div>
+      <button id="taLogoutBtn" onclick="logout()"
+              style="margin-top:3px;font-size:8px;padding:2px 7px;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:4px;cursor:pointer">LOG OUT</button>
     </div>
     <!-- countdown + open trade tally -->
     <div class="gh-ticker" id="ghTicker" style="display:none">
@@ -4082,14 +4088,22 @@ async function _tickLivePrices() {
 }
 let _lastWalletBalancePoll = 0;
 function _tickHeader(){
-  // Periodic poll of live on-chain MetaMask balance (every 15s)
+  // Periodic refresh of the live on-chain balance (every 15s).
+  // NOTE: this refreshes walletState only. It must NOT write into `balance`:
+  // `balance` is the trading balance, and overwriting it on every poll
+  // silently discards the user's P&L and re-arms the drawdown breaker.
   const nowTime = Date.now();
   if (window.walletState && window.walletState.isConnected && (nowTime - _lastWalletBalancePoll > 15000)) {
     _lastWalletBalancePoll = nowTime;
     if (window.getWalletBalanceUSD) {
       window.getWalletBalanceUSD().then(liveBalance => {
         if (liveBalance !== undefined && liveBalance !== null) {
-          balance = liveBalance;
+          window.lastOnChainBalance = liveBalance;
+          const el = document.getElementById('walletChainValue');
+          if (el) {
+            el.textContent = '🔗 $' + Number(liveBalance).toFixed(2);
+            el.style.display = 'block';
+          }
         }
       }).catch(err => console.warn('Periodic balance poll failed:', err));
     }
@@ -7118,6 +7132,68 @@ function closeWithdrawModal() {
   const modal = document.getElementById('withdrawModal');
   if(modal) modal.style.display = 'none';
 }
+
+/**
+ * Log out: clear the session, drop the wallet connection and return to the
+ * connect screen.
+ *
+ * Revokes the app session only. MetaMask retains its own site permission, so
+ * reconnecting is a single click. Also tries Privy logout when that provider
+ * is active, since this build supports both auth paths.
+ */
+async function logout() {
+  try {
+    // Best-effort: end the Privy session if one is active. Failures here must
+    // not block the local teardown below.
+    try {
+      if (window.privyLogout && typeof window.privyLogout === 'function') {
+        await window.privyLogout();
+      } else if (window.privyUser && window.PrivyProvider) {
+        console.info('[Logout] Privy session present; relying on local teardown.');
+      }
+    } catch (e) {
+      console.warn('[Logout] provider logout failed, continuing:', e.message);
+    }
+
+    // Clear local session state. ta_api_key / ta_openai_key / ta_gemini_key /
+    // ta_theme are device preferences, not session data, so they are kept.
+    try {
+      window.walletState = { isConnected: false };
+      window.currentUserAddress = null;
+      window.currentUser = null;
+      window.isLiveMode = false;
+      window.userTokenHoldings = [];
+      window.lastOnChainBalance = null;
+    } catch (e) {}
+
+    if (typeof balance !== 'undefined') { balance = 0; }
+    if (typeof startBalance !== 'undefined') { startBalance = 0; }
+    if (typeof totalPnl !== 'undefined') { totalPnl = 0; }
+
+    // Hide wallet-only header chrome.
+    const wcv = document.getElementById('walletChainValue');
+    if (wcv) wcv.style.display = 'none';
+    const net = document.getElementById('ghNetwork');
+    if (net) net.style.display = 'none';
+    const claim = document.getElementById('ghClaimBtn');
+    if (claim) claim.style.display = 'none';
+
+    const status = document.getElementById('loginStatus');
+    if (status) status.textContent = 'Logged out.';
+
+    // Return to the connect screen.
+    const cs = document.getElementById('connectScreen');
+    const app = document.getElementById('mainApp');
+    if (cs) cs.style.display = 'flex';
+    if (app) app.style.display = 'none';
+
+    console.info('[Logout] session cleared.');
+  } catch (e) {
+    console.error('Logout failed:', e);
+  }
+}
+window.logout = logout;
+
 async function handleDemoLogin() {
   // Hide connectScreen, Show mainApp
   const cs = document.getElementById('connectScreen');

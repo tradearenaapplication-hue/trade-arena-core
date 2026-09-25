@@ -2108,9 +2108,10 @@ async function getWalletBalanceUSD() {
         }
         walletState.balanceETH = balanceETH;
         walletState.balanceUSD = balanceUSD;
-        if (typeof balance !== 'undefined') {
-            window.balance = balanceUSD;
-        }
+        // Track the on-chain figure separately. Do NOT write into the global
+        // trading `balance` here - this function is called on a 15s poll, and
+        // overwriting the trading balance each time destroys the user's P&L.
+        window.lastOnChainBalance = balanceUSD;
         return balanceUSD;
     } catch (e) {
         console.error('[RealWallet] Balance fetch failed:', e);

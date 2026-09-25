@@ -10,7 +10,37 @@
  * - Transaction history
  */
 
-// ═══════════════════════════════════════════════════════════
+// ════════════// Ethers v5/v6 compatibility helpers
+const formatEther = (wei) => {
+  if (!globalThis.ethers && typeof ethers === 'undefined') return (Number(wei) / 1e18).toString();
+  const eth = globalThis.ethers || ethers;
+  try {
+    return eth.formatEther ? eth.formatEther(wei) : 
+           (eth.utils?.formatEther ? eth.utils.formatEther(wei) : (Number(wei) / 1e18).toString());
+  } catch { return (Number(wei) / 1e18).toString(); }
+};
+
+const formatUnits = (wei, unit) => {
+  if (!globalThis.ethers && typeof ethers === 'undefined') return (Number(wei) / 1e18).toString();
+  const eth = globalThis.ethers || ethers;
+  try {
+    return eth.formatUnits ? eth.formatUnits(wei, unit) : 
+           (eth.utils?.formatUnits ? eth.utils.formatUnits(wei, unit) : (Number(wei) / 1e18).toString());
+  } catch { return (Number(wei) / 1e18).toString(); }
+};
+
+// Coerce anything numeric-ish to a bigint so v5 BigNumber and v6 bigint values
+// can both be used in arithmetic.
+const toBigInt = (v) => {
+  if (typeof v === 'bigint') return v;
+  if (v == null) return 0n;
+  if (typeof v === 'number') return Number.isFinite(v) ? BigInt(Math.floor(v)) : 0n;
+  if (typeof v === 'string') return v.trim() === '' ? 0n : BigInt(v);
+  if (typeof v === 'object' && v._isBigNumber === true) return BigInt(v.toString());
+  return 0n;
+};
+
+// ════════════════════════════════════════════════
 // CONFIGURATION
 // ═══════════════════════════════════════════════════════════
 
@@ -127,11 +157,18 @@ if (typeof window !== 'undefined' && window.ethereum) {
 async function validateNetwork(provider) {
   try {
     const network = await provider.getNetwork();
-    walletState.networkId = network.chainId;
-    walletState.isCorrectNetwork = network.chainId === REAL_WALLET_CONFIG.network.id;
+    // ethers v6 returns chainId as a bigint; v5 as a number. Comparing the
+    // bigint directly to 8453 always failed, so isCorrectNetwork was stuck
+    // false and trading stayed blocked on the correct network.
+    const chainId = typeof network.chainId === 'bigint'
+      ? Number(network.chainId)
+      : parseInt(network.chainId, 16);
+
+    walletState.networkId = chainId;
+    walletState.isCorrectNetwork = chainId === REAL_WALLET_CONFIG.network.id;
 
     if (!walletState.isCorrectNetwork) {
-      console.warn(`❌ Wrong network! Connected to chain ${network.chainId}, need ${REAL_WALLET_CONFIG.network.id}`);
+      console.warn(`❌ Wrong network! Connected to chain ${chainId}, need ${REAL_WALLET_CONFIG.network.id}`);
       return false;
     }
 
@@ -303,12 +340,26 @@ async function getWalletBalance() {
     const balanceWei = await walletState.provider.getBalance(walletState.address);
     const balanceETH = parseFloat(formatEther(balanceWei));
 
-    // Get ETH price from CoinGecko
-    const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', {
-      timeout: 5000
-    });
-    const priceData = await priceResponse.json();
-    const ethPrice = priceData.ethereum?.usd || 3200;
+    // Get ETH price from CoinGecko.
+    // A `timeout` option is not part of the fetch spec - browsers ignore it,
+    // so the request could hang forever. Use an AbortController instead.
+    let ethPrice = 0;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      try {
+        const priceResponse = await fetch(
+          'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
+          { signal: controller.signal }
+        );
+        const priceData = await priceResponse.json();
+        ethPrice = priceData?.ethereum?.usd || 0;
+      } finally {
+        clearTimeout(timer);
+      }
+    } catch (e) {
+      console.warn('Price fetch failed:', e.message);
+    }
 
     walletState.balanceETH = balanceETH;
     walletState.balanceUSD = balanceETH * ethPrice;
@@ -357,7 +408,9 @@ async function estimateSwapGasCost(method = 'ARBITRAGE') {
 
   // Use EIP-1559 fee (maxFeePerGas)
   const gasPrice = feeData.maxFee || feeData.gasPrice;
-  const gasCostWei = gasPrice.mul(gasEstimate);
+  // v5 exposes a BigNumber with .mul(); v6 uses native bigint multiplication.
+  // Normalising to bigint works for both (toBigInt handles a v5 BigNumber).
+  const gasCostWei = toBigInt(gasPrice) * BigInt(gasEstimate);
   const gasCostETH = parseFloat(formatEther(gasCostWei));
   const gasCostUSD = gasCostETH * (walletState.balanceUSD / walletState.balanceETH || 3200);
 

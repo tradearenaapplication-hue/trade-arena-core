@@ -340,9 +340,10 @@ app.post('/api/webhooks/moonpay/deposit', (req, res) => {
  */
 app.post('/api/analyze/arbitrage', async (req, res) => {
     try {
-        const { tokens, amount } = req.body;
-        if (!tokens || !Array.isArray(tokens) || tokens.length < 2) {
-            return res.status(400).json({ success: false, error: 'tokens array required with >= 2 symbols' });
+        const { tokens, amount } = req.body || {};
+        const numAmount = amount !== undefined ? Number(amount) : undefined;
+        if (!tokens || !Array.isArray(tokens) || tokens.length < 2 || tokens.length > 50 || tokens.some(t => typeof t !== 'string' || !t.trim()) || (numAmount !== undefined && (isNaN(numAmount) || numAmount <= 0))) {
+            return res.status(400).json({ success: false, error: 'Invalid arbitrage parameters' });
         }
 
         const opportunities = [];

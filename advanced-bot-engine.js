@@ -255,7 +255,13 @@ function generateScalperDecision(botId, marketData, bet, botStrategy) {
 function generateTrendDecision(botId, marketData, bet, botStrategy) {
   // Trend followers: Momentum riders, follow market direction
 
-  const momentum = marketData?.reduce((sum, c) => sum + (c.price_change_percentage_24h || 0), 0) / 8 || 0;
+  let sumMom = 0;
+  if (Array.isArray(marketData)) {
+    for (let i = 0; i < marketData.length; i++) {
+      sumMom += (marketData[i]?.price_change_percentage_24h || 0);
+    }
+  }
+  const momentum = (sumMom / 8) || 0;
 
   if (momentum > 5) {
     // Strong bullish momentum - go long
@@ -311,7 +317,13 @@ function generateTrendDecision(botId, marketData, bet, botStrategy) {
 function generateAggressiveDecision(botId, marketData, bet, botStrategy) {
   // Aggressive: High risk, high reward, exploit volatility
 
-  const volatility = marketData?.reduce((sum, c) => sum + Math.abs(c.price_change_percentage_24h || 0), 0) / 8 || 2;
+  let sumVol = 0;
+  if (Array.isArray(marketData)) {
+    for (let i = 0; i < marketData.length; i++) {
+      sumVol += Math.abs(marketData[i]?.price_change_percentage_24h || 0);
+    }
+  }
+  const volatility = (sumVol / 8) || 2;
 
   if (volatility > 8) {
     // High volatility - time for aggressive plays
@@ -372,7 +384,13 @@ function generateConservativeDecision(botId, marketData, bet, botStrategy) {
 function generateBalancedDecision(botId, marketData, bet, botStrategy) {
   // Balanced: Mix of everything, adapt to conditions
 
-  const volatility = marketData?.reduce((sum, c) => sum + Math.abs(c.price_change_percentage_24h || 0), 0) / 8 || 2;
+  let sumVol = 0;
+  if (Array.isArray(marketData)) {
+    for (let i = 0; i < marketData.length; i++) {
+      sumVol += Math.abs(marketData[i]?.price_change_percentage_24h || 0);
+    }
+  }
+  const volatility = (sumVol / 8) || 2;
 
   const methods = ['ARBITRAGE', 'SPOT LONG', 'YIELD FARM', 'FLASH LOAN'];
   const tokens = ['ETH', 'SOL', 'ARB', 'PEPE'];

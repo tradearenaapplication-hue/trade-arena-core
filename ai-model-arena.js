@@ -248,8 +248,18 @@ async function callAIModel(marketData, bet, botId) {
 }
 
 function generateModelSpecificDecision(botId, model, marketData, bet) {
-  const volatility = marketData?.reduce((sum, c) => sum + Math.abs(c.price_change_percentage_24h || 0), 0) / 8 || 2;
-  const momentum = marketData?.reduce((sum, c) => sum + (c.price_change_percentage_24h || 0), 0) / 8 || 0;
+  // Fast single-pass computation for volatility and momentum preserving exact calculation semantics
+  let sumVol = 0;
+  let sumMom = 0;
+  if (Array.isArray(marketData)) {
+    for (let i = 0; i < marketData.length; i++) {
+      const p = marketData[i]?.price_change_percentage_24h || 0;
+      sumVol += Math.abs(p);
+      sumMom += p;
+    }
+  }
+  const volatility = (sumVol / 8) || 2;
+  const momentum = (sumMom / 8) || 0;
 
   // Generate decision based on model personality
   const modelKey = Object.keys(AI_MODELS).find(key => AI_MODELS[key] === model);

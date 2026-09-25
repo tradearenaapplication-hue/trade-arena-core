@@ -755,6 +755,29 @@ describe("Performance", () => {
     expect(Date.now() - start).toBeLessThan(150);
   });
 
+  it("computes AI model arena decision market indicators in single pass (generateModelSpecificDecision benchmark)", () => {
+    const { generateModelSpecificDecision, getBotAIModel } = require("./ai-model-arena.js");
+    const mockMarketData = [
+      { price_change_percentage_24h: 3.5 },
+      { price_change_percentage_24h: -1.2 },
+      { price_change_percentage_24h: 0.8 },
+      { price_change_percentage_24h: 5.4 },
+      { price_change_percentage_24h: -2.1 },
+      { price_change_percentage_24h: 1.1 },
+      { price_change_percentage_24h: 4.2 },
+      { price_change_percentage_24h: -0.5 },
+    ];
+    const model = getBotAIModel(1);
+    const start = Date.now();
+
+    for (let i = 0; i < 50000; i++) {
+      generateModelSpecificDecision(1, model, mockMarketData, 100);
+    }
+
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(150); // fast single-pass evaluation
+  });
+
   it("skips DOM innerHTML assignment when bot pad states are unchanged (renderPadGrid benchmark)", () => {
     const { renderPadGrid, tradingEngine } = require("./trading-engine.js");
     let innerHTMLWrites = 0;

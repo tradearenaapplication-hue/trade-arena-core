@@ -13,7 +13,10 @@ logs/
 # Build artifacts
 dist/
 build/
-public/arena-react-bundle.js
+# NOTE: public/*.bundle.js are NOT build artifacts here - they are committed
+# source files that public/index.html loads with <script src="...bundle.js">.
+# Excluding them produced an image where the /public/ app booted but every
+# bundle 404'd, so the page rendered with no trading engine.
 
 # IDE and editors
 .vscode/
@@ -58,7 +61,8 @@ coverage/
 
 # Build
 dist/
-*.bundle.js
+# Removed "*.bundle.js": public/*.bundle.js are committed runtime source.
+# See the note near the top of this file.
 
 # Uploads and generated files
 uploads/
@@ -122,7 +126,7 @@ dist/
 
 # Build artifacts
 dist/
-*.bundle.js
+# Removed "*.bundle.js" here too - see the note near the top of this file.
 
 # Node module directories
 node_modules/

@@ -171,8 +171,21 @@ app.use(validateRequest);
 // Apply error handling middleware
 app.use(errorHandler);
 
-// Serve static files from root directory
-app.use(express.static(__dirname));
+// Serve the root app.
+//
+// Explicit route for "/" so the canonical root index.html is always served.
+// express.static() alone would fall back to ./public/index.html if the root
+// file were ever missing, which silently deploys the wrong app.
+const path = require('path');
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Static assets from the repo root (JS modules, CSS, images, manifests).
+// `index: false` stops express.static from auto-serving index.html for
+// directory requests, which would bypass the explicit route above.
+app.use(express.static(__dirname, { index: false }));
 
 // Configuration
 const RPC_URL = 'https://mainnet.base.org'; // Base network RPC

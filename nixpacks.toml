@@ -2,10 +2,13 @@
 providers = ["node"]
 
 [phases.setup]
-nixPkgs = ["nodejs_20", "pnpm"]
+nixPkgs = ["nodejs_22"]
 
+# npm rather than pnpm: the repo commits package-lock.json and has no
+# pnpm-lock.yaml, so "pnpm install || npm install" made installs
+# non-reproducible between local and Railway.
 [phases.install]
-cmds = ["pnpm install || npm install"]
+cmds = ["npm ci --omit=dev --ignore-scripts"]
 
 [start]
 cmd = "node server.js"

@@ -1622,6 +1622,8 @@ describe("Advanced Settings Toggle & Form Inputs Accessibility", () => {
     expect(html).toContain('id="auditInterval" aria-label="Audit trade interval"');
     expect(html).toContain('id="noticeThreshold" aria-label="Win rate notice threshold percentage"');
     expect(html).toContain('id="suspendWindow" aria-label="Probation trades before suspension"');
+    expect(html).toContain('id="mcustom-${bot.id}" aria-label="Custom bet amount in dollars"');
+    expect(html).toContain('onkeydown="if(event.key===\'Enter\') setCustomBet(${bot.id})"');
   });
 });
 

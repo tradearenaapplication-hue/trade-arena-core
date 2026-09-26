@@ -4,7 +4,7 @@
   "description": "Multi-AI Trading Arena with Ridges Integration",
   "main": "server.js",
   "engines": {
-    "node": ">=22 <23"
+    "node": ">=22"
   },
   "scripts": {
     "start": "node server.js",

@@ -11,21 +11,55 @@
  * ✓ Auto-recovery on disconnect/reconnect
  */
 
-// Ethers v5/v6 compatibility helper
+// Ethers v5/v6 compatibility helper.
+//
+// Uses `typeof === 'function'` rather than a truthiness check: a property can
+// exist yet not be callable, and calling it throws "ethers.formatEther is not
+// a function" - which is exactly the error that broke balance syncing.
+const _toBigInt = (v) => {
+  if (typeof v === 'bigint') return v;
+  if (v == null) return 0n;
+  if (typeof v === 'number') return Number.isFinite(v) ? BigInt(Math.floor(v)) : 0n;
+  if (typeof v === 'string') return v.trim() === '' ? 0n : BigInt(v);
+  if (typeof v === 'object' && v._isBigNumber === true) return BigInt(v.toString());
+  return 0n;
+};
+
 const formatEther = (wei) => {
-  if (!window.ethers) return (Number(wei) / 1e18).toString();
+  const e = globalThis.ethers;
+  if (!e) return (Number(_toBigInt(wei)) / 1e18).toString();
   try {
-    return window.ethers.formatEther ? window.ethers.formatEther(wei) : 
-           (window.ethers.utils?.formatEther ? window.ethers.utils.formatEther(wei) : (Number(wei) / 1e18).toString());
-  } catch { return (Number(wei) / 1e18).toString(); }
+    if (typeof e.formatEther === 'function') return e.formatEther(_toBigInt(wei));
+    if (e.utils && typeof e.utils.formatEther === 'function') {
+      return e.utils.formatEther(_toBigInt(wei));
+    }
+  } catch (err) {
+    console.warn('[formatEther] falling back to manual conversion:', err && err.message);
+  }
+  const n = Number(_toBigInt(wei)) / 1e18;
+  return Number.isFinite(n) ? n.toString() : '0';
 };
 
 const formatUnits = (wei, unit) => {
-  if (!window.ethers) return (Number(wei) / 1e18).toString();
+  const e = globalThis.ethers;
+  const decimals = Number(unit);
+  const pow = Number.isFinite(decimals) ? decimals : 18;
+  if (!e) {
+    const n = Number(_toBigInt(wei)) / Math.pow(10, pow);
+    return Number.isFinite(n) ? n.toString() : '0';
+  }
   try {
-    return window.ethers.formatUnits ? window.ethers.formatUnits(wei, unit) : 
-           (window.ethers.utils?.formatUnits ? window.ethers.utils.formatUnits(wei, unit) : (Number(wei) / 1e18).toString());
-  } catch { return (Number(wei) / 1e18).toString(); }
+    if (typeof e.formatUnits === 'function') return e.formatUnits(_toBigInt(wei), unit);
+    if (e.utils && typeof e.utils.formatUnits === 'function') {
+      return e.utils.formatUnits(_toBigInt(wei), unit);
+    }
+  } catch (err) {
+    console.warn('[formatUnits] falling back to manual conversion:', err && err.message);
+  }
+  // NOTE: scale by the token's decimals, not a fixed 1e18. A hardcoded 1e18
+  // made 100 USDC (6dp) render as 1e-10.
+  const n = Number(_toBigInt(wei)) / Math.pow(10, pow);
+  return Number.isFinite(n) ? n.toString() : '0';
 };
 
 // MasterSwitch removed — global AUTO is now in the header (globalAutoToggle)
@@ -2048,7 +2082,17 @@ async function getWalletBalanceUSD() {
         } else if (window.walletState && window.walletState.provider) {
             provider = window.walletState.provider;
         } else if (window.ethereum) {
-            provider = new ethers.providers.Web3Provider(window.ethereum);
+            // Version-safe provider construction: ethers v6 renamed
+            // ethers.providers.Web3Provider to ethers.BrowserProvider, so a
+            // bare `new ethers.providers.Web3Provider(...)` throws on v6.
+            const e = globalThis.ethers;
+            if (e && typeof e.BrowserProvider === 'function') {
+                provider = new e.BrowserProvider(window.ethereum, 'any');
+            } else if (e && e.providers && typeof e.providers.Web3Provider === 'function') {
+                provider = new e.providers.Web3Provider(window.ethereum);
+            } else {
+                throw new Error('ethers.js not available');
+            }
         } else {
             provider = new ethers.JsonRpcProvider(REAL_WALLET_CONFIG.network.rpcUrl);
         }
@@ -3363,8 +3407,14 @@ async function simulateOrSendTransaction(quote) {
                 provider = await window.privyProvider.getEthersProvider();
                 signer = provider.getSigner();
             } else if (window.ethereum) {
-                if (typeof ethers.providers !== 'undefined' && ethers.providers.Web3Provider) {
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                // `typeof` checks for a real constructor: on ethers v6
+                // ethers.providers is undefined, and a truthiness test on a
+                // non-constructor property would throw when called.
+                const e = globalThis.ethers;
+                if (e && typeof e.BrowserProvider === 'function') {
+                    provider = new e.BrowserProvider(window.ethereum, 'any');
+                } else if (e && e.providers && typeof e.providers.Web3Provider === 'function') {
+                    provider = new e.providers.Web3Provider(window.ethereum);
                 } else {
                     provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
                 }

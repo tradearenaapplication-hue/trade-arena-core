@@ -2,6 +2,19 @@
 // This server provides complete MetaMask wallet integration with real funds trading
 // Enhanced security, validation, and error handling
 
+// Load .env before anything reads process.env. This must come first.
+//
+// dotenv never overwrites variables that are already set, so on Railway (where
+// PRIVY_CLIENT_ID is configured in the service dashboard) the real environment
+// variable wins and the local .env file is simply not present. It only fills
+// in values on a developer's machine.
+try {
+    require('dotenv').config();
+} catch (e) {
+    // dotenv is optional - production injects real env vars instead.
+    console.warn('[Config] dotenv not loaded:', e.message);
+}
+
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -27,7 +40,7 @@ app.use((req, res, next) => {
     // cloudflare-eth.com returns "Internal error"). Every host in NETWORKS
     // must appear here or the browser refuses the request before it is sent.
     // Keep this list in sync with NETWORKS in wallet-core.js.
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.privy.io https://js.hcaptcha.com https://hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.coingecko.com https://api.0x.org https://mainnet.base.org https://base-rpc.publicnode.com https://base.drpc.org https://ethereum-rpc.publicnode.com https://eth.drpc.org https://1rpc.io https://arb1.arbitrum.io https://arbitrum-one-rpc.publicnode.com https://arbitrum.drpc.org https://mainnet.optimism.io https://optimism-rpc.publicnode.com https://optimism.drpc.org https://polygon-bor-rpc.publicnode.com https://polygon.drpc.org https://bsc-dataseed.binance.org https://bsc-rpc.publicnode.com https://bsc.drpc.org https://*.alchemyapi.io https://auth.privy.io https://explorer-api.walletconnect.com https://9cc5aa622a7b.w.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.jsdelivr.net https://js.hcaptcha.com https://hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.coingecko.com https://api.0x.org https://mainnet.base.org https://base-rpc.publicnode.com https://base.drpc.org https://ethereum-rpc.publicnode.com https://eth.drpc.org https://1rpc.io https://arb1.arbitrum.io https://arbitrum-one-rpc.publicnode.com https://arbitrum.drpc.org https://mainnet.optimism.io https://optimism-rpc.publicnode.com https://optimism.drpc.org https://polygon-bor-rpc.publicnode.com https://polygon.drpc.org https://bsc-dataseed.binance.org https://bsc-rpc.publicnode.com https://bsc.drpc.org https://*.alchemyapi.io https://cdn.jsdelivr.net https://auth.privy.io https://explorer-api.walletconnect.com https://9cc5aa622a7b.w.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
     next();
 });
 
@@ -471,6 +484,47 @@ app.get('/health', (req, res) => {
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: Date.now() });
+});
+
+/**
+ * Public client configuration.
+ *
+ * This endpoint is deliberately an ALLOWLIST, never a dump of process.env.
+ * The whole point is that it cannot leak a secret: only the names listed in
+ * PUBLIC_CLIENT_CONFIG below can ever leave the server, so adding a new secret
+ * to .env can never accidentally publish it.
+ *
+ * On the values themselves - a Privy App ID and Client ID are public
+ * identifiers, not credentials. Privy's own vanilla-JS quickstart puts both
+ * directly in browser code, and the App ID here has always been hardcoded in
+ * privy-client.js. Publishing the Client ID the same way therefore grants no
+ * new access. What must never be served here (and never appear in client code
+ * at all) is the Client SECRET, MoonPay webhooks, or any API key: those are
+ * omitted from the allowlist and belong only in server-side calls.
+ */
+const PUBLIC_CLIENT_CONFIG = {
+    privyClientId: () => process.env.PRIVY_CLIENT_ID || '',
+};
+
+app.get('/api/config', (req, res) => {
+    // Build the response by walking the allowlist, so a key that is not
+    // listed above simply cannot be included.
+    const payload = {};
+    for (const [key, read] of Object.entries(PUBLIC_CLIENT_CONFIG)) {
+        let value = '';
+        try {
+            value = typeof read === 'function' ? read() : '';
+        } catch (e) {
+            console.warn(`[Config] could not read ${key}:`, e.message);
+        }
+        if (typeof value === 'string') value = value.trim();
+        if (value) payload[key] = value;
+    }
+
+    // Tell caches this can differ per environment/instance, so a CDN cannot
+    // serve one deployment's client id to another.
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(payload);
 });
 
 /**

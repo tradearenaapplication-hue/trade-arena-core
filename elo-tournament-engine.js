@@ -65,9 +65,20 @@ function recordEloMatch(agentKey, isWin) {
 
 /**
  * Recursive Self-Improvement: Check if fleet has reached evolution threshold
+ * Optimized: Single for..in pass over eloState.agents accumulating total matches and ELO without Object.values array allocations.
  */
 function checkForEvolution() {
-    const totalMatches = Object.values(eloState.agents).reduce((sum, a) => sum + a.matches, 0);
+    let totalMatches = 0;
+    let totalElo = 0;
+    let agentCount = 0;
+
+    for (const key in eloState.agents) {
+        const agent = eloState.agents[key];
+        totalMatches += agent.matches;
+        totalElo += agent.rating;
+        agentCount++;
+    }
+
     if (totalMatches > 0 && totalMatches % 50 === 0) {
         eloState.generation++;
         const leader = getLeaderAgent();
@@ -77,7 +88,7 @@ function checkForEvolution() {
         eloState.history.push({
             gen: eloState.generation,
             leader: leader,
-            avgElo: Object.values(eloState.agents).reduce((s, a) => s + a.rating, 0) / 5,
+            avgElo: agentCount > 0 ? totalElo / agentCount : 1200,
             timestamp: Date.now()
         });
 
@@ -89,11 +100,20 @@ function checkForEvolution() {
 
 /**
  * Identify the current "Lead" agent (highest ELO)
+ * Optimized: Direct for..in loop tracking max rating without Object.keys array allocation and reduce calls.
  */
 function getLeaderAgent() {
-    return Object.keys(eloState.agents).reduce((a, b) =>
-        eloState.agents[a].rating > eloState.agents[b].rating ? a : b
-    );
+    let leaderKey = 'mom';
+    let maxRating = -Infinity;
+
+    for (const key in eloState.agents) {
+        const rating = eloState.agents[key].rating;
+        if (rating > maxRating) {
+            maxRating = rating;
+            leaderKey = key;
+        }
+    }
+    return leaderKey;
 }
 
 /**
@@ -110,15 +130,24 @@ function getWeightFromElo(agentKey) {
 
 /**
  * Market Rating adjusts based on total fleet performance
+ * Optimized: Direct backwards indexed loop over recent closedTrades without slice/filter array allocations.
  */
 function calculateMarketOpponentRating() {
     // Default market difficulty
     let base = 1200;
 
     // If we have closed trades, adjust base by fleet win rate
-    if (window.closedTrades && window.closedTrades.length > 0) {
-        const recent = window.closedTrades.slice(-20);
-        const wr = recent.filter(t => t.isWin).length / recent.length;
+    const closed = typeof window !== 'undefined' ? window.closedTrades : (global.closedTrades || null);
+    if (closed && closed.length > 0) {
+        const len = closed.length;
+        const count = Math.min(len, 20);
+        const start = len - count;
+        let wins = 0;
+
+        for (let i = start; i < len; i++) {
+            if (closed[i].isWin) wins++;
+        }
+        const wr = wins / count;
         // High win rate = harder market
         base += (wr - 0.5) * 400;
     }
@@ -172,11 +201,27 @@ function renderEloArena() {
     }).join('');
 }
 
-// Global Exports
-window.recordEloMatch = recordEloMatch;
-window.getWeightFromElo = getWeightFromElo;
-window.renderEloArena = renderEloArena;
-window.loadEloState = loadEloState;
+// Global & Module Exports
+if (typeof window !== 'undefined') {
+    window.recordEloMatch = recordEloMatch;
+    window.getWeightFromElo = getWeightFromElo;
+    window.renderEloArena = renderEloArena;
+    window.loadEloState = loadEloState;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        eloState,
+        recordEloMatch,
+        checkForEvolution,
+        getLeaderAgent,
+        getWeightFromElo,
+        calculateMarketOpponentRating,
+        saveEloState,
+        loadEloState,
+        renderEloArena,
+    };
+}
 
 // Initial Load
 loadEloState();

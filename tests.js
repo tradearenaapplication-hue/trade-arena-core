@@ -45,6 +45,13 @@ const {
   scanCrossDexFlashArb,
 } = require("./cross-dex-arb-scanner.js");
 const { isPathSafe } = require("./proxy.js");
+const {
+  recordEloMatch,
+  checkForEvolution,
+  getLeaderAgent,
+  calculateMarketOpponentRating,
+  eloState,
+} = require("./elo-tournament-engine.js");
 
 const tests = [];
 let currentSuite = "";
@@ -402,6 +409,50 @@ describe("Crucible Regime Coverage", () => {
       expect(trade.verified).toBe(true);
       expect([30, -10, 0]).toContain(trade.pnl);
     });
+  });
+});
+
+describe("ELO Tournament Engine Optimization & Rating Logic", () => {
+  it("calculates market opponent rating without intermediate array allocations", () => {
+    global.closedTrades = Array.from({ length: 30 }, (_, i) => ({
+      isWin: i % 2 === 0,
+    }));
+
+    try {
+      const rating = calculateMarketOpponentRating();
+      expect(rating).toBe(1200);
+    } finally {
+      delete global.closedTrades;
+    }
+  });
+
+  it("identifies leader agent and calculates evolution thresholds accurately", () => {
+    eloState.agents.mom.rating = 1350;
+    eloState.agents.vol.rating = 1100;
+    eloState.agents.pol.rating = 1200;
+
+    expect(getLeaderAgent()).toBe("mom");
+
+    eloState.agents.mom.matches = 10;
+    eloState.agents.vol.matches = 10;
+    eloState.agents.pol.matches = 10;
+    eloState.agents.sen.matches = 10;
+    eloState.agents.risk.matches = 10;
+
+    const evolved = checkForEvolution();
+    expect(evolved).toBe(true);
+    expect(eloState.generation).toBeGreaterThan(0);
+    expect(eloState.history.length).toBeGreaterThan(0);
+    expect(eloState.history.at(-1).leader).toBe("mom");
+  });
+
+  it("benchmarks recordEloMatch execution speed without array allocations", () => {
+    const start = Date.now();
+    for (let i = 0; i < 1000; i++) {
+      recordEloMatch("mom", i % 2 === 0);
+    }
+    const duration = Date.now() - start;
+    expect(duration).toBeLessThan(50);
   });
 });
 

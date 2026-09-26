@@ -8,6 +8,25 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js" defer></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
+/* Base reset + page shell.
+   The root app was missing these entirely, so the browser fell back to its
+   default white background and default serif/monospace rendering - which is
+   what made the UI look like unstyled "skeleton" HTML. The --bg/--panel
+   custom properties are declared further down in this same <style> block. */
+*, *::before, *::after { box-sizing: border-box; }
+html { overflow-y: auto; height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
+  color: #fff;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 100% 60% at 50% -10%, rgba(255,45,120,.09) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,255,231,.04) 0%, transparent 60%),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,.009) 2px, rgba(255,255,255,.009) 4px);
+}
+
 /* Security Headers and CSP */
 .header-security {
   /* Prevent clickjacking */
@@ -209,10 +228,19 @@ iframe[sandbox] {
   sandbox: allow-scripts allow-same-origin allow-forms;
 }
 
-/* Remove all CSS pseudo-elements that could be abused */
-::before, ::after {
-  content: none !important;
-  display: none !important;
+/* Pseudo-element hardening, SCOPED.
+   The previous blanket `::before, ::after { content:none !important;
+   display:none !important; }` rule also destroyed every decorative
+   pseudo-element in the app (.divider::before, .m-reels::before, the
+   .security-guard brackets, .demo-btn::after). Restricting it to elements
+   that accept user content keeps the hardening intent without breaking the
+   UI. */
+input::before, input::after,
+textarea::before, textarea::after,
+select::before, select::after,
+option::before, option::after {
+  content: none;
+  display: none;
 }
 
 /* Strict font display */
@@ -960,7 +988,7 @@ a, button, input, select, textarea {
       <div class="divider">— or —</div>
       <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
       <button type="button" class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none'; this.setAttribute('aria-expanded', 'true');" aria-expanded="false" aria-controls="advancedSettings" style="background:none;border:none;width:100%;cursor:pointer;font-family:inherit;">
-        ⚙´©Å Advanced Settings
+        ⚙️ Advanced Settings
       </button>
       <div class="fiat-ramp-row">
         <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>

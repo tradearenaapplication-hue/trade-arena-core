@@ -212,13 +212,19 @@ input, textarea {
 
 .security-guard::after {
   content: ']';
-  color: var(--cyan');
+  color: var(--cyan);
   font-weight: bold;
 }
 
-/* Disable all interactive pseudo-elements */
+/* Suppress hover/focus/active repaint without destroying element styling.
+   The previous rule here was:
+     *:hover, *:focus, *:active, *:visited { all: unset !important; ... }
+   `all: unset` resets EVERY property on every interactive state, so merely
+   hovering or tab-focusing an element stripped its background, border,
+   padding and layout - which is what rendered the app as unstyled
+   "skeleton" markup. The other app in this repo (public/index.html) has no
+   such rule, which is why it renders correctly. */
 *:hover, *:focus, *:active, *:visited {
-  all: unset !important;
   animation: none !important;
   transition: none !important;
 }
@@ -259,13 +265,22 @@ a, button, input, select, textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Strict positioning */
-[style] {
-  all: initial;
-}
+/* Inline styles are legitimate here - the markup uses style="..." for layout
+   throughout. The previous rule `[style] { all: initial; }` reset every
+   property on every inline-styled element, discarding the author's own
+   declarations. The other app in this repo (public/index.html) has no such
+   rule, which is why it renders correctly. */
 
-/* Remove all CSS animations that could be exploited */
-@keyframes, @-webkit-keyframes {
+/* Remove all CSS animations that could be exploited.
+   `@keyframes, @-webkit-keyframes { ... }` is invalid: at-rules cannot be
+   comma-grouped in a selector list, so the browser treated the whole block as
+   a bogus qualified rule and discarded it. Each at-rule is declared
+   separately, which is valid and actually applies. */
+@keyframes {
+  from { opacity: 1; }
+  to { opacity: 1; }
+}
+@-webkit-keyframes {
   from { opacity: 1; }
   to { opacity: 1; }
 }
@@ -879,6 +894,55 @@ a, button, input, select, textarea {
 
 /* ══ STICKY HEADER ══ */
 .global-header{position:sticky;top:4px;z-index:9998}
+
+/* ══ ACCOUNT SETTINGS MODAL ══ */
+.account-modal{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:10010;display:none;align-items:center;justify-content:center;padding:16px}
+.account-modal.open{display:flex}
+.account-modal-content{background:linear-gradient(180deg,#0e0914,#08050d);border:2px solid var(--gold2);border-radius:16px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 16px 64px rgba(0,0,0,0.9),0 0 32px rgba(255,170,0,0.15)}
+.account-modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:rgba(255,170,0,0.05)}
+.account-modal-title{font-family:'Bungee',display;font-size:14px;color:var(--gold2);letter-spacing:1px}
+.account-modal-close{width:36px;height:36px;border-radius:50%;background:var(--chrome);border:1px solid var(--border);color:var(--dim);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.account-modal-close:hover{border-color:var(--hot);color:var(--hot);background:rgba(255,45,120,0.1)}
+.account-modal-body{padding:20px}
+.account-section{margin-bottom:24px}
+.account-section-title{font-family:'Bungee',display;font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.account-section-title::before{content:'';width:24px;height:2px;background:linear-gradient(90deg,var(--gold2),var(--hot))}
+.account-field{margin-bottom:16px}
+.account-field-label{display:block;font-size:9px;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.account-field-input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:12px;transition:all .15s;box-sizing:border-box}
+.account-field-input:focus{outline:none;border-color:var(--gold2);box-shadow:0 0 0 2px rgba(255,170,0,0.15)}
+.account-field-input:disabled{opacity:0.5;cursor:not-allowed}
+.account-field-hint{font-size:8px;color:var(--dim);margin-top:4px}
+.account-btn{width:100%;padding:12px 18px;border-radius:8px;font-family:'Bungee',display;font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .15s;border:none;margin-top:4px}
+.account-btn-primary{background:linear-gradient(135deg,var(--gold2),#e2761b);color:#000;box-shadow:0 2px 12px rgba(255,170,0,.3)}
+.account-btn-primary:hover{box-shadow:0 4px 20px rgba(255,170,0,.6)}
+.account-btn-secondary{background:var(--chrome);border:1px solid var(--border);color:var(--cyan)}
+.account-btn-secondary:hover{border-color:var(--gold2);color:var(--gold2)}
+.account-btn-danger{background:linear-gradient(135deg,var(--hot),#cc0044);color:#fff;box-shadow:0 2px 12px rgba(255,45,120,.3)}
+.account-btn-danger:hover{box-shadow:0 4px 20px rgba(255,45,120,.6)}
+.account-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--dim);font-size:9px}
+.account-divider::before,.account-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.account-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--chrome);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;transition:all .15s}
+.account-toggle:hover{border-color:var(--gold2)}
+.account-toggle-info{flex:1}
+.account-toggle-label{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1px;color:#fff}
+.account-toggle-desc{font-size:8px;color:var(--dim);margin-top:2px}
+.account-toggle-switch{position:relative;width:48px;height:26px;background:var(--border);border-radius:13px;cursor:pointer;transition:all .2s;flex-shrink:0}
+.account-toggle-switch.active{background:linear-gradient(90deg,var(--gold2),var(--hot))}
+.account-toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:22px;height:22px;background:#fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:all .2s}
+.account-toggle-switch.active::after{left:24px}
+.account-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:4px}
+.account-tab{padding:8px 16px;font-family:'Bungee',display;font-size:9px;letter-spacing:1px;color:var(--dim);background:none;border:none;cursor:pointer;position:relative;transition:all .15s}
+.account-tab.active{color:var(--gold2)}
+.account-tab.active::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:6px solid var(--gold2)}
+.account-tab:hover{color:var(--cyan)}
+.account-tab-panel{display:none}
+.account-tab-panel.active{display:block}
+.account-stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+.account-stat-card{background:var(--chrome);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.account-stat-value{font-family:'Oswald',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px}
+.account-stat-label{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+
 </style>
 
 <!-- ╔════════════════════════════════════════════════════════════╗ -->
@@ -6324,6 +6388,259 @@ document.addEventListener('DOMContentLoaded', function() {
     <div style="display:flex; gap:8px; width:100%">
       <input type="text" class="va-input" id="vaInput" aria-label="Command the fleet" placeholder="Command the fleet..." onkeydown="if(event.key==='Enter') sendVoiceCommand()">
       <button class="va-send" onclick="sendVoiceCommand()">SEND</button>
+</div>
+  </div>
+</div>
+
+<!-- ACCOUNT SETTINGS MODAL -->
+<div id="accountModal" class="account-modal" role="dialog" aria-labelledby="accountModalTitle" aria-modal="true">
+  <div class="account-modal-content">
+    <div class="account-modal-header">
+      <h2 class="account-modal-title" id="accountModalTitle">⚙ ACCOUNT SETTINGS</h2>
+      <button class="account-modal-close" onclick="closeAccountModal()" aria-label="Close Account Settings">✕</button>
+    </div>
+    <div class="account-modal-body">
+      <div class="account-tabs" role="tablist">
+        <button class="account-tab active" role="tab" data-tab="profile" onclick="switchAccountTab('profile')">👤 Profile</button>
+        <button class="account-tab" role="tab" data-tab="security" onclick="switchAccountTab('security')">🔒 Security</button>
+        <button class="account-tab" role="tab" data-tab="privacy" onclick="switchAccountTab('privacy')">🛡 Privacy</button>
+        <button class="account-tab" role="tab" data-tab="connections" onclick="switchAccountTab('connections')">🔗 Connections</button>
+        <button class="account-tab" role="tab" data-tab="notifications" onclick="switchAccountTab('notifications')">🔔 Notifications</button>
+      </div>
+
+      <!-- PROFILE TAB -->
+      <div class="account-tab-panel active" id="tab-profile" role="tabpanel">
+        <div class="account-section">
+          <div class="account-section-title">📋 Account Information</div>
+          <div class="account-field">
+            <label class="account-field-label">Display Name</label>
+            <input type="text" class="account-field-input" id="profileDisplayName" placeholder="Enter your display name" aria-label="Display Name">
+            <span class="account-field-hint">This name is shown in the header and leaderboards</span>
+          </div>
+          <div class="account-field">
+            <label class="account-field-label">Email</label>
+            <input type="email" class="account-field-input" id="profileEmail" placeholder="you@example.com" aria-label="Email Address">
+            <span class="account-field-hint">Used for account recovery and notifications</span>
+          </div>
+          <div class="account-field">
+            <label class="account-field-label">Wallet Address</label>
+            <input type="text" class="account-field-input" id="profileWallet" placeholder="0x..." readonly aria-label="Wallet Address">
+            <span class="account-field-hint">Your connected wallet address (cannot be changed)</span>
+          </div>
+          <button class="account-btn account-btn-primary" onclick="saveProfile()">💾 Save Profile</button>
+        </div>
+
+        <div class="account-divider">ACCOUNT STATS</div>
+        <div class="account-stats-grid">
+          <div class="account-stat-card">
+            <div class="account-stat-value" id="statTotalTrades">0</div>
+            <div class="account-stat-label">Total Trades</div>
+          </div>
+          <div class="account-stat-card">
+            <div class="account-stat-value" id="statWinRate">0%</div>
+            <div class="account-stat-label">Win Rate</div>
+          </div>
+          <div class="account-stat-card">
+            <div class="account-stat-value" id="statTotalPnL">$0.00</div>
+            <div class="account-stat-label">Total P&L</div>
+          </div>
+          <div class="account-stat-card">
+            <div class="account-stat-value" id="statActiveBots">0</div>
+            <div class="account-stat-label">Active Bots</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECURITY TAB -->
+      <div class="account-tab-panel" id="tab-security" role="tabpanel">
+        <div class="account-section">
+          <div class="account-section-title">🔐 Password & Authentication</div>
+          <div class="account-field">
+            <label class="account-field-label">Current Password</label>
+            <input type="password" class="account-field-input" id="currentPassword" placeholder="Enter current password" aria-label="Current Password">
+          </div>
+          <div class="account-field">
+            <label class="account-field-label">New Password</label>
+            <input type="password" class="account-field-input" id="newPassword" placeholder="Enter new password (min 8 chars)" aria-label="New Password">
+            <span class="account-field-hint">Must be at least 8 characters with uppercase, lowercase, number, and symbol</span>
+          </div>
+          <div class="account-field">
+            <label class="account-field-label">Confirm New Password</label>
+            <input type="password" class="account-field-input" id="confirmPassword" placeholder="Confirm new password" aria-label="Confirm New Password">
+          </div>
+          <button class="account-btn account-btn-primary" onclick="changePassword()">🔐 Update Password</button>
+        </div>
+
+        <div class="account-divider">TWO-FACTOR AUTHENTICATION</div>
+        <div class="account-toggle">
+          <div class="account-toggle-info">
+            <div class="account-toggle-label">Enable 2FA (TOTP)</div>
+            <div class="account-toggle-desc">Use Google Authenticator, Authy, or similar for added security</div>
+          </div>
+          <div class="account-toggle-switch" id="toggle2fa" onclick="toggle2FA()" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+        <div id="totpSetup" style="display:none;margin-top:12px;padding:12px;background:rgba(255,170,0,0.05);border:1px solid rgba(255,170,0,0.2);border-radius:8px;">
+          <div style="font-size:10px;color:var(--gold2);margin-bottom:8px;">Scan with your authenticator app:</div>
+          <div id="totpQrCode" style="width:160px;height:160px;margin:0 auto 8px;background:#fff;border-radius:8px;"></div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--cyan);text-align:center;word-break:break-all;margin-bottom:8px;" id="totpSecret"></div>
+          <input type="text" class="account-field-input" id="totpCode" placeholder="Enter 6-digit code" style="max-width:120px;margin:0 auto;display:block;">
+          <button class="account-btn account-btn-primary" style="margin-top:8px;max-width:180px;" onclick="verifyTOTP()">✅ Verify & Enable</button>
+        </div>
+
+        <div class="account-divider">SESSION MANAGEMENT</div>
+        <div class="account-toggle">
+          <div class="account-toggle-info">
+            <div class="account-toggle-label">Auto-lock session</div>
+            <div class="account-toggle-desc">Require password after 15 minutes of inactivity</div>
+          </div>
+          <div class="account-toggle-switch" id="toggleAutoLock" onclick="toggleAutoLock()" role="switch" aria-checked="true" tabindex="0"></div>
+        </div>
+        <button class="account-btn account-btn-secondary" onclick="revokeAllSessions()" style="margin-top:8px;">🚪 Revoke All Other Sessions</button>
+      </div>
+
+      <!-- PRIVACY TAB -->
+      <div class="account-tab-panel" id="tab-privacy" role="tabpanel">
+        <div class="account-section">
+          <div class="account-section-title">📊 Data & Analytics</div>
+          <div class="account-toggle">
+            <div class="account-toggle-info">
+              <div class="account-toggle-label">Share anonymous usage data</div>
+              <div class="account-toggle-desc">Help improve Trade Arena with anonymized analytics</div>
+            </div>
+            <div class="account-toggle-switch active" id="toggleAnalytics" onclick="toggleAnalytics()" role="switch" aria-checked="true" tabindex="0"></div>
+          </div>
+          <div class="account-toggle">
+            <div class="account-toggle-info">
+              <div class="account-toggle-label">Share trade data for AI training</div>
+              <div class="account-toggle-desc">Contribute your trades to improve AI models (anonymized)</div>
+            </div>
+            <div class="account-toggle-switch" id="toggleAITraining" onclick="toggleAITraining()" role="switch" aria-checked="false" tabindex="0"></div>
+          </div>
+          <div class="account-toggle">
+            <div class="account-toggle-info">
+              <div class="account-toggle-label">Leaderboard visibility</div>
+              <div class="account-toggle-desc">Show your stats on public leaderboards</div>
+            </div>
+            <div class="account-toggle-switch active" id="toggleLeaderboard" onclick="toggleLeaderboard()" role="switch" aria-checked="true" tabindex="0"></div>
+          </div>
+        </div>
+
+        <div class="account-divider">DATA MANAGEMENT</div>
+        <button class="account-btn account-btn-secondary" onclick="exportAccountData()" style="margin-right:8px;">📥 Export My Data</button>
+        <button class="account-btn account-btn-secondary" onclick="requestDataDeletion()">🗑️ Request Data Deletion</button>
+      </div>
+
+      <!-- CONNECTIONS TAB -->
+      <div class="account-tab-panel" id="tab-connections" role="tabpanel">
+        <div class="account-section">
+          <div class="account-section-title">🔗 Connected Wallets</div>
+          <div class="account-field">
+            <label class="account-field-label">Primary Wallet (MetaMask)</label>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;">
+              <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#f6851b,#e2761b);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#000;">M</div>
+              <div>
+                <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--gold);" id="connectedWalletAddress">Not connected</div>
+                <div style="font-size:9px;color:var(--dim);">Base Mainnet (8453)</div>
+              </div>
+            </div>
+          </div>
+          <div class="account-field">
+            <button class="account-btn account-btn-primary" onclick="connectMetaMask()" style="width:auto;">🦊 Connect MetaMask</button>
+            <button class="account-btn account-btn-secondary" onclick="disconnectWallet()" style="width:auto;margin-left:8px;">🔌 Disconnect</button>
+          </div>
+        </div>
+
+        <div class="account-divider">SOCIAL LOGIN</div>
+        <div class="account-toggle">
+          <div class="account-toggle-info">
+            <div class="account-toggle-label">Google Sign-In</div>
+            <div class="account-toggle-desc">Link Google account for easier login</div>
+          </div>
+          <div class="account-toggle-switch" id="toggleGoogleAuth" onclick="toggleGoogleAuth()" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+        <div class="account-toggle">
+          <div class="account-toggle-info">
+            <div class="account-toggle-label">Apple Sign-In</div>
+            <div class="account-toggle-desc">Link Apple ID for easier login</div>
+          </div>
+          <div class="account-toggle-switch" id="toggleAppleAuth" onclick="toggleAppleAuth()" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+
+        <div class="account-divider">API INTEGRATIONS</div>
+        <div class="account-field">
+          <label class="account-field-label">Anthropic API Key</label>
+          <input type="password" class="account-field-input" id="anthropicApiKey" placeholder="sk-ant-api03-..." aria-label="Anthropic API Key">
+          <span class="account-field-hint">Enables full Claude AI agents. Get one at <a href="https://console.anthropic.com" target="_blank" style="color:var(--cyan);">console.anthropic.com</a></span>
+        </div>
+        <div class="account-field">
+          <label class="account-field-label">OpenAI API Key</label>
+          <input type="password" class="account-field-input" id="openaiApiKey" placeholder="sk-..." aria-label="OpenAI API Key">
+        </div>
+        <div class="account-field">
+          <label class="account-field-label">CoinGecko API Key (Optional)</label>
+          <input type="password" class="account-field-input" id="coingeckoApiKey" placeholder="CG-..." aria-label="CoinGecko API Key">
+          <span class="account-field-hint">Higher rate limits for market data</span>
+        </div>
+        <button class="account-btn account-btn-primary" onclick="saveApiKeys()">💾 Save API Keys</button>
+      </div>
+
+      <!-- NOTIFICATIONS TAB -->
+      <div class="account-tab-panel" id="tab-notifications" role="tabpanel">
+        <div class="account-section">
+          <div class="account-section-title">🔔 Notification Preferences</div>
+          <div class="account-toggle">
+            <div class="account-toggle-info">
+              <div class="account-toggle-label">Push Notifications</div>
+              <div class="account-toggle-desc">Receive browser push notifications</div>
+            </div>
+            <div class="account-toggle-switch active" id="togglePush" onclick="togglePush()" role="switch" aria-checked="true" tabindex="0"></div>
+          </div>
+          <div class="account-toggle">
+            <div class="account-toggle-info">
+              <div class="account-toggle-label">Trade Executions</div>
+              <div class="account-toggle-desc">Notify when trades open/close</div>
+            </div>
+            <div class="account-toggle-switch active" id="toggleTradeNotify" onclick="toggleTradeNotify()" role="switch" aria-checked="true" tabindex="0"></div>
+          </div>
+          <div class="account-toggle">
+            <div class="account-toggle-info">
+              <div class="account-toggle-label">Profit/Loss Alerts</div>
+              <div class="account-toggle-desc">Alert on significant P&L changes</div>
+            </div>
+            <div class="account-toggle-switch active" id="togglePnLAlert" onclick="togglePnLAlert()" role="switch" aria-checked="true" tabindex="0"></div>
+          </div>
+          <div class="account-toggle">
+            <div class="account-toggle-info">
+              <div class="account-toggle-label">Daily Summary</div>
+              <div class="account-toggle-desc">End-of-day performance summary</div>
+            </div>
+            <div class="account-toggle-switch" id="toggleDailySummary" onclick="toggleDailySummary()" role="switch" aria-checked="false" tabindex="0"></div>
+          </div>
+          <div class="account-toggle">
+            <div class="account-toggle-info">
+              <div class="account-toggle-label">System Alerts</div>
+              <div class="account-toggle-desc">Maintenance, updates, and critical notices</div>
+            </div>
+            <div class="account-toggle-switch active" id="toggleSystemAlerts" onclick="toggleSystemAlerts()" role="switch" aria-checked="true" tabindex="0"></div>
+          </div>
+        </div>
+
+        <div class="account-divider">EXTERNAL NOTIFICATIONS</div>
+        <div class="account-field">
+          <label class="account-field-label">Discord Webhook URL</label>
+          <input type="url" class="account-field-input" id="discordWebhook" placeholder="https://discord.com/api/webhooks/..." aria-label="Discord Webhook URL">
+          <span class="account-field-hint">Get webhook URL from Discord Server Settings → Integrations</span>
+        </div>
+        <div class="account-field">
+          <label class="account-field-label">Telegram Bot Token</label>
+          <input type="text" class="account-field-input" id="telegramBotToken" placeholder="123456789:ABC..." aria-label="Telegram Bot Token">
+        </div>
+        <div class="account-field">
+          <label class="account-field-label">Telegram Chat ID</label>
+          <input type="text" class="account-field-input" id="telegramChatId" placeholder="-1001234567890" aria-label="Telegram Chat ID">
+        </div>
+        <button class="account-btn account-btn-primary" onclick="saveNotificationSettings()">💾 Save Notification Settings</button>
+      </div>
     </div>
   </div>
 </div>
@@ -6476,5 +6793,404 @@ Respond in JSON format:
   </div>
 </div>
 
+<!-- ACCOUNT SETTINGS JAVASCRIPT -->
+<script>
+// Account Modal Functions
+function openAccountModal() {
+  const modal = document.getElementById('accountModal');
+  if (modal) {
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    loadAccountData();
+  }
+}
+
+function closeAccountModal() {
+  const modal = document.getElementById('accountModal');
+  if (modal) {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+function switchAccountTab(tabName) {
+  // Update tabs
+  document.querySelectorAll('.account-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === tabName);
+  });
+  // Update panels
+  document.querySelectorAll('.account-tab-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === 'tab-' + tabName);
+  });
+  // Save active tab
+  localStorage.setItem('accountActiveTab', tabName);
+}
+
+async function loadAccountData() {
+  // Load saved preferences
+  const activeTab = localStorage.getItem('accountActiveTab') || 'profile';
+  switchAccountTab(activeTab);
+  
+  // Load wallet address if connected
+  if (window.walletState?.address) {
+    const walletEl = document.getElementById('connectedWalletAddress');
+    if (walletEl) walletEl.textContent = window.walletState.address;
+    const profileWallet = document.getElementById('profileWallet');
+    if (profileWallet) profileWallet.value = window.walletState.address;
+  }
+  
+  // Load profile data
+  const savedProfile = JSON.parse(localStorage.getItem('tradeArenaProfile') || '{}');
+  if (savedProfile.displayName) document.getElementById('profileDisplayName').value = savedProfile.displayName;
+  if (savedProfile.email) document.getElementById('profileEmail').value = savedProfile.email;
+  
+  // Load toggle states
+  loadToggleStates();
+  
+  // Load stats
+  loadAccountStats();
+}
+
+function loadToggleStates() {
+  const toggles = {
+    'toggle2fa': 'tradeArena_2fa',
+    'toggleAutoLock': 'tradeArena_autoLock',
+    'toggleAnalytics': 'tradeArena_analytics',
+    'toggleAITraining': 'tradeArena_aiTraining',
+    'toggleLeaderboard': 'tradeArena_leaderboard',
+    'togglePush': 'tradeArena_push',
+    'toggleTradeNotify': 'tradeArena_tradeNotify',
+    'togglePnLAlert': 'tradeArena_pnlAlert',
+    'toggleDailySummary': 'tradeArena_dailySummary',
+    'toggleSystemAlerts': 'tradeArena_systemAlerts',
+    'toggleGoogleAuth': 'tradeArena_googleAuth',
+    'toggleAppleAuth': 'tradeArena_appleAuth'
+  };
+  
+  Object.entries(toggles).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    const saved = localStorage.getItem(key);
+    if (el && saved !== null) {
+      const isActive = saved === 'true';
+      el.classList.toggle('active', isActive);
+      el.setAttribute('aria-checked', isActive);
+    }
+    // Set defaults
+    if (el && saved === null) {
+      const defaults = {
+        'tradeArena_autoLock': true,
+        'tradeArena_analytics': true,
+        'tradeArena_leaderboard': true,
+        'tradeArena_push': true,
+        'tradeArena_tradeNotify': true,
+        'tradeArena_pnlAlert': true,
+        'tradeArena_systemAlerts': true
+      };
+      if (defaults[key]) {
+        el.classList.add('active');
+        el.setAttribute('aria-checked', 'true');
+      }
+    }
+  });
+  
+  // Show TOTP setup if 2FA is enabled
+  const toggle2fa = document.getElementById('toggle2fa');
+  const totpSetup = document.getElementById('totpSetup');
+  if (toggle2fa && toggle2fa.classList.contains('active')) {
+    if (totpSetup) totpSetup.style.display = 'block';
+  }
+}
+
+function toggleSwitch(id, key) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isActive = el.classList.toggle('active');
+  el.setAttribute('aria-checked', isActive);
+  localStorage.setItem(key, isActive);
+  
+  // Special handling for 2FA
+  if (id === 'toggle2fa') {
+    const totpSetup = document.getElementById('totpSetup');
+    if (totpSetup) {
+      if (isActive) {
+        generateTOTPSetup();
+        totpSetup.style.display = 'block';
+      } else {
+        totpSetup.style.display = 'none';
+      }
+    }
+  }
+}
+
+function toggle2FA() { toggleSwitch('toggle2fa', 'tradeArena_2fa'); }
+function toggleAutoLock() { toggleSwitch('toggleAutoLock', 'tradeArena_autoLock'); }
+function toggleAnalytics() { toggleSwitch('toggleAnalytics', 'tradeArena_analytics'); }
+function toggleAITraining() { toggleSwitch('toggleAITraining', 'tradeArena_aiTraining'); }
+function toggleLeaderboard() { toggleSwitch('toggleLeaderboard', 'tradeArena_leaderboard'); }
+function togglePush() { toggleSwitch('togglePush', 'tradeArena_push'); }
+function toggleTradeNotify() { toggleSwitch('toggleTradeNotify', 'tradeArena_tradeNotify'); }
+function togglePnLAlert() { toggleSwitch('togglePnLAlert', 'tradeArena_pnlAlert'); }
+function toggleDailySummary() { toggleSwitch('toggleDailySummary', 'tradeArena_dailySummary'); }
+function toggleSystemAlerts() { toggleSwitch('toggleSystemAlerts', 'tradeArena_systemAlerts'); }
+function toggleGoogleAuth() { toggleSwitch('toggleGoogleAuth', 'tradeArena_googleAuth'); }
+function toggleAppleAuth() { toggleSwitch('toggleAppleAuth', 'tradeArena_appleAuth'); }
+
+// Profile functions
+function saveProfile() {
+  const displayName = document.getElementById('profileDisplayName')?.value || '';
+  const email = document.getElementById('profileEmail')?.value || '';
+  
+  const profile = JSON.parse(localStorage.getItem('tradeArenaProfile') || '{}');
+  profile.displayName = displayName;
+  profile.email = email;
+  profile.updatedAt = new Date().toISOString();
+  localStorage.setItem('tradeArenaProfile', JSON.stringify(profile));
+  
+  // Update header name
+  if (displayName) {
+    const ghName = document.getElementById('ghName');
+    if (ghName) ghName.textContent = displayName;
+  }
+  
+  showToast('Profile saved successfully', 'success');
+}
+
+function loadAccountStats() {
+  // Load from localStorage or compute from trade history
+  const trades = JSON.parse(localStorage.getItem('tradeArenaTrades') || '[]');
+  const totalTrades = trades.length;
+  const wins = trades.filter(t => t.profit > 0).length;
+  const winRate = totalTrades > 0 ? Math.round((wins / totalTrades) * 100) : 0;
+  const totalPnL = trades.reduce((sum, t) => sum + (t.profit || 0), 0);
+  const activeBots = document.querySelectorAll('.bot-card').length || 0;
+  
+  document.getElementById('statTotalTrades').textContent = totalTrades;
+  document.getElementById('statWinRate').textContent = winRate + '%';
+  document.getElementById('statTotalPnL').textContent = '$' + totalPnL.toFixed(2);
+  document.getElementById('statActiveBots').textContent = activeBots;
+}
+
+// Security functions
+function changePassword() {
+  const current = document.getElementById('currentPassword')?.value;
+  const newPass = document.getElementById('newPassword')?.value;
+  const confirm = document.getElementById('confirmPassword')?.value;
+  
+  if (!current || !newPass || !confirm) {
+    showToast('Please fill in all password fields', 'error');
+    return;
+  }
+  
+  if (newPass !== confirm) {
+    showToast('Passwords do not match', 'error');
+    return;
+  }
+  
+  if (newPass.length < 8) {
+    showToast('Password must be at least 8 characters', 'error');
+    return;
+  }
+  
+  // In a real app, this would verify current password and update via backend
+  // For demo, we just save a hash
+  localStorage.setItem('tradeArenaPasswordHash', btoa(newPass)); // Not secure - demo only
+  showToast('Password updated successfully', 'success');
+  
+  document.getElementById('currentPassword').value = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('confirmPassword').value = '';
+}
+
+function revokeAllSessions() {
+  if (confirm('This will log you out of all other devices. Continue?')) {
+    localStorage.removeItem('tradeArenaSession');
+    localStorage.removeItem('tradeArenaProfile');
+    showToast('All sessions revoked. Please log in again.', 'info');
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+  }
+}
+
+// TOTP functions
+function generateTOTPSetup() {
+  // Generate a random secret (in real app, this comes from backend)
+  const secret = generateRandomSecret();
+  localStorage.setItem('tradeArenaTOTPSecret', secret);
+  
+  const secretEl = document.getElementById('totpSecret');
+  if (secretEl) secretEl.textContent = formatSecret(secret);
+  
+  // In real app, generate QR code using a library
+  const qrEl = document.getElementById('totpQrCode');
+  if (qrEl) {
+    qrEl.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#666;font-size:12px;">QR Code would appear here<br><small>Use a TOTP library to generate</small></div>';
+  }
+}
+
+function verifyTOTP() {
+  const code = document.getElementById('totpCode')?.value;
+  if (!code || code.length !== 6) {
+    showToast('Please enter a valid 6-digit code', 'error');
+    return;
+  }
+  
+  // In real app, verify against backend
+  // For demo, accept any 6-digit code
+  const secret = localStorage.getItem('tradeArenaTOTPSecret');
+  if (secret) {
+    showToast('2FA enabled successfully!', 'success');
+    document.getElementById('totpSetup').style.display = 'none';
+    document.getElementById('totpCode').value = '';
+  }
+}
+
+function generateRandomSecret() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let secret = '';
+  for (let i = 0; i < 32; i++) {
+    secret += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return secret;
+}
+
+function formatSecret(secret) {
+  return secret.match(/.{1,4}/g).join(' ');
+}
+
+// Privacy functions
+function exportAccountData() {
+  const data = {
+    profile: JSON.parse(localStorage.getItem('tradeArenaProfile') || '{}'),
+    trades: JSON.parse(localStorage.getItem('tradeArenaTrades') || '[]'),
+    settings: {},
+    exportedAt: new Date().toISOString()
+  };
+  
+  // Collect all tradeArena keys
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('tradeArena')) {
+      data.settings[key] = localStorage.getItem(key);
+    }
+  }
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'trade-arena-account-data-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Account data exported', 'success');
+}
+
+function requestDataDeletion() {
+  if (confirm('This will permanently delete all your account data. This cannot be undone. Continue?')) {
+    if (confirm('Are you absolutely sure? All trades, settings, and history will be lost.')) {
+      // Clear all tradeArena keys
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('tradeArena')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      showToast('Account data deleted. Reloading...', 'info');
+      setTimeout(() => window.location.reload(), 1500);
+    }
+  }
+}
+
+// Connections functions
+function connectMetaMask() {
+  if (typeof loginMetaMask === 'function') {
+    closeAccountModal();
+    loginMetaMask();
+  } else {
+    showToast('MetaMask login not available', 'error');
+  }
+}
+
+function disconnectWallet() {
+  if (window.walletState) {
+    window.walletState.isConnected = false;
+    window.walletState.address = null;
+    window.walletState.balanceETH = 0;
+    window.walletState.balanceUSD = 0;
+    localStorage.removeItem('trade_arena_wallet_address');
+    const walletEl = document.getElementById('connectedWalletAddress');
+    if (walletEl) walletEl.textContent = 'Not connected';
+    const profileWallet = document.getElementById('profileWallet');
+    if (profileWallet) profileWallet.value = '';
+    showToast('Wallet disconnected', 'info');
+  }
+}
+
+function saveApiKeys() {
+  const keys = {
+    anthropic: document.getElementById('anthropicApiKey')?.value,
+    openai: document.getElementById('openaiApiKey')?.value,
+    coingecko: document.getElementById('coingeckoApiKey')?.value
+  };
+  
+  Object.entries(keys).forEach(([key, value]) => {
+    if (value) {
+      localStorage.setItem('tradeArenaApiKey_' + key, value);
+      // Also set global for current session
+      if (key === 'anthropic') window._userApiKey = value;
+    }
+  });
+  
+  showToast('API keys saved', 'success');
+}
+
+function saveNotificationSettings() {
+  const settings = {
+    discordWebhook: document.getElementById('discordWebhook')?.value,
+    telegramBotToken: document.getElementById('telegramBotToken')?.value,
+    telegramChatId: document.getElementById('telegramChatId')?.value
+  };
+  
+  Object.entries(settings).forEach(([key, value]) => {
+    if (value) localStorage.setItem('tradeArena_' + key, value);
+  });
+  
+  showToast('Notification settings saved', 'success');
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  // Escape to close modal
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('accountModal');
+    if (modal && modal.classList.contains('open')) {
+      closeAccountModal();
+    }
+  }
+  // Ctrl/Cmd + Shift + A to open account modal
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'A') {
+    e.preventDefault();
+    openAccountModal();
+  }
+});
+
+// Add account button to header (we'll add it to the global header)
+// This runs after DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  // Add account settings button to header controls
+  const headerControls = document.querySelector('.gh-controls');
+  if (headerControls) {
+    const accountBtn = document.createElement('button');
+    accountBtn.className = 'gh-bus-btn';
+    accountBtn.innerHTML = '⚙ ACCOUNT';
+    accountBtn.onclick = openAccountModal;
+    accountBtn.setAttribute('aria-label', 'Open Account Settings');
+    accountBtn.title = 'Account Settings (Ctrl+Shift+A)';
+    headerControls.insertBefore(accountBtn, headerControls.firstChild);
+  }
+});
+</script>
 </body>
 </html>

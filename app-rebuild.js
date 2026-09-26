@@ -469,9 +469,25 @@ class AutoRecovery {
   checkHealth() {
     if (!this.isOnline) return;
 
-    // Check if critical globals are intact
+    // Check if critical globals are intact.
+    //
+    // These are declared with `let`/`const` inside an inline <script>, which
+    // puts them in the *script* scope, NOT on `window`. Reading window[g]
+    // therefore always reported them missing and triggered a bogus
+    // "[AutoRecovery] Missing globals" recovery every few seconds. Probe the
+    // identifiers directly instead, via a Function built from the names so
+    // `typeof` never throws on an undeclared binding.
     const required = ["balance", "bots", "openPositions", "closedTrades"];
-    const missing = required.filter((g) => typeof window[g] === "undefined");
+    const missing = [];
+    for (const name of required) {
+      let present = false;
+      try {
+        present = typeof new Function("return typeof " + name)() !== "undefined";
+      } catch (e) {
+        present = typeof window[name] !== "undefined";
+      }
+      if (!present) missing.push(name);
+    }
 
     if (missing.length > 0) {
       console.warn("[AutoRecovery] Missing globals:", missing);

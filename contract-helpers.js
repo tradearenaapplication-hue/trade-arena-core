@@ -17,8 +17,12 @@ const BASE_CONFIG = {
 };
 
 // Token Addresses on Base
-if (typeof TOKENS === "undefined") {
-  var TOKENS = {
+// RENAMED from TOKENS -> BASE_TOKENS.
+// index.html declares `const TOKENS = [...]` (the emoji/ticker list) in the
+// global scope. Declaring `var TOKENS` here collided with it and threw
+// "Uncaught SyntaxError: Identifier 'TOKENS' has already been declared",
+// which killed this entire module and everything that depended on it.
+var BASE_TOKENS = {
     WETH: {
       address: "0x4200000000000000000000000000000000000006",
       symbol: "WETH",
@@ -55,8 +59,7 @@ if (typeof TOKENS === "undefined") {
       decimals: 18,
       name: "Optimism",
     },
-  };
-}
+};
 
 // DEX & Protocol Addresses on Base
 const PROTOCOLS = {

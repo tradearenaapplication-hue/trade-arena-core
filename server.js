@@ -22,11 +22,12 @@ app.use((req, res, next) => {
     res.setHeader('Referrer-Policy', 'no-referrer');
     // connect-src must list every RPC endpoint wallet-core.js calls. The
     // NETWORKS list in wallet-core.js scans Base, Ethereum, Arbitrum,
-    // Optimism, Polygon and BSC; only mainnet.base.org was whitelisted, so the
-    // other five were refused by the browser ("Refused to connect because it
-    // violates the document's Content Security Policy") and multi-chain token
-    // balances silently came back empty. Keep this list in sync with NETWORKS.
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.privy.io https://js.hcaptcha.com https://hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.coingecko.com https://api.0x.org https://mainnet.base.org https://cloudflare-eth.com https://arb1.arbitrum.io https://mainnet.optimism.io https://polygon-rpc.com https://bsc-dataseed.binance.org https://*.alchemyapi.io https://auth.privy.io https://explorer-api.walletconnect.com https://9cc5aa622a7b.w.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
+    // Optimism, Polygon and BSC, and each network carries several fallback
+    // endpoints because free public RPCs rot (polygon-rpc.com now 401s and
+    // cloudflare-eth.com returns "Internal error"). Every host in NETWORKS
+    // must appear here or the browser refuses the request before it is sent.
+    // Keep this list in sync with NETWORKS in wallet-core.js.
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.privy.io https://js.hcaptcha.com https://hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.coingecko.com https://api.0x.org https://mainnet.base.org https://base-rpc.publicnode.com https://base.drpc.org https://ethereum-rpc.publicnode.com https://eth.drpc.org https://1rpc.io https://arb1.arbitrum.io https://arbitrum-one-rpc.publicnode.com https://arbitrum.drpc.org https://mainnet.optimism.io https://optimism-rpc.publicnode.com https://optimism.drpc.org https://polygon-bor-rpc.publicnode.com https://polygon.drpc.org https://bsc-dataseed.binance.org https://bsc-rpc.publicnode.com https://bsc.drpc.org https://*.alchemyapi.io https://auth.privy.io https://explorer-api.walletconnect.com https://9cc5aa622a7b.w.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
     next();
 });
 

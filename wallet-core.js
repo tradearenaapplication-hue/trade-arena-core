@@ -36,13 +36,25 @@ const WalletCore = (() => {
   };
 
   // Networks scanned for the user's real holdings.
+  /**
+   * Public RPC endpoints, in preference order, per network.
+   *
+   * These are free, unauthenticated endpoints and they rot: `polygon-rpc.com`
+   * now returns 401 ("tenant disabled") and `cloudflare-eth.com` returns
+   * "Internal error" for every method. When that happened the balance scan
+   * silently dropped those chains, because the callers below swallow errors
+   * and return 0. So each network now carries several endpoints and rpcCall
+   * walks the list until one answers.
+   *
+   * Keep this in sync with the CSP connect-src list in server.js.
+   */
   const NETWORKS = [
-    { name: 'Base',      chainId: 8453,  rpc: 'https://mainnet.base.org',         nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
-    { name: 'Ethereum',  chainId: 1,     rpc: 'https://cloudflare-eth.com',       nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
-    { name: 'Arbitrum',  chainId: 42161, rpc: 'https://arb1.arbitrum.io/rpc',      nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
-    { name: 'Optimism',  chainId: 10,    rpc: 'https://mainnet.optimism.io',      nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
-    { name: 'Polygon',   chainId: 137,   rpc: 'https://polygon-rpc.com',           nativeSymbol: 'POL', coingeckoId: 'matic-network' },
-    { name: 'BSC',       chainId: 56,    rpc: 'https://bsc-dataseed.binance.org', nativeSymbol: 'BNB', coingeckoId: 'binancecoin' },
+    { name: 'Base',      chainId: 8453,  rpc: ['https://mainnet.base.org', 'https://base-rpc.publicnode.com', 'https://base.drpc.org'],         nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
+    { name: 'Ethereum',  chainId: 1,     rpc: ['https://ethereum-rpc.publicnode.com', 'https://eth.drpc.org', 'https://1rpc.io/eth'],              nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
+    { name: 'Arbitrum',  chainId: 42161, rpc: ['https://arb1.arbitrum.io/rpc', 'https://arbitrum-one-rpc.publicnode.com', 'https://arbitrum.drpc.org'],      nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
+    { name: 'Optimism',  chainId: 10,    rpc: ['https://mainnet.optimism.io', 'https://optimism-rpc.publicnode.com', 'https://optimism.drpc.org'],      nativeSymbol: 'ETH', coingeckoId: 'ethereum' },
+    { name: 'Polygon',   chainId: 137,   rpc: ['https://polygon-bor-rpc.publicnode.com', 'https://polygon.drpc.org', 'https://1rpc.io/matic'],            nativeSymbol: 'POL', coingeckoId: 'matic-network' },
+    { name: 'BSC',       chainId: 56,    rpc: ['https://bsc-dataseed.binance.org', 'https://bsc-rpc.publicnode.com', 'https://bsc.drpc.org'],                nativeSymbol: 'BNB', coingeckoId: 'binancecoin' },
   ];
 
   const TOKENS = {
@@ -252,36 +264,61 @@ const WalletCore = (() => {
   // RAW JSON-RPC READS (multi-chain holdings)
   // ═══════════════════════════════════════════════════════════
 
+  /**
+   * Try each endpoint for a network in turn until one answers.
+   * Accepts a single URL or the NETWORKS array of fallbacks.
+   */
   async function rpcCall(rpc, method, params) {
-    const res = await fetchWithTimeout(rpc, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-    }, 4000);
-    const data = await res.json();
-    if (data && data.error) throw new Error(data.error.message || 'RPC error');
-    return data ? data.result : null;
+    const list = Array.isArray(rpc) ? rpc : [rpc];
+    let lastErr = null;
+    for (const endpoint of list) {
+      try {
+        const res = await fetchWithTimeout(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+        }, 4000);
+        const data = await res.json();
+        if (data && data.error) throw new Error(data.error.message || 'RPC error');
+        return data ? data.result : null;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error('All RPC endpoints failed');
   }
 
-  async function getNativeBalance(rpc, address) {
+  /**
+   * Balance reads return 0n on failure so one bad chain cannot break the
+   * whole sync - but that also meant a dead RPC looked identical to an empty
+   * wallet. Warn when every endpoint for a chain failed, so a rotted endpoint
+   * is visible in the console instead of silently zeroing a balance.
+   */
+  async function getNativeBalance(net, address) {
     try {
-      return toBigInt(await rpcCall(rpc, 'eth_getBalance', [address, 'latest']));
-    } catch (e) { return 0n; }
+      return toBigInt(await rpcCall(net.rpc, 'eth_getBalance', [address, 'latest']));
+    } catch (e) {
+      console.warn(`[WalletCore] ${net.name}: native balance unavailable -`, e.message);
+      return 0n;
+    }
   }
 
   // ERC-20 balanceOf(address) selector 0x70a08231
   const BALANCE_OF_SELECTOR = '0x70a08231';
 
-  async function getErc20Balance(rpc, tokenAddress, address) {
+  async function getErc20Balance(net, tokenAddress, address) {
     try {
       const arg = address.toLowerCase().replace(/^0x/, '').padStart(64, '0');
       const result = await rpcCall(
-        rpc, 'eth_call',
+        net.rpc, 'eth_call',
         [{ to: tokenAddress, data: BALANCE_OF_SELECTOR + arg }, 'latest'],
       );
       if (!result || result === '0x') return 0n;
       return toBigInt(result);
-    } catch (e) { return 0n; }
+    } catch (e) {
+      console.warn(`[WalletCore] ${net.name}/${token.symbol}: balance unavailable -`, e.message);
+      return 0n;
+    }
   }
 
   /**
@@ -296,7 +333,7 @@ const WalletCore = (() => {
     const scans = NETWORKS.map(async (net) => {
       const found = [];
 
-      const nativeWei = await getNativeBalance(net.rpc, addr);
+      const nativeWei = await getNativeBalance(net, addr);
       const nativeAmount = parseFloat(formatEther(nativeWei)) || 0;
       if (nativeAmount > 0) {
         found.push({
@@ -309,7 +346,7 @@ const WalletCore = (() => {
       }
 
       for (const token of TOKENS[net.chainId] || []) {
-        const raw = await getErc20Balance(net.rpc, token.address, addr);
+        const raw = await getErc20Balance(net, token.address, addr);
         if (raw <= 0n) continue;
         const amount = parseFloat(formatUnits(raw, token.decimals)) || 0;
         if (amount > 0) {

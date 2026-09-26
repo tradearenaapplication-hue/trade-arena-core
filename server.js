@@ -20,7 +20,13 @@ app.use((req, res, next) => {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.privy.io https://js.hcaptcha.com https://hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.coingecko.com https://api.0x.org https://mainnet.base.org https://*.alchemyapi.io https://auth.privy.io https://explorer-api.walletconnect.com https://9cc5aa622a7b.w.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
+    // connect-src must list every RPC endpoint wallet-core.js calls. The
+    // NETWORKS list in wallet-core.js scans Base, Ethereum, Arbitrum,
+    // Optimism, Polygon and BSC; only mainnet.base.org was whitelisted, so the
+    // other five were refused by the browser ("Refused to connect because it
+    // violates the document's Content Security Policy") and multi-chain token
+    // balances silently came back empty. Keep this list in sync with NETWORKS.
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.privy.io https://js.hcaptcha.com https://hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.coingecko.com https://api.0x.org https://mainnet.base.org https://cloudflare-eth.com https://arb1.arbitrum.io https://mainnet.optimism.io https://polygon-rpc.com https://bsc-dataseed.binance.org https://*.alchemyapi.io https://auth.privy.io https://explorer-api.walletconnect.com https://9cc5aa622a7b.w.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
     next();
 });
 
@@ -177,6 +183,7 @@ app.use(errorHandler);
 // express.static() alone would fall back to ./public/index.html if the root
 // file were ever missing, which silently deploys the wrong app.
 const path = require('path');
+const fs = require('fs');
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -272,6 +279,55 @@ const provider = new ethers.JsonRpcProvider(RPC_URL);
 /**
  * GET /api/health - Server health check
  */
+
+/**
+ * Maintenance / Sentinel Log Endpoint
+ *
+ * staff-engine.js POSTs warn/error/SENTINEL events here so they survive a
+ * reload. The route only existed in proxy.js, but the root app is served by
+ * server.js and proxy.js never runs in production - so every POST returned
+ * 404 and the log silently never persisted.
+ *
+ * Input is validated and the filename is derived from a fixed allow-list of
+ * two constants, never from user input, so this cannot write to an arbitrary
+ * path.
+ */
+app.post('/api/maintenance/log', (req, res) => {
+    try {
+        const { agent, message, level } = req.body || {};
+        if (typeof agent !== 'string' || !agent || typeof message !== 'string' || !message) {
+            return res.status(400).json({ success: false, error: 'Invalid log payload' });
+        }
+        if (message.length > 2000) {
+            return res.status(400).json({ success: false, error: 'Log message too long' });
+        }
+
+        // NOTE: the repo tracks this directory as ".Jules" (capital J), but the
+        // original proxy.js code used ".jules". On Windows those are the same
+        // directory; on Linux/Railway they are not, so the log would be written
+        // to a fresh directory that is not the one in version control. Use the
+        // capitalised name that the repo actually tracks, and fall back to the
+        // old name if it is the one that already exists on disk.
+        const logDir = fs.existsSync(path.join(__dirname, '.jules'))
+            ? path.join(__dirname, '.jules')
+            : path.join(__dirname, '.Jules');
+        if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+
+        const safeAgent = agent.toUpperCase() === 'SENTINEL' ? 'SENTINEL' : 'MAINTENANCE';
+        const logFile = safeAgent === 'SENTINEL' ? 'sentinel.md' : 'maintenance.md';
+        const safeLevel = (typeof level === 'string' && level.trim())
+            ? level.trim().toUpperCase().slice(0, 16)
+            : 'INFO';
+
+        const entry = `\n## ${new Date().toISOString()} - [${safeLevel}] ${safeAgent}\n${message}\n`;
+        fs.appendFileSync(path.join(logDir, logFile), entry);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Maintenance log error:', error.message);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
 
 /**
  * User Account, Session & Trade Log Database Endpoints

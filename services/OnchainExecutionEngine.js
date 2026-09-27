@@ -1,12 +1,44 @@
 /**
  * ON-CHAIN EXECUTION ENGINE (Backend)
- * Trade Arena • Production-grade swap execution on Base Mainnet (Chain ID 8453)
+ * Trade Arena • Production-grade swap execution on Base (mainnet + Sepolia)
+ *
+ * NETWORK SELECTION
+ *   The network is chosen by BASE_CHAIN_ID (default 8453 = Base Mainnet).
+ *   Set BASE_CHAIN_ID=84532 to point the whole engine at Base Sepolia, where
+ *   test ETH is free. Addresses, RPC and the enforced chain check all follow
+ *   from that one value, so a testnet run can never touch mainnet funds by
+ *   accident.
  */
 
 const { ethers } = require('ethers');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
 const tokenManager = require('./TokenManager');
+
+/**
+ * Per-network deployment table.
+ *
+ * Uniswap V3 addresses are chain-specific, and a mainnet router/quoter
+ * address pointed at Sepolia returns no code and reverts every call. The
+ * values below are taken from the official Uniswap Base deployment tables
+ * and were each verified to return deployed bytecode.
+ */
+const NETWORKS = {
+    8453: {
+        name: 'Base Mainnet',
+        rpcUrl: 'https://mainnet.base.org',
+        swapRouter: '0x2626664c2603336E57B271c5C0b26F421741e481',
+        quoter: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a',
+        isTestnet: false
+    },
+    84532: {
+        name: 'Base Sepolia',
+        rpcUrl: 'https://sepolia.base.org',
+        swapRouter: '0x94cC0AaC535CCDB3C01d6787D6413C739ae12bc4',
+        quoter: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27',
+        isTestnet: true
+    }
+};
 
 class OnchainExecutionEngine {
     constructor() {
@@ -16,30 +48,34 @@ class OnchainExecutionEngine {
         this.lastNonce = null;
         this.nonceMutex = false; // Simple lock for sequential nonce processing
 
-        // Uniswap V3 SwapRouter02 & QuoterV2 addresses on Base Mainnet.
-        // Per the official Base deployment table these are the only supported
-        // V3 entrypoints. The previous values (0x68b3...ACBA / 0xB048...C026)
-        // were both mistyped checksums, so ethers v6 threw INVALID_ARGUMENT
-        // before a single call left the process.
-        this.UNISWAP_ROUTER = '0x2626664c2603336E57B271c5C0b26F421741e481';
-        this.UNISWAP_QUOTER = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a';
+        const configured = parseInt(process.env.BASE_CHAIN_ID || '8453', 10);
+        const network = NETWORKS[configured];
+        if (!network) {
+            throw new Error(
+                `Unsupported BASE_CHAIN_ID "${configured}". Expected one of: ${Object.keys(NETWORKS).join(', ')}`
+            );
+        }
 
-        // Base Mainnet Chain ID
-        this.CHAIN_ID = 8453;
+        this.CHAIN_ID = configured;
+        this.NETWORK = network;
+        this.isTestnet = network.isTestnet;
+
+        this.UNISWAP_ROUTER = network.swapRouter;
+        this.UNISWAP_QUOTER = network.quoter;
     }
 
     /**
      * Initializes the provider and signer from environment variables.
-     * Enforces strict validation that the chain is Base Mainnet.
+     * Enforces strict validation that the chain matches BASE_CHAIN_ID.
      */
     async initialize() {
         if (this.initialized) return;
 
-        const rpcUrl = process.env.BASE_RPC_URL || process.env.RPC_URL || 'https://mainnet.base.org';
+        const rpcUrl = process.env.BASE_RPC_URL || this.NETWORK.rpcUrl;
         const privateKey = process.env.TRADING_PRIVATE_KEY;
 
         if (!privateKey) {
-            console.log('[OnchainExecutionEngine] No TRADING_PRIVATE_KEY configured. Engine running in DRY RUN / SIMULATION mode.');
+            console.log(`[OnchainExecutionEngine] No TRADING_PRIVATE_KEY configured. Engine running in DRY RUN / SIMULATION mode (${this.NETWORK.name}).`);
             this.initialized = true;
             return;
         }
@@ -53,10 +89,10 @@ class OnchainExecutionEngine {
             const connectedChainId = Number(network.chainId);
 
             if (connectedChainId !== this.CHAIN_ID) {
-                throw new Error(`CRITICAL: Connected to incorrect network. Expected Base Mainnet (8453), got ${connectedChainId}`);
+                throw new Error(`CRITICAL: Connected to incorrect network. Expected ${this.NETWORK.name} (${this.CHAIN_ID}), got ${connectedChainId}`);
             }
 
-            console.log(`[OnchainExecutionEngine] Initialized on Base Mainnet with wallet: ${this.signer.address}`);
+            console.log(`[OnchainExecutionEngine] Initialized on ${this.NETWORK.name} with wallet: ${this.signer.address}`);
             this.initialized = true;
         } catch (error) {
             console.error('[OnchainExecutionEngine] Initialization failed:', error.message);
@@ -181,7 +217,7 @@ class OnchainExecutionEngine {
     }
 
     /**
-     * Executes a complete real on-chain trade on Base Mainnet.
+     * Executes a complete real on-chain trade on the configured Base network.
      * Enforces the complete lifecycle:
      * SIGNAL -> RISK VALIDATION -> QUOTE -> BALANCE -> ALLOWANCE -> APPROVAL -> CONSTRUCTION -> GAS -> SIMULATION -> BROADCAST -> RECEIPT -> DECODE -> PERSIST
      */
@@ -196,7 +232,7 @@ class OnchainExecutionEngine {
         const resolvedOut = tokenManager.resolveToken(toToken);
 
         if (!resolvedIn || !resolvedOut) {
-            throw new Error(`CRITICAL: Asset validation failed. Tokens must be whitelisted Base Mainnet assets. In: ${fromToken}, Out: ${toToken}`);
+            throw new Error(`CRITICAL: Asset validation failed. Tokens must be whitelisted ${this.NETWORK.name} assets. In: ${fromToken}, Out: ${toToken}`);
         }
 
         // 🚀 METAMASK AGENT WALLET INTEGRATION
@@ -225,7 +261,7 @@ class OnchainExecutionEngine {
         if (useAgentWallet) {
             try {
                 const slippagePct = (slippageBps / 100).toFixed(1);
-                const cmd = `${mmPath} swap execute --from ${resolvedIn.symbol} --to ${resolvedOut.symbol} --amount ${amount} --from-chain-id 8453 --slippage ${slippagePct} --json`;
+                const cmd = `${mmPath} swap execute --from ${resolvedIn.symbol} --to ${resolvedOut.symbol} --amount ${amount} --from-chain-id ${this.CHAIN_ID} --slippage ${slippagePct} --json`;
                 console.log(`[OnchainExecutionEngine] Executing via Agent Wallet: ${cmd}`);
                 
                 const output = execSync(cmd, { 
@@ -324,7 +360,7 @@ class OnchainExecutionEngine {
                 }
             }
             if (expectedAmountOutRaw === null) {
-                throw new Error(`No Uniswap V3 pool with liquidity for ${resolvedIn.symbol} -> ${resolvedOut.symbol} on Base Mainnet`);
+                throw new Error(`No Uniswap V3 pool with liquidity for ${resolvedIn.symbol} -> ${resolvedOut.symbol} on ${this.NETWORK.name}`);
             }
             const expectedAmountOut = ethers.formatUnits(expectedAmountOutRaw, resolvedOut.decimals);
             console.log(`[OnchainExecutionEngine] Executable Quote: Receive approx ${expectedAmountOut} ${resolvedOut.symbol} (fee tier ${feeTier})`);

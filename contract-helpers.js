@@ -446,7 +446,7 @@ class FlashLoanSimulator {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     BASE_CONFIG,
-    TOKENS,
+    BASE_TOKENS,
     PROTOCOLS,
     ABIS,
     ContractHelper,

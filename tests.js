@@ -922,7 +922,7 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
 describe("Swap Execution Endpoint Security", () => {
   const server = require("./server.js");
 
-  it("rejects swap requests with missing or invalid parameters", () => {
+  it("rejects swap requests with missing or invalid parameters", async () => {
     const route = server._router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/execute/swap"
     );
@@ -945,14 +945,14 @@ describe("Swap Execution Endpoint Security", () => {
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      route.route.stack[0].handle({ body }, res);
+      await route.route.stack[0].handle({ body }, res, () => {});
       expect(statusCode).toBe(400);
       expect(jsonResponse.success).toBe(false);
       expect(jsonResponse.error).toBe("Invalid swap parameters");
     }
   });
 
-  it("executes valid swap requests and returns secure txHash", () => {
+  it("executes valid swap requests through the real on-chain engine", async () => {
     const route = server._router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/execute/swap"
     );
@@ -964,16 +964,27 @@ describe("Swap Execution Endpoint Security", () => {
       json: (data) => { jsonResponse = data; return res; },
     };
 
-    route.route.stack[0].handle({
+    // The handler is async because it now performs a real quote/execution
+    // through OnchainExecutionEngine, so it must be awaited.
+    await route.route.stack[0].handle({
       body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 }
-    }, res);
+    }, res, () => {});
 
     expect(statusCode).toBe(200);
     expect(jsonResponse.success).toBe(true);
     expect(jsonResponse.swap.from.token).toBe("WETH");
-    expect(jsonResponse.swap.from.amount).toBe("1.5000");
+    expect(jsonResponse.swap.from.amount).toBe("1.5");
     expect(jsonResponse.swap.to.token).toBe("USDC");
-    expect(jsonResponse.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+
+    // The response must reflect what the engine actually did. Previously this
+    // route returned `'0x' + crypto.randomBytes(32)`, a fabricated hash for a
+    // trade that never touched the chain. In DRY_RUN there is deliberately no
+    // hash; in LIVE mode it must be a real 32-byte transaction hash.
+    if (jsonResponse.mode === "DRY_RUN") {
+      expect(jsonResponse.txHash === null).toBe(true);
+    } else {
+      expect(jsonResponse.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+    }
   });
 });
 

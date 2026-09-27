@@ -16,9 +16,13 @@ class OnchainExecutionEngine {
         this.lastNonce = null;
         this.nonceMutex = false; // Simple lock for sequential nonce processing
 
-        // Uniswap V3 Router & Quoter Addresses on Base Mainnet
-        this.UNISWAP_ROUTER = '0x68b3465833fb72B5A828cCEA02FFAD6bCFB8ACBA';
-        this.UNISWAP_QUOTER = '0xB048bbc1Ee6b733FFfCFb9e9CeF7375518e6C026';
+        // Uniswap V3 SwapRouter02 & QuoterV2 addresses on Base Mainnet.
+        // Per the official Base deployment table these are the only supported
+        // V3 entrypoints. The previous values (0x68b3...ACBA / 0xB048...C026)
+        // were both mistyped checksums, so ethers v6 threw INVALID_ARGUMENT
+        // before a single call left the process.
+        this.UNISWAP_ROUTER = '0x2626664c2603336E57B271c5C0b26F421741e481';
+        this.UNISWAP_QUOTER = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a';
 
         // Base Mainnet Chain ID
         this.CHAIN_ID = 8453;
@@ -74,20 +78,27 @@ class OnchainExecutionEngine {
             return (BigInt(amountIn) * 99n) / 100n; // Assume 1% price impact/fee
         }
 
+        // QuoterV2 takes a single struct and returns four values. The legacy
+        // v1 signature (5 positional args returning one uint256) does not
+        // exist on this contract and reverts with "missing revert data".
         const quoterAbi = [
-            'function quoteExactInputSingle(address tokenIn, address tokenOut, uint24 fee, uint256 amountIn, uint160 sqrtPriceLimitX96) public returns (uint256)'
+            'function quoteExactInputSingle((address tokenIn, address tokenOut, uint256 amountIn, uint24 fee, uint160 sqrtPriceLimitX96) params) external returns (uint256 amountOut, uint160 sqrtPriceX96After, uint32[] ticksCrossed, uint256 gasEstimate)'
         ];
 
         const quoterContract = new ethers.Contract(this.UNISWAP_QUOTER, quoterAbi, this.provider);
 
         try {
-            const amountOut = await quoterContract.quoteExactInputSingle.staticCall(
+            const quote = await quoterContract.quoteExactInputSingle.staticCall({
                 tokenIn,
                 tokenOut,
-                fee,
                 amountIn,
-                0
-            );
+                fee,
+                sqrtPriceLimitX96: 0
+            });
+            const amountOut = quote.amountOut ?? quote[0];
+            if (!amountOut || BigInt(amountOut) === 0n) {
+                throw new Error('Quoter returned a zero amount (no liquidity for this pair/fee tier)');
+            }
             return amountOut;
         } catch (error) {
             console.error(`[OnchainExecutionEngine] Quoter failed for ${tokenIn} -> ${tokenOut}:`, error.message);
@@ -133,7 +144,13 @@ class OnchainExecutionEngine {
      */
     async simulateTransaction(txRequest) {
         try {
-            await this.provider.call(txRequest);
+            // eth_call with no `from` simulates as the zero address, which has no
+            // token allowance or balance and reverts for reasons unrelated to the
+            // real trade. Simulate as the actual signer so the result is meaningful.
+            await this.provider.call({
+                ...txRequest,
+                from: this.signer ? this.signer.address : undefined
+            });
             return true;
         } catch (error) {
             console.error('[OnchainExecutionEngine] Transaction simulation reverted:', error.message);
@@ -188,9 +205,13 @@ class OnchainExecutionEngine {
         const mmPath = process.env.MM_PATH || 'mm';
 
         try {
-            const doctorOutput = execSync(`${mmPath} doctor --json`, { 
+            const doctorOutput = execSync(`${mmPath} doctor --json`, {
                 encoding: 'utf8',
-                env: { ...process.env }
+                env: { ...process.env },
+                // execSync is blocking: without a bound, a missing or hung `mm`
+                // binary stalls the Node event loop and every other request.
+                timeout: 5000,
+                windowsHide: true
             });
             const doctor = JSON.parse(doctorOutput);
             if (doctor.ok && doctor.data.authenticated && doctor.data.initialized) {
@@ -285,10 +306,28 @@ class OnchainExecutionEngine {
 
             // 4. Quote Fetching
             console.log('[OnchainExecutionEngine] Fetching real executable quote...');
-            const feeTier = tokenManager.getPairFee(tokenInAddress, tokenOutAddress) || 3000;
-            const expectedAmountOutRaw = await this.getUniswapV3Quote(tokenInAddress, tokenOutAddress, amountInRaw, feeTier);
+            const configuredFee = tokenManager.getPairFee(tokenInAddress, tokenOutAddress) || 3000;
+            // A configured tier can have no pool (or no liquidity) for a given
+            // pair. Falling back keeps a trade executable instead of aborting on
+            // a tier that simply does not exist on-chain.
+            const feeCandidates = [configuredFee, 500, 3000, 10000]
+                .filter((f, i, arr) => arr.indexOf(f) === i);
+            let expectedAmountOutRaw = null;
+            let feeTier = configuredFee;
+            for (const candidate of feeCandidates) {
+                try {
+                    expectedAmountOutRaw = await this.getUniswapV3Quote(tokenInAddress, tokenOutAddress, amountInRaw, candidate);
+                    feeTier = candidate;
+                    break;
+                } catch (e) {
+                    console.warn(`[OnchainExecutionEngine] No executable quote at fee tier ${candidate}: ${e.message}`);
+                }
+            }
+            if (expectedAmountOutRaw === null) {
+                throw new Error(`No Uniswap V3 pool with liquidity for ${resolvedIn.symbol} -> ${resolvedOut.symbol} on Base Mainnet`);
+            }
             const expectedAmountOut = ethers.formatUnits(expectedAmountOutRaw, resolvedOut.decimals);
-            console.log(`[OnchainExecutionEngine] Executable Quote: Receive approx ${expectedAmountOut} ${resolvedOut.symbol}`);
+            console.log(`[OnchainExecutionEngine] Executable Quote: Receive approx ${expectedAmountOut} ${resolvedOut.symbol} (fee tier ${feeTier})`);
 
             // 5. Slippage Protection
             const slippageFactor = 10000n - BigInt(slippageBps);
@@ -356,7 +395,12 @@ class OnchainExecutionEngine {
 
             // 11. Decode Receipt Event Logs for Actual Token Transfers & Gas Cost
             const actualGasUsed = receipt.gasUsed;
-            const actualGasCostWei = actualGasUsed * receipt.fee ? receipt.fee : (receipt.effectiveGasPrice || gasPrice);
+            // `receipt.fee` does not exist on an ethers v6 receipt, so the old
+            // `actualGasUsed * receipt.fee ? ... : ...` expression evaluated
+            // BigInt * undefined and threw a TypeError *after* the swap had
+            // already been broadcast and mined. Total cost is gasUsed * gasPrice.
+            const effectiveGasPrice = receipt.effectiveGasPrice ?? gasPrice;
+            const actualGasCostWei = actualGasUsed * effectiveGasPrice;
             const actualGasCostETH = ethers.formatEther(actualGasCostWei);
 
             return {

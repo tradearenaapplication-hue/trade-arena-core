@@ -22,6 +22,7 @@ const axios = require('axios');
 const db = require('./data/database');
 const ethers = require('ethers');
 const WebSocket = require('websocket').w3cwebsocket;
+const onchainEngine = require('./services/OnchainExecutionEngine');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -66,20 +67,41 @@ function validateRequest(req, res, next) {
             }
         }
         
-        if (req.body) {
+        if (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) {
+            // Sanitize strings, but PRESERVE non-string values.
+            //
+            // This previously rebuilt the body from string fields only, so every
+            // number, boolean, null, array and nested object was silently
+            // dropped. Read-only endpoints were unaffected, which is why wallet
+            // balance sync looked healthy while trades failed: `amount` and
+            // `slippage` arrived as `undefined` and validation rejected the
+            // request as "Invalid swap parameters".
             const sanitizedBody = {};
             for (const key in req.body) {
-                if (typeof req.body[key] === 'string') {
+                const value = req.body[key];
+                if (typeof value === 'string') {
                     const sqlChars = [';', '--', '/*', '*/', 'xp_'];
-                    const found = sqlChars.some(char => req.body[key].includes(char));
-                    if (found) {
+                    if (sqlChars.some(char => value.includes(char))) {
                         return res.status(400).json({
                             success: false,
                             error: 'Bad Request',
                             message: 'Invalid characters in request data'
                         });
                     }
-                    sanitizedBody[key] = req.body[key];
+                    sanitizedBody[key] = value;
+                } else if (typeof value === 'number') {
+                    if (!Number.isFinite(value)) {
+                        return res.status(400).json({
+                            success: false,
+                            error: 'Bad Request',
+                            message: `Invalid numeric value for "${key}"`
+                        });
+                    }
+                    sanitizedBody[key] = value;
+                } else {
+                    // Booleans, null, arrays and nested objects pass through
+                    // untouched; individual handlers validate their own shape.
+                    sanitizedBody[key] = value;
                 }
             }
             req.body = sanitizedBody;
@@ -101,11 +123,17 @@ function errorHandler(err, req, res, next) {
     const timestamp = new Date().toISOString();
     const errorId = crypto.randomBytes(16).toString('hex');
     
+    // Defensive: these handlers are also unit-tested with minimal mock req
+    // objects that have no `connection`, `get`, `params` or `query`. Reading
+    // them unguarded threw inside the error handler, masking the real error.
+    const ip = req.ip || (req.connection && req.connection.remoteAddress) || undefined;
+    const userAgent = typeof req.get === 'function' ? req.get('User-Agent') : undefined;
+
     const errorContext = {
         error: err.message,
         stack: err.stack,
-        ip: req.ip || req.connection.remoteAddress,
-        userAgent: req.get('User-Agent'),
+        ip,
+        userAgent,
         method: req.method,
         path: req.path,
         body: req.method !== 'GET' ? JSON.stringify(req.body, null, 2) : undefined,
@@ -964,9 +992,12 @@ app.get('/api/wallet/balance', async (req, res) => {
 });
 
 // ===== SWAP TOKENS =====
-app.post('/api/wallet/swap', async (req, res) => {
+// Executes through the real on-chain engine (Uniswap V3 on Base Mainnet).
+// Previously this route returned a fabricated quote, a random gas number and a
+// random tx hash, so it reported success while moving no funds at all.
+async function handleSwapRequest(req, res, next) {
     try {
-        const { fromToken, toToken, amount, slippage, deadline } = req.body || {};
+        const { fromToken, toToken, amount, slippage, botId } = req.body || {};
 
         const numAmount = Number(amount);
         const numSlippage = slippage !== undefined ? Number(slippage) : 0.005;
@@ -979,69 +1010,42 @@ app.post('/api/wallet/swap', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Invalid swap parameters' });
         }
 
-        // Simulate swap execution
-        const expectedOutput = numAmount * (1 - numSlippage);
-        const gasUsed = Math.random() * 150000 + 50000; // 50k - 200k gas
-        const gasCost = gasUsed * 0.001; // Simplified (real would use current gas price)
+        // The engine takes slippage in basis points.
+        const slippageBps = Math.round(numSlippage * 10000);
 
-        const swapResult = {
-            from: { token: fromToken, amount: numAmount.toFixed(4) },
-            to: { token: toToken, amount: expectedOutput.toFixed(4) },
-            exchange: 'Uniswap V3',
-            slippage: `${(numSlippage * 100).toFixed(2)}%`,
-            gasUsed: gasUsed.toFixed(0),
-            gasCost: gasCost.toFixed(4),
-            timestamp: Date.now()
-        };
-        
+        const result = await onchainEngine.executeTrade({
+            botId: botId || 'manual',
+            fromToken,
+            toToken,
+            amount: numAmount,
+            slippageBps
+        });
+
         res.json({
             success: true,
-            swap: swapResult,
-            txHash: '0x' + crypto.randomBytes(32).toString('hex')
+            mode: result.mode,
+            swap: {
+                from: { token: fromToken, amount: String(result.fromAmount) },
+                to: { token: toToken, amount: String(result.toAmount) },
+                exchange: 'Uniswap V3',
+                slippage: `${(numSlippage * 100).toFixed(2)}%`,
+                gasUsed: result.gasUsed,
+                gasCost: result.gasCostETH,
+                blockNumber: result.blockNumber,
+                timestamp: result.timestamp
+            },
+            txHash: result.txHash
         });
     } catch (error) {
+        console.error('[API swap] Execution failed:', error.message);
         errorHandler(error, req, res, next);
     }
-});
+}
+
+app.post('/api/wallet/swap', handleSwapRequest);
 
 // ===== ALIAS: /api/execute/swap =====
-app.post('/api/execute/swap', async (req, res) => {
-    try {
-        const { fromToken, toToken, amount, slippage } = req.body || {};
-
-        const numAmount = Number(amount);
-        const numSlippage = slippage !== undefined ? Number(slippage) : 0.005;
-
-        if (!fromToken || typeof fromToken !== 'string' ||
-            !toToken || typeof toToken !== 'string' ||
-            isNaN(numAmount) || numAmount <= 0 ||
-            isNaN(numSlippage) || numSlippage < 0 || numSlippage > 1) {
-            return res.status(400).json({ success: false, error: 'Invalid swap parameters' });
-        }
-
-        const expectedOutput = numAmount * (1 - numSlippage);
-        const gasUsed = Math.random() * 150000 + 50000;
-        const gasCost = gasUsed * 0.001;
-
-        const swapResult = {
-            from: { token: fromToken, amount: numAmount.toFixed(4) },
-            to: { token: toToken, amount: expectedOutput.toFixed(4) },
-            exchange: 'Uniswap V3',
-            slippage: `${(numSlippage * 100).toFixed(2)}%`,
-            gasUsed: gasUsed.toFixed(0),
-            gasCost: gasCost.toFixed(4),
-            timestamp: Date.now()
-        };
-
-        res.json({
-            success: true,
-            swap: swapResult,
-            txHash: '0x' + crypto.randomBytes(32).toString('hex')
-        });
-    } catch (error) {
-        errorHandler(error, req, res, next);
-    }
-});
+app.post('/api/execute/swap', handleSwapRequest);
 
 // ===== ADD TOKEN =====
 app.post('/api/wallet/tokens', async (req, res) => {

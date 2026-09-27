@@ -601,7 +601,19 @@ app.post('/api/bot/create', async (req, res) => {
  */
 app.get('/api/market/prices', async (req, res) => {
     try {
-        const symbols = req.query.symbols?.split(',') || ['WETH', 'USDC', 'ARB'];
+        const rawSymbols = req.query.symbols;
+        let symbols = ['WETH', 'USDC', 'ARB'];
+
+        if (typeof rawSymbols === 'string' && rawSymbols.trim().length > 0) {
+            symbols = rawSymbols
+                .split(',')
+                .map(s => s.trim().toUpperCase())
+                .filter(s => s.length > 0 && s.length <= 10 && /^[A-Z0-9_-]+$/.test(s))
+                .slice(0, 10);
+            if (symbols.length === 0) {
+                symbols = ['WETH', 'USDC', 'ARB'];
+            }
+        }
 
         const prices = {};
         for (const symbol of symbols) {

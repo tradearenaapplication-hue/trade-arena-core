@@ -1464,6 +1464,59 @@ describe("Proxy Endpoint Security", () => {
   });
 });
 
+describe("Market Prices Endpoint Security", () => {
+  const server = require("./server.js");
+
+  it("handles non-string or array query parameters safely and falls back to default symbols", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/market/prices"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const nonStringQueries = [
+      {},
+      { symbols: ["WETH", "BTC"] },
+      { symbols: { key: "value" } },
+      { symbols: "   " },
+      { symbols: "!!!,@@@,###" },
+    ];
+
+    for (const query of nonStringQueries) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const req = { query };
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle(req, res);
+      expect(statusCode).toBe(200);
+      expect(jsonResponse.success).toBe(true);
+      expect(Boolean(jsonResponse.prices)).toBe(true);
+    }
+  });
+
+  it("sanitizes valid string symbols, converts to uppercase, and caps symbols to max 10", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/market/prices"
+    );
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const req = { query: { symbols: " weth , usdc , arb , op , btc , sol , ada , xrp , doge , link , extra1 , extra2 " } };
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    await route.route.stack[0].handle(req, res);
+    expect(statusCode).toBe(200);
+    expect(jsonResponse.success).toBe(true);
+    expect(Boolean(jsonResponse.prices)).toBe(true);
+  });
+});
+
 describe("Server Error Handling & Input Validation Security", () => {
   const server = require("./server.js");
 

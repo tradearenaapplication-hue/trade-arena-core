@@ -734,7 +734,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="divider">— or —</div>
       <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
       <button type="button" class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none'; this.setAttribute('aria-expanded', 'true');" aria-expanded="false" aria-controls="advancedSettings" style="background:none;border:none;width:100%;cursor:pointer;font-family:inherit;">
-        ⚙´©Å Advanced Settings
+        ⚙️ Advanced Settings
       </button>
       <div class="fiat-ramp-row">
         <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
@@ -892,7 +892,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         </div>
         <div class="bus-custom-row">
           <input type="number" id="busCustomAmt" aria-label="Custom trade amount in dollars" placeholder="Custom $" min="0.01" step="0.01">
-          <button onclick="busSetCustomAmount()">SET ALL</button>
+          <button onclick="busSetCustomAmount()" aria-label="Apply custom trade amount to all bots">SET ALL</button>
         </div>
       </div>
 
@@ -2429,6 +2429,12 @@ function exportCSV() {
   });
   const csv=[headers.join(','),...rows].join('\n');
   downloadFile(csv,'trade-arena-ledger-'+Date.now()+'.csv','text/csv');
+  const btn = document.querySelector('.export-csv');
+  if (btn) {
+    if (!btn.dataset.origText) btn.dataset.origText = btn.textContent;
+    btn.textContent = '✓ EXPORTED!';
+    setTimeout(() => { btn.textContent = btn.dataset.origText; }, 1500);
+  }
 }
 function exportJSON() {
   if(!closedTrades.length){ alert('No closed trades to export yet.'); return; }
@@ -2439,6 +2445,12 @@ function exportJSON() {
     trades:closedTrades
   };
   downloadFile(JSON.stringify(data,null,2),'trade-arena-ledger-'+Date.now()+'.json','application/json');
+  const btn = document.querySelector('.export-json');
+  if (btn) {
+    if (!btn.dataset.origText) btn.dataset.origText = btn.textContent;
+    btn.textContent = '✓ EXPORTED!';
+    setTimeout(() => { btn.textContent = btn.dataset.origText; }, 1500);
+  }
 }
 
 function generatePitchReport() {
@@ -3402,8 +3414,8 @@ function renderBot(bot){
             ${[0.10,0.25,0.50,1.00,2.00,5.00,20.00,100.00].map(v=>`<button class="m-dd-bet${v===1.00?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`).join('')}
           </div>
           <div class="m-dd-custom">
-            <input type="number" id="mcustom-${bot.id}" placeholder="Custom $" min="0.01" step="0.01">
-            <button onclick="setCustomBet(${bot.id})">SET</button>
+            <input type="number" id="mcustom-${bot.id}" aria-label="Custom trade amount for Bot #${bot.id} in dollars" placeholder="Custom $" min="0.01" step="0.01">
+            <button onclick="setCustomBet(${bot.id})" aria-label="Set custom trade amount for Bot #${bot.id}">SET</button>
           </div>
         </div>
         <div class="m-dd-row">

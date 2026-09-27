@@ -81,8 +81,24 @@ class OnchainExecutionEngine {
         }
 
         try {
+            // Normalise: 0x-prefixed, 32-byte hex. Trimmed so a pasted value with
+            // stray whitespace or a trailing newline does not fail to parse.
+            const normalizedKey = privateKey.trim().replace(/^0x/, '');
+
+            if (!/^[0-9a-fA-F]{64}$/.test(normalizedKey)) {
+                // Deliberately does NOT echo the value back.
+                throw new Error(
+                    'TRADING_PRIVATE_KEY is not a valid 32-byte hex key (expected 64 hex characters). ' +
+                    'Check for missing 0x prefix, truncation, or a pasted seed phrase.'
+                );
+            }
+
             this.provider = new ethers.JsonRpcProvider(rpcUrl);
-            this.signer = new ethers.Wallet(privateKey, this.provider);
+            this.signer = new ethers.Wallet('0x' + normalizedKey, this.provider);
+
+            // Register the secret for redaction so it can never appear in a
+            // stack trace, console dump or serialized error payload.
+            this._redact(normalizedKey);
 
             // Strict network validation
             const network = await this.provider.getNetwork();
@@ -98,6 +114,57 @@ class OnchainExecutionEngine {
             console.error('[OnchainExecutionEngine] Initialization failed:', error.message);
             throw error;
         }
+    }
+
+    /**
+     * Scrub the private key from any string that might be logged.
+     *
+     * A wallet library error can embed the offending argument in its message
+     * or stack. Without this, a single failed call could write the key to
+     * stdout, a log file, or a crash reporter. Applied defensively to
+     * console.error/console.log output via a wrapper below.
+     */
+    _redact(keyHex) {
+        if (!keyHex) return;
+        const secret = keyHex.toLowerCase();
+
+        const scrub = (args) => args.map((a) => {
+            if (typeof a === 'string') {
+                return a
+                    .replace(new RegExp(secret, 'gi'), '[REDACTED_PRIVATE_KEY]')
+                    .replace(/0x[0-9a-fA-F]{64}/g, '[REDACTED_PRIVATE_KEY]');
+            }
+            if (a instanceof Error) {
+                a.message = scrub([a.message])[0];
+                if (a.stack) a.stack = scrub([a.stack])[0];
+                return a;
+            }
+            return a;
+        });
+
+        // Patch once per process; re-patching would wrap the wrapper.
+        if (this._redactionInstalled) return;
+        this._redactionInstalled = true;
+        this._originalConsole = { log: console.log, error: console.error, warn: console.warn };
+
+        for (const level of ['log', 'error', 'warn']) {
+            const original = console[level].bind(console);
+            console[level] = (...args) => original(...scrub(args));
+        }
+    }
+
+    /**
+     * Stops the console redaction wrapper. Used by tests and long-lived
+     * processes that rotate keys.
+     */
+    restoreConsole() {
+        if (!this._redactionInstalled || !this._originalConsole) return;
+        const { log, error, warn } = this._originalConsole;
+        console.log = log;
+        console.error = error;
+        console.warn = warn;
+        this._redactionInstalled = false;
+        this._originalConsole = null;
     }
 
     /**

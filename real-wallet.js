@@ -71,7 +71,7 @@ const REAL_WALLET_CONFIG = {
   tokens: {
     WETH: '0x4200000000000000000000000000000000000006',
     USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-    DAI: '0x50c5725949A6F0c72afAA8647BC0D4a6d7c15e50',
+    DAI: '0x50c5725949A6f0c72aFAA8647BC0d4a6D7C15e50',
   },
 
   trading: {
@@ -211,7 +211,7 @@ async function fetchMultiChainTokenBalances(walletAddress) {
     8453: [
       { symbol: 'USDC', address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals: 6, coingeckoId: 'usd-coin' },
       { symbol: 'WETH', address: '0x4200000000000000000000000000000000000006', decimals: 18, coingeckoId: 'ethereum' },
-      { symbol: 'DAI', address: '0x50c5725949A6F0c72afAA8647BC0D4a6d7c15e50', decimals: 18, coingeckoId: 'dai' }
+      { symbol: 'DAI', address: '0x50c5725949A6f0c72aFAA8647BC0d4a6D7C15e50', decimals: 18, coingeckoId: 'dai' }
     ],
     1: [
       { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6, coingeckoId: 'usd-coin' },

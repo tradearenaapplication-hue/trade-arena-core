@@ -2073,7 +2073,15 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   updateGlobalBalance();
 
   updateOpenCount();
-  setTimeout(()=>checkExit(pos,bot), EXIT_TIMES[decision.method]);
+  // NOTE: the timer is an ELAPSED-TIME display only.
+  //
+  // This used to be a forced exit:
+  //   setTimeout(()=>checkExit(pos,bot), EXIT_TIMES[decision.method]);
+  // which closed every position once its clock ran out, regardless of P&L.
+  // A trade now ends only on its own terms: stop-loss, take-profit, or a
+  // manual close. The countdown below therefore counts UP from open and can
+  // never "time out", and pos.exitTime is set per position at open (index.html
+  // ~2026) so each new trade starts a fresh clock.
   startLivePnlTicker(pos, bot);
   return pos;
 }
@@ -2090,7 +2098,7 @@ function startLivePnlTicker(pos, bot) {
       const delta=pos.direction==='long'?(p-pos.entryPrice)/pos.entryPrice:(pos.entryPrice-p)/pos.entryPrice;
       const net=pos.bet*delta-pos.costs.total;
       if(pnlEl){
-        const pnlStr = (net>=0?'+':'')+'$'+net.toFixed(2);
+        const pnlStr = (net>=0?'+':'')+fmtUSD(net,2);
         // Optimization: Dirty-check P&L value to avoid redundant DOM writes and animation restarts
         if (pnlStr !== pos._lastPnlStr) {
           pnlEl.textContent=pnlStr;
@@ -2123,12 +2131,18 @@ function startLivePnlTicker(pos, bot) {
       }
     }
     if(timerEl){
-      const rem=Math.max(0,pos.exitTime-Date.now());
-      const m=Math.floor(rem/60000),s=Math.floor((rem%60000)/1000);
+      // Elapsed time since the position opened. This previously counted DOWN
+      // to pos.exitTime and clamped at 0:00, so every open trade ended up
+      // showing a dead "0:00" once its clock ran out. Counting up cannot
+      // expire, and pos.openedAt is set per position, so each new trade gets a
+      // fresh clock.
+      const openedAt = pos.openedAt || pos.entryTime || Date.now();
+      const el2 = Math.max(0, Date.now() - openedAt);
+      const m=Math.floor(el2/60000),s=Math.floor((el2%60000)/1000);
       // Optimization: Use passed bot reference instead of bots.find(O(N))
       const slLabel=bot&&(bot.stopLossPct||bot.takeProfitPct)
         ?` · SL${bot.stopLossPct?` −${bot.stopLossPct}%`:'—'} TP${bot.takeProfitPct?` +${bot.takeProfitPct}%`:'—'}`:'';
-      timerEl.textContent=`Exit in ${m}:${s.toString().padStart(2,'0')}${slLabel}`;
+      timerEl.textContent=`Open ${m}:${s.toString().padStart(2,'0')}${slLabel}`;
     }
     // Optimization: updateLiveBalance() moved to _tickHeader (500ms) to avoid DOM churn when multiple positions tick
     if(pos.status==='open') setTimeout(tick,2000);  // Increased frequency: 5s → 2s
@@ -2246,10 +2260,10 @@ function showOpenOverlay(botId, pos) {
   if(!ov) return;
   setVal('opToken-'+botId,pos.token);
   setVal('opMethod-'+botId,pos.method);
-  setVal('opEntry-'+botId,'Entry: $'+pos.entryPrice.toFixed(pos.entryPrice<1?6:2));
+  setVal('opEntry-'+botId,'Entry: '+fmtUSD(pos.entryPrice, pos.entryPrice<1?6:2));
   const el=document.getElementById('opLivePnl-'+botId); if(el){el.textContent='…';el.className='op-live-pnl pend';}
   const exitM=Math.round(pos.exitDuration/60000);
-  setVal('opTimer-'+botId,`Exit in ${exitM}m 0s`);
+  setVal('opTimer-'+botId,`Open 0:00`);
   setVal('opExit-'+botId,`−${fmtUSD(pos.costs.total, 2)} gas+slip+spread`);
   ov.classList.add('show');
 }
@@ -4028,7 +4042,12 @@ function addBot(){
   // Each bot gets unique personality for trade diversity
   const personality = ['AGGRESSIVE', 'CONSERVATIVE', 'MOMENTUM', 'CONTRARIAN', 'BALANCED'][botCounter % 5];
   const bot={
-    id:botCounter,spinning:false,auto:false,bet:10,pnl:0,
+    id:botCounter,spinning:false,auto:false,
+    // Default stake is A$0.50, expressed in USD because bot.bet is USD-
+    // denominated (it feeds P&L, the balance check, amountUSD and the risk
+    // limit). It previously defaulted to a hardcoded 10 USD, which displayed
+    // as A$14.22 and ignored the bet presets entirely.
+    bet:audToUsd(0.50),pnl:0,
     consecutiveLosses:0,cooldownLevel:0,coolingUntil:0,cooling:false,
     autoTimer:null,tickerTimer:null,tickerIdx:0,
     personality,

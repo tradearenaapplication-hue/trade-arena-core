@@ -118,9 +118,28 @@ async function executeOnChainTrade(tradeRequest) {
         const fromToken = isLong ? 'USDC' : token;
         const toToken = isLong ? token : 'USDC';
 
-        // 1. Authorise: request a nonce, sign it, and post it back with the trade.
+        // 1. Authorise: request a nonce for THIS exact trade, sign it, post it back.
+        //
+        // The nonce is bound to the terms below, and the server rejects any
+        // submission whose terms differ from the ones signed. The payload is
+        // therefore built once and sent identically to both calls - if the two
+        // ever disagreed, the signature would verify and the trade would still
+        // be refused.
         updateExecutionUI(botId, 'AUTHORISING');
-        const nonceRes = await fetch(`/api/wallet/trade-nonce?address=${encodeURIComponent(userAddress)}`);
+        const tradeTerms = {
+            address: userAddress,
+            botId,
+            fromToken,
+            toToken,
+            amountUSD,          // dollar budget; the server converts
+            slippage: 0.005
+        };
+
+        const nonceRes = await fetch('/api/wallet/trade-nonce', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(tradeTerms)
+        });
         const nonceData = await nonceRes.json();
         if (!nonceRes.ok || !nonceData.success) {
             throw new Error(nonceData.error || 'Could not obtain a trade authorisation nonce');
@@ -135,11 +154,7 @@ async function executeOnChainTrade(tradeRequest) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                botId,
-                fromToken,
-                toToken,
-                amountUSD,          // dollar budget; the server converts
-                slippage: 0.005,
+                ...tradeTerms,
                 traderAddress: nonceData.address,
                 nonce: nonceData.nonce,
                 signature

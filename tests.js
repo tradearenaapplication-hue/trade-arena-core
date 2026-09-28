@@ -919,6 +919,143 @@ describe("escapeHTML - XSS Prevention (index.html:1304)", () => {
   });
 });
 
+describe("Trade Authorisation Hardening", () => {
+  // Must be set BEFORE server.js is required: the allowlist is read once at
+  // module load, which is what makes it impossible for a request handler to
+  // widen it at runtime.
+  const { ethers } = require("ethers");
+
+  // Throwaway test key. Never holds funds; used only to produce signatures.
+  const TRADER_KEY = "0x" + "11".repeat(32);
+  const STRANGER_KEY = "0x" + "22".repeat(32);
+  const trader = new ethers.Wallet(TRADER_KEY);
+  const stranger = new ethers.Wallet(STRANGER_KEY);
+
+  process.env.ALLOWED_TRADERS = trader.address;
+  const server = require("./server.js");
+
+  const findRoute = (path) => {
+    const r = server._router.stack.find((l) => l.route && l.route.path === path);
+    expect(Boolean(r)).toBe(true);
+    return r.route;
+  };
+
+  const mockRes = () => {
+    const res = { statusCode: 200, body: null };
+    res.status = (c) => { res.statusCode = c; return res; };
+    res.json = (d) => { res.body = d; return res; };
+    return res;
+  };
+
+  const issueNonce = async (address, terms) => {
+    const res = mockRes();
+    await findRoute("/api/wallet/trade-nonce").stack[0].handle(
+      { body: { address, ...terms } }, res, () => {}
+    );
+    return res;
+  };
+
+  const baseTerms = { fromToken: "ETH", toToken: "USDC", amountUSD: 0.5, slippage: 0.005, botId: "b1" };
+
+  it("refuses to issue a nonce to an address that is not allowlisted", async () => {
+    // The core fix: before, ANY address could self-authorise.
+    const res = await issueNonce(stranger.address, baseTerms);
+    expect(res.statusCode).toBe(403);
+    expect(res.body.success).toBe(false);
+  });
+
+  it("issues a nonce to an allowlisted trader", async () => {
+    const res = await issueNonce(trader.address, baseTerms);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.nonce).toMatch(/^0x[0-9a-f]{32}$/);
+  });
+
+  it("REGRESSION: a signature for a small trade cannot be used to submit a large one", async () => {
+    // The signature covers only the address, nonce and payload hash. Without
+    // the hash comparison an attacker signs for $0.50 and submits $10,000.
+    const issued = await issueNonce(trader.address, baseTerms);
+    const signature = await trader.signMessage(issued.body.message);
+
+    const guard = findRoute("/api/wallet/swap").stack[0].handle;
+    const res = mockRes();
+    await guard({
+      body: { ...baseTerms, amountUSD: 10000, traderAddress: trader.address, nonce: issued.body.nonce, signature },
+      get: () => undefined, headers: {},
+    }, res, () => {});
+
+    expect(res.statusCode).toBe(401);
+    expect(res.body.error).toMatch(/do not match/i);
+  });
+
+  it("REGRESSION: tampering with the token pair invalidates the authorisation", async () => {
+    const issued = await issueNonce(trader.address, baseTerms);
+    const signature = await trader.signMessage(issued.body.message);
+
+    const guard = findRoute("/api/wallet/swap").stack[0].handle;
+    const res = mockRes();
+    await guard({
+      body: { ...baseTerms, fromToken: "WETH", traderAddress: trader.address, nonce: issued.body.nonce, signature },
+      get: () => undefined, headers: {},
+    }, res, () => {});
+
+    expect(res.statusCode).toBe(401);
+  });
+
+  it("rejects a replayed authorisation", async () => {
+    const issued = await issueNonce(trader.address, baseTerms);
+    const signature = await trader.signMessage(issued.body.message);
+    const body = { ...baseTerms, traderAddress: trader.address, nonce: issued.body.nonce, signature };
+
+    const guard = findRoute("/api/wallet/swap").stack[0].handle;
+    const first = mockRes();
+    let passed = false;
+    await guard({ body: { ...body }, get: () => undefined, headers: {} }, first, () => { passed = true; });
+    expect(passed).toBe(true);
+    expect(first.statusCode).toBe(200);
+
+    // Same nonce, same signature, second time.
+    const second = mockRes();
+    await guard({ body: { ...body }, get: () => undefined, headers: {} }, second, () => {});
+    expect(second.statusCode).toBe(401);
+    expect(second.body.error).toMatch(/already-used|unknown/i);
+  });
+
+  it("rejects a signature made by someone other than the claimed trader", async () => {
+    const issued = await issueNonce(trader.address, baseTerms);
+    // Stranger signs the allowlisted trader's message.
+    const forged = await stranger.signMessage(issued.body.message);
+
+    const guard = findRoute("/api/wallet/swap").stack[0].handle;
+    const res = mockRes();
+    await guard({
+      body: { ...baseTerms, traderAddress: trader.address, nonce: issued.body.nonce, signature: forged },
+      get: () => undefined, headers: {},
+    }, res, () => {});
+
+    expect(res.statusCode).toBe(401);
+  });
+
+  it("rejects an allowlisted but unauthorised caller at the swap route", async () => {
+    const issued = await issueNonce(stranger.address, baseTerms);
+    expect(issued.statusCode).toBe(403);
+
+    // Even with a well-formed self-signed authorisation, the swap route must
+    // refuse: the allowlist is enforced there too, not only at nonce issue.
+    const signature = await stranger.signMessage(
+      "Trade Arena trade authorisation\n\nAddress: " + stranger.address
+    );
+    const guard = findRoute("/api/wallet/swap").stack[0].handle;
+    const res = mockRes();
+    await guard({
+      body: { ...baseTerms, traderAddress: stranger.address, nonce: "0x" + "ff".repeat(16), signature },
+      get: () => undefined, headers: {},
+    }, res, () => {});
+
+    expect(res.statusCode).toBe(403);
+  });
+});
+
 describe("Swap Execution Endpoint Security", () => {
   const server = require("./server.js");
 

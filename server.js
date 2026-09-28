@@ -1022,19 +1022,94 @@ app.get('/api/wallet/balance', async (req, res) => {
 const TRADE_NONCES = new Map();
 const NONCE_TTL_MS = 5 * 60 * 1000;
 
-function issueTradeNonce(address) {
+// Who may trade.
+//
+// The engine signs with a server-held key, so this route spends money that does
+// not belong to whoever calls it. Previously ANY address could request a nonce
+// and authorise itself, which made the endpoint a public drain: an attacker
+// needed nothing but an address and a free signature.
+//
+// Fails closed. An unset or empty ALLOWED_TRADERS denies everyone rather than
+// allowing everyone, because a trading wallet that is accidentally open is
+// unrecoverable while one that is accidentally shut is a config fix.
+const ALLOWED_TRADERS = new Set(
+    (process.env.ALLOWED_TRADERS || '')
+        .split(',')
+        .map(a => a.trim())
+        .filter(a => ethers.isAddress(a))
+        .map(a => ethers.getAddress(a))
+);
+
+if (ALLOWED_TRADERS.size === 0) {
+    console.warn(
+        '[SECURITY] ALLOWED_TRADERS is empty or unset: /api/wallet/swap will reject every trader. ' +
+        'Set ALLOWED_TRADERS to a comma-separated list of wallet addresses to enable live trading.'
+    );
+}
+
+function isAllowedTrader(address) {
+    if (!address || !ethers.isAddress(address)) return false;
+    return ALLOWED_TRADERS.has(ethers.getAddress(address));
+}
+
+/**
+ * Canonical description of the exact trade being authorised.
+ *
+ * The signed message commits to a hash of this, so a captured signature can
+ * never be replayed against different terms - the single biggest hole in the
+ * previous scheme, where the signature covered only the address and nonce and
+ * left amount, tokens and slippage completely free for the caller to edit.
+ *
+ * Both the nonce issuer and the verifier call this, so the two cannot drift.
+ * The fields are exactly those the swap handler acts on; anything not listed
+ * here is not something a signature can authorise.
+ */
+function canonicalTradePayload(body) {
+    const b = body || {};
+    // Normalise numerics so 1.5, "1.5" and 0.005 hash identically after a JSON
+    // round trip, while remaining strict about the VALUE.
+    const norm = (v) => {
+        if (v === undefined || v === null || v === '') return '';
+        const n = Number(v);
+        return Number.isFinite(n) ? String(n) : String(v);
+    };
+    return [
+        String(b.fromToken || '').trim().toUpperCase(),
+        String(b.toToken || '').trim().toUpperCase(),
+        norm(b.amount),
+        norm(b.amountUSD),
+        norm(b.slippage === undefined ? 0.005 : b.slippage),
+        String(b.botId || 'manual').trim()
+    ].join('|');
+}
+
+function tradePayloadHash(body) {
+    return ethers.keccak256(ethers.toUtf8Bytes(canonicalTradePayload(body)));
+}
+
+function issueTradeNonce(address, payloadHash) {
     const nonce = '0x' + crypto.randomBytes(16).toString('hex');
-    TRADE_NONCES.set(`${address.toLowerCase()}:${nonce}`, Date.now());
+    TRADE_NONCES.set(`${address.toLowerCase()}:${nonce}`, { issuedAt: Date.now(), payloadHash });
     // Opportunistic cleanup so the map cannot grow without bound.
     const now = Date.now();
-    for (const [k, ts] of TRADE_NONCES) {
-        if (now - ts > NONCE_TTL_MS) TRADE_NONCES.delete(k);
+    for (const [k, entry] of TRADE_NONCES) {
+        if (now - entry.issuedAt > NONCE_TTL_MS) TRADE_NONCES.delete(k);
     }
     return nonce;
 }
 
-function tradeMessage(address, nonce) {
-    return `Trade Arena wants you to authorise trading as ${address}\n\nNonce: ${nonce}\nThis does not authorise any transfer of funds to the site.`;
+function tradeMessage(address, nonce, payloadHash) {
+    return [
+        'Trade Arena trade authorisation',
+        '',
+        `Address: ${address}`,
+        `Nonce: ${nonce}`,
+        `Chain: ${process.env.BASE_CHAIN_ID || '8453'}`,
+        `Trade: ${payloadHash}`,
+        '',
+        'This authorises exactly ONE trade with the terms hashed above.',
+        'It cannot be reused, and it does not authorise any transfer of funds to the site.'
+    ].join('\n');
 }
 
 function verifyTradeAuth(req, res, next) {
@@ -1042,23 +1117,54 @@ function verifyTradeAuth(req, res, next) {
     if (!traderAddress || !nonce || !signature) {
         return res.status(401).json({
             success: false,
-            error: 'Trade authorisation required. Call GET /api/wallet/trade-nonce first, then sign the returned message.'
+            error: 'Trade authorisation required. Call POST /api/wallet/trade-nonce first, then sign the returned message.'
+        });
+    }
+
+    if (!ethers.isAddress(traderAddress)) {
+        return res.status(401).json({ success: false, error: 'Malformed trading address.' });
+    }
+
+    // Allowlist BEFORE touching the nonce store, so a non-allowlisted caller
+    // learns nothing about system state.
+    if (!isAllowedTrader(traderAddress)) {
+        return res.status(403).json({
+            success: false,
+            error: 'This address is not authorised to trade. Add it to ALLOWED_TRADERS on the server.'
         });
     }
 
     const key = `${String(traderAddress).toLowerCase()}:${nonce}`;
-    const issuedAt = TRADE_NONCES.get(key);
-    if (!issuedAt) {
+    const entry = TRADE_NONCES.get(key);
+    if (!entry) {
         return res.status(401).json({ success: false, error: 'Unknown or already-used trade nonce. Request a new one.' });
     }
-    if (Date.now() - issuedAt > NONCE_TTL_MS) {
+    if (Date.now() - entry.issuedAt > NONCE_TTL_MS) {
         TRADE_NONCES.delete(key);
         return res.status(401).json({ success: false, error: 'Trade nonce expired. Request a new one.' });
     }
 
+    // The submitted trade must be the one that was authorised.
+    //
+    // Compared against the STORED hash, not the signature: the signature only
+    // proves the signer agreed to SOME payload, and the stored hash is what
+    // pins that payload to these exact terms. Without this check a caller could
+    // request a nonce for a $0.50 trade and then submit it with a $10,000 one.
+    const submittedHash = tradePayloadHash(req.body);
+    if (submittedHash !== entry.payloadHash) {
+        TRADE_NONCES.delete(key);
+        return res.status(401).json({
+            success: false,
+            error: 'Trade terms do not match the signed authorisation. Request a new nonce for these exact terms.'
+        });
+    }
+
     let recovered;
     try {
-        recovered = ethers.verifyMessage(tradeMessage(traderAddress, nonce), signature);
+        recovered = ethers.verifyMessage(
+            tradeMessage(traderAddress, nonce, entry.payloadHash),
+            signature
+        );
     } catch (e) {
         TRADE_NONCES.delete(key);
         return res.status(401).json({ success: false, error: 'Could not verify trade authorisation signature.' });
@@ -1071,23 +1177,53 @@ function verifyTradeAuth(req, res, next) {
 
     // Single use: burn it whether or not the trade then succeeds.
     TRADE_NONCES.delete(key);
-    req.traderAddress = String(traderAddress);
+    req.traderAddress = ethers.getAddress(traderAddress);
+    req.tradePayloadHash = entry.payloadHash;
     next();
 }
 
-/** Issue a nonce the client must sign. GET so the message can be built. */
-app.get('/api/wallet/trade-nonce', (req, res) => {
+/**
+ * Issue a nonce bound to one specific trade, which the client must sign.
+ *
+ * POST rather than GET: the trade terms have to travel with the request, since
+ * they are what the signature commits to. A GET cannot carry them.
+ */
+app.post('/api/wallet/trade-nonce', (req, res) => {
     try {
-        const address = String(req.query.address || '').trim();
+        const address = String(req.body?.address || '').trim();
         if (!ethers.isAddress(address)) {
             return res.status(400).json({ success: false, error: 'A valid address is required' });
         }
-        const nonce = issueTradeNonce(address);
+        if (!isAllowedTrader(address)) {
+            return res.status(403).json({
+                success: false,
+                error: 'This address is not authorised to trade. Add it to ALLOWED_TRADERS on the server.'
+            });
+        }
+
+        // Reject a request that could never execute, rather than handing back a
+        // nonce the swap would later refuse.
+        const { fromToken, toToken, amount, amountUSD } = req.body || {};
+        const hasAmount = amount !== undefined && amount !== null && amount !== '';
+        const hasUsd = amountUSD !== undefined && amountUSD !== null && amountUSD !== '';
+        if (hasAmount === hasUsd) {
+            return res.status(400).json({
+                success: false,
+                error: 'Supply exactly one of "amount" or "amountUSD" so the authorisation can be bound to this trade.'
+            });
+        }
+        if (!fromToken || !toToken) {
+            return res.status(400).json({ success: false, error: 'fromToken and toToken are required' });
+        }
+
+        const payloadHash = tradePayloadHash(req.body);
+        const nonce = issueTradeNonce(address, payloadHash);
         res.json({
             success: true,
             address: ethers.getAddress(address),
             nonce,
-            message: tradeMessage(address, nonce)
+            payloadHash,
+            message: tradeMessage(address, nonce, payloadHash)
         });
     } catch (error) {
         errorHandler(error, req, res, () => {});

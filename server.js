@@ -421,13 +421,25 @@ app.get('/api/user/session', (req, res) => {
 
 app.post('/api/user/tradelog', (req, res) => {
     try {
-        const { address, agentId, botName, action, symbol, amount, pnl, details } = req.body || {};
+        const { address, agentId, botName, action, symbol, amount, pnl, details, ...extra } = req.body || {};
         if (!address) {
             return res.status(400).json({ success: false, error: 'Wallet address required' });
         }
 
+        // Preserve any additional fields (txHash, blockNumber, mode, network...)
+        // into details. Previously only `details` was stored, so a caller that
+        // sent the hash as a top-level field had it silently discarded and the
+        // trade became untraceable on-chain.
+        const mergedDetails = {
+            ...(details && typeof details === 'object' && !Array.isArray(details) ? details : {}),
+            ...Object.fromEntries(
+                Object.entries(extra).filter(([k, v]) => k !== 'traderAddress' && v !== undefined)
+            )
+        };
+
         const tradeLog = db.addTradeLog({
-            address, agentId, botName, action, symbol, amount, pnl, details
+            address, agentId, botName, action, symbol, amount, pnl,
+            details: mergedDetails
         });
 
         res.json({
@@ -1021,9 +1033,59 @@ async function handleSwapRequest(req, res, next) {
             slippageBps
         });
 
+        // Record the trade server-side. Without this, onchain swaps executed
+        // through this endpoint were never written to the trade log: only the
+        // browser's simulated paper-trade path (index.html -> saveTradeLogToDb)
+        // ever posted to /api/user/tradelog. Live fills therefore vanished from
+        // the history and the P&L figures shown in the app.
+        //
+        // Logging failures must not fail an already-executed trade, so this is
+        // best-effort and the error is surfaced in the response instead.
+        let logged = false;
+        let logError = null;
+        const traderAddress = (req.body && typeof req.body.traderAddress === 'string' && req.body.traderAddress)
+            || (req.session && req.session.address)
+            || null;
+
+        if (traderAddress) {
+            try {
+                db.addTradeLog({
+                    address: traderAddress,
+                    agentId: botId || 'manual',
+                    botName: botId || 'Onchain Trader',
+                    action: 'SWAP',
+                    symbol: `${fromToken}/${toToken}`,
+                    amount: Number(result.fromAmount) || numAmount,
+                    pnl: 0, // realized P&L requires a matched exit; see note below
+                    details: {
+                        venue: 'Uniswap V3',
+                        network: onchainEngine.NETWORK.name,
+                        chainId: onchainEngine.CHAIN_ID,
+                        mode: result.mode,
+                        fromToken,
+                        toToken,
+                        fromAmount: String(result.fromAmount),
+                        toAmount: String(result.toAmount),
+                        slippageBps,
+                        gasUsed: result.gasUsed,
+                        gasCostETH: result.gasCostETH,
+                        txHash: result.txHash,
+                        blockNumber: result.blockNumber
+                    }
+                });
+                logged = true;
+            } catch (logErr) {
+                logError = logErr.message;
+                console.error('[API swap] Trade executed but trade-log write failed:', logErr.message);
+            }
+        }
+
         res.json({
             success: true,
             mode: result.mode,
+            logged,
+            ...(logError ? { logError } : {}),
+            ...(traderAddress ? {} : { logWarning: 'No trader address supplied, trade not added to history. Pass traderAddress.' }),
             swap: {
                 from: { token: fromToken, amount: String(result.fromAmount) },
                 to: { token: toToken, amount: String(result.toAmount) },

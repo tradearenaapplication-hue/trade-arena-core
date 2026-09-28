@@ -3844,6 +3844,28 @@ function saveTradeLogToDb(pos) {
   const addr = window.currentUserAddress || (typeof walletState !== 'undefined' && walletState.address);
   if (!addr) return;
   try {
+    // Details fields that are undefined were dropped by JSON.stringify, so an
+    // absent regime/method used to silently vanish from the stored record.
+    // Send explicit nulls instead, and carry the on-chain identity (tx hash,
+    // gas) when this trade came from the live engine rather than paper mode.
+    const details = {
+      method: pos.method || null,
+      regime: pos.regime || null,
+      entryPrice: typeof pos.entryPrice === 'number' ? pos.entryPrice : null,
+      exitPrice: typeof pos.exitPrice === 'number' ? pos.exitPrice : null,
+      isWin: typeof pos.isWin === 'boolean' ? pos.isWin : null,
+      costs: pos.costs ? {
+        gas: pos.costs.gas,
+        slippagePct: pos.costs.slippagePct,
+        spread: pos.costs.spread
+      } : null
+    };
+
+    if (pos.txHash) details.txHash = pos.txHash;
+    if (pos.mode) details.mode = pos.mode;
+    if (pos.blockNumber !== undefined) details.blockNumber = pos.blockNumber;
+    if (pos.gasCostETH !== undefined) details.gasCostETH = pos.gasCostETH;
+
     fetch('/api/user/tradelog', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -3853,17 +3875,18 @@ function saveTradeLogToDb(pos) {
         botName: pos.botName || 'Trade Bot',
         action: pos.direction || 'SWAP',
         symbol: pos.token || 'ETH/USD',
-        amount: pos.bet || 0,
-        pnl: pos.netPnl || 0,
-        details: {
-          method: pos.method,
-          regime: pos.regime,
-          entryPrice: pos.entryPrice,
-          exitPrice: pos.exitPrice,
-          isWin: pos.isWin
+        amount: typeof pos.bet === 'number' ? pos.bet : 0,
+        pnl: typeof pos.netPnl === 'number' ? pos.netPnl : 0,
+        details
+      })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!d || d.success === false) {
+          console.warn('Trade log rejected by server:', d && d.error);
         }
       })
-    }).catch(e => console.warn('Failed to persist trade log:', e));
+      .catch(e => console.warn('Failed to persist trade log:', e));
   } catch (e) {
     console.warn('Error sending trade log:', e);
   }

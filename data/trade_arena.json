@@ -12,7 +12,7 @@
           "valueUsd": 11.17
         }
       ],
-      "lastLogin": "2026-09-28T14:40:02.865Z",
+      "lastLogin": "2026-09-28T14:57:47.342Z",
       "sessionData": {
         "balance": 11.17
       }
@@ -687,23 +687,6 @@
       "timestamp": "2026-09-28T14:14:01.612Z"
     },
     {
-      "id": "trade_1790606401196_5f5f96d161128f43",
-      "address": "0x9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a",
-      "agentId": "agent-default",
-      "botName": "Trade Bot",
-      "action": "TRADE",
-      "symbol": "SOL/USD",
-      "amount": 0,
-      "pnl": 0,
-      "details": {
-        "status": "OPEN"
-      },
-      "timestamp": "2026-09-28T14:40:01.196Z",
-      "positionId": "pos_b",
-      "status": "OPEN",
-      "openedAt": "2026-09-28T14:40:01.196Z"
-    },
-    {
       "id": "trade_1790606402869_9173acb03f473fc1",
       "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
       "agentId": "bot-1",
@@ -716,6 +699,37 @@
         "isWin": true
       },
       "timestamp": "2026-09-28T14:40:02.869Z"
+    },
+    {
+      "id": "trade_1790607465710_e5dd499e2e741663",
+      "address": "0x9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "TRADE",
+      "symbol": "SOL/USD",
+      "amount": 0,
+      "pnl": 0,
+      "details": {
+        "status": "OPEN"
+      },
+      "timestamp": "2026-09-28T14:57:45.710Z",
+      "positionId": "pos_b",
+      "status": "OPEN",
+      "openedAt": "2026-09-28T14:57:45.710Z"
+    },
+    {
+      "id": "trade_1790607467344_92478342928a9ad5",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-09-28T14:57:47.345Z"
     }
   ],
   "userState": {

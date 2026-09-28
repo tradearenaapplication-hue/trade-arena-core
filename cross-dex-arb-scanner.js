@@ -11,6 +11,10 @@ const DEFAULT_FLASH_ARB_CONFIG = {
   maxQuoteAgeMs: 3000,
   maxBorrowUSD: 250000,
   minLiquidityUSD: 50000,
+  // Below this, fixed costs (gas plus the MEV buffer) dominate regardless of
+  // the edge, so no route can ever be viable. Stated explicitly rather than
+  // left as an emergent property of the arithmetic.
+  minViableBorrowUSD: 100,
 };
 
 function calculateFlashLoanArb({ borrowAmountUSD, buyQuote, sellQuote, config = {} }) {
@@ -26,6 +30,29 @@ function calculateFlashLoanArb({ borrowAmountUSD, buyQuote, sellQuote, config = 
   const netProfitUSD = grossProfitUSD - flashLoanFeeUSD - gasUSD - slippageUSD - mevBufferUSD;
   const roi = amount > 0 ? netProfitUSD / amount : 0;
 
+  const reasons = [];
+  if (netProfitUSD < cfg.minNetProfitUSD) {
+    reasons.push(
+      "net USD " + netProfitUSD.toFixed(2) + " is below the USD " + cfg.minNetProfitUSD + " floor"
+    );
+  }
+  if (roi < cfg.minROI) {
+    reasons.push(
+      "ROI " + (roi * 100).toFixed(3) + "% is below the " + (cfg.minROI * 100).toFixed(3) + "% floor"
+    );
+  }
+  if (grossProfitUSD > 0 && gasUSD > grossProfitUSD) {
+    reasons.push(
+      "gas USD " + gasUSD.toFixed(2) + " exceeds gross profit USD " + grossProfitUSD.toFixed(2)
+    );
+  }
+  if (amount < (cfg.minViableBorrowUSD || 0)) {
+    reasons.push(
+      "borrow USD " + amount + " is below the USD " + cfg.minViableBorrowUSD +
+      " at which fixed costs can be covered at all"
+    );
+  }
+
   return {
     borrowAmountUSD: amount,
     intermediateAmount: buyOut,
@@ -38,6 +65,12 @@ function calculateFlashLoanArb({ borrowAmountUSD, buyQuote, sellQuote, config = 
     netProfitUSD,
     roi,
     isViable: netProfitUSD >= cfg.minNetProfitUSD && roi >= cfg.minROI,
+    // Why it was rejected. A scanner returning an empty array is
+    // indistinguishable from a broken one; naming the binding constraint stops
+    // someone concluding "no arbitrage exists" when the truth is "gas ate it",
+    // and makes it explicit that a small bankroll can never clear a flat floor.
+    rejectReasons: reasons,
+    blockingConstraint: reasons.length ? reasons[0] : null,
   };
 }
 

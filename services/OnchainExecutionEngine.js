@@ -393,6 +393,39 @@ class OnchainExecutionEngine {
      * Alchemy/QuickNode endpoint to get the stronger guarantee.
      */
     /**
+     * Poll until an approval is visible to the node, not merely mined.
+     *
+     * A confirmed receipt does not mean the node serving our calls has caught
+     * up. The public Base endpoint serves eth_call from a block that can lag
+     * the head, so a swap simulated immediately after an approval sees an
+     * allowance of zero and reverts STF - with the approval gas already spent.
+     * That is exactly how a real trade was lost to a phantom failure.
+     *
+     * Polls the allowance directly rather than trusting a block number, so it
+     * works whatever the node's lag looks like.
+     *
+     * @returns {Promise<boolean>} true once the allowance is visible
+     */
+    async waitForAllowance(tokenContract, required, timeoutMs = 20000) {
+        const deadline = Date.now() + timeoutMs;
+        let last = null;
+        while (Date.now() < deadline) {
+            try {
+                last = await tokenContract.allowance(this.signer.address, this.UNISWAP_ROUTER);
+                if (last >= required) return true;
+            } catch (e) {
+                // A node mid-catch-up can refuse the call; keep trying.
+            }
+            await new Promise((r) => setTimeout(r, 500));
+        }
+        console.error(
+            `[OnchainExecutionEngine] Approval not visible to the node after ${timeoutMs}ms ` +
+            `(allowance ${last === null ? 'unreadable' : last.toString()}, needed ${required.toString()}).`
+        );
+        return false;
+    }
+
+    /**
      * Whether the configured RPC is actually usable, and switch to the public
      * endpoint if not.
      *
@@ -1095,7 +1128,23 @@ class OnchainExecutionEngine {
                     const approveTx = await inContract.approve(this.UNISWAP_ROUTER, amountInRaw);
                     console.log(`[OnchainExecutionEngine] Approval TX broadcasted: ${approveTx.hash}`);
                     await approveTx.wait();
-                    console.log('[OnchainExecutionEngine] Approval confirmed.');
+                    // Wait until the approval is actually VISIBLE to the node.
+                    //
+                    // A confirmed transaction is not the same as a visible state. The receipt
+                    // says the approval was mined, but an eth_call at 'latest' can still be
+                    // served from a block before it - the public Base endpoint does this. The
+                    // swap was then simulated against a zero allowance and reverted STF, after
+                    // the approval gas had already been spent. Reproduced: the identical call
+                    // passes seconds later with the same allowance on chain.
+                    const seen = await this.waitForAllowance(inContract, amountInRaw);
+                    if (!seen) {
+                        throw new Error(
+                            'Approval was mined but the node does not report it yet. ' +
+                            'Simulating now would revert and waste the approval gas. ' +
+                            'This node is lagging; use an endpoint with reliable state.'
+                        );
+                    }
+                    console.log('[OnchainExecutionEngine] Approval confirmed and visible to the node.');
                 }
             }
 

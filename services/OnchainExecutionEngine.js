@@ -262,6 +262,43 @@ class OnchainExecutionEngine {
     /**
      * Executes transaction simulation using eth_call.
      */
+    /**
+     * Unwrap WETH back to native ETH.
+     *
+     * Used to unwind a wrap when a later step of a native trade fails. Swaps the
+     * WETH balance for ETH so the funds are not left parked in a token the user
+     * never asked to hold. Deliberately uses WETH9.withdraw(): a revert here is
+     * cheap and leaves the WETH intact for manual recovery, whereas a failed
+     * combined router call can strand funds inside the router.
+     *
+     * Throws on failure so the caller can report the balance needing manual
+     * recovery; callers must treat this as best effort.
+     */
+    async unwrapWeth(amount) {
+        const weth = tokenManager.resolveToken('WETH');
+        if (!weth) throw new Error('WETH is not whitelisted on this network.');
+
+        const wethContract = new ethers.Contract(
+            weth.address,
+            ['function withdraw(uint256) payable', 'function balanceOf(address) view returns (uint256)'],
+            this.signer
+        );
+
+        // Never try to unwrap more than is actually held: a stale amount would
+        // revert and, worse, could race a concurrent trade.
+        const held = await wethContract.balanceOf(this.signer.address);
+        if (held === 0n) {
+            console.log('[OnchainExecutionEngine] No WETH held; nothing to unwind.');
+            return;
+        }
+        const amountToUnwrap = amount > held ? held : amount;
+
+        console.log(`[OnchainExecutionEngine] Unwinding ${ethers.formatEther(amountToUnwrap)} WETH back to ETH...`);
+        const tx = await wethContract.withdraw(amountToUnwrap);
+        const receipt = await tx.wait();
+        console.log(`[OnchainExecutionEngine] Unwound to ETH (tx ${receipt.hash}).`);
+    }
+
     async simulateTransaction(txRequest) {
         try {
             // eth_call with no `from` simulates as the zero address, which has no
@@ -516,6 +553,12 @@ class OnchainExecutionEngine {
         const isNativeIn = tokenInAddress === NATIVE || /^(ETH|NATIVE)$/i.test(fromToken || '');
         const nativeInAddress = isNativeIn ? NATIVE : tokenInAddress;
 
+        // Tracks WETH that this call wrapped and not yet swapped, so the catch
+        // block can unwind it if a later step fails. Must be declared out here:
+        // declared inside the try it would be out of scope where the cleanup
+        // needs it.
+        let wrappedAmount = 0n;
+
         const tokenAbi = [
             'function decimals() view returns (uint8)',
             'function balanceOf(address account) view returns (uint256)',
@@ -623,6 +666,36 @@ class OnchainExecutionEngine {
             const slippageFactor = 10000n - BigInt(slippageBps);
             const amountOutMinimum = (expectedAmountOutRaw * slippageFactor) / 10000n;
 
+            // 5b. Pre-broadcast sanity checks.
+            //
+            // Everything below this point can spend money: the wrap and the
+            // approval are irreversible broadcasts, and only AFTER them does
+            // the swap get simulated. So anything that can be known in advance
+            // is checked here, while the position is still untouched.
+            //
+            // A native trade costs three transactions (wrap, approve, swap).
+            // Verifying the balance covers only the first one left room for
+            // gas and then ran out mid-sequence, which is exactly how funds
+            // ended up stranded as WETH.
+            if (expectedAmountOutRaw <= 0n) {
+                throw new Error('Quote produced no output; aborting before any transaction is sent.');
+            }
+            if (amountOutMinimum <= 0n) {
+                throw new Error('Slippage floor rounds to zero; aborting before any transaction is sent.');
+            }
+            if (isNativeIn) {
+                // wrap + approve + swap, with headroom for the estimate itself.
+                const gasNeeded = ethers.parseEther('0.0009');
+                const bal = await this.provider.getBalance(this.signer.address);
+                if (bal < amountInRaw + gasNeeded) {
+                    throw new Error(
+                        `Insufficient ETH for a native swap: ${ethers.formatEther(amountInRaw)} plus ` +
+                        `~${ethers.formatEther(gasNeeded)} gas for the wrap, approval and swap. ` +
+                        `Have ${ethers.formatEther(bal)}. Aborting before any transaction is sent.`
+                    );
+                }
+            }
+
             // 6a. Wrap native ETH into WETH.
             //
             // Uniswap V3 has no pool keyed on address(0), so a native-input swap
@@ -655,6 +728,7 @@ class OnchainExecutionEngine {
                 console.log(`[OnchainExecutionEngine] Wrapped into WETH (tx ${wrapTx.hash}).`);
 
                 swapTokenIn = weth.address;
+                wrappedAmount = amountInRaw;
             }
 
             // 6b. Allowance Check & Approval if Required.
@@ -741,6 +815,10 @@ class OnchainExecutionEngine {
             const actualGasCostWei = actualGasUsed * effectiveGasPrice;
             const actualGasCostETH = ethers.formatEther(actualGasCostWei);
 
+            // Funds are accounted for: suppress the unwind in the catch block so
+            // a later logging failure cannot re-wrap or touch a completed trade.
+            wrappedAmount = 0n;
+
             return {
                 success: true,
                 mode: 'LIVE',
@@ -755,6 +833,28 @@ class OnchainExecutionEngine {
 
         } catch (error) {
             console.error('[OnchainExecutionEngine] Trade execution failed:', error.message);
+
+            // Unwind a native wrap. If the wrap and approval succeeded but the
+            // swap did not, the ETH is left sitting in the wallet as WETH - a
+            // token the user did not ask for. The pre-broadcast checks reduce
+            // how often this happens but cannot eliminate it: the swap is only
+            // simulated after those broadcasts, because the public RPC has no
+            // state overrides for simulating a balance that does not exist yet.
+            //
+            // Best effort only: never mask the original error, never throw from
+            // the cleanup path.
+            if (typeof wrappedAmount !== 'undefined' && wrappedAmount && wrappedAmount > 0n) {
+                try {
+                    await this.unwrapWeth(wrappedAmount);
+                } catch (unwrapErr) {
+                    console.error(
+                        `[OnchainExecutionEngine] FAILED to unwind ${ethers.formatEther(wrappedAmount)} WETH to ETH. ` +
+                        `${ethers.formatEther(wrappedAmount)} WETH remains in the wallet and must be ` +
+                        `recovered manually. Reason: ${unwrapErr.message}`
+                    );
+                }
+            }
+
             throw error;
         }
     }

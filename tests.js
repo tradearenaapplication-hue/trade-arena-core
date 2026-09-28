@@ -998,6 +998,36 @@ describe("Swap Execution Endpoint Security", () => {
       (layer) => layer.route && layer.route.path === "/api/execute/swap"
     );
 
+    // Never broadcast from the test suite.
+    //
+    // This handler drives OnchainExecutionEngine, and with DRY_RUN=false on a
+    // funded mainnet wallet the engine wraps, approves and swaps real ETH. A
+    // test that spends money is not a test, and it fails in the most expensive
+    // possible way: it passes. The real chain is exercised by
+    // `npm run preflight:live`, which is read-only apart from an explicit opt-in.
+    const engine = require("./services/OnchainExecutionEngine");
+    const realExecuteTrade = engine.executeTrade;
+    let engineWasCalled = false;
+
+    engine.executeTrade = async (request) => {
+      engineWasCalled = true;
+      expect(request.fromToken).toBe("WETH");
+      expect(request.toToken).toBe("USDC");
+      // Shape mirrors a real receipt so the route's response contract is
+      // still genuinely under test.
+      return {
+        success: true,
+        mode: "LIVE",
+        txHash: "0x" + "ab".repeat(32),
+        blockNumber: 12345678,
+        gasUsed: "150000",
+        gasCostETH: "0.0001",
+        fromAmount: request.amount,
+        toAmount: "1.5",
+        timestamp: Date.now(),
+      };
+    };
+
     let statusCode = 200;
     let jsonResponse = null;
     const res = {
@@ -1005,13 +1035,20 @@ describe("Swap Execution Endpoint Security", () => {
       json: (data) => { jsonResponse = data; return res; },
     };
 
-    // The handler is async because it now performs a real quote/execution
-    // through OnchainExecutionEngine, so it must be awaited.
-    // Skip the auth guard (stack[0]) - this exercises the handler itself.
-    await route.route.stack[1].handle({
-      body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 }
-    }, res, () => {});
+    try {
+      // The handler is async because it performs a real quote/execution
+      // through OnchainExecutionEngine, so it must be awaited.
+      // Skip the auth guard (stack[0]) - this exercises the handler itself.
+      await route.route.stack[1].handle({
+        body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 }
+      }, res, () => {});
+    } finally {
+      engine.executeTrade = realExecuteTrade;
+    }
 
+    // The route must genuinely delegate to the engine rather than fabricate a
+    // response inline.
+    expect(engineWasCalled).toBe(true);
     expect(statusCode).toBe(200);
     expect(jsonResponse.success).toBe(true);
     expect(jsonResponse.swap.from.token).toBe("WETH");

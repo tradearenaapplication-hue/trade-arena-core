@@ -301,6 +301,50 @@ class OnchainExecutionEngine {
     }
 
     /**
+     * Estimate the USD value of `amount` units of `token`, or null if a
+     * reliable price cannot be obtained.
+     *
+     * Prices are derived ON-CHAIN by quoting the token against USDC on the
+     * configured chain, so the risk limit cannot be defeated by a stale or
+     * spoofed external price feed. Stablecoins are treated as $1 (that is their
+     * defining peg) and a pool that cannot be quoted returns null, which the
+     * caller treats as "refuse to trade".
+     */
+    async estimateUsdValue(token, amount) {
+        const qty = Number(amount);
+        if (!Number.isFinite(qty) || qty <= 0) return null;
+
+        // Stablecoins are $1 by definition; avoid a pointless pool lookup.
+        const STABLES = new Set(['USDC', 'USDT', 'DAI', 'USDB', 'FRAX']);
+        if (STABLES.has(token.symbol)) return qty;
+
+        const usdc = tokenManager.resolveToken('USDC');
+        if (!usdc || usdc.address === token.address) return null;
+
+        // Native ETH has no pool; quote its WETH leg instead.
+        const quoteIn = token.native
+            ? tokenManager.resolveToken('WETH')
+            : token;
+        if (!quoteIn) return null;
+
+        // Probe a few tiers; the first executable quote wins.
+        for (const fee of [500, 3000, 10000]) {
+            try {
+                const rawOut = await this.getUniswapV3Quote(
+                    quoteIn.address,
+                    usdc.address,
+                    ethers.parseUnits(qty.toString(), quoteIn.decimals),
+                    fee
+                );
+                const usd = Number(ethers.formatUnits(rawOut, usdc.decimals));
+                // A "quote" of 0 or a non-finite value is not a price.
+                if (Number.isFinite(usd) && usd > 0) return usd;
+            } catch (_) { /* try the next tier */ }
+        }
+        return null;
+    }
+
+    /**
      * Executes a complete real on-chain trade on the configured Base network.
      * Enforces the complete lifecycle:
      * SIGNAL -> RISK VALIDATION -> QUOTE -> BALANCE -> ALLOWANCE -> APPROVAL -> CONSTRUCTION -> GAS -> SIMULATION -> BROADCAST -> RECEIPT -> DECODE -> PERSIST
@@ -395,10 +439,32 @@ class OnchainExecutionEngine {
         }
 
         // 2. Risk Validation (Limits Check)
+        //
+        // MAX_TRADE_USD is a DOLLAR cap, but `amount` is a token QUANTITY.
+        // Comparing them directly is a unit error: with the limit at 10,
+        // "10 USDC" (~$10) passed, but so did "5 ETH" (~$13,000), while
+        // "1,000,000 PEPE" (~$0.01) was needlessly blocked. The cap is now
+        // enforced in USD, using a spot price, and the trade is refused if a
+        // reliable price cannot be obtained.
         const maxTradeUsd = parseFloat(process.env.MAX_TRADE_USD || '500');
-        if (amount > maxTradeUsd) {
-            throw new Error(`Execution blocked: Amount ${amount} exceeds MAX_TRADE_USD limit (${maxTradeUsd})`);
+        if (!Number.isFinite(maxTradeUsd) || maxTradeUsd <= 0) {
+            throw new Error(`Execution blocked: MAX_TRADE_USD is not a valid positive limit (got "${process.env.MAX_TRADE_USD}")`);
         }
+
+        const inputUsd = await this.estimateUsdValue(resolvedIn, amount);
+        if (inputUsd === null) {
+            throw new Error(
+                `Execution blocked: could not determine the USD value of ${amount} ${resolvedIn.symbol}; ` +
+                'refusing to trade without a reliable risk check.'
+            );
+        }
+        if (inputUsd > maxTradeUsd) {
+            throw new Error(
+                `Execution blocked: ${amount} ${resolvedIn.symbol} is worth ~$${inputUsd.toFixed(2)}, ` +
+                `which exceeds the MAX_TRADE_USD limit of $${maxTradeUsd}`
+            );
+        }
+        console.log(`[OnchainExecutionEngine] Risk check: $${inputUsd.toFixed(2)} <= $${maxTradeUsd} limit.`);
 
         const tokenInAddress = resolvedIn.address;
         const tokenOutAddress = resolvedOut.address;

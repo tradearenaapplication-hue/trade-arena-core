@@ -195,7 +195,7 @@ function errorHandler(err, req, res, next) {
         errorResponse.details = {
             path: req.path,
             method: req.method,
-            ip: req.ip || req.connection.remoteAddress,
+            ip: req.ip || (req.connection && req.connection.remoteAddress) || undefined,
             timestamp
         };
     }

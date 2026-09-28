@@ -1009,15 +1009,36 @@ app.get('/api/wallet/balance', async (req, res) => {
 // random tx hash, so it reported success while moving no funds at all.
 async function handleSwapRequest(req, res, next) {
     try {
-        const { fromToken, toToken, amount, slippage, botId } = req.body || {};
+        const { fromToken, toToken, amount, amountUSD, slippage, botId } = req.body || {};
 
-        const numAmount = Number(amount);
+        // Exactly one denomination must be supplied, and it is always explicit.
+        //
+        // `amount`    = a QUANTITY of fromToken (0.01 means 0.01 of the token)
+        // `amountUSD` = a DOLLAR budget, converted to a quantity via spot price
+        //
+        // Passing a USD figure through `amount` was correct only for USDC
+        // (~$1). A caller that sent $10 of WETH through `amount` asked for a
+        // swap of 10 WETH, about $26,500. Rejecting the ambiguous case and
+        // requiring `amountUSD` for dollar budgets removes the guesswork.
+        const hasAmount = amount !== undefined && amount !== null && amount !== '';
+        const hasUsd = amountUSD !== undefined && amountUSD !== null && amountUSD !== '';
+
+        if (hasAmount && hasUsd) {
+            return res.status(400).json({
+                success: false,
+                error: 'Supply either "amount" (a token quantity) or "amountUSD" (a dollar budget), not both.'
+            });
+        }
+        if (!hasAmount && !hasUsd) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing size: provide "amount" (token quantity) or "amountUSD" (dollar budget).'
+            });
+        }
+
         const numSlippage = slippage !== undefined ? Number(slippage) : 0.005;
-
-        // Security: Validate inputs & sanitize error output
         if (!fromToken || typeof fromToken !== 'string' ||
             !toToken || typeof toToken !== 'string' ||
-            isNaN(numAmount) || numAmount <= 0 ||
             isNaN(numSlippage) || numSlippage < 0 || numSlippage > 1) {
             return res.status(400).json({ success: false, error: 'Invalid swap parameters' });
         }
@@ -1025,11 +1046,34 @@ async function handleSwapRequest(req, res, next) {
         // The engine takes slippage in basis points.
         const slippageBps = Math.round(numSlippage * 10000);
 
+        let engineAmount;
+        let sizing;
+        if (hasUsd) {
+            const usd = Number(amountUSD);
+            if (isNaN(usd) || usd <= 0) {
+                return res.status(400).json({ success: false, error: 'amountUSD must be a positive number' });
+            }
+            engineAmount = await onchainEngine.usdToTokenAmount(fromToken, usd);
+            if (engineAmount === null) {
+                return res.status(400).json({
+                    success: false,
+                    error: `Could not price ${fromToken} to convert $${usd}. Pass "amount" as an explicit token quantity instead.`
+                });
+            }
+            sizing = { input: 'amountUSD', requestedUSD: usd, engineAmount };
+        } else {
+            engineAmount = Number(amount);
+            if (isNaN(engineAmount) || engineAmount <= 0) {
+                return res.status(400).json({ success: false, error: 'amount must be a positive number' });
+            }
+            sizing = { input: 'amount', engineAmount };
+        }
+
         const result = await onchainEngine.executeTrade({
             botId: botId || 'manual',
             fromToken,
             toToken,
-            amount: numAmount,
+            amount: engineAmount,
             slippageBps
         });
 
@@ -1055,7 +1099,7 @@ async function handleSwapRequest(req, res, next) {
                     botName: botId || 'Onchain Trader',
                     action: 'SWAP',
                     symbol: `${fromToken}/${toToken}`,
-                    amount: Number(result.fromAmount) || numAmount,
+                    amount: Number(result.fromAmount) || engineAmount,
                     pnl: 0, // realized P&L requires a matched exit; see note below
                     details: {
                         venue: 'Uniswap V3',
@@ -1084,6 +1128,9 @@ async function handleSwapRequest(req, res, next) {
             success: true,
             mode: result.mode,
             logged,
+            // Echo the resolved sizing so the caller can see exactly what
+            // denomination was interpreted, e.g. "$0.50 -> 0.000188 WETH".
+            sizing,
             ...(logError ? { logError } : {}),
             ...(traderAddress ? {} : { logWarning: 'No trader address supplied, trade not added to history. Pass traderAddress.' }),
             swap: {

@@ -928,16 +928,24 @@ describe("Swap Execution Endpoint Security", () => {
     );
     expect(Boolean(route)).toBe(true);
 
+    // Each invalid payload, with the specific error the route must return.
+    // The route distinguishes a MISSING size from other invalid parameters,
+    // because `amount` (a token quantity) and `amountUSD` (a dollar budget)
+    // are separate fields and sending neither is its own mistake.
     const invalidPayloads = [
-      {},
-      { fromToken: "WETH" },
-      { fromToken: "WETH", toToken: "USDC", amount: -5 },
-      { fromToken: "WETH", toToken: "USDC", amount: "invalid" },
-      { fromToken: "WETH", toToken: "USDC", amount: 10, slippage: -0.1 },
-      { fromToken: "WETH", toToken: "USDC", amount: 10, slippage: 1.5 },
+      [{}, "Missing size: provide \"amount\" (token quantity) or \"amountUSD\" (dollar budget)."],
+      [{ fromToken: "WETH" }, "Missing size: provide \"amount\" (token quantity) or \"amountUSD\" (dollar budget)."],
+      [{ fromToken: "WETH", toToken: "USDC" }, "Missing size: provide \"amount\" (token quantity) or \"amountUSD\" (dollar budget)."],
+      [{ fromToken: "WETH", toToken: "USDC", amount: -5 }, "amount must be a positive number"],
+      [{ fromToken: "WETH", toToken: "USDC", amount: "invalid" }, "amount must be a positive number"],
+      [{ fromToken: "WETH", toToken: "USDC", amount: 10, slippage: -0.1 }, "Invalid swap parameters"],
+      [{ fromToken: "WETH", toToken: "USDC", amount: 10, slippage: 1.5 }, "Invalid swap parameters"],
+      // Ambiguous sizing must be refused rather than guessed.
+      [{ fromToken: "WETH", toToken: "USDC", amount: 1, amountUSD: 1 }, "Supply either \"amount\" (a token quantity) or \"amountUSD\" (a dollar budget), not both."],
+      [{ fromToken: "WETH", toToken: "USDC", amountUSD: -1 }, "amountUSD must be a positive number"],
     ];
 
-    for (const body of invalidPayloads) {
+    for (const [body, expectedError] of invalidPayloads) {
       let statusCode = 200;
       let jsonResponse = null;
       const res = {
@@ -948,7 +956,7 @@ describe("Swap Execution Endpoint Security", () => {
       await route.route.stack[0].handle({ body }, res, () => {});
       expect(statusCode).toBe(400);
       expect(jsonResponse.success).toBe(false);
-      expect(jsonResponse.error).toBe("Invalid swap parameters");
+      expect(jsonResponse.error).toBe(expectedError);
     }
   });
 

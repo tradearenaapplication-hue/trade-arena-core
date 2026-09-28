@@ -197,12 +197,36 @@ class AutonomousWorker {
             return;
         }
 
+        // Convert the USD budget into a TOKEN QUANTITY before calling the
+        // engine.
+        //
+        // The engine's `amount` is denominated in the input token, not in USD.
+        // Passing tradeSizeUsd straight through happened to be correct only for
+        // USDC (≈$1), so a long signal selling WETH asked the engine to swap
+        // 10 WETH — roughly $26,500 for a $10 trade, ~2650x over the limit.
+        // The engine's own USD risk check would then block it, so this surfaced
+        // as "execution blocked" rather than a loss, but the two systems
+        // disagreed about what the amount meant.
+        const inputPrice = Number(prices[fromToken] ?? prices[tradeToken] ?? 0);
+        if (!Number.isFinite(inputPrice) || inputPrice <= 0) {
+            console.warn(`[AutonomousWorker] No usable price for ${fromToken}; aborting swap.`);
+            return;
+        }
+        const amountInToken = tradeSizeUsd / inputPrice;
+        if (!Number.isFinite(amountInToken) || amountInToken <= 0) {
+            console.warn('[AutonomousWorker] Computed trade size is not a usable quantity; aborting.');
+            return;
+        }
+        console.log(
+            `[AutonomousWorker] Trade size: $${tradeSizeUsd} -> ${amountInToken.toFixed(8)} ${fromToken} @ $${inputPrice}`
+        );
+
         try {
             const tradeRequest = {
                 botId: bot.id,
                 fromToken,
                 toToken,
-                amount: tradeSizeUsd,
+                amount: amountInToken,
                 slippageBps: this.riskLimits.maxSlippageBps
             };
 

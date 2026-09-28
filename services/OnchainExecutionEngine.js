@@ -301,6 +301,44 @@ class OnchainExecutionEngine {
     }
 
     /**
+     * Convert a USD budget into a quantity of `symbol`, or null if it cannot be
+     * priced. Used by the API so callers can express a trade in dollars without
+     * the engine having to guess which token they meant.
+     */
+    async usdToTokenAmount(symbolOrAddress, usd) {
+        const budget = Number(usd);
+        if (!Number.isFinite(budget) || budget <= 0) return null;
+
+        const token = tokenManager.resolveToken(symbolOrAddress);
+        if (!token) return null;
+
+        const valueUsd = await this.estimateUsdValue(token, 1);
+        if (valueUsd === null || valueUsd <= 0) return null;
+
+        const raw = budget / valueUsd;
+        if (!Number.isFinite(raw) || raw <= 0) return null;
+
+        // A float division yields far more precision than the token has (a
+        // $0.50 WETH trade is 0.00018872049951299712 - 20 decimal places, but
+        // WETH has 18). Passing that to parseUnits throws "too many decimals",
+        // which surfaced as an unpriceable trade. Truncate to the token's own
+        // decimal precision, rounding DOWN so the trade never exceeds the
+        // requested dollar budget.
+        return this.truncateToDecimals(raw, token.decimals);
+    }
+
+    /**
+     * Truncate a positive number to `decimals` places without going through
+     * string rounding, so the result is always <= the input.
+     */
+    truncateToDecimals(value, decimals) {
+        const factor = Math.pow(10, decimals);
+        // Nudge down by one ULP-ish epsilon to defeat binary float artefacts
+        // (e.g. 0.29999999999999998) before truncating.
+        return Math.floor((value - Math.abs(value) * Number.EPSILON) * factor) / factor;
+    }
+
+    /**
      * Estimate the USD value of `amount` units of `token`, or null if a
      * reliable price cannot be obtained.
      *

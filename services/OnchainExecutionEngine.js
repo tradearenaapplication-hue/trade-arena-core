@@ -127,22 +127,28 @@ class OnchainExecutionEngine {
     _redact(keyHex) {
         if (!keyHex) return;
         const secret = keyHex.toLowerCase();
+        // Match the exact key (with or without 0x). Deliberately NOT a generic
+        // /0x[0-9a-f]{64}/ pattern: that also matches router calldata and other
+        // legitimate 32-byte hex, corrupting real values rather than secrets.
+        const pattern = new RegExp(secret.replace(/^0x/, ''), 'gi');
+
+        // Pure: returns redacted COPIES and never mutates the input. An earlier
+        // version rewrote Error.message/.stack in place, which permanently
+        // corrupted shared error objects - including ethers' own assertion
+        // errors, turning "invalid private key" into "invalid [REDACTED]" and
+        // destroying the diagnostic.
+        const scrubString = (s) => String(s).replace(pattern, '[REDACTED_PRIVATE_KEY]');
 
         const scrub = (args) => args.map((a) => {
-            if (typeof a === 'string') {
-                // Redact the known key, and any bare 32-byte hex that is not
-                // part of a longer hex blob. The length check matters: a naive
-                // /0x[0-9a-f]{64}/ also matched the 64-hex selector+argument run
-                // at the start of router calldata, mangling legitimate error
-                // output and making failures unreadable.
-                return a
-                    .replace(new RegExp(secret, 'gi'), '[REDACTED_PRIVATE_KEY]')
-                    .replace(/0x[0-9a-fA-F]{64}(?![0-9a-fA-F])/g, '[REDACTED_PRIVATE_KEY]');
-            }
+            if (typeof a === 'string') return scrubString(a);
             if (a instanceof Error) {
-                a.message = scrub([a.message])[0];
-                if (a.stack) a.stack = scrub([a.stack])[0];
-                return a;
+                // Copy rather than mutate, and leave the original error intact
+                // for the caller.
+                const copy = new Error(scrubString(a.message));
+                copy.name = a.name;
+                if (a.code) copy.code = a.code;
+                copy.stack = a.stack ? scrubString(a.stack) : a.stack;
+                return copy;
             }
             return a;
         });
@@ -413,10 +419,35 @@ class OnchainExecutionEngine {
             'function approve(address spender, uint256 amount) returns (bool)'
         ];
 
-        const routerAbi = [
-            'struct ExactInputSingleParams { address tokenIn; address tokenOut; uint24 fee; address recipient; uint256 deadline; uint256 amountIn; uint256 amountOutMinimum; uint160 sqrtPriceLimitX96; }',
-            'function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut)'
-        ];
+        // The router ABI must be expressed as JSON, not human-readable strings.
+        //
+        // ethers' human-readable parser does NOT support `struct Foo { ... }`
+        // declarations, so the previous string form constructed an Interface
+        // containing NO functions at all - silently, with no error. Every
+        // swap then failed at encodeFunctionData with "unknown function
+        // (argument=fragment, value=exactInputSingle)". A real trade could
+        // never have been built, let alone broadcast.
+        const EXACT_INPUT_SINGLE = {
+            type: 'function',
+            name: 'exactInputSingle',
+            stateMutability: 'payable',
+            inputs: [{
+                name: 'params',
+                type: 'tuple',
+                components: [
+                    { name: 'tokenIn', type: 'address' },
+                    { name: 'tokenOut', type: 'address' },
+                    { name: 'fee', type: 'uint24' },
+                    { name: 'recipient', type: 'address' },
+                    { name: 'deadline', type: 'uint256' },
+                    { name: 'amountIn', type: 'uint256' },
+                    { name: 'amountOutMinimum', type: 'uint256' },
+                    { name: 'sqrtPriceLimitX96', type: 'uint160' }
+                ]
+            }],
+            outputs: [{ name: 'amountOut', type: 'uint256' }]
+        };
+        const routerAbi = [EXACT_INPUT_SINGLE];
 
         try {
             const tokenInContract = new ethers.Contract(tokenInAddress, tokenAbi, this.signer);

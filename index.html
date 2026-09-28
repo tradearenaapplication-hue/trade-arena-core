@@ -1064,6 +1064,12 @@ a, button, input, select, textarea {
 .acct-table th,.acct-table td{border-bottom:1px solid var(--border);padding:5px;text-align:left}
 .tl-evidence{color:var(--accent,#4a9eff);text-decoration:none}
 .tl-evidence.muted{color:var(--dim)}
+.earn-subcount{font-size:9px;color:var(--dim);letter-spacing:0}
+.tl-status{font-size:7px;padding:2px 5px;border-radius:4px;font-weight:700}
+.tl-status.open{background:rgba(255,200,80,.18);color:#ffd166}
+.tl-status.closed{background:rgba(140,140,140,.15);color:var(--dim)}
+.tl-row-open{background:rgba(255,200,80,.05)}
+.tl-table td{font-size:8px}
 </style>
 
 <div id="earn-panel">
@@ -1077,6 +1083,13 @@ a, button, input, select, textarea {
 
   <h3 style="margin-top:14px">📊 REAL P&amp;L</h3>
   <div id="acct-panel"><p class="earn-empty">Connect a wallet to view P&amp;L.</p></div>
+
+  <h3 style="margin-top:14px">📜 TRADE LOG <span id="tl-open-count" class="earn-subcount"></span></h3>
+  <p class="earn-note">A trade appears here the moment it opens, marked OPEN, and flips to CLOSED with its result when it resolves.</p>
+  <table class="acct-table tl-table">
+    <thead><tr><th>Time</th><th>Pair</th><th>Size</th><th>P&amp;L</th><th>Status</th><th>Evidence</th></tr></thead>
+    <tbody id="tl-body"><tr><td colspan="6">Connect a wallet to see the trade log.</td></tr></tbody>
+  </table>
 </div>
 <div id="earn-toast" class="earn-toast"></div>
 
@@ -2096,6 +2109,13 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   };
   openPositions.push(pos);
 
+  // Record the trade the moment it opens, not only when it resolves. A log
+  // that only appears on exit cannot show what is happening on the floor right
+  // now. The close writes the same positionId, so this row is updated in place
+  // rather than duplicated - which also keeps the trade count and traded
+  // volume honest for the P&L ledger and the task checks.
+  try { saveTradeLogToDb(pos, 'open'); } catch (e) { console.warn('Open trade log failed:', e); }
+
   // Track trade in bot's lastTrade for ticker display
   const methodEmoji = {
     'SPOT LONG':'📈', 'SPOT SHORT':'📉',
@@ -2377,7 +2397,9 @@ function showExitResult(pos, bot) {
     blEl.style.color=better.length?'var(--green)':'var(--hot)';
   }
   rEl.classList.add('show');
-  saveTradeLogToDb(pos);
+  // Updates the row written when this position opened, rather than adding a
+  // second one for the same trade.
+  saveTradeLogToDb(pos, 'close');
 }
 
 // ══════════════════════════════════════════════════════
@@ -3929,7 +3951,16 @@ function syncUserSessionToDb(address, provider, holdings, balanceUSD) {
   }
 }
 
-function saveTradeLogToDb(pos) {
+/**
+ * Write a trade to the log.
+ *
+ * Called TWICE per trade: once with phase 'open' the moment the position is
+ * created, and once with phase 'close' when it resolves. Both carry the same
+ * positionId, so the second call UPDATES the row the first created. Appending a
+ * second row instead would double both the trade count and the traded volume,
+ * corrupting the P&L ledger and the task checks that count trades.
+ */
+function saveTradeLogToDb(pos, phase) {
   const addr = window.currentUserAddress || (typeof walletState !== 'undefined' && walletState.address);
   if (!addr) return;
   try {
@@ -3955,13 +3986,20 @@ function saveTradeLogToDb(pos) {
     if (pos.blockNumber !== undefined) details.blockNumber = pos.blockNumber;
     if (pos.gasCostETH !== undefined) details.gasCostETH = pos.gasCostETH;
 
-// On-chain evidence. Every executed trade gets a block-explorer link so the
-// fill can be checked independently rather than taken on this app's word.
-// Built here for live fills; the server also stores the URL on records it
-// writes itself, and annotateTradeLogs prefers that stored value.
-if (pos.txHash && typeof window.TA_annotateTradeLogs === 'function') {
-  try { window.TA_annotateTradeLogs([{ details }]); } catch (e) { /* never block a trade */ }
-}
+    // Open/close lifecycle on the record itself.
+    //
+    // `openedAt` is the position's own timestamp, not "now": it is the real
+    // age of the trade and feeds the short/long-term CGT split, so re-sending
+    // it on the close must not restart the clock. `onchain` marks whether this
+    // leg touched a real fill, which is what keeps simulated paper trades out
+    // of the on-chain P&L ledger.
+    details.status = when === 'close' ? 'CLOSED' : 'OPEN';
+    details.openedAt = pos.openedAt ? new Date(pos.openedAt).toISOString() : new Date().toISOString();
+    if (when === 'close') details.closedAt = new Date().toISOString();
+    details.onchain = !!(pos.txHash && pos.mode === 'LIVE');
+    if (pos.txHash && details.onchain && typeof window.TA_annotateTradeLogs === 'function') {
+      try { window.TA_annotateTradeLogs([{ details }]); } catch (e) { /* never block a trade */ }
+    }
 
 
     fetch('/api/user/tradelog', {
@@ -3969,6 +4007,9 @@ if (pos.txHash && typeof window.TA_annotateTradeLogs === 'function') {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         address: addr,
+        // Same id on the open and the close write, so the server updates the
+        // existing row instead of appending a second one for the same trade.
+        positionId: String(pos.id),
         agentId: pos.botId || 'agent-1',
         botName: pos.botName || 'Trade Bot',
         action: pos.direction || 'SWAP',

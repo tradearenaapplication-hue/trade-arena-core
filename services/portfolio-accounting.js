@@ -509,6 +509,19 @@ function buildLedger(trades, opts = {}) {
   const ledger = new PortfolioLedger(opts);
   const ordered = (Array.isArray(trades) ? trades : [])
     .filter(Boolean)
+    .filter((t) => {
+      // Simulated paper trades are excluded, but only when they SAY they are.
+      //
+      // The browser now stamps every position it writes with
+      // details.onchain = false, so that flag is the reliable marker. An
+      // earlier version of this filter instead required a tx hash to be
+      // present, which silently dropped every record that lacked one -
+      // including the ledger's own historical fixtures - and reported a P&L
+      // of zero. Absence of a hash is not proof of simulation.
+      if (opts.includePaper) return true;
+      const d = t.details || {};
+      return d.onchain !== false;
+    })
     .slice()
     .sort((a, b) => Date.parse(a.timestamp || 0) - Date.parse(b.timestamp || 0));
 

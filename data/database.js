@@ -125,6 +125,62 @@ class FileDatabase {
     return tradeLog;
   }
 
+  /**
+   * Insert a trade, or update the existing record for the same position.
+   *
+   * A trade has two moments worth recording - when it opens and when it closes
+   * - and they must be ONE record, not two. Writing a second row on close would
+   * double both the trade count and the traded volume, which corrupts the
+   * accounting ledger and the task eligibility checks that count trades.
+   * Keying on positionId makes the close an update of the row the open created.
+   *
+   * openedAt is preserved across the update: it is the real age of the trade
+   * and feeds the short/long-term CGT split, so a close must not reset it to
+   * the moment of closing.
+   */
+  upsertTradeLog(tradeData) {
+    if (!tradeData || typeof tradeData !== 'object') return null;
+    const { address, positionId, details } = tradeData;
+    if (!address || typeof address !== 'string') return null;
+    if (!positionId) return this.addTradeLog(tradeData);
+
+    const cleanAddr = address.toLowerCase();
+    const existing = this.data.tradeLogs.find(
+      (t) => t && t.positionId === positionId && t.address === cleanAddr
+    );
+
+    if (!existing) {
+      const created = this.addTradeLog(tradeData);
+      if (created) {
+        created.positionId = positionId;
+        created.status = (details && details.status) || 'OPEN';
+        created.openedAt = (details && details.openedAt) || created.timestamp;
+        this.save();
+      }
+      return created;
+    }
+
+    // Merge rather than replace: a close knows the exit and has no reason to
+    // restate the entry, and replacing would blank the fields the open filled in.
+    existing.agentId = tradeData.agentId || existing.agentId;
+    existing.botName = tradeData.botName || existing.botName;
+    existing.action = tradeData.action || existing.action;
+    existing.symbol = tradeData.symbol || existing.symbol;
+    if (typeof tradeData.amount === 'number' && !isNaN(tradeData.amount)) existing.amount = tradeData.amount;
+    if (typeof tradeData.pnl === 'number' && !isNaN(tradeData.pnl)) existing.pnl = tradeData.pnl;
+    existing.details = {
+      ...(existing.details || {}),
+      ...(details && typeof details === 'object' ? details : {})
+    };
+    existing.status = (details && details.status) || existing.status || 'OPEN';
+    existing.openedAt = existing.openedAt || (details && details.openedAt) || existing.timestamp;
+    existing.closedAt = (details && details.closedAt) || existing.closedAt || null;
+    existing.updatedAt = new Date().toISOString();
+
+    this.save();
+    return existing;
+  }
+
   getTradeLogs(address, limit = 100) {
     if (!address || typeof address !== 'string') return [];
     const cleanAddr = address.toLowerCase();

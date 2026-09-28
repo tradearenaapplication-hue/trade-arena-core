@@ -430,7 +430,7 @@ app.get('/api/user/session', (req, res) => {
 
 app.post('/api/user/tradelog', (req, res) => {
     try {
-        const { address, agentId, botName, action, symbol, amount, pnl, details, ...extra } = req.body || {};
+        const { address, agentId, botName, action, symbol, amount, pnl, details, positionId, ...extra } = req.body || {};
         if (!address) {
             return res.status(400).json({ success: false, error: 'Wallet address required' });
         }
@@ -446,8 +446,13 @@ app.post('/api/user/tradelog', (req, res) => {
             )
         };
 
-        const tradeLog = db.addTradeLog({
-            address, agentId, botName, action, symbol, amount, pnl,
+        // A trade is written twice: once when it opens, once when it closes.
+        // Both writes carry the same positionId so the second UPDATES the
+        // first. Appending instead would double the trade count and traded
+        // volume, which would corrupt the accounting ledger and the task
+        // eligibility checks that count trades.
+        const tradeLog = db.upsertTradeLog({
+            address, agentId, botName, action, symbol, amount, pnl, positionId,
             details: mergedDetails
         });
 

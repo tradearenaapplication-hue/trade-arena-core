@@ -1282,6 +1282,105 @@ describe("On-chain Evidence Links", () => {
   });
 });
 
+describe("Trade Log Open/Close Lifecycle", () => {
+  const db = require("./data/database");
+  const A = "0x" + "9a".repeat(20);
+  const key = (pid) => A + ":pos_" + pid;
+
+  const cleanup = () => {
+    for (const k of Object.keys(db.data.tradeLogs)) {
+      if (db.data.tradeLogs[k] && db.data.tradeLogs[k].address === A) {
+        db.data.tradeLogs.splice(k, 1);
+      }
+    }
+    db.save();
+  };
+
+  it("writes one row on open", () => {
+    cleanup();
+    db.upsertTradeLog({
+      address: A, positionId: "pos_1", agentId: "b1", symbol: "ETH/USD",
+      amount: 0.5, pnl: 0, details: { status: "OPEN", openedAt: "2026-05-01T00:00:00.000Z" }
+    });
+    expect(db.getTradeLogs(A).length).toBe(1);
+    cleanup();
+  });
+
+  it("REGRESSION: a close UPDATES the open row instead of appending", () => {
+    // Appending would double the trade count and traded volume, corrupting
+    // both the P&L ledger and the task checks that count trades.
+    cleanup();
+    db.upsertTradeLog({ address: A, positionId: "pos_2", symbol: "ETH/USD", amount: 0.5, pnl: 0, details: { status: "OPEN", openedAt: "2026-05-01T00:00:00.000Z" } });
+    db.upsertTradeLog({ address: A, positionId: "pos_2", symbol: "ETH/USD", amount: 0.5, pnl: 0.12, details: { status: "CLOSED", entryPrice: 2500 } });
+    const logs = db.getTradeLogs(A);
+    expect(logs.length).toBe(1);
+    expect(logs[0].status).toBe("CLOSED");
+    expect(logs[0].pnl).toBe(0.12);
+    cleanup();
+  });
+
+  it("REGRESSION: openedAt survives the close update", () => {
+    // openedAt drives the short/long-term CGT split. Resetting it on close
+    // would make every trade look brand new at the moment it finished.
+    cleanup();
+    const opened = "2026-01-01T00:00:00.000Z";
+    db.upsertTradeLog({ address: A, positionId: "pos_3", symbol: "ETH/USD", details: { status: "OPEN", openedAt: opened } });
+    db.upsertTradeLog({ address: A, positionId: "pos_3", symbol: "ETH/USD", pnl: 1, details: { status: "CLOSED", openedAt: "2026-09-01T00:00:00.000Z" } });
+    expect(db.getTradeLogs(A)[0].openedAt).toBe(opened);
+    cleanup();
+  });
+
+  it("merges details rather than blanking the entry on close", () => {
+    cleanup();
+    db.upsertTradeLog({ address: A, positionId: "pos_4", symbol: "ETH/USD", details: { status: "OPEN", entryPrice: 2500, regime: "BULL" } });
+    db.upsertTradeLog({ address: A, positionId: "pos_4", symbol: "ETH/USD", pnl: 2, details: { status: "CLOSED", exitPrice: 2600 } });
+    const rec = db.getTradeLogs(A)[0];
+    expect(rec.details.entryPrice).toBe(2500);
+    expect(rec.details.exitPrice).toBe(2600);
+    expect(rec.details.regime).toBe("BULL");
+    cleanup();
+  });
+
+  it("keeps different positions as separate rows", () => {
+    cleanup();
+    db.upsertTradeLog({ address: A, positionId: "pos_a", symbol: "ETH/USD", details: { status: "OPEN" } });
+    db.upsertTradeLog({ address: A, positionId: "pos_b", symbol: "SOL/USD", details: { status: "OPEN" } });
+    expect(db.getTradeLogs(A).length).toBe(2);
+    cleanup();
+  });
+
+  it("excludes paper trades from the on-chain ledger", () => {
+    // The browser writes paper positions to the same log and stamps them
+    // onchain:false. Counting them as real fills would report positions the
+    // wallet never held. Each record is a full round trip so it would open a
+    // lot if it were included.
+    const { buildLedger } = require("./services/portfolio-accounting.js");
+    const onchain = {
+      address: A, agentId: "b1", symbol: "USDC/WBTC", timestamp: "2026-01-01T00:00:00.000Z",
+      details: { fromToken: "USDC", toToken: "WBTC", fromAmount: "1000", toAmount: "0.02", fromUsd: 1000, toUsd: 1000, txHash: "0x" + "ab".repeat(32), onchain: true }
+    };
+    const paper = {
+      address: A, agentId: "b1", symbol: "USDC/SOL", timestamp: "2026-01-02T00:00:00.000Z",
+      details: { fromToken: "USDC", toToken: "SOL", fromAmount: "500", toAmount: "1.0", fromUsd: 500, toUsd: 500, onchain: false }
+    };
+    // Only the on-chain trade opens a position.
+    expect(buildLedger([onchain, paper]).summary().openPositions).toBe(1);
+    // Paper included opens both.
+    expect(buildLedger([onchain, paper], { includePaper: true }).summary().openPositions).toBe(2);
+  });
+
+  it("keeps legacy records that carry no onchain flag", () => {
+    // Absence of the flag is not proof of simulation. Dropping these would
+    // silently zero the P&L of every trade logged before the flag existed.
+    const { buildLedger } = require("./services/portfolio-accounting.js");
+    const legacy = {
+      address: A, agentId: "b1", symbol: "USDC/WBTC", timestamp: "2026-01-01T00:00:00.000Z",
+      details: { fromToken: "USDC", toToken: "WBTC", fromAmount: "1000", toAmount: "0.02", fromUsd: 1000, toUsd: 1000 }
+    };
+    expect(buildLedger([legacy]).summary().openPositions).toBe(1);
+  });
+});
+
 describe("Swap Execution Endpoint Security", () => {
 
 

@@ -236,13 +236,49 @@
     }
     window.TA_annotateTradeLogs = annotateTradeLogs;
 
+    // ─── Live trade log ──────────────────────────────────────────
+
+    /**
+     * Render the trade log, newest first, showing open trades as they appear.
+     *
+     * A trade appears the moment it opens and stays in the list while it is
+     * open, then flips to closed with its result. The open/close distinction is
+     * carried on the record itself, so the list reflects what was actually
+     * written rather than guessing from a missing P&L.
+     */
+    async function loadTradeLog() {
+        const root = $('#tl-body');
+        if (!root) return;
+        const addr = await getAddress();
+        if (!addr) { root.innerHTML = '<tr><td colspan="6">Connect a wallet to see the trade log.</td></tr>'; return; }
+
+        try {
+            const res = await fetch('/api/user/tradelogs?address=' + addr);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Could not load the trade log');
+            let logs = annotateTradeLogs(data.tradeLogs || []);
+
+            const openCount = logs.filter((t) => (t.status || (t.details || {}).status) === 'OPEN').length;
+            const counter = $('#tl-open-count');
+            if (counter) counter.textContent = openCount + ' open';
+
+            root.innerHTML = logs.length
+                ? logs.map(tradeLogRow).join('')
+                : '<tr><td colspan="6">No trades yet. A trade appears here the moment it opens.</td></tr>';
+        } catch (err) {
+            root.innerHTML = '<tr><td colspan="6">Could not load the trade log: ' + esc(err.message) + '</td></tr>';
+        }
+    }
+    window.TA_loadTradeLog = loadTradeLog;
+
     /** Render a trade-log row including its on-chain evidence. */
     function tradeLogRow(t) {
         const d = t.details || {};
-        const when = new Date(t.timestamp).toLocaleString();
+        const isOpen = (t.status || d.status) === 'OPEN';
+        const when = isOpen && d.openedAt ? new Date(d.openedAt) : new Date(t.timestamp);
         const pnl = Number(t.pnl) || 0;
         const pnlCls = pnl > 0 ? 'up' : pnl < 0 ? 'down' : '';
-        const pnlTxt = t.pnl ? (pnl > 0 ? '+' : '') + money(pnl) : '—';
+        const pnlTxt = isOpen ? '—' : (t.pnl ? (pnl > 0 ? '+' : '') + money(pnl) : '—');
 
         const link = d.explorerUrl
             ? '<a class="tl-evidence" href="' + esc(d.explorerUrl) + '" target="_blank" rel="noopener">basescan ↗</a>'
@@ -250,13 +286,16 @@
 
         const gas = d.gasUsd ? ' · gas ' + aud(d.gasUsd) : '';
         const block = d.blockNumber ? ' · block ' + esc(d.blockNumber) : '';
+        const status = isOpen
+            ? '<span class="tl-status open">OPEN</span>'
+            : '<span class="tl-status closed">CLOSED</span>';
 
-        return '<tr>' +
-            '<td>' + esc(when) + '</td>' +
+        return '<tr' + (isOpen ? ' class="tl-row-open"' : '') + '>' +
+            '<td>' + esc(when.toLocaleString()) + '</td>' +
             '<td>' + esc(t.symbol || '—') + '</td>' +
             '<td>' + esc(d.fromAmount != null ? d.fromAmount : t.amount) + '</td>' +
             '<td class="' + pnlCls + '">' + pnlTxt + '</td>' +
-            '<td>' + esc(d.mode || '—') + gas + block + '</td>' +
+            '<td>' + status + ' ' + esc(d.mode || '—') + gas + block + '</td>' +
             '<td>' + link + '</td>' +
         '</tr>';
     }
@@ -332,10 +371,16 @@
     document.addEventListener('DOMContentLoaded', function () {
         loadTasks();
         loadAccounting();
+        loadTradeLog();
     });
 
-    window.TA_earn = { loadTasks, loadAccounting, state };
-    // The page fires this after recording a trade so P&L and task eligibility
-    // refresh together instead of waiting for a manual reload.
-    window.addEventListener('tradeLogged', function () { loadTasks(); loadAccounting(); });
+    window.TA_earn = { loadTasks, loadAccounting, loadTradeLog, state };
+    // The page fires this after recording a trade. Open and close are handled
+    // the same way on purpose: a close UPDATES the same row, so refreshing on
+    // both keeps the list correct without a second entry appearing.
+    window.addEventListener('tradeLogged', function () {
+        loadTasks();
+        loadAccounting();
+        loadTradeLog();
+    });
 })();

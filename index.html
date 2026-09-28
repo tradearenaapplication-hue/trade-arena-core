@@ -1019,6 +1019,67 @@ a, button, input, select, textarea {
 <body>
 <div class="edge"></div>
 
+<!-- ══ EARN + ACCOUNTING PANEL ══
+     Styles and markup for earn-dashboard.js. The panel reports what the server
+     actually knows: a reward shows as paid only when a payout transaction
+     exists, and a task states how it was verified. Nothing here is decorative. -->
+<style>
+#earn-panel{background:var(--panel,#111);border:1px solid var(--border);border-radius:10px;padding:12px;margin:10px auto;max-width:1000px}
+#earn-panel h3{font-family:'Bungee',sans-serif;font-size:12px;letter-spacing:2px;margin:0 0 4px}
+.earn-totals{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0}
+.earn-tot{display:flex;flex-direction:column}
+.earn-tot b{font-size:16px}
+.earn-tot span{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.earn-note{font-size:9px;padding:6px 8px;border-radius:6px;margin:6px 0}
+.earn-note.ok{background:rgba(80,255,140,.1);color:#7dffa8}
+.earn-note.warn{background:rgba(255,200,80,.12);color:#ffd166}
+.earn-card{display:flex;gap:10px;align-items:flex-start;padding:9px;border:1px solid var(--border);border-radius:8px;margin:6px 0}
+.earn-card.rejected{opacity:.65}
+.earn-icon{font-size:20px;line-height:1}
+.earn-main{flex:1}
+.earn-label{font-size:10px;font-weight:700}
+.earn-desc,.earn-verif,.earn-reason{font-size:8px;color:var(--dim);margin-top:2px}
+.earn-verif{color:#8fb4ff}
+.earn-badge{font-size:8px;margin-top:3px;color:#ffd166}
+.earn-badge.PAID{color:#7dffa8}
+.earn-badge.REJECTED{color:#ff8080}
+.earn-side{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.earn-reward{font-size:12px;font-weight:700}
+.earn-btn{font-family:'Bungee',sans-serif;font-size:8px;padding:5px 10px;border:1px solid var(--accent,#4a9eff);background:transparent;color:var(--accent,#4a9eff);border-radius:5px;cursor:pointer}
+.earn-btn.disabled,.earn-btn.done{opacity:.5;cursor:not-allowed;border-color:var(--dim);color:var(--dim)}
+.earn-empty{font-size:9px;color:var(--dim);padding:10px 0}
+.earn-toast{display:none;position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:#111;border:1px solid var(--accent,#4a9eff);color:#fff;padding:9px 14px;border-radius:8px;font-size:9px;z-index:9999;max-width:80vw}
+.earn-toast.show{display:block}
+.earn-toast.err{border-color:#ff6b6b}
+.acct-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:8px 0}
+.acct-row{display:flex;flex-direction:column;padding:8px;border:1px solid var(--border);border-radius:7px}
+.acct-k{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.acct-v{font-size:15px;font-weight:700}
+.acct-n{font-size:7px;color:var(--dim)}
+.acct-v.up{color:#7dffa8}.acct-v.down{color:#ff8080}
+.acct-sub{font-size:8px;color:var(--dim);margin:6px 0}
+.acct-warn{font-size:8px;color:#ffd166}
+.acct-table,.tl-evidence{font-size:8px}
+.acct-table{width:100%;border-collapse:collapse;margin:6px 0}
+.acct-table th,.acct-table td{border-bottom:1px solid var(--border);padding:5px;text-align:left}
+.tl-evidence{color:var(--accent,#4a9eff);text-decoration:none}
+.tl-evidence.muted{color:var(--dim)}
+</style>
+
+<div id="earn-panel">
+  <h3>💰 EARN &amp; ACCOUNTING</h3>
+  <div class="earn-totals">
+    <div class="earn-tot"><b id="earn-paid">—</b><span>Paid on-chain</span></div>
+    <div class="earn-tot"><b id="earn-pending">—</b><span>Verified, not yet paid</span></div>
+  </div>
+  <p id="earn-payout-note" class="earn-note">Checking payout configuration…</p>
+  <div id="earn-tasks"><p class="earn-empty">Connect a wallet to register and claim tasks.</p></div>
+
+  <h3 style="margin-top:14px">📊 REAL P&amp;L</h3>
+  <div id="acct-panel"><p class="earn-empty">Connect a wallet to view P&amp;L.</p></div>
+</div>
+<div id="earn-toast" class="earn-toast"></div>
+
 <!-- ══ CONNECT ══ -->
 <div id="connectScreen">
   <div class="marquee-wrap">
@@ -3894,6 +3955,15 @@ function saveTradeLogToDb(pos) {
     if (pos.blockNumber !== undefined) details.blockNumber = pos.blockNumber;
     if (pos.gasCostETH !== undefined) details.gasCostETH = pos.gasCostETH;
 
+// On-chain evidence. Every executed trade gets a block-explorer link so the
+// fill can be checked independently rather than taken on this app's word.
+// Built here for live fills; the server also stores the URL on records it
+// writes itself, and annotateTradeLogs prefers that stored value.
+if (pos.txHash && typeof window.TA_annotateTradeLogs === 'function') {
+  try { window.TA_annotateTradeLogs([{ details }]); } catch (e) { /* never block a trade */ }
+}
+
+
     fetch('/api/user/tradelog', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -3912,7 +3982,11 @@ function saveTradeLogToDb(pos) {
       .then(d => {
         if (!d || d.success === false) {
           console.warn('Trade log rejected by server:', d && d.error);
+          return;
         }
+        // Refresh the earn tab and P&L panel so task eligibility and totals
+        // follow a new trade immediately, instead of waiting for a reload.
+        window.dispatchEvent(new CustomEvent('tradeLogged'));
       })
       .catch(e => console.warn('Failed to persist trade log:', e));
   } catch (e) {
@@ -6429,6 +6503,7 @@ document.addEventListener('keydown', function(e) {
 <script src="execution-engine.js" defer></script>
 <script src="elo-tournament-engine.js" defer></script>
 <script src="task-center.js" defer></script>
+<script src="earn-dashboard.js" defer></script>
 <script src="privy-client.js" defer></script>
 <script src="staff-engine.js" defer></script>
 <script src="gemini-voice-engine.js" defer></script>

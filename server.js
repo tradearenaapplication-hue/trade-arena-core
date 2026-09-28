@@ -217,6 +217,14 @@ app.use(express.json({ limit: '10mb' }));
 // Apply request validation middleware
 app.use(validateRequest);
 
+// Earn / task module.
+//
+// Mounted after validateRequest so these routes inherit the same input
+// sanitisation as everything else. Registration and claiming each verify a
+// wallet signature, so the routes are not an open door onto the reward record
+// even though the catalogue and a wallet's own status are readable.
+app.use('/api/tasks', require('./routes/taskRoutes'));
+
 // Apply error handling middleware
 app.use(errorHandler);
 
@@ -1556,6 +1564,13 @@ async function handleSwapRequest(req, res, next) {
                         gasUsed: result.gasUsed,
                         gasCostETH: result.gasCostETH,
                         txHash: result.txHash,
+                        // On-chain evidence. A trade this app claims to have
+                        // executed should be independently checkable, so the
+                        // explorer link is stored with the record rather than
+                        // reconstructed in the UI from a bare hash.
+                        explorerUrl: onchainEngine.getTxExplorerUrl(result.txHash),
+                        explorer: onchainEngine.NETWORK.explorer,
+                        traderExplorerUrl: onchainEngine.getAddressExplorerUrl(traderAddress),
                         blockNumber: result.blockNumber
                     }
                 });

@@ -1182,6 +1182,106 @@ describe("Portfolio Accounting", () => {
   });
 });
 
+describe("Task / Earn Module", () => {
+  const registry = require("./services/task-registry.js");
+  const { ethers } = require("ethers");
+
+  it("declares how every task is verified", () => {
+    // A task with no declared verification would be a claim the UI cannot
+    // honestly present, so every one must carry a known value.
+    const allowed = ["PROVEN", "ATTESTED", "EXTERNAL_UNAVAILABLE"];
+    for (const t of registry.TASKS) {
+      expect(allowed.includes(t.verification)).toBe(true);
+      expect(typeof t.rewardUsd).toBe("number");
+    }
+  });
+
+  it("refuses a task that needs an unconfigured third-party API", () => {
+    const v = registry.verifyTask("join_discord", { tradeLogs: [] });
+    expect(v.ok).toBe(false);
+    expect(v.reason).toMatch(/not configured/i);
+  });
+
+  it("verifies first_trade from the real trade log", () => {
+    expect(registry.verifyTask("first_trade", { tradeLogs: [] }).ok).toBe(false);
+    const withTrade = [{ details: { txHash: "0x" + "ab".repeat(32) } }];
+    const v = registry.verifyTask("first_trade", { tradeLogs: withTrade });
+    expect(v.ok).toBe(true);
+    expect(v.evidence.tradeCount).toBe(1);
+  });
+
+  it("verifies trade volume against stored USD legs", () => {
+    const low = [{ amount: 10, details: { fromUsd: 10 } }];
+    expect(registry.verifyTask("trade_volume", { tradeLogs: low }).ok).toBe(false);
+    const high = [{ amount: 60, details: { fromUsd: 60 } }, { amount: 50, details: { fromUsd: 50 } }];
+    expect(registry.verifyTask("trade_volume", { tradeLogs: high }).ok).toBe(true);
+  });
+
+  it("verifies realised profit only from a positive booked P&L", () => {
+    expect(registry.verifyTask("realised_profit", { pnlByTxHash: { "0xaa": -5 } }).ok).toBe(false);
+    expect(registry.verifyTask("realised_profit", { pnlByTxHash: { "0xaa": 12.5 } }).ok).toBe(true);
+  });
+
+  it("marks an attested task as NOT proven", () => {
+    // Self-reported is not verified. Collapsing the two would let an
+    // unverified claim be displayed as a win.
+    const v = registry.verifyTask("share_win", {});
+    expect(v.ok).toBe(true);
+    expect(v.evidence.verified).toBe(false);
+  });
+
+  it("reports payout configuration honestly", () => {
+    const cfg = registry.payoutConfiguration();
+    expect(typeof cfg.enabled).toBe("boolean");
+    if (!cfg.enabled) {
+      expect(cfg.missing.length).toBeGreaterThan(0);
+      expect(cfg.detail).toMatch(/NOT configured/i);
+    }
+  });
+
+  it("records a claim as PENDING when no payout path exists", () => {
+    const db = require("./data/database");
+    const addr = "0x" + "55".repeat(20);
+    const cfg = registry.payoutConfiguration();
+    const rec = db.recordTaskClaim(addr, "wallet_connected", {
+      payoutStatus: cfg.enabled ? "ELIGIBLE" : "PENDING_CONFIGURATION",
+      verification: "ATTESTED", proven: false, rewardUsd: 1, reason: "test"
+    });
+    expect(rec.taskId).toBe("wallet_connected");
+    expect(rec.address).toBe(addr.toLowerCase());
+    // createdAt must survive a second write, or a record's age resets.
+    const again = db.recordTaskClaim(addr, "wallet_connected", { reason: "second" });
+    expect(again.createdAt).toBe(rec.createdAt);
+    delete db.data.taskClaims[addr.toLowerCase() + ":wallet_connected"];
+    db.save();
+  });
+});
+
+describe("On-chain Evidence Links", () => {
+  it("builds a BaseScan URL for a real transaction hash", () => {
+    const engine = require("./services/OnchainExecutionEngine");
+    const hash = "0x" + "ab".repeat(32);
+    const url = engine.getTxExplorerUrl(hash);
+    expect(url).toContain("basescan.org/tx/" + hash);
+  });
+
+  it("returns null rather than a broken link without a valid hash", () => {
+    const engine = require("./services/OnchainExecutionEngine");
+    // A dry run has no hash. Returning a link to "undefined" would look like
+    // evidence exists when none does.
+    expect(engine.getTxExplorerUrl(null)).toBe(null);
+    expect(engine.getTxExplorerUrl("")).toBe(null);
+    expect(engine.getTxExplorerUrl("0xdeadbeef")).toBe(null);
+    expect(engine.getTxExplorerUrl("not-a-hash")).toBe(null);
+  });
+
+  it("builds an address URL only for a valid address", () => {
+    const engine = require("./services/OnchainExecutionEngine");
+    expect(engine.getAddressExplorerUrl("0x" + "11".repeat(20))).toContain("basescan.org/address/");
+    expect(engine.getAddressExplorerUrl("nope")).toBe(null);
+  });
+});
+
 describe("Swap Execution Endpoint Security", () => {
 
 

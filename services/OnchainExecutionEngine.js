@@ -29,14 +29,19 @@ const NETWORKS = {
         rpcUrl: 'https://mainnet.base.org',
         swapRouter: '0x2626664c2603336E57B271c5C0b26F421741e481',
         quoter: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a',
-        isTestnet: false
+        isTestnet: false,
+        // Block explorer for on-chain evidence. Every executed trade links
+        // here, so a claim about a fill can always be checked independently
+        // rather than taken on trust from this app's own records.
+        explorer: 'https://basescan.org'
     },
     84532: {
         name: 'Base Sepolia',
         rpcUrl: 'https://sepolia.base.org',
         swapRouter: '0x94cC0AaC535CCDB3C01d6787D6413C739ae12bc4',
         quoter: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27',
-        isTestnet: true
+        isTestnet: true,
+        explorer: 'https://sepolia.basescan.org'
     }
 };
 
@@ -353,6 +358,23 @@ class OnchainExecutionEngine {
         } catch (e) {
             return '0';
         }
+    }
+
+    /**
+     * Block-explorer URL for a transaction, or null when there is no hash.
+     *
+     * Returns null rather than a broken link for a dry run or a failed
+     * broadcast, so a UI can distinguish "no evidence yet" from "evidence".
+     */
+    getTxExplorerUrl(txHash) {
+        if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(String(txHash))) return null;
+        return `${this.NETWORK.explorer}/tx/${txHash}`;
+    }
+
+    /** Block-explorer URL for an address. */
+    getAddressExplorerUrl(address) {
+        if (!ethers.isAddress(address)) return null;
+        return `${this.NETWORK.explorer}/address/${address}`;
     }
 
     /**

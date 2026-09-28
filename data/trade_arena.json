@@ -559,6 +559,43 @@
         "isWin": true
       },
       "timestamp": "2026-09-28T10:23:03.492Z"
+    },
+    {
+      "id": "trade_1790591320812_9d9f3136862ff43c",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "e2e-1",
+      "botName": "e2e-1",
+      "action": "SWAP",
+      "symbol": "ETH/USDC",
+      "amount": 0.000188903105870967,
+      "pnl": -0.002089,
+      "details": {
+        "venue": "Uniswap V3",
+        "network": "Base Mainnet",
+        "chainId": 8453,
+        "mode": "LIVE",
+        "fromToken": "ETH",
+        "toToken": "USDC",
+        "fromAmount": "0.000188903105870967",
+        "toAmount": "0.498273",
+        "fromUsd": 0.5,
+        "toUsd": 0.498273,
+        "gasUsd": 0.002088658088393232,
+        "costBasisMethod": "FIFO",
+        "realizedDetail": {
+          "matchedLots": [],
+          "gasUsd": 0.002089
+        },
+        "slippageBps": 50,
+        "gasUsed": "131518",
+        "gasCostETH": "0.000000789108",
+        "txHash": "0xb1e223aacdb535b95fc8233b1e5ff9c9bf8ee8e748d16353f3c4e02b80671dc6",
+        "explorerUrl": "https://basescan.org/tx/0xb1e223aacdb535b95fc8233b1e5ff9c9bf8ee8e748d16353f3c4e02b80671dc6",
+        "explorer": "https://basescan.org",
+        "traderExplorerUrl": "https://basescan.org/address/0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB",
+        "blockNumber": 51900987
+      },
+      "timestamp": "2026-09-28T10:28:40.812Z"
     }
   ],
   "userState": {

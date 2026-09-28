@@ -361,9 +361,52 @@ class OnchainExecutionEngine {
      * checks plus the automatic unwrap. Configure SIMULATION_RPC_URL with an
      * Alchemy/QuickNode endpoint to get the stronger guarantee.
      */
+    /**
+     * Does the configured RPC support eth_call state overrides?
+     *
+     * Probed rather than assumed. Inferring support from the presence of a
+     * URL is wrong in both directions: an endpoint that is set but does not
+     * implement overrides would send a preflight that always fails, and - worse
+     * - the reverse mistake is easy to make, because the main RPC variable
+     * (BASE_RPC_URL) is the natural place to put a paid key while a separate
+     * simulation variable sits empty, leaving the guarantee silently off.
+     *
+     * Probed once and cached; the answer cannot change within a process.
+     */
     async canSimulateWithOverrides() {
-        if (this._overrideSupport === undefined) {
-            this._overrideSupport = !!(process.env.SIMULATION_RPC_URL || '').trim();
+        if (this._overrideSupport !== undefined) return this._overrideSupport;
+
+        // The simulation RPC may be separate, but the main RPC is a sensible
+        // fallback: if you have paid for a node, use it for preflight too.
+        const simUrl = (process.env.SIMULATION_RPC_URL || process.env.BASE_RPC_URL || '').trim();
+        if (!simUrl) {
+            this._overrideSupport = false;
+            return false;
+        }
+
+        try {
+            let provider = this.provider;
+            if (simUrl !== (this.NETWORK.rpcUrl || '') && simUrl !== (process.env.BASE_RPC_URL || '')) {
+                provider = new ethers.JsonRpcProvider(simUrl);
+            }
+            // A trivial call carrying an override. An endpoint that ignores the
+            // parameter still answers, so check the ANSWER is what we asked
+            // for: the override gives a fresh 99-balance address exactly 7 ETH.
+            const probe = '0x' + 'ab'.repeat(20);
+            const res = await provider.send('eth_getBalance', [probe, 'latest', {
+                [probe]: { balance: '0x' + (7n * 10n ** 18n).toString(16) }
+            }]);
+            const ok = res && BigInt(res) === 7n * 10n ** 18n;
+            this._overrideSupport = !!ok;
+            if (!ok) {
+                console.log(
+                    '[OnchainExecutionEngine] RPC did not apply a state override; ' +
+                    'native swaps fall back to pre-checks and automatic unwrap. ' +
+                    'Use an Alchemy or QuickNode Base endpoint to enable pre-broadcast simulation.'
+                );
+            }
+        } catch (e) {
+            this._overrideSupport = false;
         }
         return this._overrideSupport;
     }

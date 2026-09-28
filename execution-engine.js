@@ -72,8 +72,26 @@ async function getSwapQuote(buyTokenAddress, sellTokenAddress, sellAmountWei, ta
 }
 
 /**
- * Execute a real on-chain trade
+ * Execute a real on-chain trade by delegating to the server engine.
+ *
+ * This used to be a second, independent execution path: it built its own
+ * quote, sized the input as `amountUSD * 1e6` USDC units, signed through
+ * Privy and broadcast from the browser. That path never shared any of the
+ * server engine's correctness work - the corrected SwapRouter02 selector
+ * (no `deadline` in ExactInputSingleParams), the WETH wrap for native input,
+ * the USD-denominated risk limit, or the amountUSD-to-token-quantity
+ * conversion - and it re-introduced the same USD/token confusion it had
+ * elsewhere fixed.
+ *
+ * There is now ONE engine. The browser proves it controls the trading
+ * address by signing a server-issued nonce, and the server does the quoting,
+ * risk-checking, wrapping, approving and broadcasting.
+ *
  * @param {Object} tradeRequest
+ * @param {string} tradeRequest.botId
+ * @param {string} tradeRequest.token     token being bought/sold
+ * @param {string} tradeRequest.method    e.g. 'SPOT LONG'
+ * @param {number} tradeRequest.amountUSD dollar budget (USD, not AUD)
  */
 async function executeOnChainTrade(tradeRequest) {
     if (ExecutionState.isExecuting) {
@@ -81,69 +99,74 @@ async function executeOnChainTrade(tradeRequest) {
     }
 
     const { botId, token, method, amountUSD } = tradeRequest;
-    console.log(`[Execution] EXECUTING REAL TRADE: Bot #${botId} - ${method} ${token} $${amountUSD}`);
+    console.log(`[Execution] Delegating to server engine: Bot #${botId} - ${method} ${token} $${amountUSD}`);
 
     if (typeof window.privySignMessage !== 'function' || !window.isPrivyConnected()) {
         throw new Error('Privy wallet not connected or ready');
     }
 
+    const userAddress = window.getPrivyAddress();
+    if (!userAddress) throw new Error('No connected wallet address');
+
     ExecutionState.isExecuting = true;
     updateExecutionUI(botId, 'PREPARING');
 
     try {
-        const userAddress = window.getPrivyAddress();
-        const usdcAddress = TOKENS.USDC.address;
-        const targetTokenAddress = TOKENS[token]?.address;
+        // Directional routing, as before: a LONG sells USDC for the target
+        // token, otherwise it sells the target token back to USDC.
+        const isLong = String(method || '').includes('LONG');
+        const fromToken = isLong ? 'USDC' : token;
+        const toToken = isLong ? token : 'USDC';
 
-        if (!targetTokenAddress) throw new Error(`Token ${token} address unknown`);
-
-        // 1. Get Quote
-        // For simplicity, we assume $1 = 1,000,000 USDC units (6 decimals)
-        const amountWei = (amountUSD * 1000000).toString();
-
-        // Directional logic
-        const buyToken = method.includes('LONG') ? targetTokenAddress : usdcAddress;
-        const sellToken = method.includes('LONG') ? usdcAddress : targetTokenAddress;
-
-        updateExecutionUI(botId, 'QUOTING');
-        const quote = await getSwapQuote(buyToken, sellToken, amountWei, userAddress);
-
-        // 2. Request Transaction via Privy
-        updateExecutionUI(botId, 'SIGNING');
-
-        // In a real implementation with Privy, we'd use the provider to send the transaction
-        // Since we are in a sandbox/simulated environment, we'll use a simulated result
-        // if no real API key is present, otherwise we'd use ethers.js with privy provider.
-
-        // 2. Prepare Atomic Bundle (MEV Protection)
-        let txHash;
-        if (EXECUTION_CONFIG.useAtomicBundles) {
-            updateExecutionUI(botId, 'BUNDLING');
-            txHash = await sendAtomicBundle(quote, userAddress);
-        } else {
-            txHash = await simulateOrSendTransaction(quote);
+        // 1. Authorise: request a nonce, sign it, and post it back with the trade.
+        updateExecutionUI(botId, 'AUTHORISING');
+        const nonceRes = await fetch(`/api/wallet/trade-nonce?address=${encodeURIComponent(userAddress)}`);
+        const nonceData = await nonceRes.json();
+        if (!nonceRes.ok || !nonceData.success) {
+            throw new Error(nonceData.error || 'Could not obtain a trade authorisation nonce');
         }
 
-        ExecutionState.lastTxHash = txHash;
-        updateExecutionUI(botId, 'MINING', txHash);
+        const signature = await window.privySignMessage(nonceData.message);
+        if (!signature) throw new Error('Trade authorisation was not signed');
 
-        // 3. Wait for Receipt
-        const receipt = await waitForTransaction(txHash);
+        // 2. Execute on the server.
+        updateExecutionUI(botId, 'SIGNING');
+        const res = await fetch('/api/wallet/swap', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                botId,
+                fromToken,
+                toToken,
+                amountUSD,          // dollar budget; the server converts
+                slippage: 0.005,
+                traderAddress: nonceData.address,
+                nonce: nonceData.nonce,
+                signature
+            })
+        });
 
-        ExecutionState.isExecuting = false;
-        updateExecutionUI(botId, 'COMPLETE', txHash);
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            throw new Error(data.error || `Trade failed (HTTP ${res.status})`);
+        }
+
+        ExecutionState.lastTxHash = data.txHash;
+        updateExecutionUI(botId, 'COMPLETE', data.txHash);
 
         return {
             success: true,
-            txHash: txHash,
-            receipt: receipt
+            txHash: data.txHash,
+            mode: data.mode,
+            sizing: data.sizing,
+            swap: data.swap
         };
-
     } catch (e) {
-        ExecutionState.isExecuting = false;
         updateExecutionUI(botId, 'ERROR', e.message);
         console.error('[Execution] Trade failed:', e);
         throw e;
+    } finally {
+        ExecutionState.isExecuting = false;
     }
 }
 

@@ -1007,6 +1007,93 @@ app.get('/api/wallet/balance', async (req, res) => {
 // Executes through the real on-chain engine (Uniswap V3 on Base Mainnet).
 // Previously this route returned a fabricated quote, a random gas number and a
 // random tx hash, so it reported success while moving no funds at all.
+// ===== TRADE AUTHENTICATION =====
+//
+// /api/wallet/swap spends the server-held TRADING_PRIVATE_KEY. Without a
+// check, any unauthenticated POST would move that wallet's funds, so the
+// caller must prove they control the address they are trading as.
+//
+// /api/user/signin cannot be used for this: it accepts an address with no
+// signature, so anyone can claim any address and would inherit its rights.
+//
+// The caller signs a canonical message binding the address, the amount and a
+// server-issued nonce. The signature is verified with ethers, and the nonce
+// is single-use so a captured request cannot be replayed.
+const TRADE_NONCES = new Map();
+const NONCE_TTL_MS = 5 * 60 * 1000;
+
+function issueTradeNonce(address) {
+    const nonce = '0x' + crypto.randomBytes(16).toString('hex');
+    TRADE_NONCES.set(`${address.toLowerCase()}:${nonce}`, Date.now());
+    // Opportunistic cleanup so the map cannot grow without bound.
+    const now = Date.now();
+    for (const [k, ts] of TRADE_NONCES) {
+        if (now - ts > NONCE_TTL_MS) TRADE_NONCES.delete(k);
+    }
+    return nonce;
+}
+
+function tradeMessage(address, nonce) {
+    return `Trade Arena wants you to authorise trading as ${address}\n\nNonce: ${nonce}\nThis does not authorise any transfer of funds to the site.`;
+}
+
+function verifyTradeAuth(req, res, next) {
+    const { traderAddress, nonce, signature } = req.body || {};
+    if (!traderAddress || !nonce || !signature) {
+        return res.status(401).json({
+            success: false,
+            error: 'Trade authorisation required. Call GET /api/wallet/trade-nonce first, then sign the returned message.'
+        });
+    }
+
+    const key = `${String(traderAddress).toLowerCase()}:${nonce}`;
+    const issuedAt = TRADE_NONCES.get(key);
+    if (!issuedAt) {
+        return res.status(401).json({ success: false, error: 'Unknown or already-used trade nonce. Request a new one.' });
+    }
+    if (Date.now() - issuedAt > NONCE_TTL_MS) {
+        TRADE_NONCES.delete(key);
+        return res.status(401).json({ success: false, error: 'Trade nonce expired. Request a new one.' });
+    }
+
+    let recovered;
+    try {
+        recovered = ethers.verifyMessage(tradeMessage(traderAddress, nonce), signature);
+    } catch (e) {
+        TRADE_NONCES.delete(key);
+        return res.status(401).json({ success: false, error: 'Could not verify trade authorisation signature.' });
+    }
+
+    if (recovered.toLowerCase() !== String(traderAddress).toLowerCase()) {
+        TRADE_NONCES.delete(key);
+        return res.status(401).json({ success: false, error: 'Signature does not match the trading address.' });
+    }
+
+    // Single use: burn it whether or not the trade then succeeds.
+    TRADE_NONCES.delete(key);
+    req.traderAddress = String(traderAddress);
+    next();
+}
+
+/** Issue a nonce the client must sign. GET so the message can be built. */
+app.get('/api/wallet/trade-nonce', (req, res) => {
+    try {
+        const address = String(req.query.address || '').trim();
+        if (!ethers.isAddress(address)) {
+            return res.status(400).json({ success: false, error: 'A valid address is required' });
+        }
+        const nonce = issueTradeNonce(address);
+        res.json({
+            success: true,
+            address: ethers.getAddress(address),
+            nonce,
+            message: tradeMessage(address, nonce)
+        });
+    } catch (error) {
+        errorHandler(error, req, res, () => {});
+    }
+});
+
 async function handleSwapRequest(req, res, next) {
     try {
         const { fromToken, toToken, amount, amountUSD, slippage, botId } = req.body || {};
@@ -1087,9 +1174,8 @@ async function handleSwapRequest(req, res, next) {
         // best-effort and the error is surfaced in the response instead.
         let logged = false;
         let logError = null;
-        const traderAddress = (req.body && typeof req.body.traderAddress === 'string' && req.body.traderAddress)
-            || (req.session && req.session.address)
-            || null;
+        // Use the address proven by verifyTradeAuth, never one from the body.
+        const traderAddress = req.traderAddress || null;
 
         if (traderAddress) {
             try {
@@ -1151,10 +1237,10 @@ async function handleSwapRequest(req, res, next) {
     }
 }
 
-app.post('/api/wallet/swap', handleSwapRequest);
+app.post('/api/wallet/swap', verifyTradeAuth, handleSwapRequest);
 
 // ===== ALIAS: /api/execute/swap =====
-app.post('/api/execute/swap', handleSwapRequest);
+app.post('/api/execute/swap', verifyTradeAuth, handleSwapRequest);
 
 // ===== ADD TOKEN =====
 app.post('/api/wallet/tokens', async (req, res) => {

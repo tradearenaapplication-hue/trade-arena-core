@@ -953,11 +953,44 @@ describe("Swap Execution Endpoint Security", () => {
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      await route.route.stack[0].handle({ body }, res, () => {});
+      // Call the route HANDLER (stack[1]), skipping the auth guard at
+      // stack[0]. These assertions are about parameter validation, which runs
+      // after a caller has been authenticated; the guard has its own test.
+      await route.route.stack[1].handle({ body }, res, () => {});
       expect(statusCode).toBe(400);
       expect(jsonResponse.success).toBe(false);
       expect(jsonResponse.error).toBe(expectedError);
     }
+  });
+
+  it("requires a signed authorisation before any swap can execute", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/execute/swap"
+    );
+
+    // The route is guarded by verifyTradeAuth, so an unauthenticated POST must
+    // be refused BEFORE any quote, risk check or broadcast. It spends the
+    // server-held private key, so an open endpoint would let anyone drain it.
+    expect(route.route.stack.length).toBe(2);
+    const guard = route.route.stack[0].handle.toString();
+    expect(guard.includes('verifyTradeAuth') || guard.includes('_router') === false).toBeTruthy();
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    // A well-formed but unauthorised request.
+    await route.route.stack[0].handle({
+      body: { fromToken: "WETH", toToken: "USDC", amount: 1 },
+      get: () => undefined,
+      headers: {}
+    }, res, () => {});
+
+    expect(statusCode).toBe(401);
+    expect(jsonResponse.success).toBe(false);
   });
 
   it("executes valid swap requests through the real on-chain engine", async () => {
@@ -974,7 +1007,8 @@ describe("Swap Execution Endpoint Security", () => {
 
     // The handler is async because it now performs a real quote/execution
     // through OnchainExecutionEngine, so it must be awaited.
-    await route.route.stack[0].handle({
+    // Skip the auth guard (stack[0]) - this exercises the handler itself.
+    await route.route.stack[1].handle({
       body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 }
     }, res, () => {});
 

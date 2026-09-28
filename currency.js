@@ -186,3 +186,31 @@ if (typeof window !== 'undefined') {
     Currency.refresh();
     setInterval(() => Currency.refresh(true), 15 * 60 * 1000);
 }
+
+// Defensive fallbacks. If this file fails to load, or throws above, the formatters
+// must still exist: the UI renders money during initial parse, and an undefined
+// fmtUSD()/fmtAUD() there throws a ReferenceError that silently stops bots being
+// added and trade logs from rendering. Degrade to plain USD rather than break.
+if (typeof window !== 'undefined') {
+    if (typeof window.fmtUSD !== 'function') {
+        window.fmtUSD = (v, dp) => {
+            const n = Number(v);
+            return '$' + (Number.isFinite(n) ? n.toFixed(dp === undefined ? 2 : dp) : '0.00');
+        };
+        console.warn('[Currency] formatter unavailable - falling back to plain USD display.');
+    }
+    if (typeof window.fmtAUD !== 'function') {
+        window.fmtAUD = (v, dp) => {
+            const n = Number(v);
+            return 'A$' + (Number.isFinite(n) ? n.toFixed(dp === undefined ? 2 : dp) : '0.00');
+        };
+    }
+    if (typeof window.fmtNum !== 'function') {
+        window.fmtNum = (v, dp) => {
+            const n = Number(v);
+            return Number.isFinite(n) ? n.toFixed(dp === undefined ? 2 : dp) : '0';
+        };
+    }
+    if (typeof window.audToUsd !== 'function') window.audToUsd = (v) => Number(v) || 0;
+    if (typeof window.usdToAud !== 'function') window.usdToAud = (v) => Number(v) || 0;
+}

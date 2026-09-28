@@ -6,6 +6,13 @@
 <title>TRADE ARENA — AI TRADING FLOOR</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js" defer></script>
+<!-- Currency: AUD display layer.
+     Loaded here WITHOUT defer, and before the body, on purpose. The main
+     inline script runs during parsing and calls addBot() early, which renders
+     money through fmtUSD()/fmtAUD(). A deferred tag would execute only after
+     the document was parsed, so those helpers would still be undefined at that
+     point and every render would throw a ReferenceError. -->
+<script src="currency.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 /* Base reset + page shell.
@@ -6381,9 +6388,6 @@ document.addEventListener('keydown', function(e) {
 });
 
 </script>
-<!-- Currency: AUD display layer. Must load before any script that formats
-     money, so fmtUSD()/Currency exist when templates first render. -->
-<script src="currency.js" defer></script>
 <script src="app-rebuild.js" defer></script>
 <!-- Wallet: WalletCore is the single source of truth for connection + balance sync.
      It MUST load before real-wallet.js so walletState exists for the legacy mirrors. -->

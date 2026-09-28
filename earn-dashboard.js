@@ -146,7 +146,7 @@
         }
 
         const evidence = t.explorerUrl
-            ? ' <a href="' + esc(t.explorerUrl) + '" target="_blank" rel="noopener">view on explorer</a>'
+            ? ' <a href="' + esc(t.explorerUrl) + '" target="_blank" rel="noopener">view payout on explorer ↗</a>'
             : '';
 
         return '<div class="earn-card' + (t.status === 'REJECTED' ? ' rejected' : '') + '">' +

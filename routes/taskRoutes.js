@@ -22,8 +22,25 @@ const { ethers } = require('ethers');
 
 const db = require('../data/database');
 const taskRegistry = require('../services/task-registry');
+const { PayoutExecutor } = require('../services/payout-executor');
+const onchainEngine = require('../services/OnchainExecutionEngine');
 
 const router = express.Router();
+
+/**
+ * Constructed once, at startup, from the same network config the trading
+ * engine uses. If the payout credentials are absent the executor reports
+ * itself unconfigured and refuses, which is what keeps an unconfigured server
+ * from ever recording a reward as paid.
+ */
+const payoutExecutor = new PayoutExecutor({
+    chainId: onchainEngine.CHAIN_ID,
+    rpcUrl: onchainEngine.NETWORK.rpcUrl,
+    explorer: onchainEngine.NETWORK.explorer,
+    payoutManagerAddress: process.env.PAYOUT_MANAGER_ADDRESS,
+    rewardTokenAddress: process.env.REWARD_TOKEN_ADDRESS,
+    oraclePrivateKey: process.env.PAYOUT_PRIVATE_KEY
+});
 
 const NONCE_TTL_MS = 5 * 60 * 1000;
 const TASK_NONCES = new Map();
@@ -234,7 +251,20 @@ async function handleClaim(req, res, taskIdOverride) {
             return res.status(400).json({ success: false, error: verdict.reason, record: rejected });
         }
 
-        const payoutStatus = payout.enabled ? 'ELIGIBLE' : 'PENDING_CONFIGURATION';
+        // Pay on-chain when the payout path is configured, and record exactly
+        // what happened either way. A claim that verified but did not pay is
+        // recorded as PENDING_CONFIGURATION, never as PAID: the record carries
+        // no tx hash, so the UI has nothing to mistake for a receipt.
+        let payoutResult = { ok: false, reason: 'On-chain payouts are not configured.' };
+        if (payout.enabled) {
+            payoutResult = await payoutExecutor.payReward({
+                userAddress: address,
+                taskId,
+                rewardUsd: task.rewardUsd
+            });
+        }
+
+        const payoutStatus = payoutResult.ok ? 'PAID' : 'PENDING_CONFIGURATION';
         const record = db.recordTaskClaim(address, taskId, {
             payoutStatus,
             verification: task.verification,
@@ -244,17 +274,19 @@ async function handleClaim(req, res, taskIdOverride) {
             reason: verdict.reason,
             evidence: verdict.evidence,
             submissionUrl: (req.body && req.body.submissionUrl) || null,
-            txHash: null,
-            explorerUrl: null
+            txHash: payoutResult.txHash || null,
+            explorerUrl: payoutResult.explorerUrl || null,
+            blockNumber: payoutResult.blockNumber || null,
+            payoutNote: payoutResult.reason
         });
 
         res.json({
             success: true,
             record,
             payout,
-            message: payout.enabled
-                ? 'Task verified. Payout is queued.'
-                : 'Task verified and recorded. No tokens were sent: ' + payout.detail
+            message: payoutResult.ok
+                ? `Reward of ${task.rewardUsd} paid on-chain.`
+                : 'Task verified and recorded. No tokens were sent: ' + payoutResult.reason
         });
     } catch (err) {
         console.error('[tasks] claim failed:', err);

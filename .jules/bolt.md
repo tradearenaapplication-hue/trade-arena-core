@@ -13,3 +13,7 @@
 ## 2026-10-14 - Redundant DOM Matrix Redraws in Acoustic Core Pad Grid Updates
 **Learning:** `renderPadGrid` in `trading-engine.js` was executing `.map().join()` string building and full `grid.innerHTML` overwrites on every timer tick regardless of whether bot P&L states had actually changed. In a multi-bot live environment, this caused frequent layout recalcs and DOM churn.
 **Action:** Implement lightweight state hashing across entity values (`${bot.id}:${pnl};`) to perform fast scalar dirty checking. Return early to bypass string concatenation and DOM `innerHTML` assignments when values are identical.
+
+## 2026-10-28 - Intermediate Array Allocations in Hot-Path ELO Tournament Engine
+**Learning:** `recordEloMatch` in `elo-tournament-engine.js` is triggered on every position outcome across all ensemble agents, executing `calculateMarketOpponentRating`, `checkForEvolution`, and `getLeaderAgent`. Functional methods (`.slice(-20)`, `.filter()`, `Object.values().reduce()`, `Object.keys().reduce()`) caused redundant intermediate array allocations and GC churn on every trade resolution.
+**Action:** Use single-pass scalar loops (`for...in` and index-based `for` loops) over object properties and arrays in high-frequency scoring/rating routines to eliminate garbage collection overhead.

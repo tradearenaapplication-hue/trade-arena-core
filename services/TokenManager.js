@@ -10,6 +10,16 @@
 
 const chainId = parseInt(process.env.BASE_CHAIN_ID || '8453', 10);
 
+// Native ETH, valid as swap INPUT only (it can never be the output token).
+// Represented by the zero address, which is how Uniswap's router identifies it.
+const NATIVE_ETH = {
+    address: '0x0000000000000000000000000000000000000000',
+    decimals: 18,
+    symbol: 'ETH',
+    name: 'Native Ether',
+    native: true
+};
+
 // Base Mainnet canonical tokens.
 const MAINNET_TOKENS = {
     'USDC': {
@@ -103,15 +113,29 @@ class TokenManager {
 
     /**
      * Resolves token symbol or address to its whitelisted metadata.
+     *
+     * Native ETH is always resolvable as a symbol or the zero address, but it
+     * is a valid INPUT only. resolveToken(token, { asInput: false }) rejects
+     * it, which keeps a nonsensical "buy ETH with ETH" request from reaching
+     * the router and reverting.
      */
-    resolveToken(symbolOrAddress) {
+    resolveToken(symbolOrAddress, opts = {}) {
         if (!symbolOrAddress) return null;
 
         const clean = symbolOrAddress.trim().toUpperCase();
-        if (this.whitelist[clean]) return this.whitelist[clean];
-
         const addrLower = symbolOrAddress.trim().toLowerCase();
-        return Object.values(this.whitelist).find(t => t.address.toLowerCase() === addrLower) || null;
+        const wantsNative = clean === 'ETH' || clean === 'NATIVE'
+            || addrLower === NATIVE_ETH.address;
+
+        let found = this.whitelist[clean]
+            || Object.values(this.whitelist).find(t => t.address.toLowerCase() === addrLower)
+            || null;
+
+        if (!found && wantsNative) found = NATIVE_ETH;
+
+        if (found && found.native && opts.asInput === false) return null;
+
+        return found;
     }
 
     /**

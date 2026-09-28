@@ -130,9 +130,14 @@ class OnchainExecutionEngine {
 
         const scrub = (args) => args.map((a) => {
             if (typeof a === 'string') {
+                // Redact the known key, and any bare 32-byte hex that is not
+                // part of a longer hex blob. The length check matters: a naive
+                // /0x[0-9a-f]{64}/ also matched the 64-hex selector+argument run
+                // at the start of router calldata, mangling legitimate error
+                // output and making failures unreadable.
                 return a
                     .replace(new RegExp(secret, 'gi'), '[REDACTED_PRIVATE_KEY]')
-                    .replace(/0x[0-9a-fA-F]{64}/g, '[REDACTED_PRIVATE_KEY]');
+                    .replace(/0x[0-9a-fA-F]{64}(?![0-9a-fA-F])/g, '[REDACTED_PRIVATE_KEY]');
             }
             if (a instanceof Error) {
                 a.message = scrub([a.message])[0];
@@ -184,8 +189,14 @@ class OnchainExecutionEngine {
         // QuoterV2 takes a single struct and returns four values. The legacy
         // v1 signature (5 positional args returning one uint256) does not
         // exist on this contract and reverts with "missing revert data".
+        //
+        // `ticksCrossed` is a uint32 COUNT, not a dynamic array. Declaring it as
+        // `uint32[]` makes the ABI expect an offset word, so decoding every
+        // successful quote failed with BAD_DATA - the contract returned valid
+        // data that ethers could not parse, which surfaced as a misleading
+        // "no executable quote" on every mainnet pair.
         const quoterAbi = [
-            'function quoteExactInputSingle((address tokenIn, address tokenOut, uint256 amountIn, uint24 fee, uint160 sqrtPriceLimitX96) params) external returns (uint256 amountOut, uint160 sqrtPriceX96After, uint32[] ticksCrossed, uint256 gasEstimate)'
+            'function quoteExactInputSingle((address tokenIn, address tokenOut, uint256 amountIn, uint24 fee, uint160 sqrtPriceLimitX96) params) external returns (uint256 amountOut, uint160 sqrtPriceX96After, uint32 ticksCrossed, uint256 gasEstimate)'
         ];
 
         const quoterContract = new ethers.Contract(this.UNISWAP_QUOTER, quoterAbi, this.provider);
@@ -296,7 +307,9 @@ class OnchainExecutionEngine {
 
         // 1. Resolve & Validate Whitelisted Assets strictly
         const resolvedIn = tokenManager.resolveToken(fromToken);
-        const resolvedOut = tokenManager.resolveToken(toToken);
+        // ETH is input-only: receiving native ETH would require unwrapping WETH
+        // after the swap, which this engine does not do.
+        const resolvedOut = tokenManager.resolveToken(toToken, { asInput: false });
 
         if (!resolvedIn || !resolvedOut) {
             throw new Error(`CRITICAL: Asset validation failed. Tokens must be whitelisted ${this.NETWORK.name} assets. In: ${fromToken}, Out: ${toToken}`);
@@ -384,6 +397,15 @@ class OnchainExecutionEngine {
         const tokenInAddress = resolvedIn.address;
         const tokenOutAddress = resolvedOut.address;
 
+        // Native ETH is not an ERC-20, so it has no allowance to grant and no
+        // balanceOf to read. Uniswap's router identifies it by the zero
+        // address. Supporting it matters because a wallet that only holds gas
+        // cannot otherwise trade at all: the ERC-20-only path would report
+        // "Insufficient wallet balance: Have 0.0" forever.
+        const NATIVE = '0x0000000000000000000000000000000000000000';
+        const isNativeIn = tokenInAddress === NATIVE || /^(ETH|NATIVE)$/i.test(fromToken || '');
+        const nativeInAddress = isNativeIn ? NATIVE : tokenInAddress;
+
         const tokenAbi = [
             'function decimals() view returns (uint8)',
             'function balanceOf(address account) view returns (uint256)',
@@ -398,18 +420,27 @@ class OnchainExecutionEngine {
 
         try {
             const tokenInContract = new ethers.Contract(tokenInAddress, tokenAbi, this.signer);
-            const decimals = await tokenInContract.decimals();
+            // Native ETH always has 18 decimals.
+            const decimals = isNativeIn ? 18 : await tokenInContract.decimals();
             const amountInRaw = ethers.parseUnits(amount.toString(), decimals);
 
             // 3. Balance Check
+            if (isNativeIn) {
+                const gasBalance = await this.provider.getBalance(this.signer.address);
+                if (gasBalance < amountInRaw) {
+                    throw new Error(`Insufficient native ETH: Have ${ethers.formatEther(gasBalance)}, need ${amount}`);
+                }
+                console.log(`[OnchainExecutionEngine] Using native ETH as input (no approval required).`);
+            } else {
             const walletBalance = await tokenInContract.balanceOf(this.signer.address);
             if (walletBalance < amountInRaw) {
                 throw new Error(`Insufficient wallet balance: Have ${ethers.formatUnits(walletBalance, decimals)}, need ${amount}`);
             }
+            }
 
             // 4. Quote Fetching
             console.log('[OnchainExecutionEngine] Fetching real executable quote...');
-            const configuredFee = tokenManager.getPairFee(tokenInAddress, tokenOutAddress) || 3000;
+            const configuredFee = tokenManager.getPairFee(nativeInAddress, tokenOutAddress) || 3000;
             // A configured tier can have no pool (or no liquidity) for a given
             // pair. Falling back keeps a trade executable instead of aborting on
             // a tier that simply does not exist on-chain.
@@ -419,7 +450,15 @@ class OnchainExecutionEngine {
             let feeTier = configuredFee;
             for (const candidate of feeCandidates) {
                 try {
-                    expectedAmountOutRaw = await this.getUniswapV3Quote(tokenInAddress, tokenOutAddress, amountInRaw, candidate);
+                    // Quote with WETH for native input. Uniswap V3 pools are
+                    // always ERC-20 <-> ERC-20, so a pool keyed on the zero
+                    // address does not exist and the quoter reverts. The router
+                    // wraps native ETH 1:1 into WETH internally, so quoting the
+                    // WETH leg gives the same price the swap will execute at.
+                    const quoteTokenIn = isNativeIn
+                        ? tokenManager.resolveToken('WETH').address
+                        : nativeInAddress;
+                    expectedAmountOutRaw = await this.getUniswapV3Quote(quoteTokenIn, tokenOutAddress, amountInRaw, candidate);
                     feeTier = candidate;
                     break;
                 } catch (e) {
@@ -436,14 +475,17 @@ class OnchainExecutionEngine {
             const slippageFactor = 10000n - BigInt(slippageBps);
             const amountOutMinimum = (expectedAmountOutRaw * slippageFactor) / 10000n;
 
-            // 6. Allowance Check & Approval if Required
-            const allowance = await tokenInContract.allowance(this.signer.address, this.UNISWAP_ROUTER);
-            if (allowance < amountInRaw) {
-                console.log('[OnchainExecutionEngine] Allowance insufficient. Approving Router...');
-                const approveTx = await tokenInContract.approve(this.UNISWAP_ROUTER, amountInRaw);
-                console.log(`[OnchainExecutionEngine] Approval TX broadcasted: ${approveTx.hash}`);
-                await approveTx.wait();
-                console.log('[OnchainExecutionEngine] Approval confirmed.');
+            // 6. Allowance Check & Approval if Required.
+            // Native ETH needs no approval: the router only accepts it as msg.value.
+            if (!isNativeIn) {
+                const allowance = await tokenInContract.allowance(this.signer.address, this.UNISWAP_ROUTER);
+                if (allowance < amountInRaw) {
+                    console.log('[OnchainExecutionEngine] Allowance insufficient. Approving Router...');
+                    const approveTx = await tokenInContract.approve(this.UNISWAP_ROUTER, amountInRaw);
+                    console.log(`[OnchainExecutionEngine] Approval TX broadcasted: ${approveTx.hash}`);
+                    await approveTx.wait();
+                    console.log('[OnchainExecutionEngine] Approval confirmed.');
+                }
             }
 
             // 7. Transaction Construction
@@ -451,7 +493,7 @@ class OnchainExecutionEngine {
             const deadline = Math.floor(Date.now() / 1000) + 1200; // 20-minute deadline
 
             const swapParams = {
-                tokenIn: tokenInAddress,
+                tokenIn: nativeInAddress,
                 tokenOut: tokenOutAddress,
                 fee: feeTier,
                 recipient: this.signer.address,
@@ -466,7 +508,10 @@ class OnchainExecutionEngine {
             const txRequest = {
                 to: this.UNISWAP_ROUTER,
                 data: txData,
-                value: 0
+                // Native input must travel as msg.value. With value: 0 the
+                // router reverts with insufficient ETH, so an ETH->token swap
+                // would always fail.
+                value: isNativeIn ? amountInRaw : 0n
             };
 
             // 8. Gas Estimation & Transaction Simulation

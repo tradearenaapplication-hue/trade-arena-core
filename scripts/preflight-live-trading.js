@@ -83,7 +83,9 @@ function finish() {
     try {
         const usdc = tokenManager.resolveToken('USDC');
         const weth = tokenManager.resolveToken('WETH');
-        const abi = ['function quoteExactInputSingle((address tokenIn,address tokenOut,uint256 amountIn,uint24 fee,uint160 sqrtPriceLimitX96) params) external returns (uint256 amountOut,uint160 sqrtPriceX96After,uint32[] ticksCrossed,uint256 gasEstimate)'];
+        // ticksCrossed is a uint32 count, not a dynamic array. See the identical
+        // correction in OnchainExecutionEngine.
+        const abi = ['function quoteExactInputSingle((address tokenIn,address tokenOut,uint256 amountIn,uint24 fee,uint160 sqrtPriceLimitX96) params) external returns (uint256 amountOut,uint160 sqrtPriceX96After,uint32 ticksCrossed,uint256 gasEstimate)'];
         const quoter = new ethers.Contract(net.quoter, abi, provider);
         let quoted = false;
         const quoteErrors = [];

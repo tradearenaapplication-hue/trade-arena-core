@@ -9,8 +9,15 @@ const path = require('path');
 class StrategyLoader {
   constructor() {
     this.strategies = new Map();
-    this.corePath = path.join(__dirname, 'strategies', 'core');
-    this.customPath = path.join(__dirname, 'strategies', 'custom');
+    // Relative to THIS file, which already lives inside strategies/.
+    //
+    // This used to join __dirname with 'strategies' as well, producing
+    // strategies/strategies/core. ensureDirectoryExists then happily created
+    // that empty tree at startup, so the scan found nothing and the bot
+    // silently loaded zero strategies - it could never generate a signal, and
+    // the failure looked like "no trade opportunity" rather than a bug.
+    this.corePath = path.join(__dirname, 'core');
+    this.customPath = path.join(__dirname, 'custom');
 
     // Ensure directories exist
     this.ensureDirectoryExists(this.corePath);

@@ -118,21 +118,66 @@ class AutonomousWorker {
 
             // 4. Bot Execution Cycles
             const users = loadUsers();
+            let activeBots = 0;
+            let evaluating = 0;
+            let inCooldown = 0;
+
             for (const userId of Object.keys(users)) {
                 const user = users[userId];
                 if (!user.bots || user.bots.length === 0) continue;
 
                 for (const bot of user.bots) {
                     if (bot.status !== 'ACTIVE') continue;
+                    activeBots++;
 
                     // Ensure bot is scheduled to evaluate
                     const now = Date.now();
                     const lastTradeTime = bot.lastTradeTime || 0;
                     const cooldown = 30000; // 15-30s cooldown between evaluations per bot
-                    if (now - lastTradeTime < cooldown) continue;
+                    if (now - lastTradeTime < cooldown) {
+                        inCooldown++;
+                        continue;
+                    }
 
+                    evaluating++;
                     await this.evaluateBotStrategy(user, bot, prices);
                 }
+            }
+
+            // Per-cycle summary.
+            //
+            // Without this the worker is silent on success, and silence is
+            // ambiguous: "no signal yet", "no bots configured", "strategies
+            // failed to load" and "a bug in the loop" all look identical. That
+            // ambiguity is precisely what hid the strategy-loader bug for so
+            // long. One line per cycle makes the bot's state legible from the
+            // log alone.
+            this._cycleCount = (this._cycleCount || 0) + 1;
+            const hist = this.priceHistory.WETH ? this.priceHistory.WETH.length : 0;
+            const openList = positionManager.getOpenPositions
+                ? positionManager.getOpenPositions()
+                : (positionManager.openPositions || []);
+            console.log(
+                '[AutonomousWorker] cycle #' + this._cycleCount +
+                ' | WETH $' + Number(prices.WETH || 0).toFixed(2) +
+                ' | history ' + hist + '/' + this.maxHistoryLength +
+                ' | open ' + openList.length +
+                ' | activeBots ' + activeBots +
+                ' | evaluated ' + evaluating +
+                (inCooldown ? ' | cooldown ' + inCooldown : '') +
+                ' | spentToday $' + this.dailySpendUsd.toFixed(2) + '/$' + this.riskLimits.maxDailyLossUsd
+            );
+
+            // The most useful line in the worker: it separates "waiting for a
+            // signal" from "nothing will ever happen because no bot is ACTIVE".
+            if (activeBots === 0 && !this._warnedNoBots) {
+                console.warn(
+                    '[AutonomousWorker] No ACTIVE bots found - nothing will ever be evaluated. ' +
+                    'Register a bot with status ACTIVE, or this worker is idling forever.'
+                );
+                this._warnedNoBots = true;
+            } else if (activeBots > 0) {
+                this._warnedNoBots = false;
             }
 
         } catch (error) {

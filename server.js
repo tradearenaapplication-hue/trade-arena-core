@@ -2067,6 +2067,30 @@ function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+// ===== AUTONOMOUS WORKER =====
+//
+// Started explicitly, never by default. A bot that signs transactions on a
+// 15-second timer is not something to bring up as a side effect of booting the
+// server - it has to be asked for, and AUTONOMOUS_WORKER_ENABLED is the ask.
+//
+// The limits it runs under come from .env and must be sized to the wallet that
+// actually exists. MAX_DAILY_LOSS_USD is the real backstop: a per-trade cap
+// alone bounds nothing if the bot can open many positions, and the daily cap
+// only protects if it is smaller than the balance.
+if (String(process.env.AUTONOMOUS_WORKER_ENABLED || '').toLowerCase() === 'true') {
+    try {
+        const worker = require('./services/AutonomousWorker');
+        worker.start();
+        console.log('🤖 Autonomous worker enabled (' + (process.env.DRY_RUN === 'true' ? 'DRY RUN' : 'LIVE') + ')');
+        console.log('   limits: ' + JSON.stringify(worker.riskLimits));
+    } catch (err) {
+        // A worker that fails to start must not take the server down with it.
+        console.error('🤖 Autonomous worker failed to start: ' + err.message);
+    }
+} else {
+    console.log('🤖 Autonomous worker disabled (set AUTONOMOUS_WORKER_ENABLED=true to run)');
+}
+
 // ===== START SERVER =====
 const server = app.listen(PORT, () => {
     console.log(`🚀 Trade Arena Server Started`);

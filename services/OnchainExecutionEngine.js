@@ -491,8 +491,14 @@ class OnchainExecutionEngine {
         // declarations, so the previous string form constructed an Interface
         // containing NO functions at all - silently, with no error. Every
         // swap then failed at encodeFunctionData with "unknown function
-        // (argument=fragment, value=exactInputSingle)". A real trade could
-        // never have been built, let alone broadcast.
+        // (argument=fragment, value=exactInputSingle)".
+        //
+        // The struct has SEVEN fields and NO `deadline`. SwapRouter02 dropped
+        // the deadline in favour of `pay()`/`refundETH()`; including it gave
+        // selector 0x414bf389, which the router does not implement, so calls
+        // reverted with no data. The real selector is 0x04e45aaf, confirmed by
+        // a live eth_call that reaches the router and returns "STF"
+        // (SafeTransferFrom) rather than "no function".
         const EXACT_INPUT_SINGLE = {
             type: 'function',
             name: 'exactInputSingle',
@@ -505,7 +511,6 @@ class OnchainExecutionEngine {
                     { name: 'tokenOut', type: 'address' },
                     { name: 'fee', type: 'uint24' },
                     { name: 'recipient', type: 'address' },
-                    { name: 'deadline', type: 'uint256' },
                     { name: 'amountIn', type: 'uint256' },
                     { name: 'amountOutMinimum', type: 'uint256' },
                     { name: 'sqrtPriceLimitX96', type: 'uint160' }
@@ -587,14 +592,15 @@ class OnchainExecutionEngine {
 
             // 7. Transaction Construction
             const routerContract = new ethers.Contract(this.UNISWAP_ROUTER, routerAbi, this.signer);
-            const deadline = Math.floor(Date.now() / 1000) + 1200; // 20-minute deadline
 
+            // No `deadline` field: SwapRouter02 removed it from
+            // ExactInputSingleParams. Including it produced a selector the
+            // router does not implement.
             const swapParams = {
                 tokenIn: nativeInAddress,
                 tokenOut: tokenOutAddress,
                 fee: feeTier,
                 recipient: this.signer.address,
-                deadline: deadline,
                 amountIn: amountInRaw,
                 amountOutMinimum: amountOutMinimum,
                 sqrtPriceLimitX96: 0

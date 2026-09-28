@@ -1467,6 +1467,44 @@ describe("Proxy Endpoint Security", () => {
 describe("Server Error Handling & Input Validation Security", () => {
   const server = require("./server.js");
 
+  it("enforces rate limiting on user endpoints in server.js", async () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/user/signin"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    let lastStatus = 200;
+    let lastJson = null;
+
+    // Simulate sending 105 requests from ip "127.0.0.77" to exceed userApiLimiter max (100)
+    for (let i = 0; i < 105; i++) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const req = {
+        ip: "127.0.0.77",
+        headers: {},
+        app: server,
+        body: { address: "0x1234567890123456789012345678901234567890" }
+      };
+      const res = {
+        setHeader: () => {},
+        status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle(req, res, async () => {
+        await route.route.stack[1].handle(req, res);
+      });
+
+      lastStatus = statusCode;
+      lastJson = jsonResponse;
+    }
+
+    expect(lastStatus).toBe(429);
+    expect(lastJson.error).toContain("Too many user requests");
+  });
+
   it("sanitizes 500 error responses and does not leak internal error messages", async () => {
     const route = server._router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/analyze/volatility"

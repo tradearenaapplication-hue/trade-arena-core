@@ -12,7 +12,7 @@
           "valueUsd": 11.17
         }
       ],
-      "lastLogin": "2026-09-28T10:23:03.490Z",
+      "lastLogin": "2026-09-28T10:50:49.571Z",
       "sessionData": {
         "balance": 11.17
       }
@@ -564,24 +564,6 @@
       "timestamp": "2026-09-28T10:21:19.737Z"
     },
     {
-      "id": "trade_1790590982043_4040eae2975b7e13",
-      "address": "0x9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a",
-      "agentId": "agent-default",
-      "botName": "Trade Bot",
-      "action": "TRADE",
-      "symbol": "SOL/USD",
-      "amount": 0,
-      "pnl": 0,
-      "details": {
-        "status": "OPEN",
-        "onchain": false
-      },
-      "timestamp": "2026-09-28T10:23:02.043Z",
-      "positionId": "pos_b",
-      "status": "OPEN",
-      "openedAt": "2026-09-28T10:23:02.043Z"
-    },
-    {
       "id": "trade_1790590983492_ac82cf47b63071c4",
       "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
       "agentId": "bot-1",
@@ -675,6 +657,37 @@
         "note": "Opening balance read from the chain. Establishes the cost basis for capital already held."
       },
       "timestamp": "2026-09-28T10:50:20.608Z"
+    },
+    {
+      "id": "trade_1790592647648_c1164f4eb3b25c21",
+      "address": "0x9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "TRADE",
+      "symbol": "SOL/USD",
+      "amount": 0,
+      "pnl": 0,
+      "details": {
+        "status": "OPEN"
+      },
+      "timestamp": "2026-09-28T10:50:47.648Z",
+      "positionId": "pos_b",
+      "status": "OPEN",
+      "openedAt": "2026-09-28T10:50:47.648Z"
+    },
+    {
+      "id": "trade_1790592649574_a1671bb0a1fe02f9",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-09-28T10:50:49.574Z"
     }
   ],
   "userState": {

@@ -45,6 +45,26 @@ const NETWORKS = {
     }
 };
 
+/**
+ * Reject if a promise has not settled within `ms`.
+ *
+ * A hang is worse than an error here: the public Base endpoint and Alchemy
+ * both have forms they never answer rather than refusing, and an unbounded
+ * await on one of those would hold a request open indefinitely. Returns null
+ * on timeout so a capability check can treat it as "not supported" rather
+ * than propagating a rejection.
+ */
+function withTimeout(promise, ms, label) {
+    let timer;
+    const guard = new Promise((resolve) => {
+        timer = setTimeout(() => {
+            console.warn(`[OnchainExecutionEngine] ${label} timed out after ${ms}ms; treating as unsupported.`);
+            resolve(null);
+        }, ms);
+    });
+    return Promise.race([promise, guard]).finally(() => clearTimeout(timer));
+}
+
 class OnchainExecutionEngine {
     constructor() {
         this.provider = null;
@@ -98,7 +118,18 @@ class OnchainExecutionEngine {
                 );
             }
 
-            this.provider = new ethers.JsonRpcProvider(rpcUrl);
+            // RPC endpoints in preference order: the configured one first, then the
+            // public endpoint for this network as a fallback.
+            //
+            // A provider that dies mid-session must not take trading down with it. An
+            // Alchemy key that ran out of monthly quota answered every call with HTTP
+            // 429, and ethers retried until initialize() never returned - the whole
+            // engine simply stopped, with no error the user could act on. Falling back
+            // keeps the arena working and says so plainly.
+            this.rpcCandidates = [rpcUrl, this.NETWORK.rpcUrl]
+                .filter((u, i, a) => u && a.indexOf(u) === i);
+            this.activeRpc = this.rpcCandidates[0];
+            this.provider = new ethers.JsonRpcProvider(this.activeRpc);
             this.signer = new ethers.Wallet('0x' + normalizedKey, this.provider);
 
             // Register the secret for redaction so it can never appear in a
@@ -362,6 +393,44 @@ class OnchainExecutionEngine {
      * Alchemy/QuickNode endpoint to get the stronger guarantee.
      */
     /**
+     * Whether the configured RPC is actually usable, and switch to the public
+     * endpoint if not.
+     *
+     * Called during initialisation so a dead or rate-limited provider is
+     * reported once, up front, rather than surfacing as a mystery hang later.
+     * A paid endpoint that is out of quota is a configuration problem the user
+     * must fix; silently limping along on the free endpoint would hide it, so
+     * the fallback is logged loudly.
+     *
+     * @returns {Promise<{ok: boolean, url: string, error: string|null}>}
+     */
+    async ensureRpcReachable() {
+        if (this._rpcChecked) return { ok: true, url: this.activeRpc, error: null };
+        let lastError = null;
+        for (const url of this.rpcCandidates) {
+            try {
+                const res = await withTimeout(this.provider.getBlockNumber(), 10000, 'RPC reachability check');
+                if (res !== null) {
+                    if (url !== this.rpcCandidates[0]) {
+                        console.error(
+                            `[OnchainExecutionEngine] The configured RPC (${this.rpcCandidates[0]}) did not respond. ` +
+                            `FELL BACK TO ${url}. Trading continues, but the primary endpoint needs fixing: ` +
+                            `check the key, its quota, or the network.`
+                        );
+                    }
+                    this.activeRpc = url;
+                    this._rpcChecked = true;
+                    return { ok: true, url, error: null };
+                }
+                lastError = 'timed out';
+            } catch (err) {
+                lastError = (err && (err.shortMessage || err.message)) || String(err);
+            }
+        }
+        return { ok: false, url: this.activeRpc, error: lastError };
+    }
+
+    /**
      * Does the configured RPC support eth_call state overrides?
      *
      * Probed rather than assumed. Inferring support from the presence of a
@@ -389,18 +458,58 @@ class OnchainExecutionEngine {
             if (simUrl !== (this.NETWORK.rpcUrl || '') && simUrl !== (process.env.BASE_RPC_URL || '')) {
                 provider = new ethers.JsonRpcProvider(simUrl);
             }
-            // A trivial call carrying an override. An endpoint that ignores the
-            // parameter still answers, so check the ANSWER is what we asked
-            // for: the override gives a fresh 99-balance address exactly 7 ETH.
-            const probe = '0x' + 'ab'.repeat(20);
-            const res = await provider.send('eth_getBalance', [probe, 'latest', {
-                [probe]: { balance: '0x' + (7n * 10n ** 18n).toString(16) }
-            }]);
-            const ok = res && BigInt(res) === 7n * 10n ** 18n;
-            this._overrideSupport = !!ok;
-            if (!ok) {
+
+            // Probe with the SAME mechanism preflightNativeSwap uses: an
+            // eth_call carrying an object-form state override, against a
+            // contract storage slot so the effect is observable.
+            //
+            // "The call did not throw" is NOT a test. The public Base endpoint
+            // happily answers a call that carries overrides and then ignores
+            // them, so a not-threw probe reports a working override capability
+            // where there is none. That is the dangerous direction: preflight
+            // would then run against a phantom WETH balance, fail, and block
+            // every legitimate ETH trade.
+            //
+            // So the probe checks that the override actually CHANGED the
+            // answer. WETH9 keeps balanceOf in slot 3; give a fresh address a
+            // balance of exactly 7 WETH and require the call to return it.
+            const WETH_ADDR = tokenManager.resolveToken('WETH');
+            if (!WETH_ADDR) {
+                this._overrideSupport = false;
+                return false;
+            }
+            const holder = '0x' + 'ab'.repeat(20);
+            const want = 7n * 10n ** 18n;
+            const iface = new ethers.Interface(['function balanceOf(address) view returns (uint256)']);
+            const data = iface.encodeFunctionData('balanceOf', [holder]);
+            const res = await withTimeout(
+                provider.send('eth_call', [{
+                    to: WETH_ADDR.address,
+                    data
+                }, 'latest', {
+                    [WETH_ADDR.address]: {
+                        [ethers.toBeHex(3, 32)]: {
+                            [ethers.keccak256(ethers.concat([
+                                ethers.toBeHex(holder, 32),
+                                ethers.toBeHex(3, 32)
+                            ]))]: ethers.toBeHex(want, 32)
+                        }
+                    }
+                }]),
+                8000,
+                'override probe'
+            );
+
+            let applied = false;
+            try {
+                applied = res !== null && iface.decodeFunctionResult('balanceOf', res)[0] === want;
+            } catch (e) {
+                applied = false;
+            }
+            this._overrideSupport = applied;
+            if (!applied) {
                 console.log(
-                    '[OnchainExecutionEngine] RPC did not apply a state override; ' +
+                    '[OnchainExecutionEngine] RPC answered a state-override call but did not APPLY it; ' +
                     'native swaps fall back to pre-checks and automatic unwrap. ' +
                     'Use an Alchemy or QuickNode Base endpoint to enable pre-broadcast simulation.'
                 );
@@ -454,15 +563,24 @@ class OnchainExecutionEngine {
         };
 
         try {
-            await this.provider.call({
-                to: this.UNISWAP_ROUTER,
-                data,
-                from: this.signer.address,
-                stateOverride: {
-                    [NATIVE]: { balance: ethers.toBeHex(amountIn, 32) },
-                    [weth.address]: wethState
-                }
-            });
+            // Bounded: an RPC that never answers must not hold the request
+            // open. A timeout here is treated as inconclusive, not as a pass.
+            const sim = await withTimeout(
+                this.provider.call({
+                    to: this.UNISWAP_ROUTER,
+                    data,
+                    from: this.signer.address,
+                    stateOverride: {
+                        [NATIVE]: { balance: ethers.toBeHex(amountIn, 32) },
+                        [weth.address]: wethState
+                    }
+                }),
+                10000,
+                'native swap preflight'
+            );
+            if (sim === null) {
+                return { ok: false, supported: false, reason: 'Preflight simulation timed out; proceeding with pre-checks and automatic unwrap.' };
+            }
             return { ok: true, supported: true, reason: 'Simulated successfully against pre-wrap state.' };
         } catch (err) {
             return {

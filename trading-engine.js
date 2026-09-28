@@ -215,6 +215,10 @@ class TradingEngine {
 
          this.trades = [];
 
+         // Cached scalar accumulation of total net profit across all executed/closed trades
+         // Avoids O(N) array iteration on every trade execution safety check
+         this.totalNetProfit = 0;
+
          this.marketData = {};
 
          this.opportunities = [];
@@ -813,8 +817,9 @@ class TradingEngine {
 
     async executeTrade(bot, opportunity) {
 
+        // Optimized O(1) read using this.totalNetProfit instead of O(N) this.trades.reduce(...)
         const safetyCheck = this.safetyControls.isTradeExecutionBlocked(
-            this.trades.reduce((sum, t) => sum + (t.profit || 0), 0),
+            this.totalNetProfit,
             bot.amount || 10000
         );
         if (safetyCheck.blocked) {
@@ -923,6 +928,9 @@ class TradingEngine {
             trade.profit = Number(actualProfit.toFixed(4));
             trade.profitPercent = trade.size > 0 ? Number(((actualProfit / parseFloat(trade.size)) * 100).toFixed(2)) : 0;
 
+            // Update scalar totalNetProfit accumulator in O(1)
+            this.totalNetProfit += trade.profit;
+
             // Update bot's totalProfit
             const botIndex = this.bots.findIndex(b => b.id === trade.botId);
             if (botIndex !== -1) {
@@ -948,17 +956,14 @@ class TradingEngine {
 
                 else acousticAudio.loss(bot.id);
 
-                // Check for global bell milestones
-
-                const totalProfit = this.bots.reduce((sum, b) => sum + (b.totalProfit || 0), 0);
-
-                acousticAudio.checkMilestones(totalProfit);
+                // Check for global bell milestones using O(1) totalNetProfit
+                acousticAudio.checkMilestones(this.totalNetProfit);
 
                 // Update vault display
 
                 if (typeof updateVaultDisplay === 'function') {
 
-                    updateVaultDisplay(10000 + totalProfit, 10000);
+                    updateVaultDisplay(10000 + this.totalNetProfit, 10000);
 
                 }
 
@@ -1024,13 +1029,16 @@ class TradingEngine {
 
             const roi = parseFloat(opportunity.expectedROI) - 0.09;
 
-            trade.profit = (opportunity.loanAmount * roi / 100).toFixed(4);
+            trade.profit = Number((opportunity.loanAmount * roi / 100).toFixed(4));
 
 
 
             trade.status = 'COMPLETED';
 
             trade.closedTime = Date.now();
+
+            // Update scalar totalNetProfit accumulator in O(1)
+            this.totalNetProfit += trade.profit;
 
             // Update bot's totalProfit
             const botIndex = this.bots.findIndex(b => b.id === trade.botId);

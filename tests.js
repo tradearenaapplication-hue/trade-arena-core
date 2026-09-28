@@ -755,6 +755,19 @@ describe("Performance", () => {
     expect(Date.now() - start).toBeLessThan(150);
   });
 
+  it("maintains totalNetProfit accumulator in O(1) time without O(N) trade array reduction", async () => {
+    const engine = new TradingEngine();
+    const bot = { id: "bot-scalar", amount: 100, risk: "Moderate (5x leverage)" };
+    engine.bots.push(bot);
+
+    for (let i = 0; i < 50; i++) {
+      await engine.executeTrade(bot, { type: "ARBITRAGE", profitMargin: 0.5, volatility: 2 });
+    }
+
+    const manualSum = engine.trades.reduce((sum, t) => sum + (t.profit || 0), 0);
+    expect(Number(engine.totalNetProfit.toFixed(4))).toBe(Number(manualSum.toFixed(4)));
+  });
+
   it("skips DOM innerHTML assignment when bot pad states are unchanged (renderPadGrid benchmark)", () => {
     const { renderPadGrid, tradingEngine } = require("./trading-engine.js");
     let innerHTMLWrites = 0;

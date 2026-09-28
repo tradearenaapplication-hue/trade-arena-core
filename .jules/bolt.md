@@ -13,3 +13,7 @@
 ## 2026-10-14 - Redundant DOM Matrix Redraws in Acoustic Core Pad Grid Updates
 **Learning:** `renderPadGrid` in `trading-engine.js` was executing `.map().join()` string building and full `grid.innerHTML` overwrites on every timer tick regardless of whether bot P&L states had actually changed. In a multi-bot live environment, this caused frequent layout recalcs and DOM churn.
 **Action:** Implement lightweight state hashing across entity values (`${bot.id}:${pnl};`) to perform fast scalar dirty checking. Return early to bypass string concatenation and DOM `innerHTML` assignments when values are identical.
+
+## 2026-11-08 - O(N) Array Reduction in High-Frequency Trade Safety Evaluation
+**Learning:** `TradingEngine.executeTrade` and acoustic milestone checks performed full array reductions (`this.trades.reduce(...)` and `this.bots.reduce(...)`) on every trade execution to check safety control limits and update total profit displays. As the trade history grew, this created $O(N^2)$ cumulative work across simulation runs.
+**Action:** Maintain running scalar accumulators (e.g. `this.totalNetProfit`) on domain objects that increment/decrement in $O(1)$ time upon trade completion instead of scanning array collections on every step.

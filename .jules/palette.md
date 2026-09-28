@@ -5,3 +5,7 @@
 ## 2026-09-24 - [Escape Key Dismissal for Modals & Dropdowns]
 **Learning:** WCAG 2.1 compliance requires that keyboard users can dismiss open modal dialogs, slide-out panels, and dropdown menus using the `Escape` key. Returning early after handling the topmost active modal prevents chained dismissals.
 **Action:** Always register a global `Escape` key listener when building overlay or modal UI components in Vanilla JS/HTML.
+
+## 2026-10-15 - [ARIA Attributes on Modals and Floating Warning Banners]
+**Learning:** Floating dialogs require `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` linking to their header ID, while floating dynamic status alerts require `role="alert"` and `aria-live="polite"` so screen readers immediately announce state changes without interrupting user focus.
+**Action:** Always include semantic role and ARIA attributes on modal overlays and dynamically toggled warning banners in Vanilla HTML/JS.

@@ -5587,9 +5587,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <!-- VOICE AGENT MODAL -->
-<div id="voiceAgentModal">
+<div id="voiceAgentModal" role="dialog" aria-modal="true" aria-labelledby="vaTitle">
   <div class="va-header">
-    <span class="va-title">🎙️ AI FLOOR MANAGER</span>
+    <span class="va-title" id="vaTitle">🎙️ AI FLOOR MANAGER</span>
     <button class="m-close" onclick="toggleVoiceAgent()" aria-label="Close Voice Agent">✕</button>
   </div>
   <div class="va-body">
@@ -5747,7 +5747,7 @@ Respond in JSON format:
 }
 </script>
 <!-- Floating Session Time Warning Banner -->
-<div id="sessionWarningBanner" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(180deg,#110b18,var(--panel));border:2px solid var(--amber);border-radius:10px;padding:12px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.8);max-width:440px;width:90%;color:#fff;align-items:center;justify-content:space-between;gap:12px;">
+<div id="sessionWarningBanner" role="alert" aria-live="polite" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(180deg,#110b18,var(--panel));border:2px solid var(--amber);border-radius:10px;padding:12px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.8);max-width:440px;width:90%;color:#fff;align-items:center;justify-content:space-between;gap:12px;">
   <div>
     <div style="font-family:'Bungee',display;font-size:11px;color:var(--amber);margin-bottom:2px;">⏱ SESSION TIME WARNING</div>
     <div id="sessionWarningDetails" style="font-size:10px;color:#ccc;">Active session: 30 mins · Net P&L: +$0.00</div>

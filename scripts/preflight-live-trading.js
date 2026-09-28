@@ -14,6 +14,11 @@
  */
 
 const { ethers } = require('ethers');
+// Load env FIRST. TokenManager reads BASE_CHAIN_ID at module scope to pick its
+// per-network token whitelist, so requiring it before dotenv.config() made it
+// fall back to the mainnet USDC address. On Sepolia that address has no
+// liquidity, and the quote then reverted with an unhelpful "LOK" error.
+require('dotenv').config();
 const tokenManager = require('../services/TokenManager');
 const { NETWORKS, ok, bad, warn } = require('./preflight-shared.js');
 
@@ -81,6 +86,7 @@ function finish() {
         const abi = ['function quoteExactInputSingle((address tokenIn,address tokenOut,uint256 amountIn,uint24 fee,uint160 sqrtPriceLimitX96) params) external returns (uint256 amountOut,uint160 sqrtPriceX96After,uint32[] ticksCrossed,uint256 gasEstimate)'];
         const quoter = new ethers.Contract(net.quoter, abi, provider);
         let quoted = false;
+        const quoteErrors = [];
         for (const fee of [500, 3000, 10000]) {
             try {
                 const r = await quoter.quoteExactInputSingle.staticCall({
@@ -90,9 +96,17 @@ function finish() {
                 ok(`Quoted 100 USDC -> ${ethers.formatUnits(r.amountOut, weth.decimals)} WETH at fee tier ${fee}`);
                 quoted = true;
                 break;
-            } catch (_) { /* try next tier */ }
+            } catch (err) {
+                // Do not swallow the reason. Silently trying the next tier made
+                // every failure look like "no pool with liquidity", which hides
+                // genuine problems (wrong token address, RPC revert, bad ABI).
+                quoteErrors.push(`fee ${fee}: ${(err.shortMessage || err.message).split('\n')[0]}`);
+            }
         }
-        if (!quoted) bad('No Uniswap V3 pool with liquidity for USDC/WETH on this network');
+        if (!quoted) {
+            bad('Could not quote USDC -> WETH on this network');
+            for (const line of quoteErrors) console.log(`         - ${line}`);
+        }
     } catch (e) {
         bad(`Quote failed: ${e.message}`);
     }

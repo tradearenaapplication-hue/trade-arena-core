@@ -262,6 +262,36 @@ class FileDatabase {
   getAllTaskClaims() {
     return Object.values(this.data.taskClaims);
   }
+
+  /**
+   * Mark historical records that predate the onchain flag.
+   *
+   * Records written before the flag existed carry no way to tell a simulated
+   * position from a real fill, so the ledger treated dozens of paper trades as
+   * on-chain disposals of ETH and emitted a "no cost basis" warning for each.
+   * A record with no tx hash was never a real fill: the swap handler always
+   * stores one. Backfilling the flag removes the noise without touching rows
+   * that carry real on-chain evidence.
+   *
+   * Returns the number of rows changed so a caller can report it rather than
+   * silently mutating history.
+   */
+  backfillOnchainFlag() {
+    let changed = 0;
+    for (const t of this.data.tradeLogs) {
+      if (!t || typeof t !== 'object') continue;
+      const d = t.details || {};
+      if (d.onchain !== undefined) continue;
+      if (t.action === 'DEPOSIT') { d.onchain = true; t.details = d; changed++; continue; }
+      if (d.txHash) { d.onchain = true; t.details = d; changed++; continue; }
+      // No hash and not a deposit: a simulated position.
+      d.onchain = false;
+      t.details = d;
+      changed++;
+    }
+    if (changed) this.save();
+    return changed;
+  }
 }
 
 const db = new FileDatabase();

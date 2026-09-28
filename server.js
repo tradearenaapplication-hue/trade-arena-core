@@ -25,6 +25,137 @@ const WebSocket = require('websocket').w3cwebsocket;
 const onchainEngine = require('./services/OnchainExecutionEngine');
 const accounting = require('./services/portfolio-accounting');
 
+/**
+ * The arena's actual holdings, read from the chain.
+ *
+ * Read live rather than trusted, and used to seed the ledger's opening lots.
+ * Without an acquisition record for the ETH and USDC the wallet already held,
+ * the first disposal of them has no cost basis and the reported P&L describes
+ * trading costs rather than returns on capital.
+ */
+const SEED_SYMBOLS = ['USDC', 'WETH', 'WBTC', 'CBBTC', 'PEPE', 'SOL'];
+
+async function readChainBalances() {
+    // The engine initialises asynchronously at startup, so on the very first
+    // request provider and signer can still be null. Without this await the
+    // balance read throws and the whole accounting endpoint 500s.
+    if (!onchainEngine.initialized || !onchainEngine.provider) {
+        await onchainEngine.initialize();
+    }
+    const out = {};
+    for (const s of SEED_SYMBOLS) {
+        out[s] = await onchainEngine.getTokenBalance(s);
+    }
+    out.ETH = ethers.formatEther(await onchainEngine.provider.getBalance(onchainEngine.signer.address));
+    return out;
+}
+
+const priceCache = new Map();
+async function priceOf(symbol) {
+    if (priceCache.has(symbol)) return priceCache.get(symbol);
+    // The engine initialises asynchronously at startup. Without this await a
+    // price lookup can run before the provider exists, throw, and cache 0 for
+    // the token - which then reports the holding as worthless for the rest of
+    // the process. A silent 0 is worse than a slow answer.
+    if (!onchainEngine.initialized || !onchainEngine.provider) {
+        await onchainEngine.initialize();
+    }
+    let p = 0;
+    try {
+        p = (await onchainEngine.getTokenPriceUSD(symbol)) || 0;
+    } catch (e) {
+        console.error(`[accounting] Could not price ${symbol}: ${e.message}`);
+    }
+    // Only cache a real price. Caching a failure turns a transient RPC blip
+    // into a permanently wrong valuation.
+    if (p > 0) priceCache.set(symbol, p);
+    return p;
+}
+
+/**
+ * Price a token that is known to be held, retrying before giving up.
+ *
+ * getTokenPriceUSD answers null when the quoter call fails, and the public Base
+ * endpoint fails intermittently under load. Accepting that first null would
+ * value a real holding at $0 - which is worse than reporting nothing, because
+ * the number looks authoritative. A holding that cannot be priced after
+ * retrying is reported as unknown, never as worthless.
+ *
+ * @returns {number|null} USD price, or null if it could not be established
+ */
+async function priceHeldToken(symbol, attempts = 3) {
+    for (let i = 0; i < attempts; i++) {
+        const p = await priceOf(symbol);
+        if (p > 0) return p;
+        await new Promise((r) => setTimeout(r, 250 * (i + 1)));
+    }
+    console.warn(`[accounting] Could not establish a USD price for ${symbol} after ${attempts} attempts.`);
+    return null;
+}
+
+/**
+ * Record a one-time DEPOSIT record capturing the wallet's opening balances.
+ *
+ * Written as a normal trade-log row with action DEPOSIT so it sorts into the
+ * ledger chronologically and is rebuilt like everything else - no separate
+ * state to keep in sync. Idempotent: a wallet is only seeded once, because
+ * re-seeding would book the same capital twice and inflate the basis.
+ */
+async function ensureOpeningBalance(address) {
+    const existing = db.getTradeLogs(address, 10000).find((t) => t.action === 'DEPOSIT');
+    if (existing) return null;
+
+        const balances = await readChainBalances();
+        const seeded = [];
+        for (const [symbol, amount] of Object.entries(balances)) {
+            // null means the chain read failed, which is not the same as an
+            // empty balance. Seeding a deposit of 0 - or skipping a holding
+            // that was never read - would quietly understate the capital.
+            if (amount === null || amount === undefined) {
+                console.warn(`[accounting] Skipping ${symbol} in the opening balance: balance read failed.`);
+                continue;
+            }
+            // Price with retries: valuing a real holding at $0 because the
+            // quoter blipped would understate the capital silently.
+            const p = await priceHeldToken(symbol);
+            if (p === null) {
+                if (Number(amount) > 0) {
+                    console.warn(`[accounting] Skipping ${symbol} in the opening balance: no reliable price.`);
+                }
+                continue;
+            }
+            const usd = Number(amount) * p;
+            // Skip dust: a fraction of a cent is not capital and would only add
+            // noise to the lot table.
+            if (!Number.isFinite(usd) || usd < 0.01) continue;
+        db.addTradeLog({
+            address,
+            agentId: 'wallet',
+            botName: 'Opening Balance',
+            action: 'DEPOSIT',
+            symbol: `DEPOSIT/${symbol}`,
+            amount: Number(amount),
+            pnl: 0,
+            details: {
+                fromToken: null,
+                toToken: symbol,
+                toAmount: String(amount),
+                toUsd: usd,
+                action: 'DEPOSIT',
+                onchain: true,
+                depositedAt: new Date().toISOString(),
+                note: 'Opening balance read from the chain. Establishes the cost basis for capital already held.'
+            }
+        });
+        seeded.push({ symbol, amount, usd });
+    }
+    if (seeded.length) {
+        console.log('[accounting] Seeded opening balance for ' + address + ': ' +
+            seeded.map((s) => `${s.symbol}=${s.usd.toFixed(2)}`).join(', '));
+    }
+    return seeded;
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -508,30 +639,60 @@ app.get('/api/accounting/:address', async (req, res) => {
             });
         }
 
+        // Seed the opening balance before building the ledger, so capital the
+        // wallet already held has a cost basis. No-op after the first call.
+        await ensureOpeningBalance(address);
+
         const history = db.getTradeLogs(address, 10000);
         const ledger = accounting.buildLedger(history, { method: requested });
 
         // Mark open positions to market. One on-chain quote per distinct token,
         // not per bot: the price is a property of the token, and asking twice
         // would double the RPC cost for an identical answer.
-        const priceCache = new Map();
-        const priceOf = async (token) => {
-            if (priceCache.has(token)) return priceCache.get(token);
-            let p = 0;
-            try {
-                p = (await onchainEngine.getTokenPriceUSD(token)) || 0;
-            } catch (e) {
-                p = 0;
-            }
-            priceCache.set(token, p);
+        const localPrices = new Map();
+        const priceFor = async (token) => {
+            const sym = String(token).toUpperCase();
+            if (localPrices.has(sym)) return localPrices.get(sym);
+            const p = await priceOf(sym);
+            localPrices.set(sym, p);
             return p;
         };
 
-        const open = ledger.unrealized((t) => priceCache.get(String(t).toUpperCase()) || 0);
+        // Cash actually held, read from the chain. The ledger tracks positions;
+        // the USDC and ETH sitting in the wallet are capital, and reporting them
+        // separately is what lets "deposited vs still here" be answered.
+        let cash = null;
+        try {
+            const balances = await readChainBalances();
+            cash = { balances: {}, unknown: [] };
+            let total = 0;
+            for (const [sym, amt] of Object.entries(balances)) {
+                // A failed read is reported as unknown, never as $0. Showing a
+                // funded wallet as empty because of one RPC blip is worse than
+                // admitting the number is missing.
+                if (amt === null || amt === undefined) {
+                    cash.unknown.push(sym);
+                    continue;
+                }
+                const p = await priceHeldToken(sym);
+                if (p === null) {
+                    if (Number(amt) > 0) cash.unknown.push(sym);
+                    continue;
+                }
+                const usd = Number(amt) * p;
+                cash.balances[sym] = { amount: String(amt), priceUsd: p, usd };
+                total += usd;
+            }
+            cash.totalUsd = total;
+        } catch (e) {
+            cash = null;
+        }
+
+        const open = ledger.unrealized((t) => localPrices.get(String(t).toUpperCase()) || 0);
         // Open positions were computed before any prices were fetched, so fill
         // the valuation in now that the cache is warm.
         for (const pos of open) {
-            const price = await priceOf(pos.token);
+            const price = await priceFor(pos.token);
             const qty = Number(pos.unitsFormatted);
             const value = Number.isFinite(qty) ? qty * price : 0;
             pos.priceUsd = price;
@@ -563,6 +724,12 @@ app.get('/api/accounting/:address', async (req, res) => {
             gasUsd: summary.gasUsd,
             openPositionValueUsd: totalValue,
             openCostBasisUsd: totalCost,
+            // Capital and cash, so "what did I put in, and how much is still
+            // here" is answerable. cash is read live from the chain; if that
+            // read failed it is null rather than a stale or invented number.
+            depositedUsd: Object.values(summary.depositedByToken || {}).reduce((a, b) => a + b, 0),
+            depositedByToken: summary.depositedByToken || {},
+            cash,
             realizedByToken: summary.realizedByToken,
             realizedByBot: summary.realizedByBot,
             openPositions: open,

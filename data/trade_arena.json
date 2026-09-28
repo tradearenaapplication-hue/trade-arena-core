@@ -63,7 +63,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-22T13:37:28.481Z"
     },
@@ -77,7 +78,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-22T13:38:23.264Z"
     },
@@ -91,7 +93,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-22T13:40:05.418Z"
     },
@@ -105,7 +108,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-22T13:41:07.464Z"
     },
@@ -119,7 +123,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-22T13:41:47.182Z"
     },
@@ -133,7 +138,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-22T13:57:54.742Z"
     },
@@ -147,7 +153,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-23T11:12:42.970Z"
     },
@@ -161,7 +168,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-23T11:13:07.025Z"
     },
@@ -175,7 +183,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-23T11:13:25.709Z"
     },
@@ -189,7 +198,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-23T11:13:48.382Z"
     },
@@ -203,7 +213,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-23T11:14:08.434Z"
     },
@@ -217,7 +228,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-23T11:14:37.485Z"
     },
@@ -231,7 +243,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-25T07:07:17.946Z"
     },
@@ -245,7 +258,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-25T10:31:54.615Z"
     },
@@ -259,7 +273,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-25T10:34:16.104Z"
     },
@@ -273,7 +288,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-25T10:35:52.132Z"
     },
@@ -287,7 +303,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-25T10:38:51.511Z"
     },
@@ -301,7 +318,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-25T10:41:09.810Z"
     },
@@ -315,7 +333,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-25T10:41:36.965Z"
     },
@@ -329,7 +348,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-25T10:44:10.638Z"
     },
@@ -343,7 +363,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-25T13:40:30.761Z"
     },
@@ -357,7 +378,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-25T20:51:33.877Z"
     },
@@ -371,7 +393,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T07:32:03.700Z"
     },
@@ -385,7 +408,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T07:32:36.411Z"
     },
@@ -399,7 +423,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T07:33:11.034Z"
     },
@@ -413,7 +438,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T07:35:03.122Z"
     },
@@ -427,7 +453,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T08:13:34.348Z"
     },
@@ -441,7 +468,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T09:29:10.052Z"
     },
@@ -455,7 +483,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T09:44:22.915Z"
     },
@@ -469,7 +498,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T09:45:23.179Z"
     },
@@ -483,7 +513,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T10:00:58.812Z"
     },
@@ -497,7 +528,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T10:02:05.877Z"
     },
@@ -511,7 +543,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T10:08:20.577Z"
     },
@@ -525,7 +558,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T10:21:19.737Z"
     },
@@ -539,7 +573,8 @@
       "amount": 0,
       "pnl": 0,
       "details": {
-        "status": "OPEN"
+        "status": "OPEN",
+        "onchain": false
       },
       "timestamp": "2026-09-28T10:23:02.043Z",
       "positionId": "pos_b",
@@ -556,7 +591,8 @@
       "amount": 10,
       "pnl": 2.5,
       "details": {
-        "isWin": true
+        "isWin": true,
+        "onchain": false
       },
       "timestamp": "2026-09-28T10:23:03.492Z"
     },
@@ -593,9 +629,52 @@
         "explorerUrl": "https://basescan.org/tx/0xb1e223aacdb535b95fc8233b1e5ff9c9bf8ee8e748d16353f3c4e02b80671dc6",
         "explorer": "https://basescan.org",
         "traderExplorerUrl": "https://basescan.org/address/0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB",
-        "blockNumber": 51900987
+        "blockNumber": 51900987,
+        "onchain": true
       },
       "timestamp": "2026-09-28T10:28:40.812Z"
+    },
+    {
+      "id": "trade_1790592619768_e0b55fc1643648bf",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "wallet",
+      "botName": "Opening Balance",
+      "action": "DEPOSIT",
+      "symbol": "DEPOSIT/USDC",
+      "amount": 0.498273,
+      "pnl": 0,
+      "details": {
+        "fromToken": null,
+        "toToken": "USDC",
+        "toAmount": "0.498273",
+        "toUsd": 0.498273,
+        "action": "DEPOSIT",
+        "onchain": true,
+        "depositedAt": "2026-09-28T10:50:19.767Z",
+        "note": "Opening balance read from the chain. Establishes the cost basis for capital already held."
+      },
+      "timestamp": "2026-09-28T10:50:19.769Z"
+    },
+    {
+      "id": "trade_1790592620608_c88bfe784492df44",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "wallet",
+      "botName": "Opening Balance",
+      "action": "DEPOSIT",
+      "symbol": "DEPOSIT/ETH",
+      "amount": 0.003874136699497425,
+      "pnl": 0,
+      "details": {
+        "fromToken": null,
+        "toToken": "ETH",
+        "toAmount": "0.003874136699497425",
+        "toUsd": 10.277624338844033,
+        "action": "DEPOSIT",
+        "onchain": true,
+        "depositedAt": "2026-09-28T10:50:20.608Z",
+        "note": "Opening balance read from the chain. Establishes the cost basis for capital already held."
+      },
+      "timestamp": "2026-09-28T10:50:20.608Z"
     }
   ],
   "userState": {

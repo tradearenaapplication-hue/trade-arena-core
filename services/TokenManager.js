@@ -35,7 +35,11 @@ const MAINNET_TOKENS = {
         name: 'Wrapped Ethereum'
     },
     'WBTC': {
-        address: '0x03C6b3903b65151371B9541b59367468160BCE62',
+        // Checksum matters. A single wrong-case character makes ethers throw
+        // "bad address checksum" on every quote and every balance read, so the
+        // token looks permanently unpriceable and untradable. Verified against
+        // ethers.getAddress.
+        address: '0x03C6B3903b65151371b9541b59367468160BCE62',
         decimals: 8,
         symbol: 'WBTC',
         name: 'Wrapped Bitcoin'
@@ -53,7 +57,9 @@ const MAINNET_TOKENS = {
         name: 'Pepe'
     },
     'SOL': {
-        address: '0x29683838D64aB2eB75757d59048a60f9e15f3366',
+        // Checksum corrected: the previous casing was invalid, so every SOL
+        // quote and balance read reverted with "bad address checksum".
+        address: '0x29683838D64Ab2Eb75757D59048A60f9e15f3366',
         decimals: 9,
         symbol: 'SOL',
         name: 'Wrapped SOL'

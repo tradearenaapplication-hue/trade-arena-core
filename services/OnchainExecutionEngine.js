@@ -343,21 +343,135 @@ class OnchainExecutionEngine {
     }
 
     /**
-     * Balance of `symbolOrAddress` held by `holder` (default: the engine wallet),
-     * as a decimal string. Returns '0' for unpriceable or absent tokens rather
-     * than throwing, so one bad lookup cannot fail a whole reconciliation.
+     * Simulate a full native-ETH swap BEFORE anything is broadcast.
+     *
+     * The ordering problem: a native trade has to wrap ETH into WETH before the
+     * swap can exist, and the swap can only be simulated once that WETH exists.
+     * So the sequence is wrap -> approve -> simulate -> swap, and anything that
+     * fails at the simulate step has already spent gas and left funds wrapped.
+     *
+     * The way out is to simulate against a STATE THAT DOES NOT EXIST YET:
+     * pretend the wallet already holds the WETH and has already approved the
+     * router, then run the swap against that. Nothing is broadcast, so a
+     * failure costs nothing.
+     *
+     * This needs an RPC that supports eth_call state overrides. The public Base
+     * endpoint does NOT ("missing revert data"), so this returns
+     * {supported:false} there and the caller falls back to the pre-broadcast
+     * checks plus the automatic unwrap. Configure SIMULATION_RPC_URL with an
+     * Alchemy/QuickNode endpoint to get the stronger guarantee.
      */
-    async getTokenBalance(symbolOrAddress, holder = null) {
-        const address = holder || (this.signer ? this.signer.address : null);
-        if (!address) return '0';
-        const token = tokenManager.resolveToken(symbolOrAddress);
-        if (!token) return '0';
-        try {
-            const c = new ethers.Contract(token.address, ['function balanceOf(address) view returns (uint256)'], this.provider);
-            return ethers.formatUnits(await c.balanceOf(address), token.decimals);
-        } catch (e) {
-            return '0';
+    async canSimulateWithOverrides() {
+        if (this._overrideSupport === undefined) {
+            this._overrideSupport = !!(process.env.SIMULATION_RPC_URL || '').trim();
         }
+        return this._overrideSupport;
+    }
+
+    /**
+     * Pre-flight a native swap against simulated state, when the RPC allows it.
+     *
+     * @returns {{ok: boolean, supported: boolean, reason: string}}
+     */
+    async preflightNativeSwap({ tokenIn, tokenOut, amountIn, amountOutMinimum, feeTier }) {
+        if (!(await this.canSimulateWithOverrides())) {
+            return {
+                ok: false,
+                supported: false,
+                reason: 'RPC does not support state overrides; relying on pre-checks and automatic unwrap.'
+            };
+        }
+
+        const NATIVE = '0x0000000000000000000000000000000000000000';
+        const weth = tokenManager.resolveToken('WETH');
+        if (!weth) return { ok: false, supported: true, reason: 'WETH not whitelisted on this network.' };
+
+        const routerAbi = ['function exactInputSingle((address,address,uint24,address,uint256,uint256,uint160)) payable returns (uint256)'];
+        const iface = new ethers.Interface(routerAbi);
+        const data = iface.encodeFunctionData('exactInputSingle', [{
+            tokenIn, tokenOut, feeTier,
+            recipient: this.signer.address,
+            amountIn, amountOutMinimum,
+            sqrtPriceLimitX96: 0
+        }]);
+
+        // Slot 3 of WETH9 is `mapping(address => uint256) balanceOf`.
+        const BALANCE_SLOT = 3;
+        const ALLOWANCE_SLOT = 4;
+        const key = ethers.toBeHex(this.signer.address, 32);
+        const maxUint = '0x' + 'f'.repeat(64);
+
+        const wethState = {
+            [BALANCE_SLOT]: {
+                [key]: ethers.toBeHex(amountIn, 32)
+            },
+            [ALLOWANCE_SLOT]: {
+                [ethers.keccak256(ethers.concat([key, ethers.toBeHex(this.UNISWAP_ROUTER, 32)]))]: maxUint
+            }
+        };
+
+        try {
+            await this.provider.call({
+                to: this.UNISWAP_ROUTER,
+                data,
+                from: this.signer.address,
+                stateOverride: {
+                    [NATIVE]: { balance: ethers.toBeHex(amountIn, 32) },
+                    [weth.address]: wethState
+                }
+            });
+            return { ok: true, supported: true, reason: 'Simulated successfully against pre-wrap state.' };
+        } catch (err) {
+            return {
+                ok: false,
+                supported: true,
+                reason: 'Swap would revert before broadcasting: ' + (err.shortMessage || err.message)
+            };
+        }
+    }
+
+    /**
+     * Balance of `symbolOrAddress` held by `holder` (default: the engine wallet),
+     * as a decimal string.
+     *
+     * Returns null - NOT "0" - when the read fails. The public Base endpoint
+     * intermittently answers a valid call with "missing revert data" under
+     * load, and treating that as a zero balance made a funded wallet report
+     * $0 of holdings: the opening balance was seeded as nothing, cash showed
+     * empty, and reconciliation reported phantom drift. A failed read is
+     * unknown, and a caller must be able to tell it from an empty wallet.
+     *
+     * Retried a couple of times before giving up, because a single blip should
+     * not empty the books.
+     */
+    async getTokenBalance(symbolOrAddress, holder = null, attempts = 3) {
+        const address = holder || (this.signer ? this.signer.address : null);
+        if (!address) return null;
+        const token = tokenManager.resolveToken(symbolOrAddress);
+        if (!token) return null;
+
+        let lastError = null;
+        for (let i = 0; i < attempts; i++) {
+            try {
+                const c = new ethers.Contract(
+                    token.address,
+                    ['function balanceOf(address) view returns (uint256)'],
+                    this.provider
+                );
+                return ethers.formatUnits(await c.balanceOf(address), token.decimals);
+            } catch (err) {
+                lastError = err;
+                if (i < attempts - 1) {
+                    await new Promise((r) => setTimeout(r, 150 * (i + 1)));
+                }
+            }
+        }
+        console.error(
+            `[OnchainExecutionEngine] Balance read for ${symbolOrAddress} failed after ` +
+            `${attempts} attempts; reporting unknown rather than zero. ` +
+            `Last error: ${lastError && (lastError.shortMessage || lastError.message)}`
+        );
+        return null;
     }
 
     /**
@@ -747,6 +861,29 @@ class OnchainExecutionEngine {
                         `~${ethers.formatEther(gasNeeded)} gas for the wrap, approval and swap. ` +
                         `Have ${ethers.formatEther(bal)}. Aborting before any transaction is sent.`
                     );
+                }
+
+                // When the RPC can simulate against overridden state, prove the
+                // swap works BEFORE the wrap is broadcast. Without this the first
+                // real failure costs gas and strands a wrap; with it, the failure
+                // happens while the wallet is still untouched.
+                const weth = tokenManager.resolveToken('WETH');
+                if (weth) {
+                    const pre = await this.preflightNativeSwap({
+                        tokenIn: weth.address,
+                        tokenOut: tokenOutAddress,
+                        amountIn: amountInRaw,
+                        amountOutMinimum,
+                        feeTier
+                    });
+                    if (pre.supported) {
+                        if (!pre.ok) {
+                            throw new Error(pre.reason);
+                        }
+                        console.log('[OnchainExecutionEngine] Pre-wrap simulation passed: ' + pre.reason);
+                    } else {
+                        console.log('[OnchainExecutionEngine] ' + pre.reason);
+                    }
                 }
             }
 

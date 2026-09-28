@@ -116,6 +116,9 @@ class PortfolioLedger {
     // Net change in the cash balance from the applied trades, for reconciling
     // the ledger against the wallet's real balance.
     this.cashDelta = ZERO_USD;
+    // Capital deposited into the arena, per token. Tracked separately from
+    // trading P&L so "you put in $X and it is now worth $Y" is answerable.
+    this.depositedByToken = new Map();
     this.warnings = [];
   }
 
@@ -206,6 +209,46 @@ class PortfolioLedger {
     this._bump(this.realizedByToken, from, result.realizedUsd);
     this._bump(this.realizedByBot, botId, result.realizedUsd);
     return result;
+  }
+
+  /**
+   * Open a new tax lot.
+   *
+   * Under WAC the new fill is blended into whatever is already open for this
+  /**
+   * Record capital deposited INTO the arena, as an acquisition with no
+   * matching disposal.
+   *
+   * Without this the wallet's own ETH and USDC have no cost basis: the first
+   * trade disposes them, the ledger finds no lot, values them at zero and
+   * reports the whole proceeds as profit - or, with gas subtracted, the
+   * position simply never appears. Either way the numbers describe trading
+   * costs rather than returns on capital.
+   *
+   * A deposit is the opening leg of the ledger's story. It is booked at the
+   * value read from the chain at the time, which is the only honest basis
+   * available: the app did not witness the transfer in, so it cannot know what
+   * it cost.
+   */
+  applyDeposit({ token, units, usdValue, at, botId = 'wallet' }) {
+    const sym = String(token || '').toUpperCase();
+    if (!sym) return null;
+    const unitCount = toBaseUnits(units, decimalsFor(sym));
+    const usd = usdToFixed(usdValue);
+    if (unitCount <= 0n || usd <= ZERO_USD) return null;
+
+    // A deposit is never a disposal, so it can never realise a gain.
+    this._acquire(this._key(botId, sym), {
+      token: sym,
+      botId,
+      acquiredAt: at || new Date().toISOString(),
+      units: unitCount,
+      costUsd: usd,
+      rawCostUsd: usd,
+      isDeposit: true
+    });
+    this._bump(this.depositedByToken, sym, usd);
+    return { token: sym, units: unitCount, usd };
   }
 
   /**
@@ -420,6 +463,9 @@ class PortfolioLedger {
       gasUsd: fixedToUsd(this.gasUsdTotal),
       cashToken: this.cashToken,
       cashDeltaUsd: fixedToUsd(this.cashDelta),
+      depositedByToken: Object.fromEntries(
+        [...this.depositedByToken].map(([k, v]) => [k, fixedToUsd(v)])
+      ),
       warnings: this.warnings
     };
   }
@@ -530,6 +576,19 @@ function buildLedger(trades, opts = {}) {
     const fromToken = d.fromToken || (String(t.symbol || '').split('/')[0]);
     const toToken = d.toToken || (String(t.symbol || '').split('/')[1]);
     const derive = opts.deriveUsd;
+
+    // A deposit is not a swap: it has no from-leg, so it must not be run
+    // through the dispose/acquire path or it would realise a phantom gain.
+    if (d.action === 'DEPOSIT' || t.action === 'DEPOSIT') {
+      ledger.applyDeposit({
+        token: toToken,
+        units: d.toAmount,
+        usdValue: d.toUsd,
+        at: d.depositedAt || t.timestamp,
+        botId: t.agentId || 'wallet'
+      });
+      continue;
+    }
 
     ledger.applyTrade({
       fromToken,

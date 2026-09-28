@@ -19,19 +19,40 @@ const ELO_CONFIG = {
 };
 
 /**
+ * Canonical agent roster.
+ *
+ * Single source of truth for the tournament: the initial state, the state
+ * normaliser and any consumer that needs to enumerate agents all read this,
+ * so adding an agent cannot desynchronise the "5 agents" assumptions that
+ * used to be hardcoded.
+ */
+const DEFAULT_AGENTS = {
+    mom:  { icon: '🔥' },
+    vol:  { icon: '🌀' },
+    pol:  { icon: '🏛️' },
+    sen:  { icon: '📊' },
+    risk: { icon: '🛡️' }
+};
+
+/**
  * Agent ELO State
  */
 let eloState = {
     generation: 0,
-    agents: {
-        mom:  { rating: 1200, matches: 0, wins: 0, losses: 0, icon: '🔥' },
-        vol:  { rating: 1200, matches: 0, wins: 0, losses: 0, icon: '🌀' },
-        pol:  { rating: 1200, matches: 0, wins: 0, losses: 0, icon: '🏛️' },
-        sen:  { rating: 1200, matches: 0, wins: 0, losses: 0, icon: '📊' },
-        risk: { rating: 1200, matches: 0, wins: 0, losses: 0, icon: '🛡️' },
-    },
+    agents: {},
     history: []
 };
+
+// Seed from the canonical roster at 1200.
+for (const [key, def] of Object.entries(DEFAULT_AGENTS)) {
+    eloState.agents[key] = {
+        rating: ELO_CONFIG.initialRating,
+        matches: 0,
+        wins: 0,
+        losses: 0,
+        icon: def.icon
+    };
+}
 
 /**
  * Record a match result between an agent and the "Market"
@@ -67,8 +88,15 @@ function recordEloMatch(agentKey, isWin) {
  * Recursive Self-Improvement: Check if fleet has reached evolution threshold
  */
 function checkForEvolution() {
-    const totalMatches = Object.values(eloState.agents).reduce((sum, a) => sum + a.matches, 0);
-    if (totalMatches > 0 && totalMatches % 50 === 0) {
+    const all = Object.values(eloState.agents);
+    const totalMatches = all.reduce((sum, a) => sum + a.matches, 0);
+    const THRESHOLD = 50;
+
+    // Fire only on CROSSING a threshold, not on every multiple of it.
+    // The old `totalMatches % 50 === 0` test evaluated true on any total that
+    // happened to be a multiple of 50 and, because a single trade replays the
+    // whole ensemble (5 agents), re-armed itself on the very next match.
+    if (totalMatches > 0 && Math.floor((totalMatches - 1) / THRESHOLD) < Math.floor(totalMatches / THRESHOLD)) {
         eloState.generation++;
         const leader = getLeaderAgent();
         console.log(`[ELO] EVOLUTION REACHED: Generation ${eloState.generation}. Leader: ${leader.toUpperCase()}`);
@@ -77,7 +105,10 @@ function checkForEvolution() {
         eloState.history.push({
             gen: eloState.generation,
             leader: leader,
-            avgElo: Object.values(eloState.agents).reduce((s, a) => s + a.rating, 0) / 5,
+            // Divide by the live agent count. This was hardcoded to /5, so
+            // adding or removing an agent silently skewed the average.
+            avgElo: all.reduce((s, a) => s + a.rating, 0) / all.length,
+            totalMatches,
             timestamp: Date.now()
         });
 
@@ -126,6 +157,67 @@ function calculateMarketOpponentRating() {
     return base;
 }
 
+/**
+ * Build a complete, valid state object.
+ *
+ * loadEloState used to assign the parsed blob straight over eloState, so any
+ * older or partial save REPLACED the agent roster with whatever it contained.
+ * A save missing an agent left `agents[key]` undefined, and `recordEloMatch`
+ * then returned early (silently dropping every match for that agent) while
+ * `getWeightFromElo` returned a flat 1.0. Merging into defaults repairs both.
+ */
+function normalizeState(parsed) {
+    const fresh = {
+        generation: typeof eloState.generation === 'number' ? eloState.generation : 0,
+        agents: {},
+        history: []
+    };
+
+    for (const [key, def] of Object.entries(DEFAULT_AGENTS)) {
+        const saved = (parsed && parsed.agents && typeof parsed.agents[key] === 'object' && parsed.agents[key]) || {};
+        const rating = Number(saved.rating);
+        const num = (v) => {
+            const n = Number(v);
+            return Number.isFinite(n) && n >= 0 ? n : 0;
+        };
+
+        const matches = Math.floor(num(saved.matches));
+        let wins = Math.floor(num(saved.wins));
+        let losses = Math.floor(num(saved.losses));
+
+        fresh.agents[key] = {
+            ...def,
+            rating: Number.isFinite(rating)
+                ? Math.max(ELO_CONFIG.minRating, Math.min(ELO_CONFIG.maxRating, rating))
+                : ELO_CONFIG.initialRating,
+            matches,
+            wins,
+            losses
+        };
+
+        // Keep the tally internally consistent so the win rate shown in the UI
+        // can never disagree with the counters: wins + losses must fit inside
+        // matches, and neither may exceed it. A corrupt save is reset to zero
+        // rather than silently producing a nonsense win rate.
+        if (fresh.agents[key].wins + fresh.agents[key].losses > matches) {
+            fresh.agents[key].wins = 0;
+            fresh.agents[key].losses = 0;
+        } else if (fresh.agents[key].wins > matches) {
+            fresh.agents[key].wins = matches;
+            fresh.agents[key].losses = 0;
+        }
+    }
+
+    if (parsed && Number.isFinite(Number(parsed.generation))) {
+        fresh.generation = Number(parsed.generation);
+    }
+    if (parsed && Array.isArray(parsed.history)) {
+        fresh.history = parsed.history.filter(h => h && typeof h === 'object');
+    }
+
+    return fresh;
+}
+
 function saveEloState() {
     try {
         localStorage.setItem('ta_elo_v4', JSON.stringify(eloState));
@@ -136,8 +228,9 @@ function loadEloState() {
     try {
         const raw = localStorage.getItem('ta_elo_v4');
         if (raw) {
-            const parsed = JSON.parse(raw);
-            eloState = parsed;
+            // Normalise rather than overwrite, so a partial or older save
+            // cannot drop agents out of the tournament.
+            eloState = normalizeState(JSON.parse(raw));
         }
     } catch(e) {}
 }

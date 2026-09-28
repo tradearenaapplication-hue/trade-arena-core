@@ -5386,10 +5386,16 @@ function getWeightedConsensus(votingAgents, agentKeys) {
   votingAgents.forEach((result, i) => {
     const key = agentKeys[i];
 
-    // DERIVE WEIGHT FROM ELO TOURNAMENT PERFORMANCE
+    // Combine the learned weight with the ELO tournament rating.
+    //
+    // This previously OVERWROTE the learned weight with the ELO-derived one
+    // (`weight = getWeightFromElo(key)`), so the entire self-learning model -
+    // agentWeights, agentStats, the strategy/regime matrix and the audit
+    // system - was computed and displayed but never actually influenced the
+    // vote. Multiplying keeps both signals: learned skill x tournament rating.
     let weight = agentWeights[key] || 1.0;
     if (typeof getWeightFromElo === 'function') {
-        weight = getWeightFromElo(key);
+        weight = weight * getWeightFromElo(key);
     }
 
     if (result.vote === 'LONG') longScore += result.conviction * weight;

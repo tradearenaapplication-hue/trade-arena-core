@@ -1,57 +1,13 @@
 [
-  {
-    "label": "global bus preset A$0.10",
-    "find": "<button class=\"bus-preset\" onclick=\"busSetAmount(0.10)\">$0.10</button>",
-    "replace": "<button class=\"bus-preset\" data-aud=\"0.10\" onclick=\"busSetAmount(0.10)\">A$0.10</button>"
-  },
-  {
-    "label": "global bus preset A$0.25",
-    "find": "<button class=\"bus-preset\" onclick=\"busSetAmount(0.25)\">$0.25</button>",
-    "replace": "<button class=\"bus-preset\" data-aud=\"0.25\" onclick=\"busSetAmount(0.25)\">A$0.25</button>"
-  },
-  {
-    "label": "global bus preset A$0.50",
-    "find": "<button class=\"bus-preset\" onclick=\"busSetAmount(0.50)\">$0.50</button>",
-    "replace": "<button class=\"bus-preset\" data-aud=\"0.50\" onclick=\"busSetAmount(0.50)\">A$0.50</button>"
-  },
-  {
-    "label": "global bus preset A$1",
-    "find": "<button class=\"bus-preset\" onclick=\"busSetAmount(1)\">$1</button>",
-    "replace": "<button class=\"bus-preset\" data-aud=\"1\" onclick=\"busSetAmount(1)\">A$1</button>"
-  },
-  {
-    "label": "global bus preset A$2",
-    "find": "<button class=\"bus-preset\" onclick=\"busSetAmount(2)\">$2</button>",
-    "replace": "<button class=\"bus-preset\" data-aud=\"2\" onclick=\"busSetAmount(2)\">A$2</button>"
-  },
-  {
-    "label": "global bus preset A$5",
-    "find": "<button class=\"bus-preset\" onclick=\"busSetAmount(5)\">$5</button>",
-    "replace": "<button class=\"bus-preset\" data-aud=\"5\" onclick=\"busSetAmount(5)\">A$5</button>"
-  },
-  {
-    "label": "global bus preset A$20",
-    "find": "<button class=\"bus-preset\" onclick=\"busSetAmount(20)\">$20</button>",
-    "replace": "<button class=\"bus-preset\" data-aud=\"20\" onclick=\"busSetAmount(20)\">A$20</button>"
-  },
-  {
-    "label": "global bus preset A$100",
-    "find": "<button class=\"bus-preset\" onclick=\"busSetAmount(100)\">$100</button>",
-    "replace": "<button class=\"bus-preset\" data-aud=\"100\" onclick=\"busSetAmount(100)\">A$100</button>"
-  },
-  {
-    "label": "per-bot preset: data-aud + native AUD label",
-    "find": "data-bet=\"${v}\" onclick=\"setBet(${bot.id},${v})\">${fmtUSD(v%1===0?v.toFixed(0):v.toFixed(2))}",
-    "replace": "data-aud=\"${v}\" onclick=\"setBet(${bot.id},${v})\">${fmtAUD(v%1===0?v.toFixed(0):v.toFixed(2))}"
-  },
-  {
-    "label": "setBet highlight reads data-aud",
-    "find": "document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>b.classList.toggle('on',Math.abs(parseFloat(b.dataset.bet)-aud)<0.005));",
-    "replace": "document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>b.classList.toggle('on',Math.abs(parseFloat(b.dataset.aud)-aud)<0.005));"
-  },
-  {
-    "label": "bus highlight uses data-aud not textContent",
-    "find": "_busHighlight('busAmtPresets', b => parseFloat(b.textContent.replace('$','')) === amt);",
-    "replace": "_busHighlight('busAmtPresets', b => Math.abs(parseFloat(b.dataset.aud) - amt) < 0.005);"
-  }
+  { "label": "bal display", "find": "balEl.textContent='$'+displayBalance.toFixed(2);", "replace": "balEl.textContent=fmtUSD(displayBalance,2);" },
+  { "label": "header balance", "find": "balEl.textContent='$'+balance.toFixed(2);", "replace": "balEl.textContent=fmtUSD(balance,2);" },
+  { "label": "pnl display", "find": "(displayPnl>=0?'+':'')+'$'+displayPnl.toFixed(2)", "replace": "(displayPnl>=0?'+':'')+fmtUSD(displayPnl,2)" },
+  { "label": "avgPnl card", "find": "(avgPnl>=0?'+':'')+'$'+avgPnl.toFixed(2)", "replace": "(avgPnl>=0?'+':'')+fmtUSD(avgPnl,2)" },
+  { "label": "local fmt helper", "find": "const fmt=(v)=>(v>=0?'+':'')+'$'+v.toFixed(2);", "replace": "const fmt=(v)=>(v>=0?'+':'')+fmtUSD(v,2);" },
+  { "label": "dist min", "find": "setVal('distMin','$'+min.toFixed(1));", "replace": "setVal('distMin',fmtUSD(min,1));" },
+  { "label": "dist max", "find": "setVal('distMax','$'+max.toFixed(1));", "replace": "setVal('distMax',fmtUSD(max,1));" },
+  { "label": "adj pnl", "find": "el.textContent=(adjPnl>=0?'+':'')+'$'+adjPnl.toFixed(2);", "replace": "el.textContent=(adjPnl>=0?'+':'')+fmtUSD(adjPnl,2);" },
+  { "label": "header total pnl", "find": "p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';", "replace": "p.textContent=(totalPnl>=0?'+':'')+fmtUSD(totalPnl,2)+' today';" },
+  { "label": "bot card pnl", "find": "el.textContent=(bot.pnl>=0?'+':'')+'$'+bot.pnl.toFixed(2);", "replace": "el.textContent=(bot.pnl>=0?'+':'')+fmtUSD(bot.pnl,2);" },
+  { "label": "stat total pnl", "find": "textContent = '$' + totalPnL.toFixed(2);", "replace": "textContent = fmtUSD(totalPnL,2);" }
 ]

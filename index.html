@@ -2172,13 +2172,13 @@ function updateLiveBalance(){
     const balEl=document.getElementById('ghBalance');
     const pnlEl=document.getElementById('ghPnl');
     if(balEl){
-      balEl.textContent='$'+displayBalance.toFixed(2);
+      balEl.textContent=fmtUSD(displayBalance,2);
       balEl.title=`Realised: ${fmtUSD(balance, 2)} | Unrealised: ${fmtUSD(unrealised, 2)}`;
       // Flash gold when unrealised is active
       balEl.style.color=unrealised>0?'var(--green)':unrealised<0?'var(--hot)':'var(--gold)';
     }
     if(pnlEl){
-      pnlEl.textContent=(displayPnl>=0?'+':'')+'$'+displayPnl.toFixed(2)+(unrealised!==0?' (live)':' today');
+      pnlEl.textContent=(displayPnl>=0?'+':'')+fmtUSD(displayPnl,2)+(unrealised!==0?' (live)':' today');
       pnlEl.className='gh-pnl '+(displayPnl>=0?'pnl-pos':'pnl-neg');
     }
 
@@ -2192,7 +2192,14 @@ function updateLiveBalance(){
 async function checkExit(pos, bot) {
   if(pos.status!=='open') return;
   const exitPrice=await getLivePrice(pos.token);
-  if(!exitPrice){ setTimeout(()=>checkExit(pos,bot),30000); return; }
+  // A missing quote is NOT a reason to end the trade.
+  //
+  // This used to schedule `setTimeout(() => checkExit(pos, bot), 30000)`,
+  // which re-entered checkExit and force-closed the position 30s after a
+  // transient price-feed failure - a silent "timed out" exit. Nothing here is
+  // scheduled: the live ticker already re-checks stop-loss and take-profit
+  // every 2s, so a failed quote simply resolves on the next tick.
+  if(!exitPrice) return;
 
   pos.exitPrice=exitPrice; pos.status='closed'; pos.closedAt=Date.now();
 
@@ -2348,7 +2355,7 @@ function updateQuantReport() {
   // Metric cards
   setMCard('mc-wr','mv-wr','ms-wr',(winRate*100).toFixed(1)+'%',wins.length+'W / '+losses.length+'L',winRate>=0.5?'good':'bad');
   setMCard('mc-pf','mv-pf',null,pf>=99?'∞':pf.toFixed(2),null,pf>=1?'good':'bad');
-  setMCard('mc-exp','mv-exp','ms-exp',(avgPnl>=0?'+':'')+'$'+avgPnl.toFixed(2),'per trade after costs',avgPnl>=0?'good':'bad');
+  setMCard('mc-exp','mv-exp','ms-exp',(avgPnl>=0?'+':'')+fmtUSD(avgPnl,2),'per trade after costs',avgPnl>=0?'good':'bad');
   setMCard('mc-dd','mv-dd',null,'-$'+maxDD.toFixed(2),null,maxDD<startBalance*0.1?'good':'bad');
   setVal('mv-avgW',wins.length>0?'+$'+avgW.toFixed(2):'—');
   setVal('mv-avgL',losses.length>0?'-$'+avgL.toFixed(2):'—');
@@ -2414,7 +2421,7 @@ function drawBaselines(trades, claudeAvg) {
   const allPnls={claude:claudePnl, ...Object.fromEntries(bKeys.map(k=>[k,bData[k].pnl]))};
   const best=Object.keys(allPnls).reduce((a,b)=>allPnls[a]>allPnls[b]?a:b);
 
-  const fmt=(v)=>(v>=0?'+':'')+'$'+v.toFixed(2);
+  const fmt=(v)=>(v>=0?'+':'')+fmtUSD(v,2);
   setVal('bl-claude-pnl',fmt(claudePnl)); setVal('bl-claude-wr',claudeWr+'%'); setVal('bl-claude-avg',fmt(claudeAvg)); setVal('bl-claude-vs',fmt(claudePnl));
   bKeys.forEach(k=>{
     setVal('bl-'+k+'-pnl',fmt(bData[k].pnl)); setVal('bl-'+k+'-wr',bData[k].wr); setVal('bl-'+k+'-avg',fmt(bData[k].avg)); setVal('bl-'+k+'-vs',fmt(bData[k].pnl-0));
@@ -2460,7 +2467,7 @@ function drawReturnDist(trades) {
     const col=center>=0?'var(--green)':'var(--hot)';
     return `<div class="dist-bar" style="height:${pct}%;background:${col}" title="${c} trades ~${fmtUSD(center, 1)}"></div>`;
   }).join('');
-  setVal('distMin','$'+min.toFixed(1)); setVal('distMax','$'+max.toFixed(1));
+  setVal('distMin',fmtUSD(min,1)); setVal('distMax',fmtUSD(max,1));
 }
 
 function drawCostSensitivity(trades) {
@@ -2472,7 +2479,7 @@ function drawCostSensitivity(trades) {
       return s+t.netPnl-extraCost;
     },0);
     const el=document.getElementById(ids[i]);
-    if(el){ el.textContent=(adjPnl>=0?'+':'')+'$'+adjPnl.toFixed(2); el.style.color=adjPnl>=0?cols[i]:cols[2]; }
+    if(el){ el.textContent=(adjPnl>=0?'+':'')+fmtUSD(adjPnl,2); el.style.color=adjPnl>=0?cols[i]:cols[2]; }
   });
 }
 
@@ -4020,16 +4027,16 @@ function setupApp({name,avatar,badge,address,provider}){
 function updateGlobalBalance(){
   const balEl=document.getElementById('ghBalance');
   if(balEl){
-    balEl.textContent='$'+balance.toFixed(2);
+    balEl.textContent=fmtUSD(balance,2);
     balEl.title=`Realised: ${fmtUSD(balance, 2)} | Unrealised: $0.00`;
   }
   const p=document.getElementById('ghPnl');
-  if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
+  if(p){p.textContent=(totalPnl>=0?'+':'')+fmtUSD(totalPnl,2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
   checkGlobalBreakers();
 }
 function updateBotPnl(bot){
   const el=document.getElementById('mpnl-'+bot.id); if(!el) return;
-  el.textContent=(bot.pnl>=0?'+':'')+'$'+bot.pnl.toFixed(2);
+  el.textContent=(bot.pnl>=0?'+':'')+fmtUSD(bot.pnl,2);
   el.className='m-pnl '+(bot.pnl>=0?'pos':'neg');
 }
 
@@ -5998,11 +6005,11 @@ function renderLog(){
   if(!globalLog.length){el.innerHTML='<div class="empty-log">No trades yet.</div>';return;}
   el.innerHTML=globalLog.map(t=>{
     const isOpen=t.status==='open', isHold=t.isHold||t.method==='HOLD';
-    const pnlStr=isOpen?'OPEN':isHold?'HOLD':(t.isWin?'+':'')+'\$'+t.netPnl.toFixed(2);
+    const pnlStr=isOpen?'OPEN':isHold?'HOLD':(t.isWin?'+':'')+fmtUSD(t.netPnl,2);
     const pnlCls=isOpen?'open':isHold?'h':t.isWin?'p':'n';
-    const ep=t.entryPrice?'\$'+t.entryPrice.toFixed(t.entryPrice<1?5:2):'—';
-    const xp=t.exitPrice?'\$'+t.exitPrice.toFixed(t.exitPrice<1?5:2):(isOpen?'⏳':'—');
-    const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
+    const ep=t.entryPrice?fmtUSD(t.entryPrice,t.entryPrice<1?5:2):'—';
+    const xp=t.exitPrice?fmtUSD(t.exitPrice,t.exitPrice<1?5:2):(isOpen?'⏳':'—');
+    const cost=t.costs?.total?'−'+fmtUSD(t.costs.total,2):'';
     return`<div class="log-row">
       <div class="log-bot">#${t.botId}</div>
       <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
@@ -7034,7 +7041,7 @@ function loadAccountStats() {
   
   document.getElementById('statTotalTrades').textContent = totalTrades;
   document.getElementById('statWinRate').textContent = winRate + '%';
-  document.getElementById('statTotalPnL').textContent = '$' + totalPnL.toFixed(2);
+  document.getElementById('statTotalPnL').textContent = fmtUSD(totalPnL,2);
   document.getElementById('statActiveBots').textContent = activeBots;
 }
 

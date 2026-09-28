@@ -18,7 +18,9 @@
     "wallet:check": "mm doctor --json",
     "wallet:balances": "mm wallet balance --chain-ids 8453,42161,10 --json",
     "wallet:address": "mm wallet address --json",
-    "wallet:auth": "mm login browser --no-wait"
+    "wallet:auth": "mm login browser --no-wait",
+    "test:ui": "node scripts/test-ui.js",
+    "test:currency": "node scripts/test-currency.js"
   },
   "dependencies": {
     "axios": "^1.18.0",

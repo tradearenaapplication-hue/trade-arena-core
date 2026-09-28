@@ -529,10 +529,18 @@ class OnchainExecutionEngine {
             // 3. Balance Check
             if (isNativeIn) {
                 const gasBalance = await this.provider.getBalance(this.signer.address);
-                if (gasBalance < amountInRaw) {
-                    throw new Error(`Insufficient native ETH: Have ${ethers.formatEther(gasBalance)}, need ${amount}`);
+                // Native input must be wrapped into WETH first, which costs an
+                // extra transaction, and the wallet must keep enough ETH to pay
+                // for the wrap + approve + swap. Comparing against the raw
+                // amount would let a trade consume the entire balance and then
+                // fail to pay for its own gas.
+                const RESERVE = ethers.parseEther('0.0005');
+                if (gasBalance < amountInRaw + RESERVE) {
+                    throw new Error(
+                        `Insufficient native ETH: have ${ethers.formatEther(gasBalance)}, ` +
+                        `need ${amount} plus ~${ethers.formatEther(RESERVE)} reserved for gas`
+                    );
                 }
-                console.log(`[OnchainExecutionEngine] Using native ETH as input (no approval required).`);
             } else {
             const walletBalance = await tokenInContract.balanceOf(this.signer.address);
             if (walletBalance < amountInRaw) {
@@ -577,13 +585,50 @@ class OnchainExecutionEngine {
             const slippageFactor = 10000n - BigInt(slippageBps);
             const amountOutMinimum = (expectedAmountOutRaw * slippageFactor) / 10000n;
 
-            // 6. Allowance Check & Approval if Required.
-            // Native ETH needs no approval: the router only accepts it as msg.value.
-            if (!isNativeIn) {
-                const allowance = await tokenInContract.allowance(this.signer.address, this.UNISWAP_ROUTER);
+            // 6a. Wrap native ETH into WETH.
+            //
+            // Uniswap V3 has no pool keyed on address(0), so a native-input swap
+            // against exactInputSingle always reverts - the router resolves the
+            // pool from the pool key, and that pool does not exist. Native ETH
+            // must therefore be converted to WETH first, after which the swap is
+            // an ordinary approved ERC-20 trade.
+            //
+            // This deliberately uses WETH9.deposit() rather than the router's
+            // unwrapWETH9 helper: a revert here is cheap and leaves the ETH
+            // untouched, whereas a failed combined router call can strand funds
+            // inside the router.
+            let swapTokenIn = tokenInAddress;
+            let wrapTxHash = null;
+
+            if (isNativeIn) {
+                const weth = tokenManager.resolveToken('WETH');
+                if (!weth) throw new Error('WETH is not whitelisted on this network; cannot wrap native ETH.');
+
+                const wethContract = new ethers.Contract(
+                    weth.address,
+                    ['function deposit() payable', 'function balanceOf(address) view returns (uint256)'],
+                    this.signer
+                );
+
+                console.log('[OnchainExecutionEngine] Wrapping native ETH into WETH...');
+                const wrapTx = await wethContract.deposit({ value: amountInRaw });
+                wrapTxHash = wrapTx.hash;
+                await wrapTx.wait();
+                console.log(`[OnchainExecutionEngine] Wrapped into WETH (tx ${wrapTx.hash}).`);
+
+                swapTokenIn = weth.address;
+            }
+
+            // 6b. Allowance Check & Approval if Required.
+            // Needed for every ERC-20 input, including freshly-wrapped WETH.
+            {
+                const inContract = isNativeIn
+                    ? new ethers.Contract(swapTokenIn, tokenAbi, this.signer)
+                    : tokenInContract;
+                const allowance = await inContract.allowance(this.signer.address, this.UNISWAP_ROUTER);
                 if (allowance < amountInRaw) {
                     console.log('[OnchainExecutionEngine] Allowance insufficient. Approving Router...');
-                    const approveTx = await tokenInContract.approve(this.UNISWAP_ROUTER, amountInRaw);
+                    const approveTx = await inContract.approve(this.UNISWAP_ROUTER, amountInRaw);
                     console.log(`[OnchainExecutionEngine] Approval TX broadcasted: ${approveTx.hash}`);
                     await approveTx.wait();
                     console.log('[OnchainExecutionEngine] Approval confirmed.');
@@ -596,8 +641,12 @@ class OnchainExecutionEngine {
             // No `deadline` field: SwapRouter02 removed it from
             // ExactInputSingleParams. Including it produced a selector the
             // router does not implement.
+            //
+            // tokenIn is the WETH address for a native trade, and value is 0:
+            // the ETH was already converted by the wrap step above, so this is
+            // an ordinary ERC-20 swap from that WETH balance.
             const swapParams = {
-                tokenIn: nativeInAddress,
+                tokenIn: swapTokenIn,
                 tokenOut: tokenOutAddress,
                 fee: feeTier,
                 recipient: this.signer.address,
@@ -611,10 +660,10 @@ class OnchainExecutionEngine {
             const txRequest = {
                 to: this.UNISWAP_ROUTER,
                 data: txData,
-                // Native input must travel as msg.value. With value: 0 the
-                // router reverts with insufficient ETH, so an ETH->token swap
-                // would always fail.
-                value: isNativeIn ? amountInRaw : 0n
+                // The input is always an ERC-20 by this point: native ETH was
+                // converted to WETH by the wrap step, so no msg.value is sent
+                // with the swap. Sending value as well would double-count it.
+                value: 0n
             };
 
             // 8. Gas Estimation & Transaction Simulation

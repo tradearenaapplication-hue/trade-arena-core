@@ -338,6 +338,38 @@ class OnchainExecutionEngine {
     }
 
     /**
+     * Balance of `symbolOrAddress` held by `holder` (default: the engine wallet),
+     * as a decimal string. Returns '0' for unpriceable or absent tokens rather
+     * than throwing, so one bad lookup cannot fail a whole reconciliation.
+     */
+    async getTokenBalance(symbolOrAddress, holder = null) {
+        const address = holder || (this.signer ? this.signer.address : null);
+        if (!address) return '0';
+        const token = tokenManager.resolveToken(symbolOrAddress);
+        if (!token) return '0';
+        try {
+            const c = new ethers.Contract(token.address, ['function balanceOf(address) view returns (uint256)'], this.provider);
+            return ethers.formatUnits(await c.balanceOf(address), token.decimals);
+        } catch (e) {
+            return '0';
+        }
+    }
+
+    /**
+     * USD price of one unit of `symbolOrAddress`, or null if unpriceable.
+     *
+     * A thin wrapper over estimateUsdValue for callers that need a per-token
+     * price rather than the value of a quantity, such as marking an open
+     * position to market for unrealised P&L. Priced on-chain against USDC for
+     * the same reason the risk limit is: an external feed could be spoofed.
+     */
+    async getTokenPriceUSD(symbolOrAddress) {
+        const token = tokenManager.resolveToken(symbolOrAddress);
+        if (!token) return null;
+        return await this.estimateUsdValue(token, 1);
+    }
+
+    /**
      * Convert a USD budget into a quantity of `symbol`, or null if it cannot be
      * priced. Used by the API so callers can express a trade in dollars without
      * the engine having to guess which token they meant.
@@ -815,6 +847,15 @@ class OnchainExecutionEngine {
             const actualGasCostWei = actualGasUsed * effectiveGasPrice;
             const actualGasCostETH = ethers.formatEther(actualGasCostWei);
 
+            // Gas in USD as well as ETH. The accounting ledger values
+            // everything in dollars, and a cost expressed only in ETH cannot
+            // be netted against a dollar-denominated P&L without a price
+            // lookup at reporting time - by which point the rate has moved.
+            const ethPriceUsd = await this.getTokenPriceUSD('ETH');
+            const actualGasCostUSD = ethPriceUsd
+                ? Number(actualGasCostETH) * ethPriceUsd
+                : null;
+
             // Funds are accounted for: suppress the unwind in the catch block so
             // a later logging failure cannot re-wrap or touch a completed trade.
             wrappedAmount = 0n;
@@ -826,6 +867,7 @@ class OnchainExecutionEngine {
                 blockNumber: receipt.blockNumber,
                 gasUsed: actualGasUsed.toString(),
                 gasCostETH: actualGasCostETH,
+                gasCostUSD: actualGasCostUSD,
                 fromAmount: amount,
                 toAmount: expectedAmountOut,
                 timestamp: Date.now()

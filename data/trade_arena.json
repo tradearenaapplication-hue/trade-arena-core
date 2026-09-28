@@ -12,7 +12,7 @@
           "valueUsd": 11.17
         }
       ],
-      "lastLogin": "2026-09-28T09:29:10.049Z",
+      "lastLogin": "2026-09-28T09:45:23.176Z",
       "sessionData": {
         "balance": 11.17
       }
@@ -444,6 +444,34 @@
         "isWin": true
       },
       "timestamp": "2026-09-28T09:29:10.052Z"
+    },
+    {
+      "id": "trade_1790588662915_f21f032649ad5073",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-09-28T09:44:22.915Z"
+    },
+    {
+      "id": "trade_1790588723179_dcc928eb28413862",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-09-28T09:45:23.179Z"
     }
   ],
   "userState": {

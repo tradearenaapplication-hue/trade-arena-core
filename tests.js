@@ -1056,7 +1056,135 @@ describe("Trade Authorisation Hardening", () => {
   });
 });
 
+describe("Portfolio Accounting", () => {
+  const {
+    buildLedger, PortfolioLedger, COST_BASIS_METHODS,
+    toBaseUnits, fromBaseUnits, usdToFixed, fixedToUsd
+  } = require("./services/portfolio-accounting.js");
+
+  const T1 = "2026-01-01T00:00:00.000Z";
+  const T2 = "2026-06-01T00:00:00.000Z";
+  const T3 = "2026-09-01T00:00:00.000Z";
+
+  // Buy 1 WBTC for $60,000, buy 1 more for $40,000, sell both for $140,000.
+  // Gross P&L is $40,000 and gas is $15, so realised must be $39,985.
+  const roundTrip = [
+    { agentId: "b1", symbol: "USDC/WBTC", timestamp: T1, details: { fromToken: "USDC", toToken: "WBTC", fromAmount: "60000", toAmount: "1.0", fromUsd: 60000, toUsd: 60000, gasUsd: 5 } },
+    { agentId: "b1", symbol: "USDC/WBTC", timestamp: T2, details: { fromToken: "USDC", toToken: "WBTC", fromAmount: "40000", toAmount: "1.0", fromUsd: 40000, toUsd: 40000, gasUsd: 5 } },
+    { agentId: "b1", symbol: "WBTC/USDC", timestamp: T3, details: { fromToken: "WBTC", toToken: "USDC", fromAmount: "2.0", toAmount: "140000", fromUsd: 140000, toUsd: 140000, gasUsd: 5 } },
+  ];
+
+  it("parses decimal strings into exact base units", () => {
+    // 1e-18 would round to 0 in a float, silently zeroing a lot's cost basis.
+    expect(toBaseUnits("0.000000000000000001", 18).toString()).toBe("1");
+    expect(toBaseUnits("1.5", 8).toString()).toBe("150000000");
+    expect(toBaseUnits("2.0", 18).toString()).toBe("2000000000000000000");
+    expect(fromBaseUnits(150000000n, 8)).toBe("1.5");
+    expect(fromBaseUnits(1n, 18)).toBe("0.000000000000000001");
+  });
+
+  it("uses each token's real decimals", () => {
+    expect(toBaseUnits("1", 6).toString()).toBe("1000000");              // USDC
+    expect(toBaseUnits("1", 18).toString()).toBe("1000000000000000000"); // WETH
+  });
+
+  it("realises the correct P&L on a round trip", () => {
+    const L = buildLedger(roundTrip, { method: "FIFO" });
+    expect(L.summary().realizedPnlUsd).toBe(39985);
+    expect(L.summary().openPositions).toBe(0);
+  });
+
+  it("REGRESSION: total P&L is identical under every cost basis method", () => {
+    // The method changes WHEN a gain is recognised, never how much was made.
+    // If these ever diverge, a method is double-counting or dropping value.
+    const seen = COST_BASIS_METHODS.map((m) => buildLedger(roundTrip, { method: m }).summary().realizedPnlUsd);
+    expect(new Set(seen).size).toBe(1);
+    expect(seen[0]).toBe(39985);
+  });
+
+  it("gas is charged exactly once, never double counted", () => {
+    // 3 trades x $5 = $15. Charging it on both the lot and the disposal would
+    // make the result $15 short again.
+    const L = buildLedger(roundTrip, { method: "FIFO" });
+    expect(L.summary().gasUsd).toBe(15);
+    expect(L.summary().realizedPnlUsd).toBe(40000 - 15);
+  });
+
+  it("treats the cash leg as a transfer, not a disposal", () => {
+    // USDC is the arena's working balance. Spending it to open a position is
+    // not a realised gain, and must not warn about a missing cost basis.
+    const L = buildLedger(roundTrip, { method: "FIFO" });
+    expect(L.summary().warnings.length).toBe(0);
+  });
+
+  it("orders trades by time regardless of input order", () => {
+    // The trade log is stored newest-first for display. Feeding that straight in
+    // would make FIFO consume lots in the wrong order.
+    const shuffled = [roundTrip[2], roundTrip[0], roundTrip[1]];
+    expect(buildLedger(shuffled, { method: "FIFO" }).summary().realizedPnlUsd).toBe(39985);
+  });
+
+  it("splits closed lots into short and long term for CGT", () => {
+    const L = buildLedger(roundTrip, { method: "FIFO" });
+    // Both lots were acquired within 12 months of the September exit.
+    const split = L.taxLotSplit(new Date("2026-09-05T00:00:00.000Z"));
+    expect(split.shortTermLots).toBe(2);
+    expect(split.longTermLots).toBe(0);
+    expect(split.shortTermGainUsd).toBe(39990); // gross, before gas
+  });
+
+  it("marks open positions to market for unrealised P&L", () => {
+    const L = new PortfolioLedger({ method: "FIFO" });
+    L.applyTrade({ fromToken: "USDC", toToken: "WBTC", fromAmount: "60000", toAmount: "1.0", fromUsd: 60000, toUsd: 60000, botId: "b1", timestamp: T1 });
+    const open = L.unrealized(() => 55000);
+    expect(open.length).toBe(1);
+    expect(open[0].token).toBe("WBTC");
+    expect(open[0].costBasisUsd).toBe(60000);
+    expect(open[0].valueUsd).toBe(55000);
+    expect(open[0].unrealizedUsd).toBe(-5000);
+  });
+
+  it("warns rather than inventing a basis for an unrecorded disposal", () => {
+    const L = new PortfolioLedger({ method: "FIFO" });
+    L.applyTrade({ fromToken: "WBTC", toToken: "USDC", fromAmount: "1.0", toAmount: "60000", fromUsd: 60000, toUsd: 60000, botId: "b1", timestamp: T1 });
+    expect(L.summary().warnings.length > 0).toBe(true);
+  });
+  it("keeps each bot's positions separate", () => {
+    const L = new PortfolioLedger({ method: "FIFO" });
+    L.applyTrade({ fromToken: "USDC", toToken: "WBTC", fromAmount: "1000", toAmount: "0.1", fromUsd: 1000, toUsd: 1000, botId: "botA", timestamp: T1 });
+    L.applyTrade({ fromToken: "USDC", toToken: "WBTC", fromAmount: "2000", toAmount: "0.2", fromUsd: 2000, toUsd: 2000, botId: "botB", timestamp: T1 });
+    L.applyTrade({ fromToken: "WBTC", toToken: "USDC", fromAmount: "0.1", toAmount: "1200", fromUsd: 1200, toUsd: 1200, botId: "botA", timestamp: T3 });
+    const s = L.summary();
+    // botA realised +200; botB still holds its untouched position.
+    expect(s.realizedByBot.botA).toBe(200);
+    expect(s.realizedByBot.botB).toBe(0);
+    expect(s.openPositions).toBe(1);
+  });
+
+  it("detects drift when the chain disagrees with the ledger", () => {
+    const L = new PortfolioLedger({ method: "FIFO" });
+    L.applyTrade({ fromToken: "USDC", toToken: "WBTC", fromAmount: "60000", toAmount: "1.0", fromUsd: 60000, toUsd: 60000, botId: "b1", timestamp: T1 });
+
+    const matching = L.reconcile({ WBTC: "1.0", USDC: "0" }, { priceOf: () => 60000 });
+    expect(matching.ok).toBe(true);
+
+    // A stranded balance the ledger never recorded.
+    const drifted = L.reconcile({ WBTC: "1.5", USDC: "0" }, { priceOf: () => 60000 });
+    expect(drifted.ok).toBe(false);
+    expect(drifted.positions.find((p) => p.token === "WBTC").diffFormatted).toBe("+0.5");
+  });
+
+  it("round-trips USD through fixed point without drift", () => {
+    expect(Math.abs(fixedToUsd(usdToFixed(0.1)) - 0.1) < 1e-9).toBe(true);
+    expect(usdToFixed(1.30).toString()).toBe("1300000");
+    expect(usdToFixed(null)).toBe(0n);
+    expect(usdToFixed(NaN)).toBe(0n);
+  });
+});
+
 describe("Swap Execution Endpoint Security", () => {
+
+
   const server = require("./server.js");
 
   it("rejects swap requests with missing or invalid parameters", async () => {

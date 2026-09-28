@@ -23,6 +23,7 @@ const db = require('./data/database');
 const ethers = require('ethers');
 const WebSocket = require('websocket').w3cwebsocket;
 const onchainEngine = require('./services/OnchainExecutionEngine');
+const accounting = require('./services/portfolio-accounting');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -469,6 +470,157 @@ app.get('/api/user/tradelogs', (req, res) => {
         res.status(500).json({ success: false, error: 'Internal server error fetching trade logs' });
     }
 });
+
+/**
+ * Portfolio accounting for an address.
+ *
+ * Rebuilds a full ledger from the stored swap records and reports realised,
+ * unrealised and CGT-split P&L, optionally reconciling it against the wallet's
+ * real on-chain balances.
+ *
+ * Read-only, and it derives everything from records already written - it never
+ * mutates the trade log, so it is safe to call from a UI poll.
+ */
+app.get('/api/accounting/:address', async (req, res) => {
+    try {
+        const address = String(req.params.address || '').trim();
+        if (!ethers.isAddress(address)) {
+            return res.status(400).json({ success: false, error: 'A valid address is required' });
+        }
+        const requested = String(req.query.method || process.env.COST_BASIS_METHOD || 'FIFO').toUpperCase();
+        if (!accounting.COST_BASIS_METHODS.includes(requested)) {
+            return res.status(400).json({
+                success: false,
+                error: `Unknown cost basis method "${requested}". Use one of: ${accounting.COST_BASIS_METHODS.join(', ')}.`
+            });
+        }
+
+        const history = db.getTradeLogs(address, 10000);
+        const ledger = accounting.buildLedger(history, { method: requested });
+
+        // Mark open positions to market. One on-chain quote per distinct token,
+        // not per bot: the price is a property of the token, and asking twice
+        // would double the RPC cost for an identical answer.
+        const priceCache = new Map();
+        const priceOf = async (token) => {
+            if (priceCache.has(token)) return priceCache.get(token);
+            let p = 0;
+            try {
+                p = (await onchainEngine.getTokenPriceUSD(token)) || 0;
+            } catch (e) {
+                p = 0;
+            }
+            priceCache.set(token, p);
+            return p;
+        };
+
+        const open = ledger.unrealized((t) => priceCache.get(String(t).toUpperCase()) || 0);
+        // Open positions were computed before any prices were fetched, so fill
+        // the valuation in now that the cache is warm.
+        for (const pos of open) {
+            const price = await priceOf(pos.token);
+            const qty = Number(pos.unitsFormatted);
+            const value = Number.isFinite(qty) ? qty * price : 0;
+            pos.priceUsd = price;
+            pos.valueUsd = value;
+            pos.unrealizedUsd = value - pos.costBasisUsd;
+        }
+
+        const summary = ledger.summary();
+        const taxLots = ledger.taxLotSplit();
+
+        let totalUnrealized = 0;
+        let totalValue = 0;
+        let totalCost = 0;
+        for (const p of open) {
+            totalUnrealized += p.unrealizedUsd;
+            totalValue += p.valueUsd;
+            totalCost += p.costBasisUsd;
+        }
+
+        res.json({
+            success: true,
+            address: ethers.getAddress(address),
+            costBasisMethod: requested,
+            realized: summary.realizedPnlUsd,
+            unrealized: totalUnrealized,
+            // Total return on closed plus open positions, net of gas. This is
+            // the single number that says whether the arena is making money.
+            totalPnlUsd: summary.realizedPnlUsd + totalUnrealized,
+            gasUsd: summary.gasUsd,
+            openPositionValueUsd: totalValue,
+            openCostBasisUsd: totalCost,
+            realizedByToken: summary.realizedByToken,
+            realizedByBot: summary.realizedByBot,
+            openPositions: open,
+            taxLotSplit: taxLots,
+            tradeCount: history.length,
+            warnings: summary.warnings
+        });
+    } catch (err) {
+        console.error('Error in /api/accounting/:', err);
+        res.status(500).json({ success: false, error: 'Internal server error building the accounting ledger' });
+    }
+});
+
+/**
+ * Reconcile the ledger's expected holdings against the wallet's real balances.
+ *
+ * Drift here means the ledger and the chain disagree about the same money,
+ * which is the signal that something moved that was not recorded as a trade.
+ */
+app.get('/api/accounting/:address/reconcile', async (req, res) => {
+    try {
+        const address = String(req.params.address || '').trim();
+        if (!ethers.isAddress(address)) {
+            return res.status(400).json({ success: false, error: 'A valid address is required' });
+        }
+
+        const method = String(req.query.method || process.env.COST_BASIS_METHOD || 'FIFO').toUpperCase();
+        if (!accounting.COST_BASIS_METHODS.includes(method)) {
+            return res.status(400).json({ success: false, error: `Unknown cost basis method "${method}".` });
+        }
+
+        // The engine's wallet is the one that actually holds the positions,
+        // since the server signs with it. The address in the path selects whose
+        // ledger to rebuild.
+        const history = db.getTradeLogs(address, 10000);
+        const ledger = accounting.buildLedger(history, { method });
+
+        // Read the real wallet balances for every whitelisted token.
+        //
+        // WETH is deliberately included: a stranded wrap is exactly the kind of
+        // unrecorded movement this is meant to catch, so excluding the token the
+        // engine creates by itself would hide the failure it exists to find.
+        const SYMBOLS = ['USDC', 'WETH', 'WBTC', 'CBBTC', 'PEPE', 'SOL'];
+        const observed = {};
+        const prices = {};
+        for (const symbol of SYMBOLS) {
+            observed[symbol] = await onchainEngine.getTokenBalance(symbol);
+            prices[symbol] = (await onchainEngine.getTokenPriceUSD(symbol)) || 0;
+        }
+
+        const result = ledger.reconcile(observed, {
+            priceOf: (t) => prices[String(t).toUpperCase()] || 0,
+            toleranceUsd: 0.01
+        });
+
+        res.json({
+            success: true,
+            address: ethers.getAddress(address),
+            method,
+            note: 'Compares the ledger derived from the trade log against balances read from the chain. Drift means money moved without a matching recorded trade.',
+            prices,
+            observed,
+            reconciliation: result,
+            ledger: ledger.summary()
+        });
+    } catch (err) {
+        console.error('Error in /api/accounting/:address/reconcile:', err);
+        res.status(500).json({ success: false, error: 'Internal server error reconciling' });
+    }
+});
+
 
 app.get('/api/user/state/:address', (req, res) => {
     try {
@@ -1315,6 +1467,69 @@ async function handleSwapRequest(req, res, next) {
 
         if (traderAddress) {
             try {
+                // USD legs, so the accounting ledger can value the trade.
+                //
+                // Stored on the record rather than recomputed on demand: the
+                // price at the moment of the fill is the only correct basis,
+                // and a ledger rebuilt months later must not re-price history
+                // at today's rate. `usdToTokenAmount` already resolved the
+                // budget for a USD-sized trade, so reuse it rather than paying
+                // for a second price lookup.
+                let fromUsd = null;
+                let toUsd = null;
+                if (hasUsd) {
+                    // The caller gave a dollar budget; that IS the from-leg value.
+                    fromUsd = Number(amountUSD);
+                } else {
+                    const p = await onchainEngine.getTokenPriceUSD(fromToken);
+                    if (p) fromUsd = engineAmount * p;
+                }
+                const toPrice = await onchainEngine.getTokenPriceUSD(toToken);
+                if (toPrice) toUsd = Number(result.toAmount) * toPrice;
+
+                // Realised P&L from the ledger, not a hardcoded zero.
+                //
+                // The ledger is rebuilt from this address's full trade history
+                // so that an exit is matched against the lots that opened it.
+                // This is what turns "the arena spent money and reported
+                // break-even" into a real result.
+                let pnl = 0;
+                let costBasisMethod = 'FIFO';
+                let realizedDetail = null;
+                try {
+                    const history = db.getTradeLogs(traderAddress, 10000);
+                    const ledger = accounting.buildLedger(history, {
+                        method: process.env.COST_BASIS_METHOD || 'FIFO'
+                    });
+                    const applied = ledger.applyTrade({
+                        fromToken,
+                        toToken,
+                        fromAmount: String(result.fromAmount),
+                        toAmount: String(result.toAmount),
+                        fromUsd, toUsd,
+                        gasUsd: result.gasCostUSD,
+                        botId: botId || 'manual',
+                        timestamp: new Date().toISOString()
+                    });
+                    pnl = applied ? Number(applied.realizedUsd) / 1e6 : 0;
+                    costBasisMethod = ledger.method;
+                    realizedDetail = applied
+                        ? {
+                            matchedLots: (applied.matchedLots || []).map(l => ({
+                                acquiredAt: l.acquiredAt,
+                                units: String(l.units),
+                                costUsd: Number(l.costUsd) / 1e6,
+                                proceedsUsd: Number(l.proceedsUsd) / 1e6
+                            })),
+                            gasUsd: Number(applied.gasUsd || 0) / 1e6
+                        }
+                        : null;
+                } catch (acctErr) {
+                    // Accounting must never lose a real trade. The fill stands
+                    // even if the ledger could not be advanced.
+                    console.error('[API swap] P&L computation failed, logging fill with pnl 0:', acctErr.message);
+                }
+
                 db.addTradeLog({
                     address: traderAddress,
                     agentId: botId || 'manual',
@@ -1322,7 +1537,7 @@ async function handleSwapRequest(req, res, next) {
                     action: 'SWAP',
                     symbol: `${fromToken}/${toToken}`,
                     amount: Number(result.fromAmount) || engineAmount,
-                    pnl: 0, // realized P&L requires a matched exit; see note below
+                    pnl,
                     details: {
                         venue: 'Uniswap V3',
                         network: onchainEngine.NETWORK.name,
@@ -1332,6 +1547,11 @@ async function handleSwapRequest(req, res, next) {
                         toToken,
                         fromAmount: String(result.fromAmount),
                         toAmount: String(result.toAmount),
+                        fromUsd,
+                        toUsd,
+                        gasUsd: result.gasCostUSD,
+                        costBasisMethod,
+                        realizedDetail,
                         slippageBps,
                         gasUsed: result.gasUsed,
                         gasCostETH: result.gasCostETH,

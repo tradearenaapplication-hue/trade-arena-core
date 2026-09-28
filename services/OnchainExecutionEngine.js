@@ -861,16 +861,35 @@ class OnchainExecutionEngine {
 
         const isDryRun = process.env.DRY_RUN === 'true' || !process.env.TRADING_PRIVATE_KEY;
         if (isDryRun) {
-            console.log('[OnchainExecutionEngine] Running in DRY_RUN mode. Executing virtual trade.');
-            const simulatedOutput = amount * 0.99; // Mock output
+            console.log('[OnchainExecutionEngine] Running in DRY_RUN mode. No transaction is broadcast.');
+            // A dry run must not invent a result.
+            //
+            // This returned `amount * 0.99` - a hardcoded 1% profit on every
+            // trade. Dry mode therefore reported a bot making 1% per trade
+            // forever, which is not a simulation of anything: it is a fabricated
+            // profit curve, and it was the single most misleading line in the
+            // trading path. Anyone validating a strategy here would have seen
+            // consistent profits and concluded the strategy worked.
+            //
+            // Without a real quote there is nothing honest to return, so the
+            // output is the input: a fill is reported as exactly what went in,
+            // zero P&L, and the caller can tell that from a real fill because
+            // mode is DRY_RUN and there is no tx hash.
             return {
                 success: true,
                 mode: 'DRY_RUN',
                 txHash: null,
+                blockNumber: null,
                 fromAmount: amount,
-                toAmount: simulatedOutput,
-                gasUsed: '85000',
-                gasCostETH: '0.000085',
+                toAmount: amount,
+                // Explicitly zero, and labelled: no edge was modelled.
+                pnlUsd: 0,
+                simulated: true,
+                note: 'DRY_RUN: no quote was fetched and no profit is implied. ' +
+                      'This is a no-op fill, not a simulated result.',
+                gasUsed: '0',
+                gasCostETH: '0',
+                gasCostUSD: null,
                 timestamp: Date.now()
             };
         }

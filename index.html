@@ -1211,14 +1211,14 @@ a, button, input, select, textarea {
       <div class="bus-section">
         <div class="bus-section-title"><span>💰</span> TRADE AMOUNT — ALL BOTS</div>
         <div class="bus-presets" id="busAmtPresets">
-          <button class="bus-preset" onclick="busSetAmount(0.10)">$0.10</button>
-          <button class="bus-preset" onclick="busSetAmount(0.25)">$0.25</button>
-          <button class="bus-preset" onclick="busSetAmount(0.50)">$0.50</button>
-          <button class="bus-preset" onclick="busSetAmount(1)">$1</button>
-          <button class="bus-preset" onclick="busSetAmount(2)">$2</button>
-          <button class="bus-preset" onclick="busSetAmount(5)">$5</button>
-          <button class="bus-preset" onclick="busSetAmount(20)">$20</button>
-          <button class="bus-preset" onclick="busSetAmount(100)">$100</button>
+          <button class="bus-preset" data-aud="0.10" onclick="busSetAmount(0.10)">A$0.10</button>
+          <button class="bus-preset" data-aud="0.25" onclick="busSetAmount(0.25)">A$0.25</button>
+          <button class="bus-preset" data-aud="0.50" onclick="busSetAmount(0.50)">A$0.50</button>
+          <button class="bus-preset" data-aud="1" onclick="busSetAmount(1)">A$1</button>
+          <button class="bus-preset" data-aud="2" onclick="busSetAmount(2)">A$2</button>
+          <button class="bus-preset" data-aud="5" onclick="busSetAmount(5)">A$5</button>
+          <button class="bus-preset" data-aud="20" onclick="busSetAmount(20)">A$20</button>
+          <button class="bus-preset" data-aud="100" onclick="busSetAmount(100)">A$100</button>
         </div>
         <div class="bus-custom-row">
           <input type="number" id="busCustomAmt" aria-label="Custom trade amount in dollars" placeholder="Custom $" min="0.01" step="0.01">
@@ -1999,7 +1999,7 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   // CRITICAL: Check if sufficient balance exists before opening trade
   if(balance < bet) {
     const tick=document.getElementById('mtick-'+bot.id);
-    if(tick) tick.textContent=`❌ Insufficient balance ($${balance.toFixed(2)} < $${bet})`;
+    if(tick) tick.textContent=`❌ Insufficient balance (${fmtUSD(balance, 2)} < ${fmtUSD(bet)})`;
     bot.spinning=false;
     const spinEl=document.getElementById('mspin-'+bot.id);
     if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
@@ -2152,7 +2152,7 @@ function updateLiveBalance(){
     const pnlEl=document.getElementById('ghPnl');
     if(balEl){
       balEl.textContent='$'+displayBalance.toFixed(2);
-      balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $${unrealised.toFixed(2)}`;
+      balEl.title=`Realised: ${fmtUSD(balance, 2)} | Unrealised: ${fmtUSD(unrealised, 2)}`;
       // Flash gold when unrealised is active
       balEl.style.color=unrealised>0?'var(--green)':unrealised<0?'var(--hot)':'var(--gold)';
     }
@@ -2243,7 +2243,7 @@ function showOpenOverlay(botId, pos) {
   const el=document.getElementById('opLivePnl-'+botId); if(el){el.textContent='…';el.className='op-live-pnl pend';}
   const exitM=Math.round(pos.exitDuration/60000);
   setVal('opTimer-'+botId,`Exit in ${exitM}m 0s`);
-  setVal('opExit-'+botId,`−$${pos.costs.total.toFixed(2)} gas+slip+spread`);
+  setVal('opExit-'+botId,`−${fmtUSD(pos.costs.total, 2)} gas+slip+spread`);
   ov.classList.add('show');
 }
 
@@ -2268,8 +2268,8 @@ function showExitResult(pos, bot) {
   }
   detEl.innerHTML=
     `${escapeHTML(pos.method)} · ${escapeHTML(pos.token)} (${escapeHTML(pos.direction)}) <span class="regime-badge regime-${escapeHTML(pos.regime||'chop').toLowerCase()}">${escapeHTML(pos.regime||'?')}</span><br>`+
-    `$${pos.entryPrice.toFixed(pos.entryPrice<1?5:2)} → $${pos.exitPrice.toFixed(pos.exitPrice<1?5:2)} (${pricePct}%)<br>`+
-    `<span style="color:#555">Gas $${pos.costs.gas.toFixed(2)} · Slip ${pos.costs.slippagePct.toFixed(2)}% · Spread $${pos.costs.spread.toFixed(2)}</span>`+
+    `${fmtUSD(pos.entryPrice, pos.entryPrice<1?5:2)} → ${fmtUSD(pos.exitPrice, pos.exitPrice<1?5:2)} (${pricePct}%)<br>`+
+    `<span style="color:#555">Gas ${fmtUSD(pos.costs.gas, 2)} · Slip ${pos.costs.slippagePct.toFixed(2)}% · Spread ${fmtUSD(pos.costs.spread, 2)}</span>`+
     (pos.polSignal&&pos.polSignal.signal!=='NEUTRAL'?`<br><span style="color:#888;font-size:7px">🏛️ Pol: ${escapeHTML(pos.polSignal.reasoning)}</span>`:'');
 
   // Baseline comparison on result card
@@ -2419,7 +2419,7 @@ function drawStratBreakdown(trades) {
     return `<div class="strat-row">
       <div class="strat-name">${name}</div>
       <div class="strat-bar-wrap"><div class="strat-bar ${isPos?'pos':'neg'}" style="width:${barW}%"></div></div>
-      <div class="strat-stat" style="color:${isPos?'var(--green)':'var(--hot)'}">${isPos?'+':''}$${d.pnl.toFixed(2)} · ${wr}% WR</div>
+      <div class="strat-stat" style="color:${isPos?'var(--green)':'var(--hot)'}">${isPos?'+':''}${fmtUSD(d.pnl, 2)} · ${wr}% WR</div>
     </div>`;
   }).join('');
 }
@@ -2437,7 +2437,7 @@ function drawReturnDist(trades) {
     const pct=(c/maxC*100)||0;
     const center=min+(i+0.5)*size;
     const col=center>=0?'var(--green)':'var(--hot)';
-    return `<div class="dist-bar" style="height:${pct}%;background:${col}" title="${c} trades ~$${center.toFixed(1)}"></div>`;
+    return `<div class="dist-bar" style="height:${pct}%;background:${col}" title="${c} trades ~${fmtUSD(center, 1)}"></div>`;
   }).join('');
   setVal('distMin','$'+min.toFixed(1)); setVal('distMax','$'+max.toFixed(1));
 }
@@ -2464,13 +2464,13 @@ function drawVerdict(n, wr, pf, avg) {
   const isLosing=pf<0.8||avg<-0.5;
   if(hasEdge){
     box.className='verdict edge';
-    box.innerHTML=`<strong>✅ EDGE SIGNAL DETECTED</strong><br>Win rate ${(wr*100).toFixed(1)}% · PF ${pf.toFixed(2)} · Avg +$${avg.toFixed(2)}/trade. Check cost sensitivity — if you're profitable at 1.5× costs, this is worth investigating with micro live trades ($5–10). If not, you're riding optimistic cost assumptions.`;
+    box.innerHTML=`<strong>✅ EDGE SIGNAL DETECTED</strong><br>Win rate ${(wr*100).toFixed(1)}% · PF ${pf.toFixed(2)} · Avg +${fmtUSD(avg, 2)}/trade. Check cost sensitivity — if you're profitable at 1.5× costs, this is worth investigating with micro live trades ($5–10). If not, you're riding optimistic cost assumptions.`;
   } else if(isLosing){
     box.className='verdict losing';
-    box.innerHTML=`<strong>🔴 NO EDGE AFTER ${n} TRADES</strong><br>PF ${pf.toFixed(2)} · Avg $${avg.toFixed(2)}/trade. Strategy is losing after realistic costs. Do NOT go live. Use strategy attribution above to identify which methods are bleeding and cut them.`;
+    box.innerHTML=`<strong>🔴 NO EDGE AFTER ${n} TRADES</strong><br>PF ${pf.toFixed(2)} · Avg ${fmtUSD(avg, 2)}/trade. Strategy is losing after realistic costs. Do NOT go live. Use strategy attribution above to identify which methods are bleeding and cut them.`;
   } else {
     box.className='verdict marginal';
-    box.innerHTML=`<strong>⚠️ MARGINAL — ${n} TRADES</strong><br>PF ${pf.toFixed(2)} · Avg $${avg.toFixed(2)}/trade. Edge is weak. Gas and slippage are eating most gains. Run 100+ trades and check if Claude beats the momentum baseline — that's the key test.`;
+    box.innerHTML=`<strong>⚠️ MARGINAL — ${n} TRADES</strong><br>PF ${pf.toFixed(2)} · Avg ${fmtUSD(avg, 2)}/trade. Edge is weak. Gas and slippage are eating most gains. Run 100+ trades and check if Claude beats the momentum baseline — that's the key test.`;
   }
 }
 
@@ -2601,7 +2601,7 @@ async function runCrucibleV2Batch() {
      const simulatedResults = simulateCrucibleV2Results(regime, costModel, tradeCount);
 
      // Display results
-     alert(`Crucible V2 Results:\n\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${simulatedResults.trades}\nWin Rate: ${simulatedResults.winRate.toFixed(1)}%\nP&L: $${simulatedResults.pnl >= 0 ? '+' : ''}${simulatedResults.pnl.toFixed(2)}\nReturn: ${simulatedResults.returnPct >= 0 ? '+' : ''}${simulatedResults.returnPct.toFixed(2)}%\n\nBaseline Comparison:\n- Strategy: ${simulatedResults.strategy.pnl >= 0 ? '+' : ''}$${simulatedResults.strategy.pnl.toFixed(2)} (${simulatedResults.strategy.winRate.toFixed(1)}% WR)\n- Always Long: ${simulatedResults.baselines.alwaysLong.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.alwaysLong.pnl.toFixed(2)} (${simulatedResults.baselines.alwaysLong.winRate.toFixed(1)}% WR)\n- Momentum: ${simulatedResults.baselines.momentum.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.momentum.pnl.toFixed(2)} (${simulatedResults.baselines.momentum.winRate.toFixed(1)}% WR)\n- Random: ${simulatedResults.baselines.random.pnl >= 0 ? '+' : ''}$${simulatedResults.baselines.random.pnl.toFixed(2)} (${simulatedResults.baselines.random.winRate.toFixed(1)}% WR)\n\n${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '✅ STRATEGY BEATS ALWAYS LONG IN NON-BULL REGIME' : '⚠️ Strategy did not beat Always Long in non-bull regime'}`);
+     alert(`Crucible V2 Results:\n\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${simulatedResults.trades}\nWin Rate: ${simulatedResults.winRate.toFixed(1)}%\nP&L: $${simulatedResults.pnl >= 0 ? '+' : ''}${simulatedResults.pnl.toFixed(2)}\nReturn: ${simulatedResults.returnPct >= 0 ? '+' : ''}${simulatedResults.returnPct.toFixed(2)}%\n\nBaseline Comparison:\n- Strategy: ${simulatedResults.strategy.pnl >= 0 ? '+' : ''}${fmtUSD(simulatedResults.strategy.pnl, 2)} (${simulatedResults.strategy.winRate.toFixed(1)}% WR)\n- Always Long: ${simulatedResults.baselines.alwaysLong.pnl >= 0 ? '+' : ''}${fmtUSD(simulatedResults.baselines.alwaysLong.pnl, 2)} (${simulatedResults.baselines.alwaysLong.winRate.toFixed(1)}% WR)\n- Momentum: ${simulatedResults.baselines.momentum.pnl >= 0 ? '+' : ''}${fmtUSD(simulatedResults.baselines.momentum.pnl, 2)} (${simulatedResults.baselines.momentum.winRate.toFixed(1)}% WR)\n- Random: ${simulatedResults.baselines.random.pnl >= 0 ? '+' : ''}${fmtUSD(simulatedResults.baselines.random.pnl, 2)} (${simulatedResults.baselines.random.winRate.toFixed(1)}% WR)\n\n${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '✅ STRATEGY BEATS ALWAYS LONG IN NON-BULL REGIME' : '⚠️ Strategy did not beat Always Long in non-bull regime'}`);
 
      // Update crucible counter for UI
      crucibleCount += tradeCount;
@@ -2660,9 +2660,9 @@ function showCrucibleResults(results) {
       <div style="margin-bottom: 15px;">
          <strong>Mode:</strong> ${escapeHTML(results.mode)}<br>
          <strong>Trades Executed:</strong> ${results.tradesRun}<br>
-         <strong>Starting Balance:</strong> $${results.startBalance.toFixed(2)}<br>
-         <strong>Ending Balance:</strong> $${results.endBalance.toFixed(2)}<br>
-         <strong>Profit/Loss:</strong> ${results.pnl >= 0 ? '+' : ''}$${results.pnl.toFixed(2)} (${results.pnlPct}%)<br>
+         <strong>Starting Balance:</strong> ${fmtUSD(results.startBalance, 2)}<br>
+         <strong>Ending Balance:</strong> ${fmtUSD(results.endBalance, 2)}<br>
+         <strong>Profit/Loss:</strong> ${results.pnl >= 0 ? '+' : ''}${fmtUSD(results.pnl, 2)} (${results.pnlPct}%)<br>
          <strong>Win Rate:</strong> ${results.winRate.toFixed(1)}%
       </div>
       <div style="margin-top: 20px; text-align: center;">
@@ -2811,11 +2811,11 @@ function generatePitchReport() {
         <div class="metric-grid">
           <div class="metric-card"><div class="metric-value">${n}</div><div class="metric-label">Total Trades</div></div>
           <div class="metric-card"><div class="metric-value">${wr}%</div><div class="metric-label">Win Rate</div></div>
-          <div class="metric-card"><div class="metric-value">$${totalPnlValue.toFixed(2)}</div><div class="metric-label">Net Profit</div></div>
+          <div class="metric-card"><div class="metric-value">${fmtUSD(totalPnlValue, 2)}</div><div class="metric-label">Net Profit</div></div>
         </div>
 
         <div class="verdict">
-          <strong>PROVEN EDGE DETECTED:</strong> Based on the executed session, the agents have demonstrated a mathematical expectancy of <strong>$${avgPnl.toFixed(2)}</strong> per trade after realistic slippage and gas costs.
+          <strong>PROVEN EDGE DETECTED:</strong> Based on the executed session, the agents have demonstrated a mathematical expectancy of <strong>${fmtUSD(avgPnl, 2)}</strong> per trade after realistic slippage and gas costs.
         </div>
 
         <h2>Strategy Attribution</h2>
@@ -2915,9 +2915,9 @@ function requestDailyLossLimitIncrease() {
     const res = tradingEngine.safetyControls.requestLimitIncrease(val);
     updateSafetyControlsUI();
     if (res.immediate) {
-      alert(`Daily loss limit updated to $${val.toFixed(2)}.`);
+      alert(`Daily loss limit updated to ${fmtUSD(val, 2)}.`);
     } else {
-      alert(`Daily loss limit increase to $${val.toFixed(2)} requested. Enforcing 24-hour delay. Increases take effect in 24 hours.`);
+      alert(`Daily loss limit increase to ${fmtUSD(val, 2)} requested. Enforcing 24-hour delay. Increases take effect in 24 hours.`);
     }
   }
 }
@@ -2955,13 +2955,13 @@ function updateSafetyControlsUI() {
   const effLimit = sc.getEffectiveDailyLossLimit(startBalance);
 
   const valEl = document.getElementById('dailyLossLimitVal');
-  if (valEl) valEl.textContent = `Effective Limit: $${effLimit.toFixed(2)} (Default: $50 or 10% balance)`;
+  if (valEl) valEl.textContent = `Effective Limit: ${fmtUSD(effLimit, 2)} (Default: $50 or 10% balance)`;
 
   const pendingNote = document.getElementById('pendingLimitNote');
   if (pendingNote) {
     if (sc.pendingLossLimit !== null && Date.now() < sc.limitIncreaseEffectiveAt) {
       const remHours = Math.ceil((sc.limitIncreaseEffectiveAt - Date.now()) / 3600000);
-      pendingNote.textContent = `⏳ Increase to $${sc.pendingLossLimit.toFixed(2)} pending 24-hour safety delay (~${remHours}h remaining).`;
+      pendingNote.textContent = `⏳ Increase to ${fmtUSD(sc.pendingLossLimit, 2)} pending 24-hour safety delay (~${remHours}h remaining).`;
       pendingNote.style.display = 'block';
     } else {
       pendingNote.style.display = 'none';
@@ -2987,7 +2987,7 @@ function updateSafetyControlsUI() {
       overrideBtn.style.display = sc.coolingEscalated ? 'none' : 'inline-block';
     }
   } else {
-    if (statusBadge) { statusBadge.textContent = `ACTIVE (LIMIT: $${effLimit.toFixed(2)})`; statusBadge.className = 'breaker-status bs-ok'; }
+    if (statusBadge) { statusBadge.textContent = `ACTIVE (LIMIT: ${fmtUSD(effLimit, 2)})`; statusBadge.className = 'breaker-status bs-ok'; }
     if (box) box.style.display = 'none';
   }
 }
@@ -3015,7 +3015,7 @@ function showSessionWarningBanner(mins) {
   const banner = document.getElementById('sessionWarningBanner');
   const details = document.getElementById('sessionWarningDetails');
   if (details) {
-    details.textContent = `Active session: ${mins} mins · Net P&L: ${(totalPnl >= 0 ? '+' : '')}$${totalPnl.toFixed(2)}`;
+    details.textContent = `Active session: ${mins} mins · Net P&L: ${(totalPnl >= 0 ? '+' : '')}${fmtUSD(totalPnl, 2)}`;
   }
   if (banner) banner.style.display = 'flex';
 }
@@ -3279,7 +3279,7 @@ async function loginMetaMask(){
     s.innerHTML=`<div style="text-align:left">
       <div>✅ Connected to MetaMask!</div>
       <div style="font-size:10px;color:var(--dim);margin-top:4px">
-        ${address.slice(0,6)}...${address.slice(-4)} · $${balanceUSD.toFixed(2)}
+        ${address.slice(0,6)}...${address.slice(-4)} · ${fmtUSD(balanceUSD, 2)}
       </div>
       <div style="font-size:10px;color:var(--dim)">${chainNote}</div>
     </div>`;
@@ -3649,7 +3649,7 @@ async function nativeMetaMaskLogin(){
     const balanceUSD = WalletCore.state.usdBalance || 0;
     const holdings   = WalletCore.state.holdings || [];
     const chainName  = WalletCore.state.chainName;
-    const usdValue   = `$${balanceUSD.toFixed(2)}`;
+    const usdValue   = `${fmtUSD(balanceUSD, 2)}`;
 
     // Render only real, on-chain data. The previous version showed hardcoded
     // "USDC 1250 / WETH 0.20 / $2,450" figures whenever a read failed, making
@@ -3657,7 +3657,7 @@ async function nativeMetaMaskLogin(){
     const holdingRows = holdings.length
       ? holdings.map(h => `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim)">
             <span>${h.network} · ${h.symbol}</span>
-            <span>${Number(h.amount).toFixed(4)} ($${Number(h.valueUsd||0).toFixed(2)})</span>
+            <span>${Number(h.amount).toFixed(4)} (${fmtUSD(Number(h.valueUsd||0), 2)})</span>
           </div>`).join('')
       : '<div style="font-size:10px;color:var(--dim)">No token balances found on scanned networks.</div>';
     
@@ -3915,7 +3915,7 @@ function showHoldingsModal() {
         </div>
         <div style="text-align:right;">
           <div style="color:#fff;font-weight:bold;font-size:12px;">${h.amount.toFixed(6)} ${h.symbol}</div>
-          <div style="font-size:11px;color:var(--gold2);"><small style="color:var(--dim);">$${(h.priceUsd || 0).toFixed(2)}/ea → </small>$${(h.valueUsd || 0).toFixed(2)} USD</div>
+          <div style="font-size:11px;color:var(--gold2);"><small style="color:var(--dim);">${fmtUSD((h.priceUsd || 0), 2)}/ea → </small>${fmtUSD((h.valueUsd || 0), 2)} USD</div>
         </div>
       </div>
     `).join('');
@@ -4000,7 +4000,7 @@ function updateGlobalBalance(){
   const balEl=document.getElementById('ghBalance');
   if(balEl){
     balEl.textContent='$'+balance.toFixed(2);
-    balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $0.00`;
+    balEl.title=`Realised: ${fmtUSD(balance, 2)} | Unrealised: $0.00`;
   }
   const p=document.getElementById('ghPnl');
   if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
@@ -4170,7 +4170,7 @@ function renderBot(bot){
         <div class="m-dd-section">
           <div class="m-dd-label">Trade Amount</div>
           <div class="m-dd-bets" id="mbets-${bot.id}">
-            ${[0.10,0.25,0.50,1.00,2.00,5.00,20.00,100.00].map(v=>`<button class="m-dd-bet${v===1.00?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`).join('')}
+            ${[0.10,0.25,0.50,1.00,2.00,5.00,20.00,100.00].map(v=>`<button class="m-dd-bet${v===1.00?' on':''}" data-aud="${v}" onclick="setBet(${bot.id},${v})">${fmtAUD(v%1===0?v.toFixed(0):v.toFixed(2))}</button>`).join('')}
           </div>
           <div class="m-dd-custom">
             <input type="number" id="mcustom-${bot.id}" placeholder="Custom $" min="0.01" step="0.01">
@@ -4251,7 +4251,7 @@ function startTicker(bot){
       const trade = bot.lastTrade;
       const timeAgo = Math.floor((Date.now() - trade.time) / 1000);
       const timeStr = timeAgo < 60 ? `${timeAgo}s ago` : `${Math.floor(timeAgo/60)}m ago`;
-      el.textContent = `${trade.emoji} ${trade.token} ${trade.method} @ $${trade.price} - ${timeStr}`;
+      el.textContent = `${trade.emoji} ${trade.token} ${trade.method} @ ${fmtUSD(trade.price)} - ${timeStr}`;
     } else {
       // Default ticker while waiting for first trade
       const genericTickers = [
@@ -4268,20 +4268,31 @@ function startTicker(bot){
   }
   tick();
 }
-function setBet(id,amt){
+/**
+ * Set a bot's per-trade stake.
+ *
+ * `aud` is the amount the user typed or tapped, in AUD. bot.bet is stored in
+ * USD, because every downstream calculation - P&L, the balance check, the
+ * USD risk limit and the on-chain quote - is USD-denominated. Storing AUD
+ * there would silently scale every one of them by ~1.42.
+ */
+function setBet(id,aud){
   const bot=bots.find(b=>b.id===id); if(!bot) return;
-  amt=parseFloat(amt);
-  if(isNaN(amt)||amt<0.01) return;
-  bot.bet=amt;
-  // highlight matching preset, clear others
-  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>b.classList.toggle('on',parseFloat(b.dataset.bet)===amt));
-  // update display
+  aud=parseFloat(aud);
+  if(isNaN(aud)||aud<0.01) return;
+  const usd=audToUsd(aud);
+  if(!(usd>0)) return;
+  bot.bet=usd;
+  // highlight matching preset, clear others (presets are AUD)
+  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>b.classList.toggle('on',Math.abs(parseFloat(b.dataset.aud)-aud)<0.005));
+  // update display (bot.bet is USD, so convert back for the AUD label)
   const disp=document.getElementById('mbetdisp-'+id);
-  if(disp) disp.innerHTML=`$${amt%1===0?amt.toFixed(0):amt.toFixed(2)} <span>per trade</span>`;
+  if(disp) disp.innerHTML=`${fmtUSD(bot.bet)} <span>per trade</span>`;
 }
 function setCustomBet(id){
   const inp=document.getElementById('mcustom-'+id); if(!inp) return;
-  const val=parseFloat(inp.value);
+  // Accepts "5", "$5", "A$5" - the user may or may not type the currency mark.
+  const val=parseFloat(Currency.parseAmount(inp.value));
   if(isNaN(val)||val<0.01){ inp.style.borderColor='var(--hot)'; return; }
   inp.style.borderColor='';
   setBet(id,val);
@@ -4416,7 +4427,7 @@ async function spinBot(id){
   setVal('mpv2-'+id,exitM);
   ['mp0-','mp1-','mp2-'].forEach(pfx=>{document.getElementById(pfx+id)?.classList.add('lit');setTimeout(()=>document.getElementById(pfx+id)?.classList.remove('lit'),1200);});
   const tick=document.getElementById('mtick-'+id);
-  if(tick) tick.textContent=decision.method==='HOLD'?`🧠 HOLD — ${decision.reasoning}`:`⏱ ${decision.token} ${decision.method} @ $${entryPrice.toFixed(entryPrice<1?4:2)}`;
+  if(tick) tick.textContent=decision.method==='HOLD'?`🧠 HOLD — ${decision.reasoning}`:`⏱ ${decision.token} ${decision.method} @ ${fmtUSD(entryPrice, entryPrice<1?4:2)}`;
 
   if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
   bot.spinning=false;
@@ -4636,7 +4647,7 @@ CRITICAL: Only vote LONG/SHORT if momentum is STRONG (>2.5% move). Vote HOLD oth
 MARKET DATA:
 ${marketSummary}
 
-TARGET: ${token} | BET: $${bet}
+TARGET: ${token} | BET: ${fmtUSD(bet)}
 ${extraContext}
 
 Is there real momentum RIGHT NOW?
@@ -4656,7 +4667,7 @@ If volume is low (THIN regime) or market is choppy noise → vote HOLD. Don't fi
 MARKET DATA:
 ${marketSummary}
 
-TARGET: ${token} | BET: $${bet}
+TARGET: ${token} | BET: ${fmtUSD(bet)}
 
 Is the volatility real (not noise)? Is volume high enough to execute?
 - Volume at least 10% of 24h? Yes → check direction
@@ -4675,7 +4686,7 @@ Weak sentiment signals lose money. Default to HOLD unless conviction is 0.7+.
 MARKET DATA:
 ${marketSummary}
 
-TARGET: ${token} | BET: $${bet}
+TARGET: ${token} | BET: ${fmtUSD(bet)}
 
 What is the DOMINANT crowd sentiment? Is it strong and real?
 - Clear directional bias in price/volume? Yes
@@ -4691,7 +4702,7 @@ Respond ONLY with JSON:
 VETO only if: gas > ceiling, or volume so thin the trade cannot execute, or spread > 3%.
 Do NOT veto for normal volatility, uncertain signals, or small position sizes. Approve aggressively.
 
-TOKEN: ${token} | BET: $${bet} | GAS: ${currentGas} gwei (ceiling: ${gasHardCeiling} gwei)
+TOKEN: ${token} | BET: ${fmtUSD(bet)} | GAS: ${currentGas} gwei (ceiling: ${gasHardCeiling} gwei)
 ${extraContext}
 
 Should this trade proceed? Default to approving unless there is a specific dangerous condition.
@@ -4767,7 +4778,7 @@ async function runEnsemble(marketData, bet, botId, politicianData, bot){
   if(marketData?.length){
     // Bot personality affects token selection diversity
     const top = marketData.slice(0,5);
-    summary=top.map(c=>`${c.symbol.toUpperCase()}: $${c.current_price} | 24h: ${(c.price_change_percentage_24h||0).toFixed(1)}% | Vol: $${(c.total_volume/1e6).toFixed(0)}M | MCap: $${(c.market_cap/1e9).toFixed(1)}B`).join('\n');
+    summary=top.map(c=>`${c.symbol.toUpperCase()}: ${fmtUSD(c.current_price)} | 24h: ${(c.price_change_percentage_24h||0).toFixed(1)}% | Vol: ${fmtUSD((c.total_volume/1e6), 0)}M | MCap: ${fmtUSD((c.market_cap/1e9), 1)}B`).join('\n');
 
     // Select token based on bot personality
     let selectedCoin;
@@ -6053,8 +6064,8 @@ function _busHighlight(containerId, matchFn) {
 function busSetAmount(amt) {
   if (!bots.length) { _busStatus('No bots active', false); return; }
   bots.forEach(b => setBet(b.id, amt));
-  _busHighlight('busAmtPresets', b => parseFloat(b.textContent.replace('$','')) === amt);
-  _busStatus(`All ${bots.length} bots → $${amt} per trade`);
+  _busHighlight('busAmtPresets', b => Math.abs(parseFloat(b.dataset.aud) - amt) < 0.005);
+  _busStatus(`All ${bots.length} bots → ${fmtUSD(amt)} per trade`);
 }
 function busSetCustomAmount() {
   const inp = document.getElementById('busCustomAmt');
@@ -6063,7 +6074,7 @@ function busSetCustomAmount() {
   if (inp) { inp.style.borderColor=''; inp.value=''; }
   bots.forEach(b => setBet(b.id, val));
   document.querySelectorAll('#busAmtPresets .bus-preset').forEach(b => b.classList.remove('active'));
-  _busStatus(`All ${bots.length} bots → $${val.toFixed(2)} per trade`);
+  _busStatus(`All ${bots.length} bots → ${fmtUSD(val, 2)} per trade`);
 }
 
 // ── Personality ──
@@ -6370,6 +6381,9 @@ document.addEventListener('keydown', function(e) {
 });
 
 </script>
+<!-- Currency: AUD display layer. Must load before any script that formats
+     money, so fmtUSD()/Currency exist when templates first render. -->
+<script src="currency.js" defer></script>
 <script src="app-rebuild.js" defer></script>
 <!-- Wallet: WalletCore is the single source of truth for connection + balance sync.
      It MUST load before real-wallet.js so walletState exists for the legacy mirrors. -->
@@ -6719,8 +6733,8 @@ async function sendVoiceCommand() {
 Your goal is to assist the user in managing their fleet of ${bots.length} trading bots.
 
 CURRENT STATE:
-- Balance: $${balance.toFixed(2)}
-- Total P&L: $${totalPnl.toFixed(2)}
+- Balance: ${fmtUSD(balance, 2)}
+- Total P&L: ${fmtUSD(totalPnl, 2)}
 - Open Positions: ${openPositions.length}
 - Market Regime: ${closedTrades.length > 0 ? closedTrades[closedTrades.length-1].regime : 'Scanning...'}
 - ELO Standings: ${typeof getEloStandings === 'function' ? JSON.stringify(getEloStandings()) : 'N/A'}
@@ -6747,7 +6761,7 @@ Respond in JSON format:
   if (!apiKey) {
     // Fallback if no API key
     aiResponse = {
-      reply: "I'm operating in rule-based fallback mode (no API key). " + (cmd.toLowerCase().includes('balance') ? `Your balance is $${balance.toFixed(2)}.` : "How can I help with the fleet?"),
+      reply: "I'm operating in rule-based fallback mode (no API key). " + (cmd.toLowerCase().includes('balance') ? `Your balance is ${fmtUSD(balance, 2)}.` : "How can I help with the fleet?"),
       action: cmd.toLowerCase().includes('stop') ? 'EMERGENCY_STOP' : 'NONE'
     };
   } else {

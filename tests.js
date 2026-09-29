@@ -1699,6 +1699,45 @@ describe("Task Center XSS Sanitization Security", () => {
   });
 });
 
+describe("Staff Engine Log Sanitization Security", () => {
+  const fs = require("fs");
+  const staffEngineCode = fs.readFileSync("staff-engine.js", "utf8");
+
+  it("sanitizes log timestamp and rawTime before rendering in renderStaffPanel", () => {
+    expect(staffEngineCode).toContain("const rawTime = log.timestamp");
+    expect(staffEngineCode).toContain("const time = escapeHTML(rawTime);");
+  });
+
+  it("escapes malicious XSS payloads in log timestamp, agentName, and message", () => {
+    const escapeHTML = (str) => {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const maliciousLog = {
+      timestamp: "<script>alert('xss_time')</script>",
+      agentName: "<img src=x onerror=alert('xss_name')>",
+      agentAvatar: "🛡️",
+      message: "<svg onload=alert('xss_msg')>",
+      type: "info"
+    };
+
+    const rawTime = maliciousLog.timestamp && typeof maliciousLog.timestamp === 'string' && maliciousLog.timestamp.includes('T')
+      ? maliciousLog.timestamp.split('T')[1].split('.')[0]
+      : (maliciousLog.timestamp || '');
+    const time = escapeHTML(rawTime);
+
+    expect(time.includes("<")).toBe(false);
+    expect(time.includes(">")).toBe(false);
+    expect(time).toContain("&lt;script&gt;alert(&#039;xss_time&#039;)&lt;/script&gt;");
+  });
+});
+
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
   const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");

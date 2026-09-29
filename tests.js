@@ -741,6 +741,21 @@ describe("Cross-Market Arbitrage Dry Run Scanners", () => {
 });
 
 describe("Performance", () => {
+  it("computes Trade Olympics summary quickly via single-pass standings aggregation (getSummary benchmark)", () => {
+    TRADE_OLYMPICS.initialize({ silent: true });
+    const summary = TRADE_OLYMPICS.getSummary();
+    expect(summary.totalBrackets).toBe(480);
+    expect(summary.totalModels).toBeGreaterThan(0);
+    expect(summary.topModel).toBeDefined();
+
+    const start = Date.now();
+    for (let i = 0; i < 10000; i++) {
+      TRADE_OLYMPICS.getSummary();
+    }
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(100);
+  });
+
   it("generates IDs and computes indicators quickly", () => {
     const engine = new TradingEngine();
     const prices = Array(500)

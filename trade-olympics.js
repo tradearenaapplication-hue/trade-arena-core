@@ -98,11 +98,12 @@ const TRADE_OLYMPICS = {
     }
 
     if (!reset) this._loadPersisted();
+    this._bracketCount = Object.keys(this.BRACKETS).length;
     this.initialized = true;
     if (persist) this.persist();
     if (!silent)
       console.log(
-        `[Trade Olympics] ELO initialized: ${modelList.length} models, ${Object.keys(this.BRACKETS).length} brackets`,
+        `[Trade Olympics] ELO initialized: ${modelList.length} models, ${this._bracketCount} brackets`,
       );
     return this.getSummary();
   },
@@ -382,17 +383,31 @@ const TRADE_OLYMPICS = {
       .sort((a, b) => b.weight - a.weight);
   },
 
+  // Optimized: Single-pass accumulation over standings avoids intermediate array projections and full leaderboard sorting overhead
   getSummary() {
-    const standings = Object.values(this.STANDINGS);
-    const totalTrades = standings.reduce(
-      (sum, model) => sum + model.totalTrades,
-      0,
-    );
-    const totalPnL = standings.reduce((sum, model) => sum + model.totalPnL, 0);
-    const topModel = this.getLeaderboard("elo")[0];
+    this._ensureInitialized();
+    let totalTrades = 0;
+    let totalPnL = 0;
+    let totalModels = 0;
+    let topModel = null;
+
+    for (const key in this.STANDINGS) {
+      const model = this.STANDINGS[key];
+      totalModels++;
+      totalTrades += model.totalTrades;
+      totalPnL += model.totalPnL;
+      if (
+        !topModel ||
+        model.elo > topModel.elo ||
+        (model.elo === topModel.elo && model.totalPnL > topModel.totalPnL)
+      ) {
+        topModel = model;
+      }
+    }
+
     return {
-      totalBrackets: Object.keys(this.BRACKETS).length,
-      totalModels: standings.length,
+      totalBrackets: this._bracketCount || Object.keys(this.BRACKETS).length,
+      totalModels,
       totalTrades,
       totalPnL,
       topModel: topModel?.model,
@@ -568,6 +583,7 @@ const TRADE_OLYMPICS = {
       this.COMPETITION_LOG = saved.competitionLog || this.COMPETITION_LOG;
       this.MATCH_LOG = saved.matchLog || [];
       this.TOURNAMENTS = saved.tournaments || [];
+      this._bracketCount = Object.keys(this.BRACKETS).length;
     } catch (error) {
       console.warn("[Trade Olympics] Load failed:", error.message);
     }

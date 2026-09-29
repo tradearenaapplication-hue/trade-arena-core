@@ -1562,8 +1562,13 @@ const TICKERS=[
 // ══════════════════════════════════════════════════════
 // PRICE ENGINE
 // ══════════════════════════════════════════════════════
+const FALLBACK_PRICES = { BTC: 65000, ETH: 2600, WETH: 2600, SOL: 145, AVAX: 25, LINK: 12, MATIC: 0.4, POL: 0.4, UNI: 6, AAVE: 140, ARB: 0.6, OP: 1.4, USDC: 1, USDT: 1, DAI: 1 };
+
 async function getLivePrice(symbol) {
-  const id=COINGECKO_IDS[symbol?.toUpperCase()]; if(!id) return null;
+  if (!symbol) return 100;
+  const symUpper = symbol.toUpperCase();
+  const id = COINGECKO_IDS[symUpper];
+  const fallbackPrice = FALLBACK_PRICES[symUpper] || 100;
 
   // Tier-1: Market Cache check (highly efficient O(1) Map lookup)
   if (marketCache && (Date.now() - marketCacheTime < 30000)) {
@@ -1574,6 +1579,8 @@ async function getLivePrice(symbol) {
   const c=priceCache[symbol];
   if(c && Date.now()-c.ts<45000) return c.price;
 
+  if (!id) return fallbackPrice;
+
   // Request deduplication
   const reqKey = 'price-' + id;
   if (inFlightRequests.has(reqKey)) return inFlightRequests.get(reqKey);
@@ -1582,8 +1589,9 @@ async function getLivePrice(symbol) {
     try {
       const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`);
       const d=await r.json(); const price=d[id]?.usd;
-      if(price){ priceCache[symbol]={price,ts:Date.now()}; } return price||null;
-    } catch(e){ return c?.price||null; }
+      if(price){ priceCache[symbol]={price,ts:Date.now()}; return price; }
+      return c?.price || fallbackPrice;
+    } catch(e){ return c?.price || fallbackPrice; }
     finally { inFlightRequests.delete(reqKey); }
   })();
 
@@ -2972,23 +2980,38 @@ async function loginMetaMask(){
     }
 
     // Get balance
-    s.textContent='⏳ Fetching wallet balance…';
+    s.textContent='⏳ Fetching wallet balance & multi-chain holdings…';
     let balanceUSD = 0; // Default to $0 to enable Earn-to-Trade flow
+    let holdings = [];
 
     try {
-      const balanceWei = await provider.getBalance(address);
-      const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
-
-      // Get ETH price in USD
-      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-      const priceData = await priceResponse.json();
-      const ethPrice = priceData?.ethereum?.usd || 3200;
-
-      balanceUSD = balanceETH * ethPrice;
+      if (typeof fetchMultiChainTokenBalances === 'function') {
+        const mcResult = await fetchMultiChainTokenBalances(address);
+        holdings = mcResult?.holdings || [];
+        if (mcResult && mcResult.totalUsd > 0) {
+          balanceUSD = mcResult.totalUsd;
+        }
+      }
+    } catch(mcError) {
+      console.warn('Could not fetch multi-chain holdings:', mcError);
     }
-    catch(balanceError) {
-      console.warn('Could not fetch balance:', balanceError);
-      // Stays at $0 to allow user to use Faucet
+
+    if (balanceUSD === 0) {
+      try {
+        const balanceWei = await provider.getBalance(address);
+        const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
+
+        // Get ETH price in USD
+        const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+        const priceData = await priceResponse.json();
+        const ethPrice = priceData?.ethereum?.usd || 3200;
+
+        balanceUSD = balanceETH * ethPrice;
+      }
+      catch(balanceError) {
+        console.warn('Could not fetch balance:', balanceError);
+        // Stays at $0 to allow user to use Faucet
+      }
     }
 
     // Update global balance
@@ -3226,13 +3249,17 @@ function setupApp({name,avatar,badge,address,provider}){
 // BALANCE
 // ══════════════════════════════════════════════════════
 function updateGlobalBalance(){
-  const balEl=document.getElementById('ghBalance');
-  if(balEl){
-    balEl.textContent='$'+balance.toFixed(2);
-    balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $0.00`;
+  if (typeof updateLiveBalance === 'function') {
+    updateLiveBalance();
+  } else {
+    const balEl=document.getElementById('ghBalance');
+    if(balEl){
+      balEl.textContent='$'+balance.toFixed(2);
+      balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $0.00`;
+    }
+    const p=document.getElementById('ghPnl');
+    if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
   }
-  const p=document.getElementById('ghPnl');
-  if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
   checkGlobalBreakers();
 }
 function updateBotPnl(bot){
@@ -3596,83 +3623,92 @@ async function spinBot(id){
 
   const block=isGlobalBlocked();
   if(block.blocked){const t=document.getElementById('mtick-'+id);if(t)t.textContent='🚫 '+block.reason;return;}
-  bot.spinning=true;
-  try{ if(typeof SFX!=='undefined') SFX.spin(); }catch(e){}
+
   const spinEl=document.getElementById('mspin-'+id), thinkEl=document.getElementById('mthink-'+id), stepEl=document.getElementById('mstep-'+id);
-  if(spinEl){spinEl.disabled=true;spinEl.classList.add('going');spinEl.textContent='⏳';}
-  if(thinkEl) thinkEl.classList.add('show');
-  if(stepEl) stepEl.textContent='📡 Fetching live market data…';
-  const market=await getMarketData();
+  bot.spinning=true;
 
-  if(stepEl) stepEl.textContent='🧠 Running 5-agent ensemble…';
-  const decision=await callAI(market,bot.bet,id,bot);
-
-  if(stepEl) stepEl.textContent=`💎 Getting real ${decision.token} price…`;
-  let entryPrice=await getLivePrice(decision.token);
-  let volumeUsd=1e9, priceChangePct15m=0; // Higher realistic volume for meme coins
-  if(market?.length){
-    const sym=decision.token.toLowerCase();
-    const found=market.find(c=>c.symbol.toLowerCase()===sym);
-    if(found){
-      if(!entryPrice) entryPrice=found.current_price;
-      volumeUsd=found.total_volume||1e8;
-      priceChangePct15m=found.price_change_percentage_24h||0; // proxy
-    }
-  }
-  if(!entryPrice) entryPrice=1;
-
-  if(stepEl) stepEl.textContent='⚡ Opening position…';
-  if(thinkEl) thinkEl.classList.remove('show');
-
-  // Trigger Acoustic Open
-  if (typeof ACOUSTIC !== 'undefined') {
-    ACOUSTIC.onTradeOpen(bot.id, decision.token, decision.method);
-  }
-
-  // Start reel animation immediately and fetch instant result in parallel
-  const reelPromise = animateReels(id,decision);
-  const resultPromise = (async()=>{
-    // Simulate instant result while reels are spinning (for visual feedback)
-    await new Promise(r=>setTimeout(r,200));
-    return {decision, entryPrice};
-  })();
-
-  await Promise.all([reelPromise, resultPromise]);
-
-  setVal('mpv0-'+id,decision.token);
-  setVal('mpv1-'+id,decision.method==='HOLD'?'🧠 HOLD':decision.method);
-  const exitM=decision.method==='HOLD'?'—':Math.round(EXIT_TIMES[decision.method]/60000)+'m';
-  setVal('mpv2-'+id,exitM);
-  ['mp0-','mp1-','mp2-'].forEach(pfx=>{document.getElementById(pfx+id)?.classList.add('lit');setTimeout(()=>document.getElementById(pfx+id)?.classList.remove('lit'),1200);});
-  const tick=document.getElementById('mtick-'+id);
-  if(tick) tick.textContent=decision.method==='HOLD'?`🧠 HOLD — ${decision.reasoning}`:`⏱ ${decision.token} ${decision.method} @ $${entryPrice.toFixed(entryPrice<1?4:2)}`;
-
-  if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
-  bot.spinning=false;
-
-  // Execute trade (on-chain if connected, else paper)
   try{
     if(typeof SFX!=='undefined') SFX.spin();
-    if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
+    if(spinEl){spinEl.disabled=true;spinEl.classList.add('going');spinEl.textContent='⏳';}
+    if(thinkEl) thinkEl.classList.add('show');
+    if(stepEl) stepEl.textContent='📡 Fetching live market data…';
+    const market=await getMarketData();
 
-    // ON-CHAIN EXECUTION TRIGGER
-    if (window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
-        console.log('[Arena] Routing to On-Chain Execution Engine...');
-        try {
-            await window.executeOnChainTrade({
-                botId: bot.id,
-                token: decision.token,
-                method: decision.method,
-                amountUSD: bot.bet
-            });
-        } catch (execError) {
-            console.error('[Arena] On-chain execution failed, falling back to simulation', execError);
-        }
+    if(stepEl) stepEl.textContent='🧠 Running 5-agent ensemble…';
+    const decision=await callAI(market,bot.bet,id,bot);
+
+    if(stepEl) stepEl.textContent=`💎 Getting real ${decision.token} price…`;
+    let entryPrice=await getLivePrice(decision.token);
+    let volumeUsd=1e9, priceChangePct15m=0; // Higher realistic volume for meme coins
+    if(market?.length){
+      const sym=decision.token.toLowerCase();
+      const found=market.find(c=>c.symbol.toLowerCase()===sym);
+      if(found){
+        if(!entryPrice) entryPrice=found.current_price;
+        volumeUsd=found.total_volume||1e8;
+        priceChangePct15m=found.price_change_percentage_24h||0; // proxy
+      }
     }
-  }catch(e){}
+    if(!entryPrice) entryPrice=1;
 
-  await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m);
-  updateQuantReport();
+    if(stepEl) stepEl.textContent='⚡ Opening position…';
+    if(thinkEl) thinkEl.classList.remove('show');
+
+    // Trigger Acoustic Open
+    if (typeof ACOUSTIC !== 'undefined') {
+      ACOUSTIC.onTradeOpen(bot.id, decision.token, decision.method);
+    }
+
+    // Start reel animation immediately and fetch instant result in parallel
+    const reelPromise = animateReels(id,decision);
+    const resultPromise = (async()=>{
+      // Simulate instant result while reels are spinning (for visual feedback)
+      await new Promise(r=>setTimeout(r,200));
+      return {decision, entryPrice};
+    })();
+
+    await Promise.all([reelPromise, resultPromise]);
+
+    setVal('mpv0-'+id,decision.token);
+    setVal('mpv1-'+id,decision.method==='HOLD'?'🧠 HOLD':decision.method);
+    const exitM=decision.method==='HOLD'?'—':Math.round(EXIT_TIMES[decision.method]/60000)+'m';
+    setVal('mpv2-'+id,exitM);
+    ['mp0-','mp1-','mp2-'].forEach(pfx=>{document.getElementById(pfx+id)?.classList.add('lit');setTimeout(()=>document.getElementById(pfx+id)?.classList.remove('lit'),1200);});
+    const tick=document.getElementById('mtick-'+id);
+    if(tick) tick.textContent=decision.method==='HOLD'?`🧠 HOLD — ${decision.reasoning}`:`⏱ ${decision.token} ${decision.method} @ $${entryPrice.toFixed(entryPrice<1?4:2)}`;
+
+    // Execute trade (on-chain if connected, else paper)
+    try{
+      if(typeof SFX!=='undefined') SFX.spin();
+      if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
+
+      // ON-CHAIN EXECUTION TRIGGER
+      if (window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
+          console.log('[Arena] Routing to On-Chain Execution Engine...');
+          try {
+              await window.executeOnChainTrade({
+                  botId: bot.id,
+                  token: decision.token,
+                  method: decision.method,
+                  amountUSD: bot.bet
+              });
+          } catch (execError) {
+              console.error('[Arena] On-chain execution failed, falling back to simulation', execError);
+          }
+      }
+    }catch(e){}
+
+    await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m);
+    updateQuantReport();
+  } catch(err) {
+    console.error(`Spin error on bot #${id}:`, err);
+    const tick=document.getElementById('mtick-'+id);
+    if(tick) tick.textContent='⚠️ Trade error: ' + (err.message || 'Execution failed');
+  } finally {
+    if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
+    if(thinkEl) thinkEl.classList.remove('show');
+    bot.spinning=false;
+  }
 }
 
 // ══════════════════════════════════════════════════════

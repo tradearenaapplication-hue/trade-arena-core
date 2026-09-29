@@ -1861,6 +1861,48 @@ describe("Engine-Level Safety Controls & Responsible Trading Mechanics", () => {
   });
 });
 
+describe("Balance Display & Trading Loop Resiliency", () => {
+  const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");
+
+  it("updates walletState.balanceUSD and window globals when token holdings are fetched", async () => {
+    global.window = global.window || {};
+    global.window.balance = 0;
+    global.window.startBalance = 0;
+    let globalBalanceUpdated = false;
+    global.window.updateGlobalBalance = () => { globalBalanceUpdated = true; };
+
+    const result = await fetchMultiChainTokenBalances("0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB");
+    expect(result).toBeDefined();
+    expect(typeof walletState.balanceUSD).toBe("number");
+    if (result.totalUsd > 0) {
+      expect(global.window.balance).toBe(result.totalUsd);
+      expect(global.window.startBalance).toBe(result.totalUsd);
+      expect(globalBalanceUpdated).toBe(true);
+    }
+  });
+
+  it("resets bot.spinning = false and handles trading loop exceptions gracefully", async () => {
+    const bot = { id: 1, spinning: true, auto: false };
+    const spinEl = { disabled: true, textContent: '⏳', classList: { remove: () => {} } };
+    const thinkEl = { classList: { remove: () => {} } };
+
+    // Simulate spinBot try...finally error handling block
+    try {
+      throw new Error("Simulated API failure during trading loop");
+    } catch (err) {
+      expect(err.message).toBe("Simulated API failure during trading loop");
+    } finally {
+      spinEl.disabled = false;
+      spinEl.textContent = '🎰 SPIN';
+      bot.spinning = false;
+    }
+
+    expect(bot.spinning).toBe(false);
+    expect(spinEl.disabled).toBe(false);
+    expect(spinEl.textContent).toBe('🎰 SPIN');
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

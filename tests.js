@@ -1533,10 +1533,17 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain('aria-controls="eloPanel"');
   });
 
-  it("defines aria-pressed on #fleetViewBtn and #ghAutoBtn", () => {
+  it("defines aria-pressed on #fleetViewBtn, #ghAutoBtn, and #musicToggleBtn", () => {
     expect(html).toContain('id="fleetViewBtn"');
     expect(html).toContain('id="ghAutoBtn"');
+    expect(html).toContain('id="musicToggleBtn"');
     expect(html).toContain('aria-pressed="false"');
+  });
+
+  it("updates aria-pressed on #musicToggleBtn in toggleBackgroundMusic", () => {
+    expect(html).toContain("function toggleBackgroundMusic()");
+    expect(html).toContain("document.getElementById('musicToggleBtn')");
+    expect(html).toContain("legacyBtn.setAttribute('aria-pressed', isOn)");
   });
 
   it("defines aria-expanded and aria-controls on collapsible panel headers and bot settings gear button", () => {

@@ -867,7 +867,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot" aria-label="Add new bot">+</button>
-       <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music" aria-label="Toggle background music">🎵</button>
+       <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music" aria-label="Toggle background music" aria-pressed="false">🎵</button>
      </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
@@ -5505,6 +5505,11 @@ function toggleBackgroundMusic() {
     if (btn) {
       btn.classList.toggle('av-on', isOn);
       btn.setAttribute('aria-pressed', isOn);
+    }
+    const legacyBtn = document.getElementById('musicToggleBtn');
+    if (legacyBtn) {
+      legacyBtn.classList.toggle('av-on', isOn);
+      legacyBtn.setAttribute('aria-pressed', isOn);
     }
   }
 }

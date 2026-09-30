@@ -1699,6 +1699,48 @@ describe("Task Center XSS Sanitization Security", () => {
   });
 });
 
+describe("Trade Olympics XSS Sanitization Security", () => {
+  it("uses escapeHTML when rendering model properties in renderEloPanel", () => {
+    const fs = require("fs");
+    const tradeOlympicsCode = fs.readFileSync("./trade-olympics.js", "utf8");
+    expect(tradeOlympicsCode).toContain("escapeHTML(model.model)");
+    expect(tradeOlympicsCode).toContain("escapeHTML(model.medal || model.rank)");
+  });
+
+  it("escapes malicious XSS payloads in Trade Olympics model names when rendering panel rows", () => {
+    // Mock minimal DOM environment
+    const elements = {};
+    const mockElement = (id) => {
+      if (!elements[id]) {
+        elements[id] = { innerHTML: "", textContent: "" };
+      }
+      return elements[id];
+    };
+
+    global.document = {
+      getElementById: (id) => mockElement(id),
+    };
+
+    TRADE_OLYMPICS.reset({
+      models: [
+        { name: "<script>alert('xss')</script>", provider: "local", elo: 1500 },
+        { name: "<img src=x onerror=alert(1)>", provider: "local", elo: 1400 },
+      ],
+      silent: true,
+    });
+
+    TRADE_OLYMPICS.renderEloPanel();
+
+    const rowsHTML = mockElement("eloTournamentRows").innerHTML;
+    expect(rowsHTML.includes("<script>")).toBe(false);
+    expect(rowsHTML.includes("<img")).toBe(false);
+    expect(rowsHTML).toContain("&lt;script&gt;alert(&#039;xss&#039;)&lt;/script&gt;");
+    expect(rowsHTML).toContain("&lt;img src=x onerror=alert(1)&gt;");
+
+    delete global.document;
+  });
+});
+
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
   const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");

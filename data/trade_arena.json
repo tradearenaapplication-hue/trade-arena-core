@@ -12,7 +12,7 @@
           "valueUsd": 11.17
         }
       ],
-      "lastLogin": "2026-09-30T02:10:06.750Z",
+      "lastLogin": "2026-09-30T02:12:54.586Z",
       "sessionData": {
         "balance": 11.17
       }
@@ -229,6 +229,20 @@
         "isWin": true
       },
       "timestamp": "2026-09-30T02:10:06.751Z"
+    },
+    {
+      "id": "trade_1790734374592_a63ecf1cc0947c04",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-09-30T02:12:54.592Z"
     }
   ]
 }

@@ -1638,13 +1638,19 @@ describe("Multi-Chain Token Holdings Modal Accessibility", () => {
   });
 });
 
-describe("Go Live Acknowledgment Modal Accessibility", () => {
+describe("Go Live Acknowledgment Modal Accessibility & ASIC Regulatory Disclosure", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");
 
   it("defines role=dialog, aria-modal, and aria-labelledby on #goLiveModal", () => {
     expect(html).toContain('id="goLiveModal" role="dialog" aria-modal="true" aria-labelledby="goLiveModalTitle"');
     expect(html).toContain('id="goLiveModalTitle"');
+  });
+
+  it("contains explicit ASIC & AFSL regulatory disclosures and non-custodial guardrails in #goLiveModal", () => {
+    expect(html).toContain("ASIC & AFSL Regulatory Status:");
+    expect(html).toContain("Trade Arena is currently a technical software demonstration tool undergoing legal and AFSL assessment under Australian Corporations Act regulations prior to Gate 3 real-money clearance.");
+    expect(html).toContain("Trade Arena never takes custody of real user funds.");
   });
 });
 

@@ -1758,6 +1758,35 @@ describe("Engine-Level Safety Controls & Responsible Trading Mechanics", () => {
   });
 });
 
+describe("ASIC Regulatory Exposure & Non-Custodial Compliance Disclosures", () => {
+  const fs = require('fs');
+  const path = require('path');
+  const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+  it("contains prominent ASIC & non-AFSL regulatory disclosure banner in index.html", () => {
+    expect(indexHtml.includes("NON-CUSTODIAL & REGULATORY DISCLOSURE")).toBe(true);
+    expect(indexHtml.includes("Australian Financial Services Licence (AFSL)")).toBe(true);
+    expect(indexHtml.includes("ASIC regulations")).toBe(true);
+  });
+
+  it("contains required regulatory disclosures in goLiveModal", () => {
+    expect(indexHtml.includes("id=\"goLiveModal\"")).toBe(true);
+    expect(indexHtml.includes("REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT")).toBe(true);
+    expect(indexHtml.includes("No AFS Licence / No Financial Product Advice")).toBe(true);
+    expect(indexHtml.includes("Non-Custodial Interface")).toBe(true);
+    expect(indexHtml.includes("Automated Execution & Market Risk")).toBe(true);
+    expect(indexHtml.includes("User Responsibility & Risk Controls")).toBe(true);
+  });
+
+  it("enforces checkGoLiveAck across live action handlers and onboarding buttons", () => {
+    expect(indexHtml.includes("function checkGoLiveAck")).toBe(true);
+    expect(indexHtml.includes("function confirmGoLiveAck")).toBe(true);
+    expect(indexHtml.includes("checkGoLiveAck(loginMetaMask)")).toBe(true);
+    expect(indexHtml.includes("checkGoLiveAck(loginCoinbase)")).toBe(true);
+    expect(indexHtml.includes("checkGoLiveAck(() => openDepositFlow(50))")).toBe(true);
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

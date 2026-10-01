@@ -770,6 +770,21 @@ describe("Performance", () => {
     expect(Date.now() - start).toBeLessThan(150);
   });
 
+  it("records ELO matches quickly without allocating intermediate arrays", () => {
+    const { recordEloMatch, eloState } = require("./elo-tournament-engine.js");
+    global.closedTrades = Array.from({ length: 50 }, (_, i) => ({ isWin: i % 2 === 0 }));
+
+    const start = Date.now();
+    const agents = ["mom", "vol", "pol", "sen", "risk"];
+    for (let i = 0; i < 2000; i++) {
+      const agent = agents[i % 5];
+      recordEloMatch(agent, i % 2 === 0);
+    }
+
+    expect(Date.now() - start).toBeLessThan(100);
+    expect(eloState.agents.mom.matches).toBeGreaterThan(0);
+  });
+
   it("skips DOM innerHTML assignment when bot pad states are unchanged (renderPadGrid benchmark)", () => {
     const { renderPadGrid, tradingEngine } = require("./trading-engine.js");
     let innerHTMLWrites = 0;

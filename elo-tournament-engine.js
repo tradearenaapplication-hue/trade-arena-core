@@ -65,19 +65,31 @@ function recordEloMatch(agentKey, isWin) {
 
 /**
  * Recursive Self-Improvement: Check if fleet has reached evolution threshold
+ * ⚡ OPTIMIZATION: Zero-allocation scalar loop replaces Object.values/reduce calls.
  */
 function checkForEvolution() {
-    const totalMatches = Object.values(eloState.agents).reduce((sum, a) => sum + a.matches, 0);
+    let totalMatches = 0;
+    for (const key in eloState.agents) {
+        totalMatches += eloState.agents[key].matches;
+    }
+
     if (totalMatches > 0 && totalMatches % 50 === 0) {
         eloState.generation++;
         const leader = getLeaderAgent();
         console.log(`[ELO] EVOLUTION REACHED: Generation ${eloState.generation}. Leader: ${leader.toUpperCase()}`);
 
+        let sumElo = 0;
+        let count = 0;
+        for (const key in eloState.agents) {
+            sumElo += eloState.agents[key].rating;
+            count++;
+        }
+
         // Push to history
         eloState.history.push({
             gen: eloState.generation,
             leader: leader,
-            avgElo: Object.values(eloState.agents).reduce((s, a) => s + a.rating, 0) / 5,
+            avgElo: count > 0 ? sumElo / count : 1200,
             timestamp: Date.now()
         });
 
@@ -89,11 +101,19 @@ function checkForEvolution() {
 
 /**
  * Identify the current "Lead" agent (highest ELO)
+ * ⚡ OPTIMIZATION: Linear scalar comparison replaces Object.keys().reduce() array allocation.
  */
 function getLeaderAgent() {
-    return Object.keys(eloState.agents).reduce((a, b) =>
-        eloState.agents[a].rating > eloState.agents[b].rating ? a : b
-    );
+    let leader = null;
+    let maxRating = -Infinity;
+    for (const key in eloState.agents) {
+        const rating = eloState.agents[key].rating;
+        if (rating > maxRating) {
+            maxRating = rating;
+            leader = key;
+        }
+    }
+    return leader || 'mom';
 }
 
 /**
@@ -110,17 +130,22 @@ function getWeightFromElo(agentKey) {
 
 /**
  * Market Rating adjusts based on total fleet performance
+ * ⚡ OPTIMIZATION: Single-pass backward loop eliminates intermediate .slice(-20) and .filter() allocations.
  */
 function calculateMarketOpponentRating() {
     // Default market difficulty
     let base = 1200;
 
-    // If we have closed trades, adjust base by fleet win rate
-    if (window.closedTrades && window.closedTrades.length > 0) {
-        const recent = window.closedTrades.slice(-20);
-        const wr = recent.filter(t => t.isWin).length / recent.length;
-        // High win rate = harder market
-        base += (wr - 0.5) * 400;
+    const closedTrades = typeof window !== 'undefined' ? window.closedTrades : (global.closedTrades || []);
+    if (closedTrades && closedTrades.length > 0) {
+        const len = closedTrades.length;
+        const start = Math.max(0, len - 20);
+        const count = len - start;
+        let wins = 0;
+        for (let i = start; i < len; i++) {
+            if (closedTrades[i].isWin) wins++;
+        }
+        base += ((wins / count) - 0.5) * 400;
     }
 
     return base;
@@ -128,16 +153,20 @@ function calculateMarketOpponentRating() {
 
 function saveEloState() {
     try {
-        localStorage.setItem('ta_elo_v4', JSON.stringify(eloState));
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('ta_elo_v4', JSON.stringify(eloState));
+        }
     } catch(e) {}
 }
 
 function loadEloState() {
     try {
-        const raw = localStorage.getItem('ta_elo_v4');
-        if (raw) {
-            const parsed = JSON.parse(raw);
-            eloState = parsed;
+        if (typeof localStorage !== 'undefined') {
+            const raw = localStorage.getItem('ta_elo_v4');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                eloState = parsed;
+            }
         }
     } catch(e) {}
 }
@@ -146,7 +175,7 @@ function loadEloState() {
  * UI: Render ELO Arena
  */
 function renderEloArena() {
-    const container = document.getElementById('eloArenaRows');
+    const container = typeof document !== 'undefined' ? document.getElementById('eloArenaRows') : null;
     if (!container) return;
 
     const sorted = Object.entries(eloState.agents).sort((a, b) => b[1].rating - a[1].rating);
@@ -173,10 +202,25 @@ function renderEloArena() {
 }
 
 // Global Exports
-window.recordEloMatch = recordEloMatch;
-window.getWeightFromElo = getWeightFromElo;
-window.renderEloArena = renderEloArena;
-window.loadEloState = loadEloState;
+if (typeof window !== 'undefined') {
+    window.recordEloMatch = recordEloMatch;
+    window.getWeightFromElo = getWeightFromElo;
+    window.renderEloArena = renderEloArena;
+    window.loadEloState = loadEloState;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        recordEloMatch,
+        getWeightFromElo,
+        renderEloArena,
+        loadEloState,
+        calculateMarketOpponentRating,
+        checkForEvolution,
+        getLeaderAgent,
+        eloState
+    };
+}
 
 // Initial Load
 loadEloState();

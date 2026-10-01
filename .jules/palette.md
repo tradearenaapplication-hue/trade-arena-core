@@ -5,3 +5,7 @@
 ## 2026-09-24 - [Escape Key Dismissal for Modals & Dropdowns]
 **Learning:** WCAG 2.1 compliance requires that keyboard users can dismiss open modal dialogs, slide-out panels, and dropdown menus using the `Escape` key. Returning early after handling the topmost active modal prevents chained dismissals.
 **Action:** Always register a global `Escape` key listener when building overlay or modal UI components in Vanilla JS/HTML.
+
+## 2026-10-01 - [Bus Preset Toggle ARIA Accessibility]
+**Learning:** Grouped preset toggle buttons that alter multi-item settings require updating `aria-pressed="true|false"` dynamically alongside visual `.active` CSS classes so screen reader users perceive state updates when selecting presets.
+**Action:** Always pair visual active state updates with `aria-pressed` toggle logic in group selection helper functions (`_busHighlight`).

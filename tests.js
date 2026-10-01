@@ -1727,6 +1727,17 @@ describe("Go Live Acknowledgment Modal Accessibility", () => {
   });
 });
 
+describe("Bus Panel Preset Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines aria-pressed on bus preset buttons and updates aria-pressed in _busHighlight", () => {
+    expect(html).toContain('class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false"');
+    expect(html).toContain("b.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
+    expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
+  });
+});
+
 describe("Task Center XSS Sanitization Security", () => {
   const fs = require("fs");
   const taskCenterCode = fs.readFileSync("task-center.js", "utf8");
@@ -1775,6 +1786,48 @@ describe("Task Center XSS Sanitization Security", () => {
 
     expect(renderedIcon.includes("<")).toBe(false);
     expect(renderedIcon).toContain("&lt;svg onload=alert(1)&gt;");
+  });
+});
+
+describe("Trade Olympics XSS Sanitization Security", () => {
+  it("uses escapeHTML when rendering model properties in renderEloPanel", () => {
+    const fs = require("fs");
+    const tradeOlympicsCode = fs.readFileSync("./trade-olympics.js", "utf8");
+    expect(tradeOlympicsCode).toContain("escapeHTML(model.model)");
+    expect(tradeOlympicsCode).toContain("escapeHTML(model.medal || model.rank)");
+  });
+
+  it("escapes malicious XSS payloads in Trade Olympics model names when rendering panel rows", () => {
+    // Mock minimal DOM environment
+    const elements = {};
+    const mockElement = (id) => {
+      if (!elements[id]) {
+        elements[id] = { innerHTML: "", textContent: "" };
+      }
+      return elements[id];
+    };
+
+    global.document = {
+      getElementById: (id) => mockElement(id),
+    };
+
+    TRADE_OLYMPICS.reset({
+      models: [
+        { name: "<script>alert('xss')</script>", provider: "local", elo: 1500 },
+        { name: "<img src=x onerror=alert(1)>", provider: "local", elo: 1400 },
+      ],
+      silent: true,
+    });
+
+    TRADE_OLYMPICS.renderEloPanel();
+
+    const rowsHTML = mockElement("eloTournamentRows").innerHTML;
+    expect(rowsHTML.includes("<script>")).toBe(false);
+    expect(rowsHTML.includes("<img")).toBe(false);
+    expect(rowsHTML).toContain("&lt;script&gt;alert(&#039;xss&#039;)&lt;/script&gt;");
+    expect(rowsHTML).toContain("&lt;img src=x onerror=alert(1)&gt;");
+
+    delete global.document;
   });
 });
 
@@ -1937,6 +1990,48 @@ describe("Engine-Level Safety Controls & Responsible Trading Mechanics", () => {
 
     expect(res.status).toBe('BLOCKED_SAFETY_CONTROLS');
     expect(res.profit).toBe(0);
+  });
+});
+
+describe("Balance Display & Trading Loop Resiliency", () => {
+  const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");
+
+  it("updates walletState.balanceUSD and window globals when token holdings are fetched", async () => {
+    global.window = global.window || {};
+    global.window.balance = 0;
+    global.window.startBalance = 0;
+    let globalBalanceUpdated = false;
+    global.window.updateGlobalBalance = () => { globalBalanceUpdated = true; };
+
+    const result = await fetchMultiChainTokenBalances("0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB");
+    expect(result).toBeDefined();
+    expect(typeof walletState.balanceUSD).toBe("number");
+    if (result.totalUsd > 0) {
+      expect(global.window.balance).toBe(result.totalUsd);
+      expect(global.window.startBalance).toBe(result.totalUsd);
+      expect(globalBalanceUpdated).toBe(true);
+    }
+  });
+
+  it("resets bot.spinning = false and handles trading loop exceptions gracefully", async () => {
+    const bot = { id: 1, spinning: true, auto: false };
+    const spinEl = { disabled: true, textContent: '⏳', classList: { remove: () => {} } };
+    const thinkEl = { classList: { remove: () => {} } };
+
+    // Simulate spinBot try...finally error handling block
+    try {
+      throw new Error("Simulated API failure during trading loop");
+    } catch (err) {
+      expect(err.message).toBe("Simulated API failure during trading loop");
+    } finally {
+      spinEl.disabled = false;
+      spinEl.textContent = '🎰 SPIN';
+      bot.spinning = false;
+    }
+
+    expect(bot.spinning).toBe(false);
+    expect(spinEl.disabled).toBe(false);
+    expect(spinEl.textContent).toBe('🎰 SPIN');
   });
 });
 

@@ -263,49 +263,59 @@ const CrucibleTest = {
   generateReport() {
     const duration = ((this.endTime - this.startTime) / 1000).toFixed(2);
 
-    // Separate executed and skipped trades
-    const executedTrades = this.trades.filter((t) => !t.skipped);
-    const skippedTrades = this.trades.filter((t) => t.skipped);
+    // ⚡ OPTIMIZATION: Single-pass iteration to accumulate trade statistics and avoid intermediate array allocations
+    let wins = 0;
+    let losses = 0;
+    let totalPnl = 0;
+    let totalWinPnl = 0;
+    let totalLossPnl = 0;
+    let sumExpectedValue = 0;
+    let sumEdge = 0;
+    let sumConfidence = 0;
 
-    const wins = executedTrades.filter((t) => t.isWin).length;
-    const losses = executedTrades.filter((t) => !t.isWin).length;
+    const executedTrades = [];
+    const skippedTrades = [];
+
+    for (let i = 0; i < this.trades.length; i++) {
+      const t = this.trades[i];
+      if (t.skipped) {
+        skippedTrades.push(t);
+      } else {
+        executedTrades.push(t);
+        const pnl = t.pnl || 0;
+        totalPnl += pnl;
+        sumExpectedValue += t.expectedValue || 0;
+        sumEdge += t.edge || 0;
+        sumConfidence += t.confidence || 0;
+
+        if (t.isWin) {
+          wins++;
+          totalWinPnl += pnl;
+        } else {
+          losses++;
+          totalLossPnl += pnl;
+        }
+      }
+    }
+
+    const executedCount = executedTrades.length;
     const winRate =
-      executedTrades.length > 0
-        ? ((wins / executedTrades.length) * 100).toFixed(2)
+      executedCount > 0
+        ? ((wins / executedCount) * 100).toFixed(2)
         : 0;
 
-    // P&L calculations (only from executed trades)
-    const totalPnl = executedTrades.reduce((sum, t) => sum + t.pnl, 0);
+    // P&L calculations
     const finalBalance = this.config.paperBalance + totalPnl;
     const returnPercent = ((totalPnl / this.config.paperBalance) * 100).toFixed(
       2,
     );
 
-    // Trade statistics
-    const winTrades = executedTrades.filter((t) => t.isWin);
-    const lossTrades = executedTrades.filter((t) => !t.isWin);
+    const avgWin = wins > 0 ? (totalWinPnl / wins).toFixed(2) : 0;
+    const avgLoss = losses > 0 ? (totalLossPnl / losses).toFixed(2) : 0;
 
-    const avgWin =
-      winTrades.length > 0
-        ? (
-            winTrades.reduce((sum, t) => sum + t.pnl, 0) / winTrades.length
-          ).toFixed(2)
-        : 0;
-
-    const avgLoss =
-      lossTrades.length > 0
-        ? (
-            lossTrades.reduce((sum, t) => sum + t.pnl, 0) / lossTrades.length
-          ).toFixed(2)
-        : 0;
-
-    // Profit Factor (with risk management)
-    const totalWinAmount = Math.abs(
-      winTrades.reduce((sum, t) => sum + t.pnl, 0),
-    );
-    const totalLossAmount = Math.abs(
-      lossTrades.reduce((sum, t) => sum + t.pnl, 0),
-    );
+    // Profit Factor
+    const totalWinAmount = Math.abs(totalWinPnl);
+    const totalLossAmount = Math.abs(totalLossPnl);
 
     const profitFactor =
       totalLossAmount !== 0
@@ -316,29 +326,19 @@ const CrucibleTest = {
 
     // Expected Value Calculation
     const avgExpectedValue =
-      executedTrades.length > 0
-        ? (
-            executedTrades.reduce((sum, t) => sum + t.expectedValue, 0) /
-            executedTrades.length
-          ).toFixed(2)
+      executedCount > 0
+        ? (sumExpectedValue / executedCount).toFixed(2)
         : 0;
 
     // Edge analysis
     const avgEdge =
-      executedTrades.length > 0
-        ? (
-            executedTrades.reduce((sum, t) => sum + t.edge, 0) /
-            executedTrades.length
-          ).toFixed(2)
+      executedCount > 0
+        ? (sumEdge / executedCount).toFixed(2)
         : 0;
 
     const avgConfidence =
-      executedTrades.length > 0
-        ? (
-            (executedTrades.reduce((sum, t) => sum + t.confidence, 0) /
-              executedTrades.length) *
-            100
-          ).toFixed(0)
+      executedCount > 0
+        ? ((sumConfidence / executedCount) * 100).toFixed(0)
         : 0;
 
     // Print report

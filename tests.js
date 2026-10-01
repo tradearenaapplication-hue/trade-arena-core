@@ -1648,6 +1648,17 @@ describe("Go Live Acknowledgment Modal Accessibility", () => {
   });
 });
 
+describe("Bus Panel Preset Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines aria-pressed on bus preset buttons and updates aria-pressed in _busHighlight", () => {
+    expect(html).toContain('class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false"');
+    expect(html).toContain("b.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
+    expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
+  });
+});
+
 describe("Task Center XSS Sanitization Security", () => {
   const fs = require("fs");
   const taskCenterCode = fs.readFileSync("task-center.js", "utf8");

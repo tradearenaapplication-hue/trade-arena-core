@@ -708,7 +708,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
   <div style="width:100%;max-width:440px;padding:8px 12px;background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.25);border-radius:8px;font-size:9px;color:var(--dim);line-height:1.5;text-align:center;">
-    ⚠️ <strong>NON-CUSTODIAL NOTICE:</strong> Trade Arena is a non-custodial software interface. Trading bots execute automated strategies according to user parameters. Crypto trading carries high financial risk. Past performance does not indicate future results. Not financial advice.
+    ⚠️ <strong>NON-CUSTODIAL & REGULATORY DISCLOSURE:</strong> Trade Arena is a non-custodial software interface and does not hold an Australian Financial Services Licence (AFSL) or provide financial product advice under ASIC regulations. Trading bots execute automated user parameters. Crypto trading carries substantial risk of financial loss.
   </div>
 <div class="login-card">
     <div class="login-card-hd">SIGN IN TO THE FLOOR</div>
@@ -737,8 +737,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         ⚙´©Å Advanced Settings
       </button>
       <div class="fiat-ramp-row">
-        <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
-        <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
+        <button class="onramp-btn" onclick="checkGoLiveAck(() => window.openMoonpay && window.openMoonpay())">💳 DEPOSIT USDC</button>
+        <button class="offramp-btn" onclick="checkGoLiveAck(() => openOskoRamp('offramp'))">💵 WITHDRAW</button>
       </div>
     </div>
     <!-- Advanced Settings (hidden by default) -->
@@ -754,15 +754,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <div id="goLiveModal" role="dialog" aria-modal="true" aria-labelledby="goLiveModalTitle" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10005;align-items:center;justify-content:center;padding:16px;">
       <div style="background:var(--panel);border:2px solid var(--gold2);border-radius:14px;max-width:480px;width:100%;padding:22px;box-shadow:0 8px 32px rgba(0,0,0,0.8);color:#fff;">
         <div id="goLiveModalTitle" style="font-family:'Bungee',display;font-size:14px;color:var(--gold2);margin-bottom:12px;letter-spacing:1px;display:flex;align-items:center;gap:8px;">
-          <span>⚠️</span> NON-CUSTODIAL & RISK ACKNOWLEDGMENT
+          <span>⚠️</span> REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT
         </div>
         <div style="font-size:11px;line-height:1.6;color:#ccc;margin-bottom:16px;">
-          <p style="margin-bottom:10px;">Before proceeding to Live Mode, please review and confirm the following compliance guardrails:</p>
+          <p style="margin-bottom:10px;">Before proceeding to Live Mode, please review and confirm the following legal and regulatory disclosures:</p>
           <ul style="padding-left:18px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:10px;">
-            <li><strong>Non-Custodial Interface:</strong> Trade Arena is a non-custodial software interface. You maintain control of your wallet and private keys at all times.</li>
-            <li><strong>Automated Execution Risk:</strong> Trading bots execute automated strategies on your behalf based on your settings. Crypto markets are volatile and carry high risk of financial loss.</li>
-            <li><strong>No Financial Advice:</strong> Content, signals, and backtests provided do not constitute financial advice. Past performance does not guarantee future results.</li>
-            <li><strong>User Responsibility:</strong> You are solely responsible for setting appropriate risk parameters, daily loss limits, and monitoring open positions.</li>
+            <li><strong>No AFS Licence / No Financial Product Advice:</strong> Trade Arena does not hold an Australian Financial Services Licence (AFSL) and does not provide financial advice or manage assets under ASIC regulations. All automated strategies and signals are software tools operated directly by you.</li>
+            <li><strong>Non-Custodial Interface:</strong> Trade Arena is a purely non-custodial software interface. You retain sole custody and full control of your private keys and wallet at all times.</li>
+            <li><strong>Automated Execution & Market Risk:</strong> Automated bots execute trade orders directly on your self-sovereign wallet according to your parameters. Crypto trading is high-risk and volatile; you may lose all deposited funds. Past performance is not indicative of future results.</li>
+            <li><strong>User Responsibility & Risk Controls:</strong> You are solely responsible for setting appropriate safety controls, daily loss limits, and monitoring your positions.</li>
           </ul>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;">
@@ -789,10 +789,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
     <!-- Deposit Buttons -->
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      <button class="onramp-btn" onclick="openDepositFlow(50)" style="flex:1;min-width:120px;">
+      <button class="onramp-btn" onclick="checkGoLiveAck(() => openDepositFlow(50))" style="flex:1;min-width:120px;">
         Deposit $50
       </button>
-      <button class="onramp-btn" onclick="openDepositFlow(100)" style="flex:1;min-width:120px;">
+      <button class="onramp-btn" onclick="checkGoLiveAck(() => openDepositFlow(100))" style="flex:1;min-width:120px;">
         Deposit $100
       </button>
     </div>

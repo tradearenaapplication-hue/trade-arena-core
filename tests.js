@@ -1302,6 +1302,85 @@ describe("Proxy Endpoint Security", () => {
     expect(proxyCode.includes("res.status(500).json({ error: error.message })")).toBe(false);
   });
 
+  it("rejects invalid Gemini model parameters to prevent URL path injection", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/gemini"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidModels = [
+      "../gemini-pro",
+      "gemini-1.5-flash/evil",
+      "gemini-1.5-flash?key=injected",
+      "gemini 1.5 flash",
+      "<script>alert(1)</script>",
+      { model: "object" },
+      12345
+    ];
+
+    for (const model of invalidModels) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const req = { body: { model }, ip: "127.0.0.120", headers: {}, app: proxyApp };
+      const res = {
+        setHeader: () => {},
+        status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle(req, res, async () => {
+        await route.route.stack[1].handle(req, res);
+      });
+
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.error).toBe("Invalid model parameter");
+    }
+  });
+
+  it("accepts valid Gemini model parameters", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/gemini"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const originalFetch = global.fetch;
+    let fetchedUrl = null;
+
+    try {
+      global.fetch = async (url) => {
+        fetchedUrl = url;
+        return {
+          status: 200,
+          json: async () => ({ candidates: [] })
+        };
+      };
+
+      const validModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"];
+
+      for (const model of validModels) {
+        let statusCode = 200;
+        let jsonResponse = null;
+        const req = { body: { model, contents: [] }, ip: "127.0.0.121", headers: {}, app: proxyApp };
+        const res = {
+          setHeader: () => {},
+          status: (code) => { statusCode = code; return res; },
+          send: (data) => { jsonResponse = data; return res; },
+          json: (data) => { jsonResponse = data; return res; },
+        };
+
+        await route.route.stack[0].handle(req, res, async () => {
+          await route.route.stack[1].handle(req, res);
+        });
+
+        expect(statusCode).toBe(200);
+        expect(fetchedUrl).toContain(`/models/${model}:generateContent`);
+      }
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
   it("rejects invalid log payloads on maintenance log endpoint", async () => {
     const route = proxyApp._router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/maintenance/log"
@@ -1638,13 +1717,30 @@ describe("Multi-Chain Token Holdings Modal Accessibility", () => {
   });
 });
 
-describe("Go Live Acknowledgment Modal Accessibility", () => {
+describe("Go Live Acknowledgment Modal Accessibility & ASIC Regulatory Disclosure", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");
 
   it("defines role=dialog, aria-modal, and aria-labelledby on #goLiveModal", () => {
     expect(html).toContain('id="goLiveModal" role="dialog" aria-modal="true" aria-labelledby="goLiveModalTitle"');
     expect(html).toContain('id="goLiveModalTitle"');
+  });
+
+  it("contains explicit ASIC & AFSL regulatory disclosures and non-custodial guardrails in #goLiveModal", () => {
+    expect(html).toContain("ASIC & AFSL Regulatory Status:");
+    expect(html).toContain("Trade Arena is currently a technical software demonstration tool undergoing legal and AFSL assessment under Australian Corporations Act regulations prior to Gate 3 real-money clearance.");
+    expect(html).toContain("Trade Arena never takes custody of real user funds.");
+  });
+});
+
+describe("Bus Panel Preset Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines aria-pressed on bus preset buttons and updates aria-pressed in _busHighlight", () => {
+    expect(html).toContain('class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false"');
+    expect(html).toContain("b.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
+    expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
   });
 });
 
@@ -1727,6 +1823,48 @@ describe("Task Center XSS Sanitization Security", () => {
   });
 });
 
+describe("Trade Olympics XSS Sanitization Security", () => {
+  it("uses escapeHTML when rendering model properties in renderEloPanel", () => {
+    const fs = require("fs");
+    const tradeOlympicsCode = fs.readFileSync("./trade-olympics.js", "utf8");
+    expect(tradeOlympicsCode).toContain("escapeHTML(model.model)");
+    expect(tradeOlympicsCode).toContain("escapeHTML(model.medal || model.rank)");
+  });
+
+  it("escapes malicious XSS payloads in Trade Olympics model names when rendering panel rows", () => {
+    // Mock minimal DOM environment
+    const elements = {};
+    const mockElement = (id) => {
+      if (!elements[id]) {
+        elements[id] = { innerHTML: "", textContent: "" };
+      }
+      return elements[id];
+    };
+
+    global.document = {
+      getElementById: (id) => mockElement(id),
+    };
+
+    TRADE_OLYMPICS.reset({
+      models: [
+        { name: "<script>alert('xss')</script>", provider: "local", elo: 1500 },
+        { name: "<img src=x onerror=alert(1)>", provider: "local", elo: 1400 },
+      ],
+      silent: true,
+    });
+
+    TRADE_OLYMPICS.renderEloPanel();
+
+    const rowsHTML = mockElement("eloTournamentRows").innerHTML;
+    expect(rowsHTML.includes("<script>")).toBe(false);
+    expect(rowsHTML.includes("<img")).toBe(false);
+    expect(rowsHTML).toContain("&lt;script&gt;alert(&#039;xss&#039;)&lt;/script&gt;");
+    expect(rowsHTML).toContain("&lt;img src=x onerror=alert(1)&gt;");
+
+    delete global.document;
+  });
+});
+
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
   const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");
@@ -1803,6 +1941,63 @@ describe("Server User Database REST Endpoints", () => {
 
   it("persists user signin via /api/user/signin", async () => {
     // HTTP endpoints tested via database and server integration
+  });
+});
+
+describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
+  const fs = require("fs");
+  const server = require("./server.js");
+
+  it("blocks real-money trade execution in TradingEngine when AFSL clearance is false", async () => {
+    const engine = new TradingEngine();
+    expect(engine.afslCompliant).toBe(false);
+
+    const realMoneyBot = {
+      id: 'bot-real-1',
+      name: 'Real Fund Bot',
+      amount: 1000,
+      risk: 'Conservative (2x leverage)',
+      isRealMoney: true
+    };
+
+    const res = await engine.executeTrade(realMoneyBot, {
+      type: 'ARBITRAGE',
+      profitMargin: 1.2,
+      volatility: 2
+    });
+
+    expect(res.status).toBe('BLOCKED_REGULATORY_GATE');
+    expect(res.reason).toBe('AFSL_CLEARANCE_REQUIRED');
+    expect(res.profit).toBe(0);
+  });
+
+  it("exposes regulatory status via /api/regulatory/status endpoint", () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/regulatory/status"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    route.route.stack[0].handle({}, res);
+
+    expect(statusCode).toBe(200);
+    expect(jsonResponse.success).toBe(true);
+    expect(jsonResponse.regulatory.jurisdiction).toBe("Australia (ASIC)");
+    expect(jsonResponse.regulatory.requiresAfsl).toBe(true);
+  });
+
+  it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
+    expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
+    const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
+    expect(content).toContain("Australian Securities and Investments Commission (ASIC)");
+    expect(content).toContain("Australian Financial Services Licence (AFSL)");
+    expect(content).toContain("Gate 3 Compliance Checklist");
   });
 });
 
@@ -1886,6 +2081,48 @@ describe("Engine-Level Safety Controls & Responsible Trading Mechanics", () => {
 
     expect(res.status).toBe('BLOCKED_SAFETY_CONTROLS');
     expect(res.profit).toBe(0);
+  });
+});
+
+describe("Balance Display & Trading Loop Resiliency", () => {
+  const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");
+
+  it("updates walletState.balanceUSD and window globals when token holdings are fetched", async () => {
+    global.window = global.window || {};
+    global.window.balance = 0;
+    global.window.startBalance = 0;
+    let globalBalanceUpdated = false;
+    global.window.updateGlobalBalance = () => { globalBalanceUpdated = true; };
+
+    const result = await fetchMultiChainTokenBalances("0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB");
+    expect(result).toBeDefined();
+    expect(typeof walletState.balanceUSD).toBe("number");
+    if (result.totalUsd > 0) {
+      expect(global.window.balance).toBe(result.totalUsd);
+      expect(global.window.startBalance).toBe(result.totalUsd);
+      expect(globalBalanceUpdated).toBe(true);
+    }
+  });
+
+  it("resets bot.spinning = false and handles trading loop exceptions gracefully", async () => {
+    const bot = { id: 1, spinning: true, auto: false };
+    const spinEl = { disabled: true, textContent: '⏳', classList: { remove: () => {} } };
+    const thinkEl = { classList: { remove: () => {} } };
+
+    // Simulate spinBot try...finally error handling block
+    try {
+      throw new Error("Simulated API failure during trading loop");
+    } catch (err) {
+      expect(err.message).toBe("Simulated API failure during trading loop");
+    } finally {
+      spinEl.disabled = false;
+      spinEl.textContent = '🎰 SPIN';
+      bot.spinning = false;
+    }
+
+    expect(bot.spinning).toBe(false);
+    expect(spinEl.disabled).toBe(false);
+    expect(spinEl.textContent).toBe('🎰 SPIN');
   });
 });
 

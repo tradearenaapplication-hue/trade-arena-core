@@ -1648,6 +1648,17 @@ describe("Go Live Acknowledgment Modal Accessibility", () => {
   });
 });
 
+describe("Bus Panel Preset Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines aria-pressed on bus preset buttons and updates aria-pressed in _busHighlight", () => {
+    expect(html).toContain('class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false"');
+    expect(html).toContain("b.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
+    expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
+  });
+});
+
 describe("Task Center XSS Sanitization Security", () => {
   const fs = require("fs");
   const taskCenterCode = fs.readFileSync("task-center.js", "utf8");
@@ -1696,6 +1707,48 @@ describe("Task Center XSS Sanitization Security", () => {
 
     expect(renderedIcon.includes("<")).toBe(false);
     expect(renderedIcon).toContain("&lt;svg onload=alert(1)&gt;");
+  });
+});
+
+describe("Trade Olympics XSS Sanitization Security", () => {
+  it("uses escapeHTML when rendering model properties in renderEloPanel", () => {
+    const fs = require("fs");
+    const tradeOlympicsCode = fs.readFileSync("./trade-olympics.js", "utf8");
+    expect(tradeOlympicsCode).toContain("escapeHTML(model.model)");
+    expect(tradeOlympicsCode).toContain("escapeHTML(model.medal || model.rank)");
+  });
+
+  it("escapes malicious XSS payloads in Trade Olympics model names when rendering panel rows", () => {
+    // Mock minimal DOM environment
+    const elements = {};
+    const mockElement = (id) => {
+      if (!elements[id]) {
+        elements[id] = { innerHTML: "", textContent: "" };
+      }
+      return elements[id];
+    };
+
+    global.document = {
+      getElementById: (id) => mockElement(id),
+    };
+
+    TRADE_OLYMPICS.reset({
+      models: [
+        { name: "<script>alert('xss')</script>", provider: "local", elo: 1500 },
+        { name: "<img src=x onerror=alert(1)>", provider: "local", elo: 1400 },
+      ],
+      silent: true,
+    });
+
+    TRADE_OLYMPICS.renderEloPanel();
+
+    const rowsHTML = mockElement("eloTournamentRows").innerHTML;
+    expect(rowsHTML.includes("<script>")).toBe(false);
+    expect(rowsHTML.includes("<img")).toBe(false);
+    expect(rowsHTML).toContain("&lt;script&gt;alert(&#039;xss&#039;)&lt;/script&gt;");
+    expect(rowsHTML).toContain("&lt;img src=x onerror=alert(1)&gt;");
+
+    delete global.document;
   });
 });
 

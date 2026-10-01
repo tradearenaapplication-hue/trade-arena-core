@@ -708,7 +708,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
   <div style="width:100%;max-width:440px;padding:8px 12px;background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.25);border-radius:8px;font-size:9px;color:var(--dim);line-height:1.5;text-align:center;">
-    ⚠️ <strong>NON-CUSTODIAL NOTICE:</strong> Trade Arena is a non-custodial software interface. Trading bots execute automated strategies according to user parameters. Crypto trading carries high financial risk. Past performance does not indicate future results. Not financial advice.
+    ⚠️ <strong>NON-CUSTODIAL & REGULATORY DISCLOSURE:</strong> Trade Arena is a non-custodial software interface and does not hold an Australian Financial Services Licence (AFSL) or provide financial product advice under ASIC regulations. Trading bots execute automated user parameters. Crypto trading carries substantial risk of financial loss.
   </div>
 <div class="login-card">
     <div class="login-card-hd">SIGN IN TO THE FLOOR</div>
@@ -737,8 +737,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         ⚙´©Å Advanced Settings
       </button>
       <div class="fiat-ramp-row">
-        <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
-        <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
+        <button class="onramp-btn" onclick="checkGoLiveAck(() => window.openMoonpay && window.openMoonpay())">💳 DEPOSIT USDC</button>
+        <button class="offramp-btn" onclick="checkGoLiveAck(() => openOskoRamp('offramp'))">💵 WITHDRAW</button>
       </div>
     </div>
     <!-- Advanced Settings (hidden by default) -->
@@ -757,13 +757,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <span>⚠️</span> REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT
         </div>
         <div style="font-size:11px;line-height:1.6;color:#ccc;margin-bottom:16px;">
-          <p style="margin-bottom:10px;">Before proceeding to Live Mode, please review and confirm the following regulatory and compliance guardrails:</p>
+          <p style="margin-bottom:10px;">Before proceeding to Live Mode, please review and confirm the following legal and regulatory disclosures:</p>
           <ul style="padding-left:18px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:10px;">
-            <li><strong>Non-Custodial Interface:</strong> Trade Arena is a non-custodial software interface. You maintain direct control of your wallet and private keys at all times. Trade Arena never takes custody of real user funds.</li>
-            <li><strong>ASIC & AFSL Regulatory Status:</strong> Trade Arena is currently a technical software demonstration tool undergoing legal and AFSL assessment under Australian Corporations Act regulations prior to Gate 3 real-money clearance.</li>
-            <li><strong>Automated Execution Risk:</strong> Trading bots execute automated strategies on your behalf based on your settings. Crypto markets are highly volatile and carry significant risk of capital loss.</li>
-            <li><strong>No Financial Advice:</strong> Content, signals, and backtests provided do not constitute financial advice. Past performance does not guarantee future results.</li>
-            <li><strong>User Responsibility:</strong> You are solely responsible for setting appropriate risk parameters, daily loss limits, and monitoring open positions.</li>
+            <li><strong>No AFS Licence / No Financial Product Advice:</strong> Trade Arena does not hold an Australian Financial Services Licence (AFSL) and does not provide financial advice or manage assets under ASIC regulations. All automated strategies and signals are software tools operated directly by you.</li>
+            <li><strong>Non-Custodial Interface:</strong> Trade Arena is a purely non-custodial software interface. You retain sole custody and full control of your private keys and wallet at all times.</li>
+            <li><strong>Automated Execution & Market Risk:</strong> Automated bots execute trade orders directly on your self-sovereign wallet according to your parameters. Crypto trading is high-risk and volatile; you may lose all deposited funds. Past performance is not indicative of future results.</li>
+            <li><strong>User Responsibility & Risk Controls:</strong> You are solely responsible for setting appropriate safety controls, daily loss limits, and monitoring your positions.</li>
           </ul>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;">
@@ -790,10 +789,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
     <!-- Deposit Buttons -->
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      <button class="onramp-btn" onclick="openDepositFlow(50)" style="flex:1;min-width:120px;">
+      <button class="onramp-btn" onclick="checkGoLiveAck(() => openDepositFlow(50))" style="flex:1;min-width:120px;">
         Deposit $50
       </button>
-      <button class="onramp-btn" onclick="openDepositFlow(100)" style="flex:1;min-width:120px;">
+      <button class="onramp-btn" onclick="checkGoLiveAck(() => openDepositFlow(100))" style="flex:1;min-width:120px;">
         Deposit $100
       </button>
     </div>
@@ -882,14 +881,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>💰</span> TRADE AMOUNT — ALL BOTS</div>
         <div class="bus-presets" id="busAmtPresets">
-          <button class="bus-preset" onclick="busSetAmount(0.10)">$0.10</button>
-          <button class="bus-preset" onclick="busSetAmount(0.25)">$0.25</button>
-          <button class="bus-preset" onclick="busSetAmount(0.50)">$0.50</button>
-          <button class="bus-preset" onclick="busSetAmount(1)">$1</button>
-          <button class="bus-preset" onclick="busSetAmount(2)">$2</button>
-          <button class="bus-preset" onclick="busSetAmount(5)">$5</button>
-          <button class="bus-preset" onclick="busSetAmount(20)">$20</button>
-          <button class="bus-preset" onclick="busSetAmount(100)">$100</button>
+          <button class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false">$0.10</button>
+          <button class="bus-preset" onclick="busSetAmount(0.25)" aria-pressed="false">$0.25</button>
+          <button class="bus-preset" onclick="busSetAmount(0.50)" aria-pressed="false">$0.50</button>
+          <button class="bus-preset" onclick="busSetAmount(1)" aria-pressed="false">$1</button>
+          <button class="bus-preset" onclick="busSetAmount(2)" aria-pressed="false">$2</button>
+          <button class="bus-preset" onclick="busSetAmount(5)" aria-pressed="false">$5</button>
+          <button class="bus-preset" onclick="busSetAmount(20)" aria-pressed="false">$20</button>
+          <button class="bus-preset" onclick="busSetAmount(100)" aria-pressed="false">$100</button>
         </div>
         <div class="bus-custom-row">
           <input type="number" id="busCustomAmt" aria-label="Custom trade amount in dollars" placeholder="Custom $" min="0.01" step="0.01">
@@ -901,13 +900,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>🧠</span> PERSONALITY — ALL BOTS</div>
         <div class="bus-presets" id="busPersonalityPresets">
-          <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')">🔥 Aggressive</button>
-          <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')">🛡️ Conservative</button>
-          <button class="bus-preset" onclick="busSetPersonality('MOMENTUM')">📈 Momentum</button>
-          <button class="bus-preset" onclick="busSetPersonality('CONTRARIAN')">🔄 Contrarian</button>
-          <button class="bus-preset" onclick="busSetPersonality('BALANCED')">⚖️ Balanced</button>
-          <button class="bus-preset" onclick="busSetPersonality('RANDOM')">🎲 Random Spread</button>
-          <button class="bus-preset" onclick="busSetPersonality('OPTIMIZED')">⚡ Optimized Spread</button>
+          <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')" aria-pressed="false">🔥 Aggressive</button>
+          <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')" aria-pressed="false">🛡️ Conservative</button>
+          <button class="bus-preset" onclick="busSetPersonality('MOMENTUM')" aria-pressed="false">📈 Momentum</button>
+          <button class="bus-preset" onclick="busSetPersonality('CONTRARIAN')" aria-pressed="false">🔄 Contrarian</button>
+          <button class="bus-preset" onclick="busSetPersonality('BALANCED')" aria-pressed="false">⚖️ Balanced</button>
+          <button class="bus-preset" onclick="busSetPersonality('RANDOM')" aria-pressed="false">🎲 Random Spread</button>
+          <button class="bus-preset" onclick="busSetPersonality('OPTIMIZED')" aria-pressed="false">⚡ Optimized Spread</button>
         </div>
       </div>
 
@@ -915,10 +914,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>⏱️</span> AUTO DELAY — ALL BOTS</div>
         <div class="bus-presets" id="busDelayPresets">
-          <button class="bus-preset" onclick="busSetDelay(2000)">Fast 2s</button>
-          <button class="bus-preset" onclick="busSetDelay(5000)">Normal 5s</button>
-          <button class="bus-preset" onclick="busSetDelay(15000)">Slow 15s</button>
-          <button class="bus-preset" onclick="busSetDelay(60000)">Patient 1m</button>
+          <button class="bus-preset" onclick="busSetDelay(2000)" aria-pressed="false">Fast 2s</button>
+          <button class="bus-preset" onclick="busSetDelay(5000)" aria-pressed="false">Normal 5s</button>
+          <button class="bus-preset" onclick="busSetDelay(15000)" aria-pressed="false">Slow 15s</button>
+          <button class="bus-preset" onclick="busSetDelay(60000)" aria-pressed="false">Patient 1m</button>
         </div>
       </div>
 
@@ -929,19 +928,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <div style="flex:1">
             <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Stop Loss</div>
             <div class="bus-presets" id="busSLPresets" style="flex-direction:column">
-              <button class="bus-preset" onclick="busSetSL(0)">None</button>
-              <button class="bus-preset" onclick="busSetSL(10)">−10%</button>
-              <button class="bus-preset" onclick="busSetSL(20)">−20%</button>
-              <button class="bus-preset" onclick="busSetSL(50)">−50%</button>
+              <button class="bus-preset" onclick="busSetSL(0)" aria-pressed="false">None</button>
+              <button class="bus-preset" onclick="busSetSL(10)" aria-pressed="false">−10%</button>
+              <button class="bus-preset" onclick="busSetSL(20)" aria-pressed="false">−20%</button>
+              <button class="bus-preset" onclick="busSetSL(50)" aria-pressed="false">−50%</button>
             </div>
           </div>
           <div style="flex:1">
             <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Take Profit</div>
             <div class="bus-presets" id="busTPPresets" style="flex-direction:column">
-              <button class="bus-preset" onclick="busSetTP(0)">None</button>
-              <button class="bus-preset" onclick="busSetTP(20)">+20%</button>
-              <button class="bus-preset" onclick="busSetTP(50)">+50%</button>
-              <button class="bus-preset" onclick="busSetTP(100)">+100%</button>
+              <button class="bus-preset" onclick="busSetTP(0)" aria-pressed="false">None</button>
+              <button class="bus-preset" onclick="busSetTP(20)" aria-pressed="false">+20%</button>
+              <button class="bus-preset" onclick="busSetTP(50)" aria-pressed="false">+50%</button>
+              <button class="bus-preset" onclick="busSetTP(100)" aria-pressed="false">+100%</button>
             </div>
           </div>
         </div>
@@ -1563,8 +1562,13 @@ const TICKERS=[
 // ══════════════════════════════════════════════════════
 // PRICE ENGINE
 // ══════════════════════════════════════════════════════
+const FALLBACK_PRICES = { BTC: 65000, ETH: 2600, WETH: 2600, SOL: 145, AVAX: 25, LINK: 12, MATIC: 0.4, POL: 0.4, UNI: 6, AAVE: 140, ARB: 0.6, OP: 1.4, USDC: 1, USDT: 1, DAI: 1 };
+
 async function getLivePrice(symbol) {
-  const id=COINGECKO_IDS[symbol?.toUpperCase()]; if(!id) return null;
+  if (!symbol) return 100;
+  const symUpper = symbol.toUpperCase();
+  const id = COINGECKO_IDS[symUpper];
+  const fallbackPrice = FALLBACK_PRICES[symUpper] || 100;
 
   // Tier-1: Market Cache check (highly efficient O(1) Map lookup)
   if (marketCache && (Date.now() - marketCacheTime < 30000)) {
@@ -1575,6 +1579,8 @@ async function getLivePrice(symbol) {
   const c=priceCache[symbol];
   if(c && Date.now()-c.ts<45000) return c.price;
 
+  if (!id) return fallbackPrice;
+
   // Request deduplication
   const reqKey = 'price-' + id;
   if (inFlightRequests.has(reqKey)) return inFlightRequests.get(reqKey);
@@ -1583,8 +1589,9 @@ async function getLivePrice(symbol) {
     try {
       const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`);
       const d=await r.json(); const price=d[id]?.usd;
-      if(price){ priceCache[symbol]={price,ts:Date.now()}; } return price||null;
-    } catch(e){ return c?.price||null; }
+      if(price){ priceCache[symbol]={price,ts:Date.now()}; return price; }
+      return c?.price || fallbackPrice;
+    } catch(e){ return c?.price || fallbackPrice; }
     finally { inFlightRequests.delete(reqKey); }
   })();
 
@@ -2973,23 +2980,38 @@ async function loginMetaMask(){
     }
 
     // Get balance
-    s.textContent='⏳ Fetching wallet balance…';
+    s.textContent='⏳ Fetching wallet balance & multi-chain holdings…';
     let balanceUSD = 0; // Default to $0 to enable Earn-to-Trade flow
+    let holdings = [];
 
     try {
-      const balanceWei = await provider.getBalance(address);
-      const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
-
-      // Get ETH price in USD
-      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-      const priceData = await priceResponse.json();
-      const ethPrice = priceData?.ethereum?.usd || 3200;
-
-      balanceUSD = balanceETH * ethPrice;
+      if (typeof fetchMultiChainTokenBalances === 'function') {
+        const mcResult = await fetchMultiChainTokenBalances(address);
+        holdings = mcResult?.holdings || [];
+        if (mcResult && mcResult.totalUsd > 0) {
+          balanceUSD = mcResult.totalUsd;
+        }
+      }
+    } catch(mcError) {
+      console.warn('Could not fetch multi-chain holdings:', mcError);
     }
-    catch(balanceError) {
-      console.warn('Could not fetch balance:', balanceError);
-      // Stays at $0 to allow user to use Faucet
+
+    if (balanceUSD === 0) {
+      try {
+        const balanceWei = await provider.getBalance(address);
+        const balanceETH = parseFloat(ethers.utils.formatEther(balanceWei));
+
+        // Get ETH price in USD
+        const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+        const priceData = await priceResponse.json();
+        const ethPrice = priceData?.ethereum?.usd || 3200;
+
+        balanceUSD = balanceETH * ethPrice;
+      }
+      catch(balanceError) {
+        console.warn('Could not fetch balance:', balanceError);
+        // Stays at $0 to allow user to use Faucet
+      }
     }
 
     // Update global balance
@@ -3227,13 +3249,17 @@ function setupApp({name,avatar,badge,address,provider}){
 // BALANCE
 // ══════════════════════════════════════════════════════
 function updateGlobalBalance(){
-  const balEl=document.getElementById('ghBalance');
-  if(balEl){
-    balEl.textContent='$'+balance.toFixed(2);
-    balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $0.00`;
+  if (typeof updateLiveBalance === 'function') {
+    updateLiveBalance();
+  } else {
+    const balEl=document.getElementById('ghBalance');
+    if(balEl){
+      balEl.textContent='$'+balance.toFixed(2);
+      balEl.title=`Realised: $${balance.toFixed(2)} | Unrealised: $0.00`;
+    }
+    const p=document.getElementById('ghPnl');
+    if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
   }
-  const p=document.getElementById('ghPnl');
-  if(p){p.textContent=(totalPnl>=0?'+':'')+'$'+totalPnl.toFixed(2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
   checkGlobalBreakers();
 }
 function updateBotPnl(bot){
@@ -3597,83 +3623,92 @@ async function spinBot(id){
 
   const block=isGlobalBlocked();
   if(block.blocked){const t=document.getElementById('mtick-'+id);if(t)t.textContent='🚫 '+block.reason;return;}
-  bot.spinning=true;
-  try{ if(typeof SFX!=='undefined') SFX.spin(); }catch(e){}
+
   const spinEl=document.getElementById('mspin-'+id), thinkEl=document.getElementById('mthink-'+id), stepEl=document.getElementById('mstep-'+id);
-  if(spinEl){spinEl.disabled=true;spinEl.classList.add('going');spinEl.textContent='⏳';}
-  if(thinkEl) thinkEl.classList.add('show');
-  if(stepEl) stepEl.textContent='📡 Fetching live market data…';
-  const market=await getMarketData();
+  bot.spinning=true;
 
-  if(stepEl) stepEl.textContent='🧠 Running 5-agent ensemble…';
-  const decision=await callAI(market,bot.bet,id,bot);
-
-  if(stepEl) stepEl.textContent=`💎 Getting real ${decision.token} price…`;
-  let entryPrice=await getLivePrice(decision.token);
-  let volumeUsd=1e9, priceChangePct15m=0; // Higher realistic volume for meme coins
-  if(market?.length){
-    const sym=decision.token.toLowerCase();
-    const found=market.find(c=>c.symbol.toLowerCase()===sym);
-    if(found){
-      if(!entryPrice) entryPrice=found.current_price;
-      volumeUsd=found.total_volume||1e8;
-      priceChangePct15m=found.price_change_percentage_24h||0; // proxy
-    }
-  }
-  if(!entryPrice) entryPrice=1;
-
-  if(stepEl) stepEl.textContent='⚡ Opening position…';
-  if(thinkEl) thinkEl.classList.remove('show');
-
-  // Trigger Acoustic Open
-  if (typeof ACOUSTIC !== 'undefined') {
-    ACOUSTIC.onTradeOpen(bot.id, decision.token, decision.method);
-  }
-
-  // Start reel animation immediately and fetch instant result in parallel
-  const reelPromise = animateReels(id,decision);
-  const resultPromise = (async()=>{
-    // Simulate instant result while reels are spinning (for visual feedback)
-    await new Promise(r=>setTimeout(r,200));
-    return {decision, entryPrice};
-  })();
-
-  await Promise.all([reelPromise, resultPromise]);
-
-  setVal('mpv0-'+id,decision.token);
-  setVal('mpv1-'+id,decision.method==='HOLD'?'🧠 HOLD':decision.method);
-  const exitM=decision.method==='HOLD'?'—':Math.round(EXIT_TIMES[decision.method]/60000)+'m';
-  setVal('mpv2-'+id,exitM);
-  ['mp0-','mp1-','mp2-'].forEach(pfx=>{document.getElementById(pfx+id)?.classList.add('lit');setTimeout(()=>document.getElementById(pfx+id)?.classList.remove('lit'),1200);});
-  const tick=document.getElementById('mtick-'+id);
-  if(tick) tick.textContent=decision.method==='HOLD'?`🧠 HOLD — ${decision.reasoning}`:`⏱ ${decision.token} ${decision.method} @ $${entryPrice.toFixed(entryPrice<1?4:2)}`;
-
-  if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
-  bot.spinning=false;
-
-  // Execute trade (on-chain if connected, else paper)
   try{
     if(typeof SFX!=='undefined') SFX.spin();
-    if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
+    if(spinEl){spinEl.disabled=true;spinEl.classList.add('going');spinEl.textContent='⏳';}
+    if(thinkEl) thinkEl.classList.add('show');
+    if(stepEl) stepEl.textContent='📡 Fetching live market data…';
+    const market=await getMarketData();
 
-    // ON-CHAIN EXECUTION TRIGGER
-    if (window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
-        console.log('[Arena] Routing to On-Chain Execution Engine...');
-        try {
-            await window.executeOnChainTrade({
-                botId: bot.id,
-                token: decision.token,
-                method: decision.method,
-                amountUSD: bot.bet
-            });
-        } catch (execError) {
-            console.error('[Arena] On-chain execution failed, falling back to simulation', execError);
-        }
+    if(stepEl) stepEl.textContent='🧠 Running 5-agent ensemble…';
+    const decision=await callAI(market,bot.bet,id,bot);
+
+    if(stepEl) stepEl.textContent=`💎 Getting real ${decision.token} price…`;
+    let entryPrice=await getLivePrice(decision.token);
+    let volumeUsd=1e9, priceChangePct15m=0; // Higher realistic volume for meme coins
+    if(market?.length){
+      const sym=decision.token.toLowerCase();
+      const found=market.find(c=>c.symbol.toLowerCase()===sym);
+      if(found){
+        if(!entryPrice) entryPrice=found.current_price;
+        volumeUsd=found.total_volume||1e8;
+        priceChangePct15m=found.price_change_percentage_24h||0; // proxy
+      }
     }
-  }catch(e){}
+    if(!entryPrice) entryPrice=1;
 
-  await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m);
-  updateQuantReport();
+    if(stepEl) stepEl.textContent='⚡ Opening position…';
+    if(thinkEl) thinkEl.classList.remove('show');
+
+    // Trigger Acoustic Open
+    if (typeof ACOUSTIC !== 'undefined') {
+      ACOUSTIC.onTradeOpen(bot.id, decision.token, decision.method);
+    }
+
+    // Start reel animation immediately and fetch instant result in parallel
+    const reelPromise = animateReels(id,decision);
+    const resultPromise = (async()=>{
+      // Simulate instant result while reels are spinning (for visual feedback)
+      await new Promise(r=>setTimeout(r,200));
+      return {decision, entryPrice};
+    })();
+
+    await Promise.all([reelPromise, resultPromise]);
+
+    setVal('mpv0-'+id,decision.token);
+    setVal('mpv1-'+id,decision.method==='HOLD'?'🧠 HOLD':decision.method);
+    const exitM=decision.method==='HOLD'?'—':Math.round(EXIT_TIMES[decision.method]/60000)+'m';
+    setVal('mpv2-'+id,exitM);
+    ['mp0-','mp1-','mp2-'].forEach(pfx=>{document.getElementById(pfx+id)?.classList.add('lit');setTimeout(()=>document.getElementById(pfx+id)?.classList.remove('lit'),1200);});
+    const tick=document.getElementById('mtick-'+id);
+    if(tick) tick.textContent=decision.method==='HOLD'?`🧠 HOLD — ${decision.reasoning}`:`⏱ ${decision.token} ${decision.method} @ $${entryPrice.toFixed(entryPrice<1?4:2)}`;
+
+    // Execute trade (on-chain if connected, else paper)
+    try{
+      if(typeof SFX!=='undefined') SFX.spin();
+      if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
+
+      // ON-CHAIN EXECUTION TRIGGER
+      if (window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
+          console.log('[Arena] Routing to On-Chain Execution Engine...');
+          try {
+              await window.executeOnChainTrade({
+                  botId: bot.id,
+                  token: decision.token,
+                  method: decision.method,
+                  amountUSD: bot.bet
+              });
+          } catch (execError) {
+              console.error('[Arena] On-chain execution failed, falling back to simulation', execError);
+          }
+      }
+    }catch(e){}
+
+    await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m);
+    updateQuantReport();
+  } catch(err) {
+    console.error(`Spin error on bot #${id}:`, err);
+    const tick=document.getElementById('mtick-'+id);
+    if(tick) tick.textContent='⚠️ Trade error: ' + (err.message || 'Execution failed');
+  } finally {
+    if(spinEl){spinEl.disabled=false;spinEl.classList.remove('going');spinEl.textContent='🎰 SPIN';}
+    if(thinkEl) thinkEl.classList.remove('show');
+    bot.spinning=false;
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -5199,7 +5234,9 @@ function _busStatus(msg, ok=true) {
 
 function _busHighlight(containerId, matchFn) {
   document.querySelectorAll(`#${containerId} .bus-preset`).forEach(b => {
-    b.classList.toggle('active', matchFn(b));
+    const isMatch = matchFn(b);
+    b.classList.toggle('active', isMatch);
+    b.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
   });
 }
 
@@ -5216,7 +5253,10 @@ function busSetCustomAmount() {
   if (isNaN(val) || val < 0.01) { if(inp) inp.style.borderColor='var(--hot)'; return; }
   if (inp) { inp.style.borderColor=''; inp.value=''; }
   bots.forEach(b => setBet(b.id, val));
-  document.querySelectorAll('#busAmtPresets .bus-preset').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#busAmtPresets .bus-preset').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
   _busStatus(`All ${bots.length} bots → $${val.toFixed(2)} per trade`);
 }
 

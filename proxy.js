@@ -64,13 +64,20 @@ app.post('/api/openai', aiLimiter, async (req, res) => {
 
 app.post('/api/gemini', aiLimiter, async (req, res) => {
   try {
-    const model = req.body.model || 'gemini-1.5-flash';
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
+    let model = 'gemini-1.5-flash';
+    if (req.body?.model !== undefined && req.body?.model !== null) {
+      if (typeof req.body.model !== 'string' || !/^[a-zA-Z0-9._-]+$/.test(req.body.model.trim())) {
+        return res.status(400).json({ error: 'Invalid model parameter' });
+      }
+      model = req.body.model.trim();
+    }
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: req.body.contents,
-        generationConfig: req.body.generationConfig
+        contents: req.body?.contents,
+        generationConfig: req.body?.generationConfig
       })
     });
     const data = await response.json();

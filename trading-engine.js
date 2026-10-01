@@ -233,6 +233,10 @@ class TradingEngine {
 
          };
 
+         // ASIC Regulatory Compliance & AFSL Gate Controls
+         this.afslCompliant = false; // Requires formal AFSL legal assessment before live funds
+         this.regulatoryGateNotice = "Real-money automated execution locked pending Australian Financial Services Licence (AFSL) legal review.";
+
          // Stablecoins to block from trading
 
          this.stablecoins = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FRAX', 'USDP'];
@@ -817,7 +821,19 @@ class TradingEngine {
 
     async executeTrade(bot, opportunity) {
 
-        // Optimized O(1) read using this.totalNetProfit instead of O(N) this.trades.reduce(...)
+        // Regulatory Compliance Lock: Real-money trading requires explicit AFSL clearance
+        if ((bot.isRealMoney || bot.realMoney) && !this.afslCompliant) {
+            return {
+                id: this.generateId(),
+                botId: bot.id,
+                status: 'BLOCKED_REGULATORY_GATE',
+                reason: 'AFSL_CLEARANCE_REQUIRED',
+                message: this.regulatoryGateNotice,
+                profit: 0,
+                timestamp: Date.now()
+            };
+        }
+
         const safetyCheck = this.safetyControls.isTradeExecutionBlocked(
             this.totalNetProfit,
             bot.amount || 10000

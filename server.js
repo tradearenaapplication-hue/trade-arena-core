@@ -21,6 +21,7 @@ const crypto = require('crypto');
 const axios = require('axios');
 const db = require('./data/database');
 const ethers = require('ethers');
+const rateLimit = require('express-rate-limit');
 const WebSocket = require('websocket').w3cwebsocket;
 const onchainEngine = require('./services/OnchainExecutionEngine');
 const accounting = require('./services/portfolio-accounting');
@@ -1780,10 +1781,18 @@ async function handleSwapRequest(req, res, next) {
     }
 }
 
-app.post('/api/wallet/swap', verifyTradeAuth, handleSwapRequest);
+const swapRateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 30, // limit each IP to 30 swap attempts per minute
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: 'Too many swap requests. Please try again shortly.' }
+});
+
+app.post('/api/wallet/swap', swapRateLimiter, verifyTradeAuth, handleSwapRequest);
 
 // ===== ALIAS: /api/execute/swap =====
-app.post('/api/execute/swap', verifyTradeAuth, handleSwapRequest);
+app.post('/api/execute/swap', swapRateLimiter, verifyTradeAuth, handleSwapRequest);
 
 // ===== ADD TOKEN =====
 app.post('/api/wallet/tokens', async (req, res) => {

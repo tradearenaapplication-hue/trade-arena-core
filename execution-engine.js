@@ -76,11 +76,21 @@ async function getSwapQuote(buyTokenAddress, sellTokenAddress, sellAmountWei, ta
  * @param {Object} tradeRequest
  */
 async function executeOnChainTrade(tradeRequest) {
+    const { botId, token, method, amountUSD } = tradeRequest || {};
+
+    // Gate 3 Regulatory Check: Hard-lock real-money execution unless AFSL compliant
+    if (typeof process !== 'undefined' && process.env && process.env.AFSL_COMPLIANT !== 'true') {
+        const errorMsg = 'AFSL Compliance Gate 3 Lock: Real-money execution requires AFS license clearance or AFSL_COMPLIANT=true';
+        if (typeof updateExecutionUI === 'function' && botId) {
+            updateExecutionUI(botId, 'ERROR', errorMsg);
+        }
+        throw new Error(errorMsg);
+    }
+
     if (ExecutionState.isExecuting) {
         throw new Error('Execution in progress');
     }
 
-    const { botId, token, method, amountUSD } = tradeRequest;
     console.log(`[Execution] EXECUTING REAL TRADE: Bot #${botId} - ${method} ${token} $${amountUSD}`);
 
     if (typeof window.privySignMessage !== 'function' || !window.isPrivyConnected()) {
@@ -203,6 +213,7 @@ async function waitForTransaction(hash) {
  * Update UI state during execution
  */
 function updateExecutionUI(botId, status, detail = '') {
+    if (typeof document === 'undefined') return;
     const el = document.getElementById('mtick-' + botId);
     if (!el) return;
 
@@ -227,5 +238,15 @@ function updateExecutionUI(botId, status, detail = '') {
 }
 
 // Export
-window.executeOnChainTrade = executeOnChainTrade;
-window.getSwapQuote = getSwapQuote;
+if (typeof window !== 'undefined') {
+    window.executeOnChainTrade = executeOnChainTrade;
+    window.getSwapQuote = getSwapQuote;
+}
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        executeOnChainTrade,
+        getSwapQuote,
+        ExecutionState,
+        EXECUTION_CONFIG
+    };
+}

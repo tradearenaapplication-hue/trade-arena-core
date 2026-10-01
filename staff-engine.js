@@ -350,7 +350,8 @@ function renderStaffPanel() {
     } else {
         list.innerHTML = logs.map(log => {
             const color = log.type === 'error' ? 'var(--hot)' : log.type === 'warn' ? 'var(--amber)' : log.type === 'success' ? 'var(--green)' : 'var(--dim)';
-            const time = log.timestamp.split('T')[1].split('.')[0];
+            const rawTime = log.timestamp && typeof log.timestamp === 'string' && log.timestamp.includes('T') ? log.timestamp.split('T')[1].split('.')[0] : (log.timestamp || '');
+            const time = escapeHTML(rawTime);
             return `
                 <div style="display:flex; gap:8px; padding:4px 8px; border-bottom:1px solid rgba(255,255,255,0.05); align-items:flex-start;">
                     <div style="font-size:10px;">${escapeHTML(log.agentAvatar)}</div>

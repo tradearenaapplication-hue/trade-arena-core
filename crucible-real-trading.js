@@ -759,15 +759,42 @@ const CrucibleRealTrading = {
   // GENERATE COMPREHENSIVE TRADING REPORT
   // ════════════════════════════════════════════════════════════════
   async generateReport() {
-    const executedTrades = this.trades.filter(t => t.executed);
-    const winTrades = executedTrades.filter(t => t.isWin);
-    const lossTrades = executedTrades.filter(t => !t.isWin);
+    // ⚡ OPTIMIZATION: Single-pass iteration to calculate report statistics and avoid intermediate array allocations
+    let executedCount = 0;
+    let winCount = 0;
+    let lossCount = 0;
+    let totalPnL = 0;
+    let totalWinPnL = 0;
+    let totalLossPnL = 0;
+    const executedTrades = [];
 
-    const totalPnL = executedTrades.reduce((sum, t) => sum + t.pnlAUD, 0);
-    const avgWin = winTrades.length > 0 ? winTrades.reduce((sum, t) => sum + t.pnlAUD, 0) / winTrades.length : 0;
-    const avgLoss = lossTrades.length > 0 ? lossTrades.reduce((sum, t) => sum + t.pnlAUD, 0) / lossTrades.length : 0;
-    const profitFactor = Math.abs(avgWin) > 0 ? Math.abs(avgWin * winTrades.length) / Math.abs(avgLoss * lossTrades.length) : 0;
-    const winRate = executedTrades.length > 0 ? (winTrades.length / executedTrades.length) * 100 : 0;
+    for (let i = 0; i < this.trades.length; i++) {
+      const t = this.trades[i];
+      if (!t.executed) continue;
+      executedTrades.push(t);
+      executedCount++;
+      const pnl = t.pnlAUD || 0;
+      totalPnL += pnl;
+
+      if (t.isWin) {
+        winCount++;
+        totalWinPnL += pnl;
+      } else {
+        lossCount++;
+        totalLossPnL += pnl;
+      }
+    }
+
+    const avgWin = winCount > 0 ? totalWinPnL / winCount : 0;
+    const avgLoss = lossCount > 0 ? totalLossPnL / lossCount : 0;
+    const absTotalLossPnL = Math.abs(totalLossPnL);
+    const profitFactor =
+      absTotalLossPnL > 0
+        ? Math.abs(totalWinPnL) / absTotalLossPnL
+        : totalWinPnL > 0
+          ? "Inf"
+          : 0;
+    const winRate = executedCount > 0 ? (winCount / executedCount) * 100 : 0;
     const returnPercent = (totalPnL / this.config.startingBalance) * 100;
 
     const duration = (this.endTime - this.startTime) / 1000;

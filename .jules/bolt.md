@@ -14,6 +14,6 @@
 **Learning:** `renderPadGrid` in `trading-engine.js` was executing `.map().join()` string building and full `grid.innerHTML` overwrites on every timer tick regardless of whether bot P&L states had actually changed. In a multi-bot live environment, this caused frequent layout recalcs and DOM churn.
 **Action:** Implement lightweight state hashing across entity values (`${bot.id}:${pnl};`) to perform fast scalar dirty checking. Return early to bypass string concatenation and DOM `innerHTML` assignments when values are identical.
 
-## 2026-11-02 - Multi-Pass Array Reduces in Bot Decision Cycles
-**Learning:** High-frequency decision engines (`generateModelSpecificDecision` in `ai-model-arena.js` and profile generators in `advanced-bot-engine.js`) were running multiple separate `.reduce()` passes over `marketData` arrays on every decision cycle to compute scalar metrics like volatility and momentum.
-**Action:** Consolidate array metrics calculations into single-pass indexed `for` loops with scalar accumulators to eliminate redundant array iterations and closure allocations per trade decision.
+## 2026-11-04 - Redundant Array Allocations and Sorting in Summary Reporting
+**Learning:** `TRADE_OLYMPICS.getSummary()` was triggering full leaderboard array allocations and sorting (`getLeaderboard("elo")`), multiple array `.reduce()` passes, and `Object.keys()` calls every time ELO summaries were rendered or queried.
+**Action:** Cache total static entity counts (`_bracketCount`) during initialization/load and perform single-pass `for...in` loop accumulation over standings objects to gather totals and max values in a single O(N) scalar pass without array allocations or sorting overhead.

@@ -22,3 +22,8 @@
 **Vulnerability:** In `server.js`, `if (expectedSecret && signature !== expectedSecret)` allowed deposit webhooks to bypass signature authentication completely when `MOONPAY_WEBHOOK_SECRET` was unconfigured (falsy `''`), allowing unauthenticated attackers to trigger fake deposit confirmations and bot deployments.
 **Learning:** Checking truthiness of an environment variable before validating signatures creates a default-open fallback when configuration is missing. Standard string inequality is also vulnerable to timing side-channels.
 **Prevention:** Always require webhook secrets and signature headers to be present before accepting incoming webhooks, and use `crypto.timingSafeEqual` for constant-time signature verification.
+
+## 2026-09-15 - [HIGH] XSS Vulnerability in Staff Operations Log Rendering
+**Vulnerability:** In `staff-engine.js`, `renderStaffPanel` extracted `time` from `log.timestamp` and interpolated it into `list.innerHTML` unescaped, allowing stored or manipulated log timestamps to execute arbitrary JavaScript.
+**Learning:** Derived or split properties from timestamps/dates are easy to overlook during sanitization audits if only primary fields like messages or names are wrapped in `escapeHTML`.
+**Prevention:** Always sanitize all dynamic expressions interpolated into `innerHTML` strings, including derived timestamp formats.

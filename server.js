@@ -28,6 +28,20 @@ const aiLimiter = rateLimit({
   keyGenerator: (req) => req.ip || req.headers?.['x-forwarded-for'] || '127.0.0.1',
   message: { error: 'Too many AI requests, please try again later' }
 });
+
+/**
+ * Rate limiter middleware for user API endpoints
+ * Prevents brute-force attacks and resource exhaustion
+ */
+const userApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => req.ip || req.headers?.['x-forwarded-for'] || '127.0.0.1',
+  message: { success: false, error: 'Too many user requests, please try again later' }
+});
 const PORT = process.env.PORT || 3001;
 
 // Middleware
@@ -97,7 +111,7 @@ const provider = new ethers.JsonRpcProvider(RPC_URL);
  * User Account, Session & Trade Log Database Endpoints
  */
 
-app.post('/api/user/signin', (req, res) => {
+app.post('/api/user/signin', userApiLimiter, (req, res) => {
     try {
         const { address, provider, name, holdings, sessionData } = req.body || {};
         if (!address) {
@@ -120,7 +134,7 @@ app.post('/api/user/signin', (req, res) => {
     }
 });
 
-app.get('/api/user/session', (req, res) => {
+app.get('/api/user/session', userApiLimiter, (req, res) => {
     try {
         const { address } = req.query;
         if (!address) {
@@ -141,7 +155,7 @@ app.get('/api/user/session', (req, res) => {
     }
 });
 
-app.post('/api/user/tradelog', (req, res) => {
+app.post('/api/user/tradelog', userApiLimiter, (req, res) => {
     try {
         const { address, agentId, botName, action, symbol, amount, pnl, details } = req.body || {};
         if (!address) {
@@ -162,7 +176,7 @@ app.post('/api/user/tradelog', (req, res) => {
     }
 });
 
-app.get('/api/user/tradelogs', (req, res) => {
+app.get('/api/user/tradelogs', userApiLimiter, (req, res) => {
     try {
         const { address } = req.query;
         if (!address) {
@@ -234,7 +248,7 @@ app.get('/api/safety-controls', (req, res) => {
     });
 });
 
-app.post('/api/safety-controls/update', (req, res) => {
+app.post('/api/safety-controls/update', userApiLimiter, (req, res) => {
     try {
         const { action, newLimit, durationHours } = req.body || {};
         if (action === 'requestLimitIncrease') {

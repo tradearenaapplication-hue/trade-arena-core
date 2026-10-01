@@ -708,7 +708,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
   <div style="width:100%;max-width:440px;padding:8px 12px;background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.25);border-radius:8px;font-size:9px;color:var(--dim);line-height:1.5;text-align:center;">
-    ⚠️ <strong>NON-CUSTODIAL NOTICE:</strong> Trade Arena is a non-custodial software interface. Trading bots execute automated strategies according to user parameters. Crypto trading carries high financial risk. Past performance does not indicate future results. Not financial advice.
+    ⚠️ <strong>NON-CUSTODIAL & REGULATORY DISCLOSURE:</strong> Trade Arena is a non-custodial software interface and does not hold an Australian Financial Services Licence (AFSL) or provide financial product advice under ASIC regulations. Trading bots execute automated user parameters. Crypto trading carries substantial risk of financial loss.
   </div>
 <div class="login-card">
     <div class="login-card-hd">SIGN IN TO THE FLOOR</div>
@@ -737,8 +737,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         ⚙´©Å Advanced Settings
       </button>
       <div class="fiat-ramp-row">
-        <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
-        <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
+        <button class="onramp-btn" onclick="checkGoLiveAck(() => window.openMoonpay && window.openMoonpay())">💳 DEPOSIT USDC</button>
+        <button class="offramp-btn" onclick="checkGoLiveAck(() => openOskoRamp('offramp'))">💵 WITHDRAW</button>
       </div>
     </div>
     <!-- Advanced Settings (hidden by default) -->
@@ -752,17 +752,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
     <!-- Go Live Acknowledgment Modal -->
     <div id="goLiveModal" role="dialog" aria-modal="true" aria-labelledby="goLiveModalTitle" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10005;align-items:center;justify-content:center;padding:16px;">
-      <div style="background:var(--panel);border:2px solid var(--gold2);border-radius:14px;max-width:480px;width:100%;padding:22px;box-shadow:0 8px 32px rgba(0,0,0,0.8);color:#fff;">
+      <div style="background:var(--panel);border:2px solid var(--gold2);border-radius:14px;max-width:520px;width:100%;padding:22px;box-shadow:0 8px 32px rgba(0,0,0,0.8);color:#fff;">
         <div id="goLiveModalTitle" style="font-family:'Bungee',display;font-size:14px;color:var(--gold2);margin-bottom:12px;letter-spacing:1px;display:flex;align-items:center;gap:8px;">
-          <span>⚠️</span> NON-CUSTODIAL & RISK ACKNOWLEDGMENT
+          <span>⚠️</span> REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT
         </div>
         <div style="font-size:11px;line-height:1.6;color:#ccc;margin-bottom:16px;">
-          <p style="margin-bottom:10px;">Before proceeding to Live Mode, please review and confirm the following compliance guardrails:</p>
+          <p style="margin-bottom:10px;">Before proceeding to Live Mode, please review and confirm the following legal and regulatory disclosures:</p>
           <ul style="padding-left:18px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:10px;">
-            <li><strong>Non-Custodial Interface:</strong> Trade Arena is a non-custodial software interface. You maintain control of your wallet and private keys at all times.</li>
-            <li><strong>Automated Execution Risk:</strong> Trading bots execute automated strategies on your behalf based on your settings. Crypto markets are volatile and carry high risk of financial loss.</li>
-            <li><strong>No Financial Advice:</strong> Content, signals, and backtests provided do not constitute financial advice. Past performance does not guarantee future results.</li>
-            <li><strong>User Responsibility:</strong> You are solely responsible for setting appropriate risk parameters, daily loss limits, and monitoring open positions.</li>
+            <li><strong>No AFS Licence / No Financial Product Advice:</strong> Trade Arena does not hold an Australian Financial Services Licence (AFSL) and does not provide financial advice or manage assets under ASIC regulations. All automated strategies and signals are software tools operated directly by you.</li>
+            <li><strong>Non-Custodial Interface:</strong> Trade Arena is a purely non-custodial software interface. You retain sole custody and full control of your private keys and wallet at all times.</li>
+            <li><strong>Automated Execution & Market Risk:</strong> Automated bots execute trade orders directly on your self-sovereign wallet according to your parameters. Crypto trading is high-risk and volatile; you may lose all deposited funds. Past performance is not indicative of future results.</li>
+            <li><strong>User Responsibility & Risk Controls:</strong> You are solely responsible for setting appropriate safety controls, daily loss limits, and monitoring your positions.</li>
           </ul>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;">
@@ -789,10 +789,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
     <!-- Deposit Buttons -->
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      <button class="onramp-btn" onclick="openDepositFlow(50)" style="flex:1;min-width:120px;">
+      <button class="onramp-btn" onclick="checkGoLiveAck(() => openDepositFlow(50))" style="flex:1;min-width:120px;">
         Deposit $50
       </button>
-      <button class="onramp-btn" onclick="openDepositFlow(100)" style="flex:1;min-width:120px;">
+      <button class="onramp-btn" onclick="checkGoLiveAck(() => openDepositFlow(100))" style="flex:1;min-width:120px;">
         Deposit $100
       </button>
     </div>
@@ -867,7 +867,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot" aria-label="Add new bot">+</button>
-       <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music" aria-label="Toggle background music">🎵</button>
+       <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music" aria-label="Toggle background music" aria-pressed="false">🎵</button>
      </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
@@ -881,14 +881,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>💰</span> TRADE AMOUNT — ALL BOTS</div>
         <div class="bus-presets" id="busAmtPresets">
-          <button class="bus-preset" onclick="busSetAmount(0.10)">$0.10</button>
-          <button class="bus-preset" onclick="busSetAmount(0.25)">$0.25</button>
-          <button class="bus-preset" onclick="busSetAmount(0.50)">$0.50</button>
-          <button class="bus-preset" onclick="busSetAmount(1)">$1</button>
-          <button class="bus-preset" onclick="busSetAmount(2)">$2</button>
-          <button class="bus-preset" onclick="busSetAmount(5)">$5</button>
-          <button class="bus-preset" onclick="busSetAmount(20)">$20</button>
-          <button class="bus-preset" onclick="busSetAmount(100)">$100</button>
+          <button class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false">$0.10</button>
+          <button class="bus-preset" onclick="busSetAmount(0.25)" aria-pressed="false">$0.25</button>
+          <button class="bus-preset" onclick="busSetAmount(0.50)" aria-pressed="false">$0.50</button>
+          <button class="bus-preset" onclick="busSetAmount(1)" aria-pressed="false">$1</button>
+          <button class="bus-preset" onclick="busSetAmount(2)" aria-pressed="false">$2</button>
+          <button class="bus-preset" onclick="busSetAmount(5)" aria-pressed="false">$5</button>
+          <button class="bus-preset" onclick="busSetAmount(20)" aria-pressed="false">$20</button>
+          <button class="bus-preset" onclick="busSetAmount(100)" aria-pressed="false">$100</button>
         </div>
         <div class="bus-custom-row">
           <input type="number" id="busCustomAmt" aria-label="Custom trade amount in dollars" placeholder="Custom $" min="0.01" step="0.01">
@@ -900,13 +900,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>🧠</span> PERSONALITY — ALL BOTS</div>
         <div class="bus-presets" id="busPersonalityPresets">
-          <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')">🔥 Aggressive</button>
-          <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')">🛡️ Conservative</button>
-          <button class="bus-preset" onclick="busSetPersonality('MOMENTUM')">📈 Momentum</button>
-          <button class="bus-preset" onclick="busSetPersonality('CONTRARIAN')">🔄 Contrarian</button>
-          <button class="bus-preset" onclick="busSetPersonality('BALANCED')">⚖️ Balanced</button>
-          <button class="bus-preset" onclick="busSetPersonality('RANDOM')">🎲 Random Spread</button>
-          <button class="bus-preset" onclick="busSetPersonality('OPTIMIZED')">⚡ Optimized Spread</button>
+          <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')" aria-pressed="false">🔥 Aggressive</button>
+          <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')" aria-pressed="false">🛡️ Conservative</button>
+          <button class="bus-preset" onclick="busSetPersonality('MOMENTUM')" aria-pressed="false">📈 Momentum</button>
+          <button class="bus-preset" onclick="busSetPersonality('CONTRARIAN')" aria-pressed="false">🔄 Contrarian</button>
+          <button class="bus-preset" onclick="busSetPersonality('BALANCED')" aria-pressed="false">⚖️ Balanced</button>
+          <button class="bus-preset" onclick="busSetPersonality('RANDOM')" aria-pressed="false">🎲 Random Spread</button>
+          <button class="bus-preset" onclick="busSetPersonality('OPTIMIZED')" aria-pressed="false">⚡ Optimized Spread</button>
         </div>
       </div>
 
@@ -914,10 +914,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>⏱️</span> AUTO DELAY — ALL BOTS</div>
         <div class="bus-presets" id="busDelayPresets">
-          <button class="bus-preset" onclick="busSetDelay(2000)">Fast 2s</button>
-          <button class="bus-preset" onclick="busSetDelay(5000)">Normal 5s</button>
-          <button class="bus-preset" onclick="busSetDelay(15000)">Slow 15s</button>
-          <button class="bus-preset" onclick="busSetDelay(60000)">Patient 1m</button>
+          <button class="bus-preset" onclick="busSetDelay(2000)" aria-pressed="false">Fast 2s</button>
+          <button class="bus-preset" onclick="busSetDelay(5000)" aria-pressed="false">Normal 5s</button>
+          <button class="bus-preset" onclick="busSetDelay(15000)" aria-pressed="false">Slow 15s</button>
+          <button class="bus-preset" onclick="busSetDelay(60000)" aria-pressed="false">Patient 1m</button>
         </div>
       </div>
 
@@ -928,19 +928,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <div style="flex:1">
             <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Stop Loss</div>
             <div class="bus-presets" id="busSLPresets" style="flex-direction:column">
-              <button class="bus-preset" onclick="busSetSL(0)">None</button>
-              <button class="bus-preset" onclick="busSetSL(10)">−10%</button>
-              <button class="bus-preset" onclick="busSetSL(20)">−20%</button>
-              <button class="bus-preset" onclick="busSetSL(50)">−50%</button>
+              <button class="bus-preset" onclick="busSetSL(0)" aria-pressed="false">None</button>
+              <button class="bus-preset" onclick="busSetSL(10)" aria-pressed="false">−10%</button>
+              <button class="bus-preset" onclick="busSetSL(20)" aria-pressed="false">−20%</button>
+              <button class="bus-preset" onclick="busSetSL(50)" aria-pressed="false">−50%</button>
             </div>
           </div>
           <div style="flex:1">
             <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Take Profit</div>
             <div class="bus-presets" id="busTPPresets" style="flex-direction:column">
-              <button class="bus-preset" onclick="busSetTP(0)">None</button>
-              <button class="bus-preset" onclick="busSetTP(20)">+20%</button>
-              <button class="bus-preset" onclick="busSetTP(50)">+50%</button>
-              <button class="bus-preset" onclick="busSetTP(100)">+100%</button>
+              <button class="bus-preset" onclick="busSetTP(0)" aria-pressed="false">None</button>
+              <button class="bus-preset" onclick="busSetTP(20)" aria-pressed="false">+20%</button>
+              <button class="bus-preset" onclick="busSetTP(50)" aria-pressed="false">+50%</button>
+              <button class="bus-preset" onclick="busSetTP(100)" aria-pressed="false">+100%</button>
             </div>
           </div>
         </div>
@@ -5234,7 +5234,9 @@ function _busStatus(msg, ok=true) {
 
 function _busHighlight(containerId, matchFn) {
   document.querySelectorAll(`#${containerId} .bus-preset`).forEach(b => {
-    b.classList.toggle('active', matchFn(b));
+    const isMatch = matchFn(b);
+    b.classList.toggle('active', isMatch);
+    b.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
   });
 }
 
@@ -5251,7 +5253,10 @@ function busSetCustomAmount() {
   if (isNaN(val) || val < 0.01) { if(inp) inp.style.borderColor='var(--hot)'; return; }
   if (inp) { inp.style.borderColor=''; inp.value=''; }
   bots.forEach(b => setBet(b.id, val));
-  document.querySelectorAll('#busAmtPresets .bus-preset').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#busAmtPresets .bus-preset').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
   _busStatus(`All ${bots.length} bots → $${val.toFixed(2)} per trade`);
 }
 
@@ -5542,6 +5547,11 @@ function toggleBackgroundMusic() {
       btn.classList.toggle('av-on', isOn);
       btn.setAttribute('aria-pressed', isOn);
     }
+    const legacyBtn = document.getElementById('musicToggleBtn');
+    if (legacyBtn) {
+      legacyBtn.classList.toggle('av-on', isOn);
+      legacyBtn.setAttribute('aria-pressed', isOn);
+    }
   }
 }
 
@@ -5623,9 +5633,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <!-- VOICE AGENT MODAL -->
-<div id="voiceAgentModal">
+<div id="voiceAgentModal" role="dialog" aria-modal="true" aria-labelledby="vaTitle">
   <div class="va-header">
-    <span class="va-title">🎙️ AI FLOOR MANAGER</span>
+    <span class="va-title" id="vaTitle">🎙️ AI FLOOR MANAGER</span>
     <button class="m-close" onclick="toggleVoiceAgent()" aria-label="Close Voice Agent">✕</button>
   </div>
   <div class="va-body">
@@ -5783,7 +5793,7 @@ Respond in JSON format:
 }
 </script>
 <!-- Floating Session Time Warning Banner -->
-<div id="sessionWarningBanner" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(180deg,#110b18,var(--panel));border:2px solid var(--amber);border-radius:10px;padding:12px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.8);max-width:440px;width:90%;color:#fff;align-items:center;justify-content:space-between;gap:12px;">
+<div id="sessionWarningBanner" role="alert" aria-live="polite" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(180deg,#110b18,var(--panel));border:2px solid var(--amber);border-radius:10px;padding:12px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.8);max-width:440px;width:90%;color:#fff;align-items:center;justify-content:space-between;gap:12px;">
   <div>
     <div style="font-family:'Bungee',display;font-size:11px;color:var(--amber);margin-bottom:2px;">⏱ SESSION TIME WARNING</div>
     <div id="sessionWarningDetails" style="font-size:10px;color:#ccc;">Active session: 30 mins · Net P&L: +$0.00</div>

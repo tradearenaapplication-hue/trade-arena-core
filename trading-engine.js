@@ -229,6 +229,10 @@ class TradingEngine {
 
          };
 
+         // ASIC Regulatory Compliance & AFSL Gate Controls
+         this.afslCompliant = false; // Requires formal AFSL legal assessment before live funds
+         this.regulatoryGateNotice = "Real-money automated execution locked pending Australian Financial Services Licence (AFSL) legal review.";
+
          // Stablecoins to block from trading
 
          this.stablecoins = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FRAX', 'USDP'];
@@ -813,14 +817,14 @@ class TradingEngine {
 
     async executeTrade(bot, opportunity) {
 
-        // Gate 3 Regulatory Check: Hard-lock real-money execution unless AFSL compliant
-        const isRealMoneyTrade = bot.isRealMoney || (opportunity && opportunity.isRealMoney) || bot.mode === 'REAL' || this.isRealTrading;
-        if (isRealMoneyTrade && (typeof process !== 'undefined' && process.env && process.env.AFSL_COMPLIANT !== 'true')) {
+        // Regulatory Compliance Lock: Real-money trading requires explicit AFSL clearance
+        if ((bot.isRealMoney || bot.realMoney) && !this.afslCompliant) {
             return {
                 id: this.generateId(),
                 botId: bot.id,
-                status: 'BLOCKED_AFSL_COMPLIANCE_GATE',
-                reason: 'AFSL Compliance Gate 3 Lock: Real-money execution requires AFS license clearance or AFSL_COMPLIANT=true',
+                status: 'BLOCKED_REGULATORY_GATE',
+                reason: 'AFSL_CLEARANCE_REQUIRED',
+                message: this.regulatoryGateNotice,
                 profit: 0,
                 timestamp: Date.now()
             };

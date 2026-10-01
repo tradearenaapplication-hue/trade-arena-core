@@ -14,6 +14,6 @@
 **Learning:** `renderPadGrid` in `trading-engine.js` was executing `.map().join()` string building and full `grid.innerHTML` overwrites on every timer tick regardless of whether bot P&L states had actually changed. In a multi-bot live environment, this caused frequent layout recalcs and DOM churn.
 **Action:** Implement lightweight state hashing across entity values (`${bot.id}:${pnl};`) to perform fast scalar dirty checking. Return early to bypass string concatenation and DOM `innerHTML` assignments when values are identical.
 
-## 2026-10-28 - Intermediate Array Allocations in Hot-Path ELO Tournament Engine
-**Learning:** `recordEloMatch` in `elo-tournament-engine.js` is triggered on every position outcome across all ensemble agents, executing `calculateMarketOpponentRating`, `checkForEvolution`, and `getLeaderAgent`. Functional methods (`.slice(-20)`, `.filter()`, `Object.values().reduce()`, `Object.keys().reduce()`) caused redundant intermediate array allocations and GC churn on every trade resolution.
-**Action:** Use single-pass scalar loops (`for...in` and index-based `for` loops) over object properties and arrays in high-frequency scoring/rating routines to eliminate garbage collection overhead.
+## 2026-11-04 - Redundant Array Allocations and Sorting in Summary Reporting
+**Learning:** `TRADE_OLYMPICS.getSummary()` was triggering full leaderboard array allocations and sorting (`getLeaderboard("elo")`), multiple array `.reduce()` passes, and `Object.keys()` calls every time ELO summaries were rendered or queried.
+**Action:** Cache total static entity counts (`_bracketCount`) during initialization/load and perform single-pass `for...in` loop accumulation over standings objects to gather totals and max values in a single O(N) scalar pass without array allocations or sorting overhead.

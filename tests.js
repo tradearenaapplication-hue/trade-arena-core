@@ -1744,6 +1744,34 @@ describe("Bus Panel Preset Accessibility", () => {
   });
 });
 
+describe("ASIC Regulatory Exposure & AFSL Gate Compliance Disclaimers", () => {
+  const fs = require("fs");
+
+  it("verifies presence and essential regulatory sections in docs/REGULATORY_AFSL_ASSESSMENT.md", () => {
+    const doc = fs.readFileSync("docs/REGULATORY_AFSL_ASSESSMENT.md", "utf8");
+    expect(doc).toContain("ASIC Regulatory Exposure & AFSL Compliance Assessment");
+    expect(doc).toContain("Corporations Act 2001");
+    expect(doc).toContain("Managed Investment Scheme (MIS) Exposure");
+    expect(doc).toContain("Australian Financial Services Licence (AFSL) Requirements");
+    expect(doc).toContain("Gate 3 Formal Clearance Criteria");
+    expect(doc).toContain("30-Minute Legal Brief Framework for Financial Services Counsel");
+  });
+
+  it("verifies ASIC Regulatory Notice banner in index.html", () => {
+    const html = fs.readFileSync("index.html", "utf8");
+    expect(html).toContain('id="regulatoryNoticeBanner"');
+    expect(html).toContain("ASIC REGULATORY NOTICE");
+    expect(html).toContain("Australian Financial Services Licence (AFSL)");
+    expect(html).toContain("Corporations Act 2001");
+  });
+
+  it("verifies Gate 3 AFSL clearance boundaries in Go Live modal in index.html", () => {
+    const html = fs.readFileSync("index.html", "utf8");
+    expect(html).toContain("ASIC & AFSL Clearance Boundary");
+    expect(html).toContain("s 766B of the Corporations Act 2001");
+  });
+});
+
 describe("Task Center XSS Sanitization Security", () => {
   const fs = require("fs");
   const taskCenterCode = fs.readFileSync("task-center.js", "utf8");

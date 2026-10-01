@@ -1809,6 +1809,20 @@ describe("ASIC Regulatory Exposure & AFSL Gate Compliance Disclaimers", () => {
   });
 });
 
+describe("Voice Agent Modal & Session Warning Banner Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines role=dialog, aria-modal, and aria-labelledby on #voiceAgentModal", () => {
+    expect(html).toContain('id="voiceAgentModal" role="dialog" aria-modal="true" aria-labelledby="vaTitle"');
+    expect(html).toContain('id="vaTitle"');
+  });
+
+  it("defines role=alert and aria-live=polite on #sessionWarningBanner", () => {
+    expect(html).toContain('id="sessionWarningBanner" role="alert" aria-live="polite"');
+  });
+});
+
 describe("Task Center XSS Sanitization Security", () => {
   const fs = require("fs");
   const taskCenterCode = fs.readFileSync("task-center.js", "utf8");

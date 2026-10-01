@@ -1916,6 +1916,63 @@ describe("Server User Database REST Endpoints", () => {
   });
 });
 
+describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
+  const fs = require("fs");
+  const server = require("./server.js");
+
+  it("blocks real-money trade execution in TradingEngine when AFSL clearance is false", async () => {
+    const engine = new TradingEngine();
+    expect(engine.afslCompliant).toBe(false);
+
+    const realMoneyBot = {
+      id: 'bot-real-1',
+      name: 'Real Fund Bot',
+      amount: 1000,
+      risk: 'Conservative (2x leverage)',
+      isRealMoney: true
+    };
+
+    const res = await engine.executeTrade(realMoneyBot, {
+      type: 'ARBITRAGE',
+      profitMargin: 1.2,
+      volatility: 2
+    });
+
+    expect(res.status).toBe('BLOCKED_REGULATORY_GATE');
+    expect(res.reason).toBe('AFSL_CLEARANCE_REQUIRED');
+    expect(res.profit).toBe(0);
+  });
+
+  it("exposes regulatory status via /api/regulatory/status endpoint", () => {
+    const route = server._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/regulatory/status"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    route.route.stack[0].handle({}, res);
+
+    expect(statusCode).toBe(200);
+    expect(jsonResponse.success).toBe(true);
+    expect(jsonResponse.regulatory.jurisdiction).toBe("Australia (ASIC)");
+    expect(jsonResponse.regulatory.requiresAfsl).toBe(true);
+  });
+
+  it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
+    expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
+    const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
+    expect(content).toContain("Australian Securities and Investments Commission (ASIC)");
+    expect(content).toContain("Australian Financial Services Licence (AFSL)");
+    expect(content).toContain("Gate 3 Compliance Checklist");
+  });
+});
+
 describe("Engine-Level Safety Controls & Responsible Trading Mechanics", () => {
   it("enforces effective daily loss limit at the engine level", () => {
     const engine = new TradingEngine();

@@ -199,6 +199,25 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
+ * ASIC Regulatory Compliance & Gate 3 Assessment Status
+ */
+let regulatoryState = {
+    afslCompliant: process.env.AFSL_COMPLIANT === 'true',
+    jurisdiction: 'Australia (ASIC)',
+    gate: 'Gate 3 Regulatory Hardstop',
+    assessmentStatus: process.env.AFSL_COMPLIANT === 'true' ? 'CLEARED' : 'PENDING_LEGAL_REVIEW',
+    disclaimer: 'Trade Arena automated tools are provided for paper trading and educational demonstration. Automated decision-making on real funds requires AFSL or exemption.',
+    requiresAfsl: true
+};
+
+app.get('/api/regulatory/status', (req, res) => {
+    res.json({
+        success: true,
+        regulatory: regulatoryState
+    });
+});
+
+/**
  * Safety Controls Engine State (Server-Side)
  */
 let serverSafetyState = {
@@ -548,6 +567,16 @@ app.post('/api/execute/swap', async (req, res) => {
             isNaN(numAmount) || numAmount <= 0 ||
             isNaN(numSlippage) || numSlippage < 0 || numSlippage > 1) {
             return res.status(400).json({ success: false, error: 'Invalid swap parameters' });
+        }
+
+        // ASIC Regulatory Check for Real-Money Swaps
+        if (req.body && req.body.isRealMoney && !regulatoryState.afslCompliant) {
+            return res.status(403).json({
+                success: false,
+                error: 'Real-money execution blocked by Regulatory Gate (AFSL assessment required)',
+                reason: 'AFSL_CLEARANCE_REQUIRED',
+                disclaimer: regulatoryState.disclaimer
+            });
         }
 
         // Simulate swap execution

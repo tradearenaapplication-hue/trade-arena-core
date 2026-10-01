@@ -519,10 +519,18 @@ app.post('/api/flash-loan/simulate', async (req, res) => {
 });
 
 /**
- * POST /api/execute/swap - Execute token swap (simulation)
+ * POST /api/execute/swap - Execute token swap
  */
 app.post('/api/execute/swap', async (req, res) => {
     try {
+        // Gate 3 Regulatory Check: Require AFSL Compliance Clearance for real-money trade execution
+        if (process.env.AFSL_COMPLIANT !== 'true') {
+            return res.status(403).json({
+                success: false,
+                error: 'AFSL Compliance Gate 3 Lock: Real-money execution requires AFS license clearance or AFSL_COMPLIANT=true'
+            });
+        }
+
         const { fromToken, toToken, amount, slippage } = req.body || {};
 
         const numAmount = Number(amount);

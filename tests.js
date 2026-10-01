@@ -87,13 +87,44 @@ const expect = (value) => ({
       throw new Error(`Expected <= ${expected}, got ${value}`);
   },
   toContain: (expected) => {
-    if (!value.includes(expected))
+    if (!value || !value.includes(expected))
       throw new Error(`Expected ${value} to contain ${expected}`);
   },
   toMatch: (pattern) => {
     if (!pattern.test(value))
       throw new Error(`Expected ${value} to match ${pattern}`);
   },
+  toThrow: (expectedMessage) => {
+    let threw = false;
+    let actualError = null;
+    try {
+      if (typeof value === "function") value();
+    } catch (err) {
+      threw = true;
+      actualError = err;
+    }
+    if (!threw) throw new Error("Expected function to throw, but it did not");
+    if (expectedMessage && !actualError.message.includes(expectedMessage)) {
+      throw new Error(`Expected error message to contain '${expectedMessage}', got '${actualError.message}'`);
+    }
+  },
+  rejects: {
+    toThrow: async (expectedMessage) => {
+      let threw = false;
+      let actualError = null;
+      try {
+        if (typeof value === "function") await value();
+        else await value;
+      } catch (err) {
+        threw = true;
+        actualError = err;
+      }
+      if (!threw) throw new Error("Expected function to throw, but it did not");
+      if (expectedMessage && !actualError.message.includes(expectedMessage)) {
+        throw new Error(`Expected error message to contain '${expectedMessage}', got '${actualError.message}'`);
+      }
+    }
+  }
 });
 
 const describe = (name, fn) => {
@@ -975,21 +1006,52 @@ describe("Swap Execution Endpoint Security", () => {
   const server = require("./server.js");
 
   it("rejects swap requests with missing or invalid parameters", () => {
-    const route = server._router.stack.find(
-      (layer) => layer.route && layer.route.path === "/api/execute/swap"
-    );
-    expect(Boolean(route)).toBe(true);
+    const originalEnv = process.env.AFSL_COMPLIANT;
+    process.env.AFSL_COMPLIANT = "true";
 
-    const invalidPayloads = [
-      {},
-      { fromToken: "WETH" },
-      { fromToken: "WETH", toToken: "USDC", amount: -5 },
-      { fromToken: "WETH", toToken: "USDC", amount: "invalid" },
-      { fromToken: "WETH", toToken: "USDC", amount: 10, slippage: -0.1 },
-      { fromToken: "WETH", toToken: "USDC", amount: 10, slippage: 1.5 },
-    ];
+    try {
+      const route = server._router.stack.find(
+        (layer) => layer.route && layer.route.path === "/api/execute/swap"
+      );
+      expect(Boolean(route)).toBe(true);
 
-    for (const body of invalidPayloads) {
+      const invalidPayloads = [
+        {},
+        { fromToken: "WETH" },
+        { fromToken: "WETH", toToken: "USDC", amount: -5 },
+        { fromToken: "WETH", toToken: "USDC", amount: "invalid" },
+        { fromToken: "WETH", toToken: "USDC", amount: 10, slippage: -0.1 },
+        { fromToken: "WETH", toToken: "USDC", amount: 10, slippage: 1.5 },
+      ];
+
+      for (const body of invalidPayloads) {
+        let statusCode = 200;
+        let jsonResponse = null;
+        const res = {
+          status: (code) => { statusCode = code; return res; },
+          json: (data) => { jsonResponse = data; return res; },
+        };
+
+        route.route.stack[0].handle({ body }, res);
+        expect(statusCode).toBe(400);
+        expect(jsonResponse.success).toBe(false);
+        expect(jsonResponse.error).toBe("Invalid swap parameters");
+      }
+    } finally {
+      if (originalEnv !== undefined) process.env.AFSL_COMPLIANT = originalEnv;
+      else delete process.env.AFSL_COMPLIANT;
+    }
+  });
+
+  it("executes valid swap requests and returns secure txHash", () => {
+    const originalEnv = process.env.AFSL_COMPLIANT;
+    process.env.AFSL_COMPLIANT = "true";
+
+    try {
+      const route = server._router.stack.find(
+        (layer) => layer.route && layer.route.path === "/api/execute/swap"
+      );
+
       let statusCode = 200;
       let jsonResponse = null;
       const res = {
@@ -997,35 +1059,20 @@ describe("Swap Execution Endpoint Security", () => {
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      route.route.stack[0].handle({ body }, res);
-      expect(statusCode).toBe(400);
-      expect(jsonResponse.success).toBe(false);
-      expect(jsonResponse.error).toBe("Invalid swap parameters");
+      route.route.stack[0].handle({
+        body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 }
+      }, res);
+
+      expect(statusCode).toBe(200);
+      expect(jsonResponse.success).toBe(true);
+      expect(jsonResponse.swap.from.token).toBe("WETH");
+      expect(jsonResponse.swap.from.amount).toBe("1.5000");
+      expect(jsonResponse.swap.to.token).toBe("USDC");
+      expect(jsonResponse.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+    } finally {
+      if (originalEnv !== undefined) process.env.AFSL_COMPLIANT = originalEnv;
+      else delete process.env.AFSL_COMPLIANT;
     }
-  });
-
-  it("executes valid swap requests and returns secure txHash", () => {
-    const route = server._router.stack.find(
-      (layer) => layer.route && layer.route.path === "/api/execute/swap"
-    );
-
-    let statusCode = 200;
-    let jsonResponse = null;
-    const res = {
-      status: (code) => { statusCode = code; return res; },
-      json: (data) => { jsonResponse = data; return res; },
-    };
-
-    route.route.stack[0].handle({
-      body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 }
-    }, res);
-
-    expect(statusCode).toBe(200);
-    expect(jsonResponse.success).toBe(true);
-    expect(jsonResponse.swap.from.token).toBe("WETH");
-    expect(jsonResponse.swap.from.amount).toBe("1.5000");
-    expect(jsonResponse.swap.to.token).toBe("USDC");
-    expect(jsonResponse.txHash).toMatch(/^0x[0-9a-f]{64}$/);
   });
 });
 
@@ -1900,6 +1947,88 @@ describe("Balance Display & Trading Loop Resiliency", () => {
     expect(bot.spinning).toBe(false);
     expect(spinEl.disabled).toBe(false);
     expect(spinEl.textContent).toBe('🎰 SPIN');
+  });
+});
+
+describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
+  const fs = require("fs");
+  const path = require("path");
+
+  it("verifies presence of REGULATORY_COMPLIANCE.md and docs/REGULATORY_AFSL_ASSESSMENT.md with Gate 3 criteria", () => {
+    const mainDocPath = path.join(__dirname, "REGULATORY_COMPLIANCE.md");
+    const assessmentDocPath = path.join(__dirname, "docs", "REGULATORY_AFSL_ASSESSMENT.md");
+
+    expect(fs.existsSync(mainDocPath)).toBe(true);
+    expect(fs.existsSync(assessmentDocPath)).toBe(true);
+
+    const mainContent = fs.readFileSync(mainDocPath, "utf8");
+    const assessmentContent = fs.readFileSync(assessmentDocPath, "utf8");
+
+    expect(mainContent).toContain("Gate 3 Clearance Criteria");
+    expect(mainContent).toContain("AFSL_COMPLIANT");
+    expect(assessmentContent).toContain("Gate 3 Status");
+  });
+
+  it("hard-locks TradingEngine.executeTrade when AFSL_COMPLIANT is not 'true'", async () => {
+    const originalEnv = process.env.AFSL_COMPLIANT;
+    delete process.env.AFSL_COMPLIANT;
+
+    const { TradingEngine } = require("./trading-engine.js");
+    const engine = new TradingEngine();
+    const bot = { id: 'bot-1', isRealMoney: true, amount: 10, risk: 'Moderate (5x leverage)' };
+
+    const res = await engine.executeTrade(bot, { type: 'ARBITRAGE', profitMargin: 0.8, volatility: 2 });
+    expect(res.status).toBe('BLOCKED_AFSL_COMPLIANCE_GATE');
+    expect(res.reason).toContain('AFSL Compliance Gate 3 Lock');
+
+    if (originalEnv !== undefined) {
+      process.env.AFSL_COMPLIANT = originalEnv;
+    }
+  });
+
+  it("hard-locks execution-engine.js executeOnChainTrade when AFSL_COMPLIANT is not 'true'", async () => {
+    const originalEnv = process.env.AFSL_COMPLIANT;
+    delete process.env.AFSL_COMPLIANT;
+
+    const { executeOnChainTrade } = require("./execution-engine.js");
+
+    await expect(async () => {
+      await executeOnChainTrade({ botId: 1, token: 'ETH', method: 'SPOT LONG', amountUSD: 10 });
+    }).rejects.toThrow("AFSL Compliance Gate 3 Lock: Real-money execution requires AFS license clearance or AFSL_COMPLIANT=true");
+
+    if (originalEnv !== undefined) {
+      process.env.AFSL_COMPLIANT = originalEnv;
+    }
+  });
+
+  it("returns 403 on /api/execute/swap endpoint when AFSL_COMPLIANT is not 'true'", async () => {
+    const originalEnv = process.env.AFSL_COMPLIANT;
+    delete process.env.AFSL_COMPLIANT;
+
+    const app = require("./server.js");
+    const http = require("http");
+
+    const server = http.createServer(app);
+    await new Promise(resolve => server.listen(0, resolve));
+    const port = server.address().port;
+
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/api/execute/swap`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromToken: "USDC", toToken: "ETH", amount: 10 })
+      });
+
+      expect(response.status).toBe(403);
+      const data = await response.json();
+      expect(data.success).toBe(false);
+      expect(data.error).toContain("AFSL Compliance Gate 3 Lock");
+    } finally {
+      await new Promise(resolve => server.close(resolve));
+      if (originalEnv !== undefined) {
+        process.env.AFSL_COMPLIANT = originalEnv;
+      }
+    }
   });
 });
 

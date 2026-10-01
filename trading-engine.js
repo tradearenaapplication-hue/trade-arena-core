@@ -813,6 +813,19 @@ class TradingEngine {
 
     async executeTrade(bot, opportunity) {
 
+        // Gate 3 Regulatory Check: Hard-lock real-money execution unless AFSL compliant
+        const isRealMoneyTrade = bot.isRealMoney || (opportunity && opportunity.isRealMoney) || bot.mode === 'REAL' || this.isRealTrading;
+        if (isRealMoneyTrade && (typeof process !== 'undefined' && process.env && process.env.AFSL_COMPLIANT !== 'true')) {
+            return {
+                id: this.generateId(),
+                botId: bot.id,
+                status: 'BLOCKED_AFSL_COMPLIANCE_GATE',
+                reason: 'AFSL Compliance Gate 3 Lock: Real-money execution requires AFS license clearance or AFSL_COMPLIANT=true',
+                profit: 0,
+                timestamp: Date.now()
+            };
+        }
+
         const safetyCheck = this.safetyControls.isTradeExecutionBlocked(
             this.trades.reduce((sum, t) => sum + (t.profit || 0), 0),
             bot.amount || 10000

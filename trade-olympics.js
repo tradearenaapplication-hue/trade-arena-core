@@ -3,6 +3,16 @@
  * Chess-style model ratings for live trades and simulated tournaments.
  */
 
+function escapeHTML(str) {
+  if (!str && str !== 0) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const DEFAULT_OLYMPICS_MODELS = [
   { name: "ANALYST", provider: "local", elo: 1200, style: "risk" },
   { name: "TRADER", provider: "local", elo: 1200, style: "momentum" },
@@ -505,7 +515,7 @@ const TRADE_OLYMPICS = {
       .map(
         (model) => `
       <div style="display:grid;grid-template-columns:28px 1fr 58px 58px 58px;gap:6px;align-items:center;font-size:9px;background:var(--chrome);border:1px solid var(--border);border-radius:6px;padding:5px 7px">
-        <span>${model.medal || model.rank}</span><span style="color:var(--cyan)">${model.model}</span><span>${model.elo}</span><span>${model.totalTrades}T</span><span style="color:${model.totalPnL >= 0 ? "var(--green)" : "var(--hot)"}">${model.totalPnL >= 0 ? "+" : ""}$${model.totalPnL.toFixed(2)}</span>
+        <span>${escapeHTML(model.medal || model.rank)}</span><span style="color:var(--cyan)">${escapeHTML(model.model)}</span><span>${escapeHTML(model.elo)}</span><span>${escapeHTML(model.totalTrades)}T</span><span style="color:${model.totalPnL >= 0 ? "var(--green)" : "var(--hot)"}">${model.totalPnL >= 0 ? "+" : ""}$${escapeHTML(model.totalPnL.toFixed(2))}</span>
       </div>`,
       )
       .join("");

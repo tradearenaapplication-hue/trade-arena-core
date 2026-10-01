@@ -293,6 +293,12 @@ async function fetchMultiChainTokenBalances(walletAddress) {
   walletState.balanceUSD = totalUsd;
   if (typeof window !== 'undefined') {
     window.userTokenHoldings = allHoldings;
+    if (totalUsd > 0) {
+      if (typeof window.balance !== 'undefined') window.balance = totalUsd;
+      if (typeof window.startBalance !== 'undefined') window.startBalance = totalUsd;
+      if (typeof window.updateGlobalBalance === 'function') window.updateGlobalBalance();
+      if (typeof window.updateLiveBalance === 'function') window.updateLiveBalance();
+    }
   }
 
   console.log('✅ Multi-chain holdings fetched for ' + address + ':', allHoldings, 'Total USD: $' + totalUsd.toFixed(2));

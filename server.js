@@ -28,6 +28,20 @@ const aiLimiter = rateLimit({
   keyGenerator: (req) => req.ip || req.headers?.['x-forwarded-for'] || '127.0.0.1',
   message: { error: 'Too many AI requests, please try again later' }
 });
+
+/**
+ * Rate limiter middleware for user API endpoints
+ * Prevents brute-force attacks and resource exhaustion
+ */
+const userApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => req.ip || req.headers?.['x-forwarded-for'] || '127.0.0.1',
+  message: { success: false, error: 'Too many user requests, please try again later' }
+});
 const PORT = process.env.PORT || 3001;
 
 // Middleware
@@ -97,7 +111,7 @@ const provider = new ethers.JsonRpcProvider(RPC_URL);
  * User Account, Session & Trade Log Database Endpoints
  */
 
-app.post('/api/user/signin', (req, res) => {
+app.post('/api/user/signin', userApiLimiter, (req, res) => {
     try {
         const { address, provider, name, holdings, sessionData } = req.body || {};
         if (!address) {
@@ -120,7 +134,7 @@ app.post('/api/user/signin', (req, res) => {
     }
 });
 
-app.get('/api/user/session', (req, res) => {
+app.get('/api/user/session', userApiLimiter, (req, res) => {
     try {
         const { address } = req.query;
         if (!address) {
@@ -141,7 +155,7 @@ app.get('/api/user/session', (req, res) => {
     }
 });
 
-app.post('/api/user/tradelog', (req, res) => {
+app.post('/api/user/tradelog', userApiLimiter, (req, res) => {
     try {
         const { address, agentId, botName, action, symbol, amount, pnl, details } = req.body || {};
         if (!address) {
@@ -162,7 +176,7 @@ app.post('/api/user/tradelog', (req, res) => {
     }
 });
 
-app.get('/api/user/tradelogs', (req, res) => {
+app.get('/api/user/tradelogs', userApiLimiter, (req, res) => {
     try {
         const { address } = req.query;
         if (!address) {
@@ -182,6 +196,25 @@ app.get('/api/user/tradelogs', (req, res) => {
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: Date.now() });
+});
+
+/**
+ * ASIC Regulatory Compliance & Gate 3 Assessment Status
+ */
+let regulatoryState = {
+    afslCompliant: process.env.AFSL_COMPLIANT === 'true',
+    jurisdiction: 'Australia (ASIC)',
+    gate: 'Gate 3 Regulatory Hardstop',
+    assessmentStatus: process.env.AFSL_COMPLIANT === 'true' ? 'CLEARED' : 'PENDING_LEGAL_REVIEW',
+    disclaimer: 'Trade Arena automated tools are provided for paper trading and educational demonstration. Automated decision-making on real funds requires AFSL or exemption.',
+    requiresAfsl: true
+};
+
+app.get('/api/regulatory/status', (req, res) => {
+    res.json({
+        success: true,
+        regulatory: regulatoryState
+    });
 });
 
 /**
@@ -215,7 +248,7 @@ app.get('/api/safety-controls', (req, res) => {
     });
 });
 
-app.post('/api/safety-controls/update', (req, res) => {
+app.post('/api/safety-controls/update', userApiLimiter, (req, res) => {
     try {
         const { action, newLimit, durationHours } = req.body || {};
         if (action === 'requestLimitIncrease') {
@@ -520,10 +553,18 @@ app.post('/api/flash-loan/simulate', async (req, res) => {
 });
 
 /**
- * POST /api/execute/swap - Execute token swap (simulation)
+ * POST /api/execute/swap - Execute token swap
  */
 app.post('/api/execute/swap', async (req, res) => {
     try {
+        // Gate 3 Regulatory Check: Require AFSL Compliance Clearance for real-money trade execution
+        if (process.env.AFSL_COMPLIANT !== 'true') {
+            return res.status(403).json({
+                success: false,
+                error: 'AFSL Compliance Gate 3 Lock: Real-money execution requires AFS license clearance or AFSL_COMPLIANT=true'
+            });
+        }
+
         const { fromToken, toToken, amount, slippage } = req.body || {};
 
         const numAmount = Number(amount);
@@ -535,6 +576,16 @@ app.post('/api/execute/swap', async (req, res) => {
             isNaN(numAmount) || numAmount <= 0 ||
             isNaN(numSlippage) || numSlippage < 0 || numSlippage > 1) {
             return res.status(400).json({ success: false, error: 'Invalid swap parameters' });
+        }
+
+        // ASIC Regulatory Check for Real-Money Swaps
+        if (req.body && req.body.isRealMoney && !regulatoryState.afslCompliant) {
+            return res.status(403).json({
+                success: false,
+                error: 'Real-money execution blocked by Regulatory Gate (AFSL assessment required)',
+                reason: 'AFSL_CLEARANCE_REQUIRED',
+                disclaimer: regulatoryState.disclaimer
+            });
         }
 
         // Simulate swap execution
@@ -602,7 +653,19 @@ app.post('/api/bot/create', async (req, res) => {
  */
 app.get('/api/market/prices', async (req, res) => {
     try {
-        const symbols = req.query.symbols?.split(',') || ['WETH', 'USDC', 'ARB'];
+        const rawSymbols = req.query.symbols;
+        let symbols = ['WETH', 'USDC', 'ARB'];
+
+        if (typeof rawSymbols === 'string' && rawSymbols.trim().length > 0) {
+            symbols = rawSymbols
+                .split(',')
+                .map(s => s.trim().toUpperCase())
+                .filter(s => s.length > 0 && s.length <= 10 && /^[A-Z0-9_-]+$/.test(s))
+                .slice(0, 10);
+            if (symbols.length === 0) {
+                symbols = ['WETH', 'USDC', 'ARB'];
+            }
+        }
 
         const prices = {};
         for (const symbol of symbols) {

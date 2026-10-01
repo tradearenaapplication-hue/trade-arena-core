@@ -3,6 +3,16 @@
  * Chess-style model ratings for live trades and simulated tournaments.
  */
 
+function escapeHTML(str) {
+  if (!str && str !== 0) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const DEFAULT_OLYMPICS_MODELS = [
   { name: "ANALYST", provider: "local", elo: 1200, style: "risk" },
   { name: "TRADER", provider: "local", elo: 1200, style: "momentum" },
@@ -98,11 +108,12 @@ const TRADE_OLYMPICS = {
     }
 
     if (!reset) this._loadPersisted();
+    this._bracketCount = Object.keys(this.BRACKETS).length;
     this.initialized = true;
     if (persist) this.persist();
     if (!silent)
       console.log(
-        `[Trade Olympics] ELO initialized: ${modelList.length} models, ${Object.keys(this.BRACKETS).length} brackets`,
+        `[Trade Olympics] ELO initialized: ${modelList.length} models, ${this._bracketCount} brackets`,
       );
     return this.getSummary();
   },
@@ -382,17 +393,31 @@ const TRADE_OLYMPICS = {
       .sort((a, b) => b.weight - a.weight);
   },
 
+  // Optimized: Single-pass accumulation over standings avoids intermediate array projections and full leaderboard sorting overhead
   getSummary() {
-    const standings = Object.values(this.STANDINGS);
-    const totalTrades = standings.reduce(
-      (sum, model) => sum + model.totalTrades,
-      0,
-    );
-    const totalPnL = standings.reduce((sum, model) => sum + model.totalPnL, 0);
-    const topModel = this.getLeaderboard("elo")[0];
+    this._ensureInitialized();
+    let totalTrades = 0;
+    let totalPnL = 0;
+    let totalModels = 0;
+    let topModel = null;
+
+    for (const key in this.STANDINGS) {
+      const model = this.STANDINGS[key];
+      totalModels++;
+      totalTrades += model.totalTrades;
+      totalPnL += model.totalPnL;
+      if (
+        !topModel ||
+        model.elo > topModel.elo ||
+        (model.elo === topModel.elo && model.totalPnL > topModel.totalPnL)
+      ) {
+        topModel = model;
+      }
+    }
+
     return {
-      totalBrackets: Object.keys(this.BRACKETS).length,
-      totalModels: standings.length,
+      totalBrackets: this._bracketCount || Object.keys(this.BRACKETS).length,
+      totalModels,
       totalTrades,
       totalPnL,
       topModel: topModel?.model,
@@ -490,7 +515,7 @@ const TRADE_OLYMPICS = {
       .map(
         (model) => `
       <div style="display:grid;grid-template-columns:28px 1fr 58px 58px 58px;gap:6px;align-items:center;font-size:9px;background:var(--chrome);border:1px solid var(--border);border-radius:6px;padding:5px 7px">
-        <span>${model.medal || model.rank}</span><span style="color:var(--cyan)">${model.model}</span><span>${model.elo}</span><span>${model.totalTrades}T</span><span style="color:${model.totalPnL >= 0 ? "var(--green)" : "var(--hot)"}">${model.totalPnL >= 0 ? "+" : ""}$${model.totalPnL.toFixed(2)}</span>
+        <span>${escapeHTML(model.medal || model.rank)}</span><span style="color:var(--cyan)">${escapeHTML(model.model)}</span><span>${escapeHTML(model.elo)}</span><span>${escapeHTML(model.totalTrades)}T</span><span style="color:${model.totalPnL >= 0 ? "var(--green)" : "var(--hot)"}">${model.totalPnL >= 0 ? "+" : ""}$${escapeHTML(model.totalPnL.toFixed(2))}</span>
       </div>`,
       )
       .join("");
@@ -568,6 +593,7 @@ const TRADE_OLYMPICS = {
       this.COMPETITION_LOG = saved.competitionLog || this.COMPETITION_LOG;
       this.MATCH_LOG = saved.matchLog || [];
       this.TOURNAMENTS = saved.tournaments || [];
+      this._bracketCount = Object.keys(this.BRACKETS).length;
     } catch (error) {
       console.warn("[Trade Olympics] Load failed:", error.message);
     }

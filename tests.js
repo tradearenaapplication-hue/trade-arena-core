@@ -1302,6 +1302,85 @@ describe("Proxy Endpoint Security", () => {
     expect(proxyCode.includes("res.status(500).json({ error: error.message })")).toBe(false);
   });
 
+  it("rejects invalid Gemini model parameters to prevent URL path injection", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/gemini"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const invalidModels = [
+      "../gemini-pro",
+      "gemini-1.5-flash/evil",
+      "gemini-1.5-flash?key=injected",
+      "gemini 1.5 flash",
+      "<script>alert(1)</script>",
+      { model: "object" },
+      12345
+    ];
+
+    for (const model of invalidModels) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const req = { body: { model }, ip: "127.0.0.120", headers: {}, app: proxyApp };
+      const res = {
+        setHeader: () => {},
+        status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
+        json: (data) => { jsonResponse = data; return res; },
+      };
+
+      await route.route.stack[0].handle(req, res, async () => {
+        await route.route.stack[1].handle(req, res);
+      });
+
+      expect(statusCode).toBe(400);
+      expect(jsonResponse.error).toBe("Invalid model parameter");
+    }
+  });
+
+  it("accepts valid Gemini model parameters", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/gemini"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const originalFetch = global.fetch;
+    let fetchedUrl = null;
+
+    try {
+      global.fetch = async (url) => {
+        fetchedUrl = url;
+        return {
+          status: 200,
+          json: async () => ({ candidates: [] })
+        };
+      };
+
+      const validModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"];
+
+      for (const model of validModels) {
+        let statusCode = 200;
+        let jsonResponse = null;
+        const req = { body: { model, contents: [] }, ip: "127.0.0.121", headers: {}, app: proxyApp };
+        const res = {
+          setHeader: () => {},
+          status: (code) => { statusCode = code; return res; },
+          send: (data) => { jsonResponse = data; return res; },
+          json: (data) => { jsonResponse = data; return res; },
+        };
+
+        await route.route.stack[0].handle(req, res, async () => {
+          await route.route.stack[1].handle(req, res);
+        });
+
+        expect(statusCode).toBe(200);
+        expect(fetchedUrl).toContain(`/models/${model}:generateContent`);
+      }
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
   it("rejects invalid log payloads on maintenance log endpoint", async () => {
     const route = proxyApp._router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/maintenance/log"

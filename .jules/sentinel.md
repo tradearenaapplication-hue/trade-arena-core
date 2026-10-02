@@ -27,3 +27,8 @@
 **Vulnerability:** In `staff-engine.js`, `renderStaffPanel` extracted `time` from `log.timestamp` and interpolated it into `list.innerHTML` unescaped, allowing stored or manipulated log timestamps to execute arbitrary JavaScript.
 **Learning:** Derived or split properties from timestamps/dates are easy to overlook during sanitization audits if only primary fields like messages or names are wrapped in `escapeHTML`.
 **Prevention:** Always sanitize all dynamic expressions interpolated into `innerHTML` strings, including derived timestamp formats.
+
+## 2026-10-02 - [HIGH] Stored/DOM XSS Vulnerability in ELO Arena Rendering
+**Vulnerability:** In `elo-tournament-engine.js`, `renderEloArena` interpolated unescaped agent keys (`key`), icons (`data.icon`), and ranks (`rank`) into `container.innerHTML` strings.
+**Learning:** Dynamic agent metadata stored in state or local storage can serve as DOM XSS sinks if rendered directly via template literals into `innerHTML`.
+**Prevention:** Always define an `escapeHTML` helper and wrap all dynamic text/metadata fields before rendering HTML templates into DOM containers.

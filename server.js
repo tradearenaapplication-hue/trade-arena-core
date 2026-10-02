@@ -860,6 +860,59 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
+ * Flash-loan scan history — READ ONLY.
+ *
+ * Exposes the recorded scan history so the UI can show what the scanner has
+ * actually observed over time. Two deliberate constraints:
+ *
+ *   1. No endpoint here can START a scan. A scan is hundreds of eth_calls;
+ *      letting a browser trigger one on demand would let any page visitor burn
+ *      the free RPC budget and, worse, imply the scan is something to poke at
+ *      interactively. Scans are run by `npm run scan:flash:record`.
+ *
+ *   2. The response carries `conclusive` per record, and the UI must not present
+ *      a low-coverage run as a market result. A run that could not price most
+ *      routes proves nothing about their absence.
+ */
+app.get('/api/scans/history', (req, res) => {
+    try {
+        const { loadAll } = require('./scripts/query-scans.js');
+        const all = loadAll();
+        const limit = Math.min(Number(req.query.limit) || 50, 500);
+        const rows = all.slice(-limit).reverse();
+        const conclusive = rows.filter((r) => r.conclusive);
+        const withEdge = conclusive.filter((r) => (r.viableCount || 0) > 0);
+
+        res.json({
+            ok: true,
+            total: all.length,
+            returned: rows.length,
+            conclusive: conclusive.length,
+            withEdge: withEdge.length,
+            hitRate: conclusive.length ? withEdge.length / conclusive.length : null,
+            bestNetProfitUSD: conclusive.reduce(
+                (m, r) => (r.bestNetProfitUSD !== null && r.bestNetProfitUSD > m ? r.bestNetProfitUSD : m),
+                0,
+            ) || null,
+            avgCoverage: rows.length
+                ? rows.reduce((a, r) => a + (r.coverage || 0), 0) / rows.length
+                : null,
+            // Stated so the UI can say "not enough data yet" rather than
+            // rendering a confident verdict off a single run.
+            verdict:
+                conclusive.length === 0
+                    ? 'NOT_ENOUGH_DATA'
+                    : withEdge.length === 0
+                        ? 'NO_EDGE_OBSERVED'
+                        : 'EDGE_OBSERVED',
+            records: rows,
+        });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
+/**
  * Public client configuration.
  *
  * This endpoint is deliberately an ALLOWLIST, never a dump of process.env.

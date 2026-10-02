@@ -21,3 +21,17 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Cached market candles from scripts/prime-candle-cache.js.
+# Regenerable at any time - committing it would bloat the repo and let stale
+# prices silently backtest a strategy against months-old data.
+data/candle-cache/
+
+# Foundry build artifacts
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+
+# Accumulated scan history. Local research data, not source.
+data/scan-history.jsonl

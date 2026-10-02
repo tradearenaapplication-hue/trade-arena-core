@@ -3,7 +3,13 @@
 const { applyRiskControls } = require("./arb-risk-engine.js");
 
 const DEFAULT_FLASH_ARB_CONFIG = {
-  flashLoanFeeRate: 0.0009,
+  // Aave v3 flash loan premium. VERIFIED ON-CHAIN via
+  // AavePool FLASHLOAN_PREMIUM_TOTAL() on Base = 5 bps.
+  // Previously set to 0.0009 (9 bps), which overstated the cost by 80% and
+  // rejected routes that were in fact viable. At $100k that was a $40 error
+  // per scan. Re-verify before changing - a wrong value here silently biases
+  // every profitability verdict this scanner produces.
+  flashLoanFeeRate: 0.0005,
   minNetProfitUSD: 10,
   minROI: 0.0015,
   defaultGasUSD: 3,
@@ -175,6 +181,18 @@ async function scanCrossDexFlashArb({
       if (opportunity.liquidityUSD && opportunity.liquidityUSD < cfg.minLiquidityUSD) {
         opportunity.status = "REJECTED";
         opportunity.risk.reasons = [...(opportunity.risk.reasons || []), "liquidity_below_minimum"];
+        // Record the liquidity floor in rejectReasons too, not only in risk.reasons.
+        // A profitable route killed purely by shallow liquidity otherwise has a
+        // NULL blockingConstraint, which defeats the whole point of stating why a
+        // route was rejected - a "REJECTED" line with no reason reads the same as
+        // a scanner that silently dropped the opportunity.
+        opportunity.rejectReasons = [
+          ...(opportunity.rejectReasons || []),
+          "liquidity USD " + opportunity.liquidityUSD.toFixed(0) + " is below the USD " +
+            cfg.minLiquidityUSD + " floor",
+        ];
+        opportunity.blockingConstraint =
+          opportunity.rejectReasons[0] || opportunity.blockingConstraint;
       }
 
       opportunities.push(opportunity);

@@ -826,33 +826,46 @@ function calculateRSI(prices, period = 14) {
     avgLoss = (avgLoss * (period - 1) + loss) / period;
   }
 
-  if (avgLoss === 0) return 100;
+  if (avgLoss === 0) return avgGain === 0 ? 50 : 100;
   const rs = avgGain / avgLoss;
   return 100 - 100 / (1 + rs);
 }
 
 /**
- * Calculate ATR (Average True Range) as percentage of price
- * Optimized: Single-pass accumulation without intermediate array allocations (reduce/slice)
- * and branch-based max/abs calculation to avoid Math.abs/Math.max overhead (~4x speedup).
+ * Calculate ATR (Average True Range) as percentage of price.
+ *
+ * ATR is an average over a WINDOW of `period` candles - not over every value
+ * that happens to be in the array. The previous version accumulated every
+ * true range from index 0 to the end but then divided by `period` alone, so
+ * feeding it 50 candles produced an ATR roughly 3.5x too large (11.47% on a
+ * series whose true ATR was ~2.8%). That fed straight into classifyRegime(),
+ * whose `atrPercent > 5` test then labelled ordinary markets HIGH_VOL.
+ *
+ * Fixed by windowing to the most recent `period` candles and dividing by the
+ * number of candles actually summed. `avgPrice` is the latest close, which is
+ * the reference ATR is conventionally expressed against.
+ *
  * @param {number[]} highs - Array of high prices
  * @param {number[]} lows - Array of low prices
  * @param {number[]} closes - Array of closing prices
  * @param {number} period - ATR period (default 14)
- * @returns {number} ATR as percentage of price
+ * @returns {number} ATR as percentage of the latest close
  */
 function calculateATR(highs, lows, closes, period = 14) {
-  const len = highs.length;
-  if (len < period) return 0; // Not enough data
+  const len = closes.length;
+  // Need at least 2 closes for a previous-close reference, and a positive period.
+  if (len < 2 || period < 1) return 0;
+
+  // The true range for candle i needs close[i-1], so the usable window ends at
+  // len-1 and starts at least one bar back. Cap the window at the array size.
+  const window = Math.min(period, len - 1);
+  const start = len - window;
 
   let trSum = 0;
-  let closeSum = 0;
-  let prevClose = closes[0];
-
-  for (let i = 0; i < len; i++) {
+  for (let i = start; i < len; i++) {
     const high = highs[i];
     const low = lows[i];
-    const close = closes[i];
+    const prevClose = closes[i - 1];
 
     const tr1 = high - low;
     const tr2 = high > prevClose ? high - prevClose : prevClose - high;
@@ -863,13 +876,12 @@ function calculateATR(highs, lows, closes, period = 14) {
     if (tr3 > tr) tr = tr3;
 
     trSum += tr;
-    closeSum += close;
-    prevClose = close;
   }
 
-  const atr = trSum / period;
-  const avgPrice = closeSum / len;
-  return (atr / avgPrice) * 100;
+  const atr = trSum / window;
+  const lastClose = closes[len - 1];
+  if (!(lastClose > 0)) return 0;
+  return (atr / lastClose) * 100;
 }
 
 /**
@@ -915,6 +927,39 @@ function classifyRegime(rsi, atrPercent, price, sma) {
   } else {
     return "CHOP";
   }
+}
+
+/**
+ * Compute every indicator the regime classifier needs from one set of candles.
+ *
+ * This exists so callers cannot accidentally mix indicators computed over
+ * different windows - the single most common way a regime read goes wrong.
+ * `atrPercent` and `rsi` here are exactly the values classifyRegime() expects.
+ *
+ * @param {Object} candles - { high: number[], low: number[], close: number[], timestamp?: number[] }
+ * @param {Object} [opts] - { rsiPeriod = 14, atrPeriod = 14, smaPeriod = 20 }
+ * @returns {{price:number, rsi:number, atrPercent:number, sma:number, trend:number}|null}
+ */
+function buildIndicators(candles, opts = {}) {
+  const { rsiPeriod = 14, atrPeriod = 14, smaPeriod = 20 } = opts;
+  const close = candles && candles.close;
+  const high = candles && candles.high;
+  const low = candles && candles.low;
+  if (!Array.isArray(close) || !Array.isArray(high) || !Array.isArray(low)) return null;
+  if (close.length < 2) return null;
+
+  const price = close[close.length - 1];
+  if (!(price > 0)) return null;
+
+  return {
+    price,
+    rsi: calculateRSI(close, rsiPeriod),
+    atrPercent: calculateATR(high, low, close, atrPeriod),
+    sma: calculateSMA(close, smaPeriod),
+    // Slope of the SMA in percent - a secondary confirmation the caller can
+    // use to distinguish a genuine trend from a single spike.
+    trend: ((price - calculateSMA(close, smaPeriod)) / price) * 100,
+  };
 }
 
 function getRegimeFixtures() {
@@ -965,6 +1010,7 @@ if (typeof window !== "undefined") {
   window.classifyRegime = classifyRegime;
   window.getRegimeFixtures = getRegimeFixtures;
   window.validateAllRegimes = validateAllRegimes;
+  window.buildIndicators = buildIndicators;
 }
 
 if (typeof module !== "undefined" && module.exports) {
@@ -983,5 +1029,6 @@ if (typeof module !== "undefined" && module.exports) {
     classifyRegime,
     getRegimeFixtures,
     validateAllRegimes,
+    buildIndicators,
   };
 }

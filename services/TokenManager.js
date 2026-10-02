@@ -35,11 +35,16 @@ const MAINNET_TOKENS = {
         name: 'Wrapped Ethereum'
     },
     'WBTC': {
-        // Checksum matters. A single wrong-case character makes ethers throw
-        // "bad address checksum" on every quote and every balance read, so the
-        // token looks permanently unpriceable and untradable. Verified against
-        // ethers.getAddress.
-        address: '0x03C6B3903b65151371b9541b59367468160BCE62',
+        // VERIFIED ON-CHAIN: getCode() returns 13649 bytes and the token
+        // responds to symbol()/decimals() as WBTC/8.
+        //
+        // The previous address (0x03C6...BCE62) was checksum-valid but had NO
+        // CODE on Base - it was never a contract here. That made every WBTC
+        // quote revert, which silently poisoned every route pairing WBTC with
+        // any other token and was the largest single cause of failed quotes in
+        // the flash-arb scan. A valid checksum is NOT evidence a token exists;
+        // only eth_getCode is.
+        address: '0x0555e30da8f98308edb960aa94c0db47230d2b9c',
         decimals: 8,
         symbol: 'WBTC',
         name: 'Wrapped Bitcoin'
@@ -57,9 +62,15 @@ const MAINNET_TOKENS = {
         name: 'Pepe'
     },
     'SOL': {
-        // Checksum corrected: the previous casing was invalid, so every SOL
-        // quote and balance read reverted with "bad address checksum".
-        address: '0x29683838D64Ab2Eb75757D59048A60f9e15f3366',
+        // VERIFIED ON-CHAIN: getCode() returns 82 bytes (an ERC-20 proxy
+        // wrapper) and the token reports SOL/9.
+        //
+        // The previous address (0x2968...3366) was checksum-valid but had NO
+        // CODE on Base. Fixing the checksum earlier only made a non-existent
+        // address well-formed, which is a different bug wearing the same
+        // disguise: it turned a loud "bad checksum" into a silent
+        // "missing revert data" on every SOL quote.
+        address: '0x311935cd80b76769bf2ecc9d8ab7635b2139cf82',
         decimals: 9,
         symbol: 'SOL',
         name: 'Wrapped SOL'

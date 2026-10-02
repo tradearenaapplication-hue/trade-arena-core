@@ -19,6 +19,7 @@ const {
   calculateSMA,
   classifyRegime,
   validateAllRegimes,
+  buildIndicators,
 } = require("./crucible-test.js");
 const { TRADE_OLYMPICS } = require("./trade-olympics.js");
 const {
@@ -45,6 +46,8 @@ const {
   scanCrossDexFlashArb,
 } = require("./cross-dex-arb-scanner.js");
 const { isPathSafe } = require("./proxy.js");
+const OnchainRegime = require("./crucible-regime.js");
+const Lab = require("./regime-strategy-lab.js");
 
 const tests = [];
 let currentSuite = "";
@@ -93,6 +96,49 @@ const expect = (value) => ({
   toMatch: (pattern) => {
     if (!pattern.test(value))
       throw new Error(`Expected ${value} to match ${pattern}`);
+  },
+  // Floating point comparison. Used by the regime maths tests, where an exact
+  // === would fail on representation error rather than on a real bug.
+  toBeCloseTo: (expected, places = 2) => {
+    const tolerance = Math.pow(10, -places) / 2;
+    if (Math.abs(value - expected) > tolerance)
+      throw new Error(`Expected ${value} to be within ${tolerance} of ${expected}`);
+  },
+  // Explicit numeric tolerance. `toBeCloseTo` is decimal-place based, which is
+  // unusable for the distribution maths where the required epsilon is an
+  // absolute float error (e.g. normal CDF vs 0.5 within 5e-10).
+  toBeWithin: (expected, epsilon) => {
+    if (!(Math.abs(value - expected) <= epsilon))
+      throw new Error(
+        `Expected ${value} to be within ${epsilon} of ${expected} ` +
+          `(off by ${Math.abs(value - expected)})`,
+      );
+  },
+  toBeUndefined: () => {
+    if (value !== undefined)
+      throw new Error(`Expected ${value} to be undefined`);
+  },
+  toThrow: (matcher) => {
+    let threw = false;
+    let error;
+    try {
+      value();
+    } catch (e) {
+      threw = true;
+      error = e;
+    }
+    if (!threw) throw new Error('Expected function to throw, but it did not');
+    if (matcher !== undefined) {
+      const message = error && error.message ? error.message : String(error);
+      const matches =
+        typeof matcher === 'string'
+          ? message.includes(matcher)
+          : matcher.test(message);
+      if (!matches)
+        throw new Error(
+          `Expected error message "${message}" to match ${matcher}`,
+        );
+    }
   },
 });
 
@@ -390,6 +436,389 @@ describe("Crucible Regime Coverage", () => {
     expect(coverage.regimes.sort()).toEqual(
       ["BEAR", "BULL", "CHOP", "HIGH_VOL"].sort(),
     );
+  });
+
+  // ── REGRESSION GUARDS FOR THE INDICATOR BUGS ──────────────────────────────
+  // Each of these failed before the fixes and must never fail again.
+
+  it("REGRESSION: ATR averages over a window, not the whole array", () => {
+    // 50 candles with a true range of exactly 3 on every bar. The old code
+    // summed all 50 and divided by 14, returning 11.47% for a series whose
+    // real ATR is ~2.8% - which then tripped classifyRegime's `atr > 5` test
+    // and mislabelled an ordinary market as HIGH_VOL.
+    const closes = Array.from({ length: 50 }, (_, i) => 100 + i);
+    const highs = closes.map((c) => c + 2);
+    const lows = closes.map((c) => c - 2);
+
+    const atr = calculateATR(highs, lows, closes, 14);
+    // Every bar has high-low = 4, which dominates the true range (the
+    // close-to-close move is only 1). So ATR = 4 and ATR% = 4/149 * 100.
+    expect(atr).toBeCloseTo((4 / 149) * 100, 4);
+    expect(atr < 5).toBe(true); // must NOT read as HIGH_VOL
+
+    // Feeding MORE history must not inflate ATR.
+    const longer = Array.from({ length: 200 }, (_, i) => 100 + i);
+    const longerAtr = calculateATR(
+      longer.map((c) => c + 2),
+      longer.map((c) => c - 2),
+      longer,
+      14,
+    );
+    expect(longerAtr < 5).toBe(true);
+  });
+
+  it("REGRESSION: RSI is neutral (50) on a flat series, not overbought", () => {
+    expect(calculateRSI(Array(40).fill(100), 14)).toBe(50);
+    // A strictly rising series is genuinely overbought and must still read 100.
+    const rising = Array.from({ length: 40 }, (_, i) => 100 + i);
+    expect(calculateRSI(rising, 14)).toBe(100);
+  });
+
+  it("REGRESSION: classifyRegime agrees across both implementations", () => {
+    // crucible-test.js and crucible-regime.js must not drift apart, or the
+    // panel and the unit tests would disagree about the same market.
+    // Compare on real synthetic series rather than hand-fed indicator values:
+    // a 2-candle series cannot produce RSI 65, so feeding indicators directly
+    // would test nothing about agreement.
+    const series = {
+      bull: Array.from({ length: 60 }, (_, i) => 100 * (1 + i / 300)),
+      bear: Array.from({ length: 60 }, (_, i) => 100 * (1 - i / 300)),
+      chop: Array.from({ length: 60 }, (_, i) => 100 + Math.sin(i / 3) * 0.5),
+      wild: Array.from({ length: 60 }, (_, i) => 100 * (1 + Math.sin(i / 2) * 0.25)),
+    };
+
+    for (const [name, closes] of Object.entries(series)) {
+      const highs = closes.map((c, i) => Math.max(c, i ? closes[i - 1] : c) * 1.02);
+      const lows = closes.map((c, i) => Math.min(c, i ? closes[i - 1] : c) * 0.98);
+      const candles = { high: highs, low: lows, close: closes, timestamp: closes.map((_, i) => i) };
+
+      const ind = buildIndicators(candles);
+      const expected = classifyRegime(ind.rsi, ind.atrPercent, ind.price, ind.sma);
+      const actual = OnchainRegime.classifyCandles(candles).regime;
+
+      expect(actual).toBe(expected);
+      // Keep the fixtures honest - if they all classified as CHOP the
+      // comparison above would pass while testing nothing.
+      expect(["BULL", "BEAR", "CHOP", "HIGH_VOL"]).toContain(actual);
+    }
+  });
+
+  // ── ON-CHAIN REGIME BACKTEST ──────────────────────────────────────────────
+
+  it("classifies a real generated trend as BULL and a downtrend as BEAR", () => {
+    const up = OnchainRegime.candlesFromCloses(
+      Array.from({ length: 60 }, (_, i) => [i * 3600000, 100 * (1 + i / 500)]),
+    );
+    expect(OnchainRegime.classifyCandles(up).regime).toBe("BULL");
+
+    const down = OnchainRegime.candlesFromCloses(
+      Array.from({ length: 60 }, (_, i) => [i * 3600000, 100 * (1 - i / 500)]),
+    );
+    expect(OnchainRegime.classifyCandles(down).regime).toBe("BEAR");
+  });
+
+  it("charges cost on BOTH legs, so costs always reduce P&L", () => {
+    const candles = OnchainRegime.candlesFromCloses(
+      Array.from({ length: 60 }, (_, i) => [i * 3600000, 100 + Math.sin(i / 3) * 5]),
+    );
+    const free = OnchainRegime.backtestStrategy(candles, {
+      direction: "long", horizon: 1, costBps: 0, notional: 100,
+    });
+    const costed = OnchainRegime.backtestStrategy(candles, {
+      direction: "long", horizon: 1, costBps: 80, notional: 100,
+    });
+    expect(free.trades).toBe(59);              // 60 candles - 1 bar of entry lookback
+    expect(costed.netPnl).toBeLessThan(free.netPnl);
+    // 80bps x 59 trades x $100 notional = $47.20 of unavoidable cost.
+    expect(free.netPnl - costed.netPnl).toBeCloseTo(59 * 0.008 * 100, 6);
+  });
+
+  it("the random baseline is reproducible, not a fresh dice roll each run", () => {
+    const candles = OnchainRegime.candlesFromCloses(
+      Array.from({ length: 80 }, (_, i) => [i * 3600000, 100 + Math.sin(i / 4) * 8]),
+    );
+    const a = OnchainRegime.backtestRegime(candles, { costModel: "REALISTIC_1X" });
+    const b = OnchainRegime.backtestRegime(candles, { costModel: "REALISTIC_1X" });
+    expect(b.baselines.random.netPnl).toBe(a.baselines.random.netPnl);
+    expect(b.strategy.netPnl).toBe(a.strategy.netPnl);
+  });
+
+  it("STRESS_1_5X costs strictly more than REALISTIC_1X", () => {
+    const cfg = OnchainRegime.DEFAULT_CONFIG;
+    expect(OnchainRegime.costBps(cfg, "STRESS_1_5X"))
+      .toBeGreaterThan(OnchainRegime.costBps(cfg, "REALISTIC_1X"));
+    // Round trip = (fee + slippage) charged on entry AND exit, so 2x.
+    expect(OnchainRegime.costBps(cfg, "REALISTIC_1X"))
+      .toBe((cfg.feeBps + cfg.slippageBps) * 2);
+  });
+
+  it("flags a regime mismatch instead of silently relabelling the data", () => {
+    // A downtrend is BEAR; asking for BULL must be reported, not hidden.
+    const down = OnchainRegime.candlesFromCloses(
+      Array.from({ length: 60 }, (_, i) => [i * 3600000, 100 * (1 - i / 500)]),
+    );
+    const r = OnchainRegime.backtestRegime(down, { requestedRegime: "BULL" });
+    expect(r.detectedRegime).toBe("BEAR");
+    expect(r.requestedRegime).toBe("BULL");
+    expect(r.regimeMismatch).toBe(true);
+
+    const agree = OnchainRegime.backtestRegime(down, { requestedRegime: "BEAR" });
+    expect(agree.regimeMismatch).toBe(false);
+  });
+
+  it("refuses to invent candles from junk input", async () => {
+    // fetchCandles is async, so it REJECTS rather than throwing synchronously.
+    // A sync expect(...).toThrow() would pass for the wrong reason here.
+    let rejected = false;
+    try {
+      await OnchainRegime.fetchCandles("x", {
+        fetchImpl: async () => ({ ok: true, json: async () => ({ prices: [] }) }),
+      });
+    } catch (e) {
+      rejected = true;
+      expect(e.message).toContain("will not display a number it cannot source");
+    }
+    expect(rejected).toBe(true);
+    expect(OnchainRegime.candlesFromCloses(null).close).toEqual([]);
+    expect(OnchainRegime.candlesFromCloses([[0, "NaN"], [1, null]]).close).toEqual([]);
+  });
+
+  // ── STRATEGY LAB: STATISTICS ──────────────────────────────────────────────
+
+  describe("Strategy Lab - Statistics", () => {
+    it("computes erf, the normal CDF and its inverse correctly", () => {
+      expect(Math.abs(Lab.erf(0))).toBeLessThan(1e-7);
+      // erf(1) = 0.8427008 to seven figures.
+      expect(Lab.erf(1)).toBeCloseTo(0.8427008, 6);
+      expect(Lab.erf(-1)).toBeCloseTo(-Lab.erf(1), 10);
+      expect(Lab.normalCdf(0)).toBeWithin(0.5, 1e-9);
+      expect(Lab.normalCdf(1.96)).toBeCloseTo(0.975, 3);
+      expect(Lab.normalCdf(-1.96)).toBeCloseTo(0.025, 3);
+      // Inverse round-trips back through the CDF.
+      expect(Lab.normalCdf(Lab.normalQuantile(0.025))).toBeCloseTo(0.025, 4);
+      expect(Lab.normalCdf(Lab.normalQuantile(0.975))).toBeCloseTo(0.975, 4);
+    });
+
+    it("runs a two-proportion z-test against a known result", () => {
+      // 60/100 vs 50/100: pooled 0.55, se = sqrt(0.55*0.45*0.02) = 0.070357,
+      // z = 0.10/0.070357 = 1.421338, two-sided p = 0.15522.
+      const t = Lab.twoProportionZTest(60, 100, 50, 100);
+      expect(t.z).toBeCloseTo(1.4213381, 5);
+      expect(t.pValue).toBeCloseTo(0.15522, 4);
+      // Identical proportions must give exactly zero difference.
+      expect(Lab.twoProportionZTest(50, 100, 50, 100).z).toBeCloseTo(0, 10);
+      // Empty samples cannot produce a spurious signal.
+      expect(Lab.twoProportionZTest(0, 0, 5, 10).pValue).toBe(1);
+    });
+
+    it("Bonferroni correction tightens as more variants are tested", () => {
+      expect(Lab.bonferroniAlpha(1)).toBe(0.05);
+      expect(Lab.bonferroniAlpha(21)).toBeCloseTo(0.05 / 21, 12);
+      expect(Lab.bonferroniAlpha(100)).toBeLessThan(Lab.bonferroniAlpha(21));
+      expect(Lab.bonferroniAlpha(0)).toBe(0.05); // guards divide-by-zero
+    });
+
+    it("win-rate standard error matches the closed form", () => {
+      // sqrt(0.25/n)
+      expect(Lab.winRateSE(50, 100)).toBeCloseTo(0.05, 9);
+      expect(Lab.winRateSE(75, 150)).toBeCloseTo(Math.sqrt(0.25 / 150), 9);
+      expect(Lab.winRateSE(0, 0)).toBe(Infinity);
+    });
+  });
+
+  // ── STRATEGY LAB: NO LOOK-AHEAD ───────────────────────────────────────────
+
+  describe("Strategy Lab - Look-Ahead Safety", () => {
+    // Synthetic price path, deterministic so the test is reproducible.
+    const walk = (n, seed) => {
+      const r = Lab.mulberry32(seed);
+      const out = [];
+      let p = 100;
+      for (let i = 0; i < n; i++) {
+        const z = (r() + r() + r() + r() + r() + r() - 3) * 0.7;
+        p *= Math.exp(z * 0.01);
+        out.push(p);
+      }
+      return out;
+    };
+    const toCandles = (close) => {
+      const high = [];
+      const low = [];
+      for (let i = 0; i < close.length; i++) {
+        const prev = i ? close[i - 1] : close[i];
+        high.push(Math.max(close[i], prev) * 1.003);
+        low.push(Math.min(close[i], prev) * 0.997);
+      }
+      return { open: close.slice(), high, low, close, timestamp: close.map((_, i) => i) };
+    };
+
+    it("REGRESSION: indicators never see the future", () => {
+      // Truncating the series must leave every already-computed indicator
+      // value bit-identical. If any indicator peeks forward, the value at
+      // bar i will change when bars > i change - which is exactly how a
+      // backtest manufactures an edge that does not exist.
+      const long = toCandles(walk(1200, 11));
+      const short = toCandles(walk(600, 11));
+      const fLong = Lab.buildFeatures(long, Lab.expandVariants());
+      const fShort = Lab.buildFeatures(short, Lab.expandVariants());
+
+      let checked = 0;
+      for (const period of Object.keys(fLong.sma)) {
+        for (let i = 0; i < 600; i++) {
+          const a = fLong.sma[period][i];
+          const b = fShort.sma[period][i];
+          if (a != null && b != null) {
+            expect(a).toBe(b); // exact identity, not approximate
+            checked++;
+          }
+        }
+      }
+      for (const period of Object.keys(fLong.rsi)) {
+        for (let i = 0; i < 600; i++) {
+          const a = fLong.rsi[period][i];
+          const b = fShort.rsi[period][i];
+          if (a != null && b != null) {
+            expect(a).toBe(b);
+            checked++;
+          }
+        }
+      }
+      for (const period of Object.keys(fLong.atrPct)) {
+        for (let i = 0; i < 600; i++) {
+          const a = fLong.atrPct[period][i];
+          const b = fShort.atrPct[period][i];
+          if (a != null && b != null) {
+            expect(a).toBe(b);
+            checked++;
+          }
+        }
+      }
+      for (let i = 0; i < 600; i++) {
+        if (fLong.regime[i] != null && fShort.regime[i] != null) {
+          expect(fLong.regime[i]).toBe(fShort.regime[i]);
+        }
+      }
+      expect(checked > 1000).toBe(true); // the comparison actually ran
+    });
+
+    it("REGRESSION: a trade can never enter at the bar that produced its signal", () => {
+      // The signal is computed from bar i; the earliest legal entry is i+1.
+      // A backtest that enters at i has look-ahead baked in.
+      const candles = toCandles(walk(400, 3));
+      const variant = Lab.expandVariants()[0];
+      const res = Lab.backtestVariant(candles, variant, { costBps: 0, horizon: 1 });
+      for (const t of res.tradeList) {
+        // entry was taken at i+1, and the exit at i+2 for a 1-bar hold
+        expect(t.entry).toBe(candles.close[t.i + 1]);
+        expect(t.exit).toBe(candles.close[t.i + 2]);
+      }
+    });
+  });
+
+  // ── STRATEGY LAB: NO FALSE POSITIVES ──────────────────────────────────────
+  //
+  // The single most valuable property of this lab: on a market with NO
+  // exploitable structure it must report no edge. A search that always finds
+  // an edge is just a random-number generator wearing a lab coat.
+
+  describe("Strategy Lab - Validation", () => {
+    const walk = (n, seed, drift) => {
+      const r = Lab.mulberry32(seed);
+      const out = [];
+      let p = 100;
+      for (let i = 0; i < n; i++) {
+        const z = (r() + r() + r() + r() + r() + r() + r() + r() + r() + r() + r() + r() - 6) * 0.29;
+        p *= Math.exp((drift || 0) + z * 0.01);
+        out.push(p);
+      }
+      return out;
+    };
+    const toCandles = (close) => {
+      const high = [];
+      const low = [];
+      for (let i = 0; i < close.length; i++) {
+        const prev = i ? close[i - 1] : close[i];
+        high.push(Math.max(close[i], prev) * 1.002);
+        low.push(Math.min(close[i], prev) * 0.998);
+      }
+      return { open: close.slice(), high, low, close, timestamp: close.map((_, i) => i) };
+    };
+
+    it("FINDS a real edge when the market genuinely has one", () => {
+      // Strong persistent drift = an exploitable trend. A correct search must
+      // detect this; if it cannot find real structure, it cannot be trusted to
+      // reject false structure either.
+      const trending = toCandles(walk(4000, 7, 0.0008));
+      const r = Lab.search(trending, { horizon: 10 });
+      expect(r.hasEdge).toBe(true);
+      expect(r.best.oos.winRate).toBeGreaterThan(r.best.control.winRate);
+      expect(r.best.edgePp).toBeGreaterThan(r.best.noisePp);
+      expect(r.best.pValue).toBeLessThan(r.alpha);
+    });
+
+    it("REGRESSION: finds NO edge on a random walk (no false positives)", () => {
+      // Zero drift = no exploitable structure. The lab must say so rather than
+      // promoting the luckiest of 21 variants to an "edge".
+      const noise = toCandles(walk(4000, 99, 0));
+      const r = Lab.search(noise, { horizon: 10 });
+      expect(r.hasEdge).toBe(false);
+      expect(r.verdict).toContain("NO EDGE");
+    });
+
+    it("REGRESSION: finds NO edge when costs exceed the typical bar move", () => {
+      // 80bps round trip against a ~1% daily bar: a 1-bar hold cannot pay for
+      // itself. The lab must not report an edge here.
+      const noise = toCandles(walk(4000, 5, 0));
+      const r = Lab.search(noise, { horizon: 1 });
+      expect(r.hasEdge).toBe(false);
+    });
+
+    it("REJECTS an in-sample winner that does not hold out-of-sample", () => {
+      // Selection happens on the first half only. If the reported winner were
+      // chosen on the full sample, its OOS result would be contaminated.
+      const candles = toCandles(walk(2000, 21, 0));
+      const r = Lab.search(candles, { horizon: 4 });
+      const n = candles.close.length;
+      const split = Math.floor(n * 0.5);
+      expect(r.split.is).toEqual([0, split]);
+      expect(r.split.oos).toEqual([split, n]);
+      // Finalists must be chosen from in-sample results only.
+      expect(r.oosResults.length > 0).toBe(true);
+      for (const o of r.oosResults) {
+        // Each OOS run starts at the split, never before.
+        expect(o.oos.tradeList.length === 0 || o.oos.tradeList[0].i >= split - 1).toBe(true);
+      }
+    });
+
+    it("costs always reduce P&L, and STRESS_1_5X costs more than REALISTIC_1X", () => {
+      const cfg = Lab.DEFAULT_CONFIG;
+      expect(Lab.costBps(cfg, "REALISTIC_1X")).toBe((cfg.feeBps + cfg.slippageBps) * 2);
+      expect(Lab.costBps(cfg, "STRESS_1_5X")).toBeGreaterThan(Lab.costBps(cfg, "REALISTIC_1X"));
+
+      const candles = toCandles(walk(600, 13, 0.0005));
+      const variant = Lab.expandVariants()[0];
+      const free = Lab.backtestVariant(candles, variant, { costBps: 0, horizon: 4 });
+      const costed = Lab.backtestVariant(candles, variant, { costBps: 80, horizon: 4 });
+      expect(costed.netPnl).toBeLessThan(free.netPnl);
+    });
+
+    it("the coin-flip control is reproducible and trades the same bars", () => {
+      const candles = toCandles(walk(600, 17, 0));
+      const a = Lab.randomControl(candles, { costBps: 80, horizon: 4, rand: Lab.mulberry32(42) });
+      const b = Lab.randomControl(candles, { costBps: 80, horizon: 4, rand: Lab.mulberry32(42) });
+      expect(a.netPnl).toBe(b.netPnl);
+      expect(a.trades).toBe(b.trades);
+      // Roughly half the control's trades should be long, i.e. a real coin flip.
+      const longs = a.tradeList.filter((t) => t.dir === 1).length;
+      expect(longs > 0 && longs < a.trades).toBe(true);
+    });
+
+    it("refuses to search when there is too little data", () => {
+      const tiny = toCandles(walk(40, 1, 0));
+      const r = Lab.search(tiny, {});
+      expect(typeof r.error).toBe("string");
+      expect(r.hasEdge).toBeUndefined();
+    });
   });
 
   it("runs a fast Crucible paper test with strict risk accounting", async () => {
@@ -940,6 +1369,30 @@ describe("Trade Authorisation Hardening", () => {
     return r.route;
   };
 
+  /**
+   * Locate the `verifyTradeAuth` guard by NAME, not by stack index.
+   *
+   * The swap route is registered as:
+   *   app.post('/api/wallet/swap', swapRateLimiter, verifyTradeAuth, handleSwapRequest)
+   *
+   * so the guard is `stack[1]`, not `stack[0]`. Hard-coding the index made every
+   * authorisation test call the RATE LIMITER instead, which just calls next() and
+   * returns 200 - so the tests "failed" while the security control worked
+   * perfectly. Resolving by name keeps them correct if a limiter, CSRF check or
+   * helmet layer is ever added in front.
+   */
+  const findAuthGuard = (path) => {
+    const route = findRoute(path);
+    const layer = route.stack.find((l) => l.name === "verifyTradeAuth");
+    if (!layer) {
+      throw new Error(
+        `No verifyTradeAuth layer on ${path}. Stack: ` +
+          route.stack.map((l) => l.name || "<anonymous>").join(" -> "),
+      );
+    }
+    return layer.handle;
+  };
+
   const mockRes = () => {
     const res = { statusCode: 200, body: null };
     res.status = (c) => { res.statusCode = c; return res; };
@@ -977,7 +1430,7 @@ describe("Trade Authorisation Hardening", () => {
     const issued = await issueNonce(trader.address, baseTerms);
     const signature = await trader.signMessage(issued.body.message);
 
-    const guard = findRoute("/api/wallet/swap").stack[0].handle;
+    const guard = findAuthGuard("/api/wallet/swap");
     const res = mockRes();
     await guard({
       body: { ...baseTerms, amountUSD: 10000, traderAddress: trader.address, nonce: issued.body.nonce, signature },
@@ -992,7 +1445,7 @@ describe("Trade Authorisation Hardening", () => {
     const issued = await issueNonce(trader.address, baseTerms);
     const signature = await trader.signMessage(issued.body.message);
 
-    const guard = findRoute("/api/wallet/swap").stack[0].handle;
+    const guard = findAuthGuard("/api/wallet/swap");
     const res = mockRes();
     await guard({
       body: { ...baseTerms, fromToken: "WETH", traderAddress: trader.address, nonce: issued.body.nonce, signature },
@@ -1007,7 +1460,7 @@ describe("Trade Authorisation Hardening", () => {
     const signature = await trader.signMessage(issued.body.message);
     const body = { ...baseTerms, traderAddress: trader.address, nonce: issued.body.nonce, signature };
 
-    const guard = findRoute("/api/wallet/swap").stack[0].handle;
+    const guard = findAuthGuard("/api/wallet/swap");
     const first = mockRes();
     let passed = false;
     await guard({ body: { ...body }, get: () => undefined, headers: {} }, first, () => { passed = true; });
@@ -1026,7 +1479,7 @@ describe("Trade Authorisation Hardening", () => {
     // Stranger signs the allowlisted trader's message.
     const forged = await stranger.signMessage(issued.body.message);
 
-    const guard = findRoute("/api/wallet/swap").stack[0].handle;
+    const guard = findAuthGuard("/api/wallet/swap");
     const res = mockRes();
     await guard({
       body: { ...baseTerms, traderAddress: trader.address, nonce: issued.body.nonce, signature: forged },
@@ -1045,7 +1498,7 @@ describe("Trade Authorisation Hardening", () => {
     const signature = await stranger.signMessage(
       "Trade Arena trade authorisation\n\nAddress: " + stranger.address
     );
-    const guard = findRoute("/api/wallet/swap").stack[0].handle;
+    const guard = findAuthGuard("/api/wallet/swap");
     const res = mockRes();
     await guard({
       body: { ...baseTerms, traderAddress: stranger.address, nonce: "0x" + "ff".repeat(16), signature },
@@ -1417,10 +1870,13 @@ describe("Swap Execution Endpoint Security", () => {
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      // Call the route HANDLER (stack[1]), skipping the auth guard at
-      // stack[0]. These assertions are about parameter validation, which runs
-      // after a caller has been authenticated; the guard has its own test.
-      await route.route.stack[1].handle({ body }, res, () => {});
+      // Call the route HANDLER, skipping the auth guard. These assertions are
+      // about parameter validation, which runs after a caller has been
+      // authenticated; the guard has its own test. Resolve the handler by name -
+      // stack[1] is the guard, not the handler.
+      const handlerLayer = route.route.stack.find((l) => l.name === "handleSwapRequest");
+      expect(Boolean(handlerLayer)).toBe(true);
+      await handlerLayer.handle({ body }, res, () => {});
       expect(statusCode).toBe(400);
       expect(jsonResponse.success).toBe(false);
       expect(jsonResponse.error).toBe(expectedError);
@@ -1435,9 +1891,17 @@ describe("Swap Execution Endpoint Security", () => {
     // The route is guarded by verifyTradeAuth, so an unauthenticated POST must
     // be refused BEFORE any quote, risk check or broadcast. It spends the
     // server-held private key, so an open endpoint would let anyone drain it.
-    expect(route.route.stack.length).toBe(2);
-    const guard = route.route.stack[0].handle.toString();
-    expect(guard.includes('verifyTradeAuth') || guard.includes('_router') === false).toBeTruthy();
+    //
+    // Resolve the guard BY NAME. The route carries a rate limiter in front of
+    // it, so the guard is not stack[0] and the stack is not 2 layers long.
+    const guardLayer = route.route.stack.find((l) => l.name === "verifyTradeAuth");
+    expect(Boolean(guardLayer)).toBe(true);
+
+    // The guard must run BEFORE the handler, or the check is decorative.
+    const names = route.route.stack.map((l) => l.name || "<anonymous>");
+    expect(names.indexOf("verifyTradeAuth")).toBeLessThan(
+      names.indexOf("handleSwapRequest")
+    );
 
     let statusCode = 200;
     let jsonResponse = null;
@@ -1447,7 +1911,7 @@ describe("Swap Execution Endpoint Security", () => {
     };
 
     // A well-formed but unauthorised request.
-    await route.route.stack[0].handle({
+    await guardLayer.handle({
       body: { fromToken: "WETH", toToken: "USDC", amount: 1 },
       get: () => undefined,
       headers: {}
@@ -1499,11 +1963,17 @@ describe("Swap Execution Endpoint Security", () => {
       json: (data) => { jsonResponse = data; return res; },
     };
 
+    // Resolve the HANDLER by name, not by index. stack[1] is the auth guard, so
+    // calling it here would test authentication again and never reach the engine.
+    const handlerLayer = route.route.stack.find((l) => l.name === "handleSwapRequest");
+    expect(Boolean(handlerLayer)).toBe(true);
+
     try {
       // The handler is async because it performs a real quote/execution
       // through OnchainExecutionEngine, so it must be awaited.
-      // Skip the auth guard (stack[0]) - this exercises the handler itself.
-      await route.route.stack[1].handle({
+      // Auth is bypassed deliberately: this exercises the handler itself, and
+      // `requires a signed authorisation` covers the guard.
+      await handlerLayer.handle({
         body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 }
       }, res, () => {});
     } finally {

@@ -1249,7 +1249,7 @@ a, button, input, select, textarea {
       <span style="font-size:8px;padding:1px 5px;border-radius:8px;background:rgba(0,255,231,.08);border:1px solid rgba(0,255,231,.2);color:var(--cyan);display:none" id="ghNetwork">BASE</span>
     </div>
     <div style="margin-right:4px;text-align:right;flex-shrink:0">
-      <div class="gh-balance" id="ghBalance" style="transition:color .3s">$10,000.00</div>
+      <div class="gh-balance" id="ghBalance" style="transition:color .3s">$50.00</div>
       <div class="gh-pnl pnl-pos" id="ghPnl">+$0.00 today</div>
       <!-- Live on-chain wallet value. Kept separate from ghBalance (the
            trading balance) so a sync never appears to change P&L. -->
@@ -1482,21 +1482,49 @@ a, button, input, select, textarea {
          </div>
 
          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+           <label for="crucibleAsset" style="color:var(--dim);font-size:10px">Asset:</label>
+           <select id="crucibleAsset" style="padding:4px 8px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
+             <option value="bitcoin">BTC</option>
+             <option value="ethereum">ETH</option>
+             <option value="solana">SOL</option>
+             <option value="dogecoin">DOGE</option>
+             <option value="pepe">PEPE</option>
+             <option value="arbitrum">ARB</option>
+           </select>
+         </div>
+
+         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+           <label for="crucibleWindow" style="color:var(--dim);font-size:10px">Window:</label>
+           <select id="crucibleWindow" style="padding:4px 8px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
+             <option value="7">7 days</option>
+             <option value="30" selected>30 days</option>
+             <option value="90">90 days</option>
+             <option value="365">1 year</option>
+           </select>
+         </div>
+
+         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
            <label for="costModelSelect" style="color:var(--dim);font-size:10px">Cost Model:</label>
            <select id="costModelSelect" style="padding:4px 8px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
-             <option value="REALISTIC_1X">REALISTIC_1X (0.1% fees)</option>
+             <option value="REALISTIC_1X">REALISTIC_1X (0.30% fee + 0.10% slippage per side)</option>
              <option value="STRESS_1_5X">STRESS_1_5X (1.5x real costs)</option>
            </select>
          </div>
 
-         <label for="crucibleTradeCount" style="color:var(--dim);font-size:10px">Trades:</label>
-         <input type="number" id="crucibleTradeCount" value="50" min="1" max="1000" style="width:60px;padding:4px 6px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
+         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+           <label for="crucibleTradeCount" style="color:var(--dim);font-size:10px">Notional:</label>
+           <input type="number" id="crucibleTradeCount" value="100" min="1" max="100000" step="1" style="width:70px;padding:4px 6px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
+           <span style="color:var(--dim);font-size:9px">USD per trade</span>
+         </div>
 
-          <button class="crucible-run-btn" onclick="runCrucibleV2Batch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">▶ RUN CRUCIBLE V2</button>
-          <button class="crucible-pause-btn" onclick="pauseCrucible()" style="padding:6px 14px;background:linear-gradient(90deg,var(--amber),var(--hot));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">⏸ PAUSE</button>
-          <button class="crucible-cancel-btn" onclick="cancelCrucible()" style="padding:6px 14px;background:linear-gradient(90deg,var(--hot),var(--purple));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">⏹ CANCEL</button>
+          <button class="crucible-run-btn" id="crucibleRunBtn" onclick="runCrucibleV2Batch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">▶ RUN CRUCIBLE V2</button>
+
+          <button id="edgeSearchBtn" onclick="runEdgeSearch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--amber),var(--hot));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">🔬 SEARCH FOR EDGE</button>
        </div>
-
+       <div id="crucibleStatus" style="font-size:9px;color:var(--dim);margin-top:6px;line-height:1.5">
+         Backtests the selected asset over REAL historical candles. Nothing shown here is simulated.
+       </div>
+       <div id="edgeSearchResult" style="font-size:9px;margin-top:6px"></div>
       <!-- Databricks Genie Config -->
       <div class="db-config" id="dbConfig">
         <div class="db-config-title">🧱 DATABRICKS GENIE <span style="color:var(--dim);font-size:7px;font-family:'Share Tech Mono',monospace" id="dbStatus">NOT CONFIGURED</span></div>
@@ -1924,8 +1952,12 @@ const CRUCIBLE_METHODS = ['SPOT LONG','SPOT SHORT','HOLD'];
 // ══════════════════════════════════════════════════════
 // GLOBAL STATE
 // ══════════════════════════════════════════════════════
+// Starting balance for a session with no wallet connected (USD). A real wallet overrides this
+// on first connect via TA_syncWalletBalance(). Keep this and the ghBalance placeholder
+// above in sync - the placeholder used to read $10,000.00 while this said 50, so the header
+// briefly showed a balance twenty times larger than the app actually held.
 let balance=50, startBalance=50, totalPnl=0;
-let closedTrades=[], openPositions=[], equityHistory=[10000];
+let closedTrades=[], openPositions=[], equityHistory=[50];
 let agentHistory=[]; // per-agent vote accuracy for quant report
 let baselines={ random:{trades:[]}, long:{trades:[]}, momentum:{trades:[]} };
 let globalLog=[];
@@ -2680,9 +2712,22 @@ async function runCrucibleBatch() {
   }
 }
 
+// Regime the user has selected. Stored in a variable rather than re-derived
+// from a DOM id: the old code did `.replace('regime','')`, which produces
+// "Bull"/"Bear"/"Chop"/"HighVol" - none of which matched the UPPERCASE keys
+// used downstream, so the selection silently fell through to the BULL default
+// and the panel reported BULL results no matter which button was pressed.
+let crucibleRegime = 'BULL';
+
+const CRUCIBLE_REGIME_IDS = {
+  BULL: 'regimeBull', BEAR: 'regimeBear', CHOP: 'regimeChop', HIGH_VOL: 'regimeHighVol',
+};
+
 function selectRegime(regime) {
-  const map = { BULL: 'regimeBull', BEAR: 'regimeBear', CHOP: 'regimeChop', HIGH_VOL: 'regimeHighVol' };
-  const targetId = map[regime] || 'regimeBull';
+  crucibleRegime = Object.prototype.hasOwnProperty.call(CRUCIBLE_REGIME_IDS, regime)
+    ? regime
+    : 'BULL';
+  const targetId = CRUCIBLE_REGIME_IDS[crucibleRegime];
   document.querySelectorAll('.regime-btn').forEach(btn => {
     const isActive = btn.id === targetId;
     btn.classList.toggle('active', isActive);
@@ -2690,52 +2735,216 @@ function selectRegime(regime) {
   });
 }
 
+/**
+ * Run the Crucible backtest over REAL market candles.
+ *
+ * Replaces the previous implementation, which called
+ * `simulateCrucibleV2Results()` - a lookup table of invented numbers
+ * (BULL: 65% win rate, BEAR: 45%, ...) with nothing measured behind it.
+ * Every figure below is now computed from prices that actually traded, with
+ * fee + slippage deducted on both legs of every trade.
+ */
 async function runCrucibleV2Batch() {
-   const runBtn = document.querySelector('.crucible-run-btn');
-   if(runBtn) runBtn.disabled = true;
+  const runBtn = document.getElementById('crucibleRunBtn');
+  const statusEl = document.getElementById('crucibleStatus');
+  if (runBtn) runBtn.disabled = true;
 
-   try {
-     const regime = document.querySelector('.regime-btn.active')?.id?.replace('regime', '') || 'BULL';
-     const costModel = document.getElementById('costModelSelect')?.value || 'REALISTIC_1X';
-     const tradeCount = parseInt(document.getElementById('crucibleTradeCount')?.value || '50');
+  const asset = document.getElementById('crucibleAsset')?.value || 'bitcoin';
+  const days = parseInt(document.getElementById('crucibleWindow')?.value || '30', 10);
+  const costModel = document.getElementById('costModelSelect')?.value || 'REALISTIC_1X';
+  const notional = parseFloat(document.getElementById('crucibleTradeCount')?.value || '100');
 
-     if(tradeCount < 1 || tradeCount > 1000) {
-       alert('Trade count must be between 1 and 1000');
-       return;
-     }
+  if (!Number.isFinite(notional) || notional <= 0) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:var(--hot)">Enter a positive notional.</span>';
+    if (runBtn) runBtn.disabled = false;
+    return;
+  }
 
-     // Show running status
-     alert(`Running Crucible V2:\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${tradeCount}\n\nThis will simulate trading in the selected regime with realistic cost modeling.`);
+  const setStatus = (html) => { if (statusEl) statusEl.innerHTML = html; };
 
-     // In a real implementation, this would call the external crucible-test.js functions
-     // For now, we'll simulate the results
-     const simulatedResults = simulateCrucibleV2Results(regime, costModel, tradeCount);
+  if (typeof OnchainRegime === 'undefined') {
+    setStatus('<span style="color:var(--hot)">crucible-regime.js failed to load - cannot verify anything without it.</span>');
+    if (runBtn) runBtn.disabled = false;
+    return;
+  }
 
-     // Display results
-     alert(`Crucible V2 Results:\n\nRegime: ${regime}\nCost Model: ${costModel}\nTrades: ${simulatedResults.trades}\nWin Rate: ${simulatedResults.winRate.toFixed(1)}%\nP&L: $${simulatedResults.pnl >= 0 ? '+' : ''}${simulatedResults.pnl.toFixed(2)}\nReturn: ${simulatedResults.returnPct >= 0 ? '+' : ''}${simulatedResults.returnPct.toFixed(2)}%\n\nBaseline Comparison:\n- Strategy: ${simulatedResults.strategy.pnl >= 0 ? '+' : ''}${fmtUSD(simulatedResults.strategy.pnl, 2)} (${simulatedResults.strategy.winRate.toFixed(1)}% WR)\n- Always Long: ${simulatedResults.baselines.alwaysLong.pnl >= 0 ? '+' : ''}${fmtUSD(simulatedResults.baselines.alwaysLong.pnl, 2)} (${simulatedResults.baselines.alwaysLong.winRate.toFixed(1)}% WR)\n- Momentum: ${simulatedResults.baselines.momentum.pnl >= 0 ? '+' : ''}${fmtUSD(simulatedResults.baselines.momentum.pnl, 2)} (${simulatedResults.baselines.momentum.winRate.toFixed(1)}% WR)\n- Random: ${simulatedResults.baselines.random.pnl >= 0 ? '+' : ''}${fmtUSD(simulatedResults.baselines.random.pnl, 2)} (${simulatedResults.baselines.random.winRate.toFixed(1)}% WR)\n\n${simulatedResults.strategy.pnl > simulatedResults.baselines.alwaysLong.pnl && regime !== 'BULL' ? '✅ STRATEGY BEATS ALWAYS LONG IN NON-BULL REGIME' : '⚠️ Strategy did not beat Always Long in non-bull regime'}`);
+  try {
+    setStatus('Fetching real candles for <b>' + escapeHTML(asset.toUpperCase()) + '</b> over ' + days + ' days...');
 
-     // Update crucible counter for UI
-     crucibleCount += tradeCount;
-     updateCrucible();
-   } finally {
-     if(runBtn) runBtn.disabled = false;
-   }
- }
+    const fetched = await OnchainRegime.fetchCandles(asset, { days });
+    const result = OnchainRegime.backtestRegime(fetched.candles, {
+      requestedRegime: crucibleRegime,
+      costModel,
+      notional,
+    });
 
-// Pause crucible batch execution
-function pauseCrucible() {
-   // This would pause the execution in a real implementation
-   alert('Crucible batch paused');
+    renderCrucibleRegimeReport(result, fetched);
+  } catch (e) {
+    // A failure to source real data is reported as a failure. The panel never
+    // falls back to a plausible-looking number.
+    setStatus('<span style="color:var(--hot)">Could not complete the backtest: ' +
+      escapeHTML(e.message || String(e)) + '</span>');
+    console.warn('[Crucible] backtest failed', e);
+  } finally {
+    if (runBtn) runBtn.disabled = false;
+  }
 }
 
-// Cancel crucible batch execution
-function cancelCrucible() {
-   // This would cancel the execution in a real implementation
-   alert('Crucible batch cancelled');
-   // Reset counters
-   crucibleCount = 0;
-   updateCrucible();
- }
+const _fmtPf = (v) => (!Number.isFinite(v) ? 'n/a' : v.toFixed(2));
+const _fmtPnl = (v) => (v >= 0 ? '+' : '') + fmtUSD(v, 2);
+
+function renderCrucibleRegimeReport(r, fetched) {
+  const ind = r.indicators;
+  const rowsFor = (label, s, highlight) => {
+    const cls = highlight ? 'style="color:' + (s.netPnl >= 0 ? 'var(--green)' : 'var(--hot)') + ';font-weight:bold"' : 'style="color:#bbb"';
+    return '<tr><td ' + cls + '>' + label + '</td><td ' + cls + '>' + s.trades + '</td><td ' + cls + '>' +
+      s.winRate.toFixed(1) + '%</td><td ' + cls + '>' + _fmtPnl(s.netPnl) + '</td><td ' + cls + '>' +
+      _fmtPf(s.profitFactor) + '</td></tr>';
+  };
+
+  const src = fetched.degraded
+    ? 'CoinGecko /market_chart (closes only; highs/lows reconstructed, so ATR is conservative)'
+    : 'CoinGecko /ohlc (true high/low bars)';
+
+  const verdict = r.edgeSignificant
+    ? '<span style="color:var(--green)">Significant edge: beats the coin-flip control by ' +
+      r.winRateEdgePct.toFixed(1) + 'pp, wider than the ' + r.noiseBandPct.toFixed(1) + 'pp noise band.</span>'
+    : r.beatsRandom
+      ? '<span style="color:var(--amber)">Ahead of the coin-flip control, but by less than the ' +
+        r.noiseBandPct.toFixed(1) + 'pp noise band - treat this as no demonstrated edge.</span>'
+      : '<span style="color:var(--hot)">Does not beat the coin-flip control after costs. No demonstrated edge.</span>';
+
+  const mismatch = r.regimeMismatch
+    ? '<div style="color:var(--amber);margin-bottom:6px">You selected <b>' + escapeHTML(r.requestedRegime) +
+      '</b>, but the real data is currently <b>' + escapeHTML(r.detectedRegime) +
+      '</b>. The backtest ran against the direction implied by your selection; the detected regime is reported above.</div>'
+    : '';
+
+  const html =
+    '<div style="font-size:9px;margin-top:8px">' +
+      mismatch +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">' +
+        '<span>Asset: <b>' + escapeHTML(fetched.candles ? assetLabel(fetched) : '') + '</b></span>' +
+        '<span>Data: <b>' + escapeHTML(src) + '</b></span>' +
+        '<span>Candles: <b>' + r.candles + '</b></span>' +
+        '<span>Cost: <b>' + r.costBpsPerRoundTrip.toFixed(0) + ' bps round trip</b></span>' +
+      '</div>' +
+      '<div style="margin-bottom:6px">Regime inputs &rarr; RSI(14) <b>' + ind.rsi.toFixed(1) +
+        '</b>, ATR%(14) <b>' + ind.atrPercent.toFixed(2) + '%</b>, price <b>' + fmtUSD(ind.price, 2) +
+        '</b>, SMA(20) <b>' + fmtUSD(ind.sma, 2) + '</b></div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:9px;margin-bottom:6px">' +
+        '<tr style="color:var(--purple);text-align:left"><th style="padding:3px 5px">Series</th>' +
+        '<th style="padding:3px 5px">Trades</th><th style="padding:3px 5px">Win %</th>' +
+        '<th style="padding:3px 5px">Net P&amp;L</th><th style="padding:3px 5px">PF</th></tr>' +
+        rowsFor('Strategy (' + escapeHTML(r.strategy.direction) + ')', r.strategy, true) +
+        rowsFor('Random control', r.baselines.random, false) +
+        rowsFor('Momentum', r.baselines.momentum, false) +
+        rowsFor('Buy &amp; hold', r.baselines.buyAndHold, false) +
+        rowsFor('Short &amp; hold', r.baselines.shortAndHold, false) +
+      '</table>' +
+      '<div>' + verdict + '</div>' +
+    '</div>';
+
+  const el = document.getElementById('crucibleStatus');
+  if (el) el.innerHTML = html;
+  window.lastCrucibleResult = r;   // for console inspection / export
+  console.log('[Crucible] real-data backtest', r);
+}
+
+function assetLabel(fetched) {
+  const id = document.getElementById('crucibleAsset')?.value || '';
+  return id.toUpperCase();
+}
+
+/**
+ * Search for a genuinely validated regime edge.
+ *
+ * This is the honest counterpart to "RUN CRUCIBLE V2". Where that panel asks
+ * "what did this one strategy do?", this asks "does ANY strategy beat a coin
+ * flip after costs, on data it was not selected on?" - which is the only
+ * question worth asking before risking money.
+ *
+ * Three things stop it from producing a flattering answer every time:
+ *   1. Split in-sample / out-of-sample. Variants are RANKED on the first half
+ *      and only then run on the second half, which the search never saw.
+ *   2. Multiple-testing correction. Testing 21 variants guarantees the best one
+ *      looks good by chance; the threshold is Bonferroni-adjusted for that.
+ *   3. A bar-matched coin-flip control paying identical costs. A strategy that
+ *      simply trades less is not thereby better.
+ *
+ * "NO EDGE FOUND" is the expected result on 4h crypto bars at 80bps round trip.
+ * That is a real finding, not an error.
+ */
+async function runEdgeSearch() {
+  const btn = document.getElementById('edgeSearchBtn');
+  const out = document.getElementById('edgeSearchResult');
+  if (btn) btn.disabled = true;
+  if (out) out.innerHTML = '<span style="color:var(--dim)">Searching... (fetches real candles, may take ~10s)</span>';
+
+  if (typeof RegimeStrategyLab === 'undefined' || typeof OnchainRegime === 'undefined') {
+    if (out) out.innerHTML = '<span style="color:var(--hot)">regime-strategy-lab.js failed to load - cannot verify anything without it.</span>';
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  const asset = document.getElementById('crucibleAsset')?.value || 'bitcoin';
+  const days = parseInt(document.getElementById('crucibleWindow')?.value || '30', 10);
+  const HORIZONS = [1, 4, 12, 24];
+
+  try {
+    const fetched = await OnchainRegime.fetchCandles(asset, { days });
+    const rows = [];
+    let anyEdge = false;
+
+    for (const h of HORIZONS) {
+      const r = RegimeStrategyLab.search(fetched.candles, { horizon: h });
+      if (r.error) continue;
+      if (r.hasEdge) anyEdge = true;
+      const b = r.best;
+      rows.push(
+        '<tr style="color:#bbb">' +
+          '<td style="padding:2px 5px">hold ' + h + (h === 1 ? ' bar' : ' bars') + '</td>' +
+          '<td style="padding:2px 5px;color:' + (r.hasEdge ? 'var(--green)' : 'var(--hot)') + '">' +
+            (r.hasEdge ? 'EDGE' : 'none') + '</td>' +
+          '<td style="padding:2px 5px">' + (b ? b.oos.trades : 0) + '</td>' +
+          '<td style="padding:2px 5px">' + (b ? b.oos.winRate.toFixed(1) : '-') + '%</td>' +
+          '<td style="padding:2px 5px">' + (b ? b.control.winRate.toFixed(1) : '-') + '%</td>' +
+          '<td style="padding:2px 5px">' + (b ? b.edgePp.toFixed(1) : '-') + 'pp</td>' +
+          '<td style="padding:2px 5px">' + (b ? b.noisePp.toFixed(1) : '-') + 'pp</td>' +
+        '</tr>'
+      );
+    }
+
+    const alpha = RegimeStrategyLab.bonferroniAlpha(RegimeStrategyLab.expandVariants().length);
+
+    const verdict = anyEdge
+      ? '<span style="color:var(--green)">At least one horizon shows an edge that survived out-of-sample validation and multiple-testing correction.</span>'
+      : '<span style="color:var(--hot)">NO EDGE FOUND.</span> No strategy beat the coin-flip control by more than sampling noise on data it was not selected on. ' +
+        'That is the honest result, not a failure. On 4h bars an 80bps round trip costs roughly the whole bar move - trading faster cannot work here.';
+
+    if (out) {
+      out.innerHTML =
+        '<div style="color:var(--purple);margin-bottom:3px">EDGE SEARCH - ' + escapeHTML(asset.toUpperCase()) +
+          ' | ' + fetched.candles.close.length + ' real candles | ' + days + 'd</div>' +
+        '<div style="margin-bottom:3px">' + RegimeStrategyLab.expandVariants().length +
+          ' strategy variants tested, Bonferroni-corrected alpha = ' + alpha.toExponential(2) + '</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:9px;margin-bottom:4px">' +
+          '<tr style="color:var(--cyan);text-align:left">' +
+            '<th style="padding:2px 5px">Horizon</th><th style="padding:2px 5px">Result</th>' +
+            '<th style="padding:2px 5px">Trades</th><th style="padding:2px 5px">WR</th>' +
+            '<th style="padding:2px 5px">Control</th><th style="padding:2px 5px">Edge</th>' +
+            '<th style="padding:2px 5px">Noise</th>' +
+          '</tr>' + rows.join('') +
+        '</table>' +
+        '<div>' + verdict + '</div>';
+    }
+  } catch (e) {
+    if (out) out.innerHTML = '<span style="color:var(--hot)">Could not complete the search: ' +
+      escapeHTML(e.message || String(e)) + '</span>';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
 
 // Show detailed crucible results in a modal
 function showCrucibleResults(results) {
@@ -2788,62 +2997,6 @@ function showCrucibleResults(results) {
    document.body.appendChild(modalOverlay);
 }
 
-// Helper function to simulate Crucible V2 results
-function simulateCrucibleV2Results(regime, costModel, tradeCount) {
-  // Base win rate and P&L per trade by regime
-  const baseStats = {
-    BULL: { winRate: 0.65, pnlPerTrade: 15 },
-    BEAR: { winRate: 0.45, pnlPerTrade: 5 },
-    CHOP: { winRate: 0.50, pnlPerTrade: 2 },
-    HIGH_VOL: { winRate: 0.40, pnlPerTrade: 8 }
-  };
-
-  const stats = baseStats[regime] || baseStats.BULL;
-  let winRate = stats.winRate;
-  let pnlPerTrade = stats.pnlPerTrade;
-
-  // Adjust for cost model
-  if (costModel === 'STRESS_1_5X') {
-    pnlPerTrade *= 0.5; // Reduce profitability under stress costs
-    winRate -= 0.05; // Slightly lower win rate due to costs
-  }
-
-  // Ensure win rate stays in reasonable bounds
-  winRate = Math.max(0.2, Math.min(0.8, winRate));
-
-  // Calculate results
-  const wins = Math.floor(tradeCount * winRate);
-  const losses = tradeCount - wins;
-  const avgWin = Math.abs(pnlPerTrade) * 1.5; // Assuming 1.5:1 reward:risk
-  const avgLoss = Math.abs(pnlPerTrade);
-  const totalPnl = (wins * avgWin) - (losses * avgLoss);
-  const returnPct = (totalPnl / 10000) * 100; // Assuming $10k starting balance
-
-  // Generate baseline comparisons
-  const baselines = {
-    alwaysLong: {
-      pnl: regime === 'BULL' ? totalPnl * 0.8 : regime === 'BEAR' ? -totalPnl * 0.5 : totalPnl * 0.3,
-      winRate: regime === 'BULL' ? 0.7 : regime === 'BEAR' ? 0.3 : 0.5
-    },
-    momentum: {
-      pnl: totalPnl * 0.6,
-      winRate: winRate * 0.9
-    },
-    random: {
-      pnl: totalPnl * 0.4,
-      winRate: 0.5
-    }
-  };
-
-  return {
-    trades: tradeCount,
-    winRate: winRate * 100,
-    pnl: totalPnl,
-    returnPct: returnPct,
-    strategy: { pnl: totalPnl, winRate: winRate * 100 },
-    baselines: baselines
-  };
-}
 
 // ══════════════════════════════════════════════════════
 // EXPORT
@@ -3533,11 +3686,14 @@ function logout() {
     // Stop the background balance poller before tearing state down.
     if (typeof WalletCore !== 'undefined' && WalletCore.stopPolling) WalletCore.stopPolling();
 
-    // Clear in-app session keys. ta_demo_* is intentionally left alone so a
-    // demo balance survives a logout/login round-trip.
-    ['ta_wallet_address', 'ta_provider', 'ta_session_provider'].forEach((k) => {
-      try { localStorage.removeItem(k); } catch (e) {}
-    });
+    // Clear every persisted session artefact, INCLUDING ta_demo_balance.
+    //
+    // The old code deliberately kept the demo balance "so it survives a
+    // logout/login round-trip". That is what let a stale balance reappear: the
+    // value was written on setup, never cleared, and restored verbatim on the
+    // next demo login - so the header could show a figure that no longer
+    // corresponded to anything on chain. Logout now starts clean.
+    clearPersistedSession();
 
     // Reset wallet + in-memory trading state to defaults.
     if (typeof WalletCore !== 'undefined' && WalletCore.disconnect) WalletCore.disconnect();
@@ -3551,9 +3707,12 @@ function logout() {
     }
     window.currentUserAddress = null;
     window.userTokenHoldings = [];
-    balance = 50;
-    startBalance = 50;
-    totalPnl = 0;
+
+    // One call resets balance, startBalance, P&L, the trade log, the equity
+    // curve and the baselines together. Setting only balance/startBalance (as
+    // the old code did) left equityHistory describing the previous session, so
+    // the drawdown breaker compared against a baseline that was not on screen.
+    resetTradingBalance({ seedFromWallet: false });
 
     // Hide wallet-only header chrome.
     const wcv = document.getElementById('walletChainValue');
@@ -4149,6 +4308,79 @@ function updateGlobalBalance(){
   if(p){p.textContent=(totalPnl>=0?'+':'')+fmtUSD(totalPnl,2)+' today';p.className='gh-pnl '+(totalPnl>=0?'pnl-pos':'pnl-neg');}
   checkGlobalBreakers();
 }
+
+/**
+ * Reset the trading balance to its correct starting point for this session.
+ *
+ * WHY THIS EXISTS
+ * The displayed balance could drift from reality in three ways, all fixed here:
+ *
+ *  1. A stale `ta_demo_balance` in localStorage was restored on every demo
+ *     reconnect and was NEVER cleared on logout - so a session could come back
+ *     with yesterday's balance.
+ *  2. `balance` and `startBalance` were reset independently on logout, while
+ *     `equityHistory` still held the old curve, so the drawdown breaker
+ *     measured against a baseline that no longer existed on screen.
+ *  3. There was no way to re-sync from the wallet without a full reconnect.
+ *
+ * The reset derives the new starting balance from the LIVE on-chain wallet
+ * value when a wallet is connected, so the header and the chain agree. It does
+ * NOT invent a number, and it never touches the on-chain balance itself - this
+ * is purely the app's paper trading ledger.
+ *
+ * @param {Object} [opts] - { seedFromWallet = true }
+ * @returns {number} the new starting balance
+ */
+function resetTradingBalance(opts = {}) {
+  const seedFromWallet = opts.seedFromWallet !== false;
+
+  // 1. Prefer the real on-chain value so the header matches the chain.
+  let seed = 50;                       // DEFAULT_START_BALANCE, matches the state decl
+  const onChain = (
+    typeof WalletCore !== 'undefined' && WalletCore.state
+      ? Number(WalletCore.state.usdBalance || 0)
+      : 0
+  );
+  if (seedFromWallet && Number.isFinite(onChain) && onChain > 0) {
+    seed = onChain;
+  }
+
+  // 2. Reset every piece of balance-derived state together, so the equity
+  //    curve, the P&L baseline and the breakers all agree.
+  balance = seed;
+  startBalance = seed;
+  totalPnl = 0;
+  closedTrades = [];
+  openPositions = [];
+  equityHistory = [seed];
+  baselines = { random: { trades: [] }, long: { trades: [] }, momentum: { trades: [] } };
+
+  // 3. Persist the new baseline so a reload does not resurrect the old one.
+  try {
+    localStorage.setItem('ta_demo_balance', String(seed));
+  } catch (e) { /* private mode - in-memory reset still applies */ }
+
+  // 4. Re-render and re-arm the breakers from the new baseline.
+  try { _lastDisplayBal = -1; _lastDisplayPnl = -1; _lastUnrealised = -1; } catch (e) {}
+  updateGlobalBalance();
+  try { updateBreakers(); } catch (e) { console.warn('reset balance: breakers:', e); }
+
+  console.info('[TradeArena] trading balance reset to', seed,
+    seedFromWallet && onChain > 0 ? '(from on-chain wallet value)' : '(default)');
+  return seed;
+}
+window.resetTradingBalance = resetTradingBalance;
+
+/**
+ * Drop every persisted session artefact, including the demo balance that
+ * logout used to leave behind. Called by logout().
+ */
+function clearPersistedSession() {
+  ['ta_wallet_address', 'ta_provider', 'ta_session_provider', 'ta_demo_balance'].forEach((k) => {
+    try { localStorage.removeItem(k); } catch (e) { /* ignore */ }
+  });
+}
+window.clearPersistedSession = clearPersistedSession;
 function updateBotPnl(bot){
   const el=document.getElementById('mpnl-'+bot.id); if(!el) return;
   el.textContent=(bot.pnl>=0?'+':'')+fmtUSD(bot.pnl,2);
@@ -6532,6 +6764,9 @@ document.addEventListener('keydown', function(e) {
 <script src="app-rebuild.js" defer></script>
 <!-- Wallet: WalletCore is the single source of truth for connection + balance sync.
      It MUST load before real-wallet.js so walletState exists for the legacy mirrors. -->
+<script src="crucible-test.js" defer></script>
+<script src="crucible-regime.js" defer></script>
+<script src="regime-strategy-lab.js" defer></script>
 <script src="wallet-core.js" defer></script>
 <script src="real-wallet.js" defer></script>
 <!-- ACOUSTIC Audio-Visual Engines -->

@@ -12,7 +12,7 @@
           "valueUsd": 11.17
         }
       ],
-      "lastLogin": "2026-09-28T14:57:47.342Z",
+      "lastLogin": "2026-10-02T11:09:55.148Z",
       "sessionData": {
         "balance": 11.17
       }
@@ -701,23 +701,6 @@
       "timestamp": "2026-09-28T14:40:02.869Z"
     },
     {
-      "id": "trade_1790607465710_e5dd499e2e741663",
-      "address": "0x9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a",
-      "agentId": "agent-default",
-      "botName": "Trade Bot",
-      "action": "TRADE",
-      "symbol": "SOL/USD",
-      "amount": 0,
-      "pnl": 0,
-      "details": {
-        "status": "OPEN"
-      },
-      "timestamp": "2026-09-28T14:57:45.710Z",
-      "positionId": "pos_b",
-      "status": "OPEN",
-      "openedAt": "2026-09-28T14:57:45.710Z"
-    },
-    {
       "id": "trade_1790607467344_92478342928a9ad5",
       "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
       "agentId": "bot-1",
@@ -730,6 +713,275 @@
         "isWin": true
       },
       "timestamp": "2026-09-28T14:57:47.345Z"
+    },
+    {
+      "id": "trade_1790872685805_2efe171082757598",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T16:38:05.805Z"
+    },
+    {
+      "id": "trade_1790874269529_c07fe4de76d24aba",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T17:04:29.529Z"
+    },
+    {
+      "id": "trade_1790874307574_cee53827ee97b582",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T17:05:07.574Z"
+    },
+    {
+      "id": "trade_1790874400334_0a370675058ad561",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T17:06:40.338Z"
+    },
+    {
+      "id": "trade_1790874440649_769d974d168becf0",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T17:07:20.649Z"
+    },
+    {
+      "id": "trade_1790874665682_cd1cf3f3c9c6ee73",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T17:11:05.682Z"
+    },
+    {
+      "id": "trade_1790880437512_f81f0c58fcde10a3",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T18:47:17.512Z"
+    },
+    {
+      "id": "trade_1790880760979_4c05d27411604e51",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T18:52:40.979Z"
+    },
+    {
+      "id": "trade_1790895776373_4d23ffc5f9134b56",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T23:02:56.374Z"
+    },
+    {
+      "id": "trade_1790895810005_86a9c9205001e3a1",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T23:03:30.005Z"
+    },
+    {
+      "id": "trade_1790895889988_0bcecec06dce707f",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T23:04:49.988Z"
+    },
+    {
+      "id": "trade_1790895998961_326092528e34fe2c",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T23:06:38.961Z"
+    },
+    {
+      "id": "trade_1790896641839_a668b96b65490521",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T23:17:21.839Z"
+    },
+    {
+      "id": "trade_1790896713563_c7762e7fb3d20d73",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T23:18:33.563Z"
+    },
+    {
+      "id": "trade_1790896782022_30cbdf8805bc2714",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-01T23:19:42.022Z"
+    },
+    {
+      "id": "trade_1790921299791_25b9a699161fe0d0",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-02T06:08:19.791Z"
+    },
+    {
+      "id": "trade_1790923956128_6d6710bab1563cf2",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-02T06:52:36.128Z"
+    },
+    {
+      "id": "trade_1790939393840_bc3a16b4af337321",
+      "address": "0x9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "TRADE",
+      "symbol": "SOL/USD",
+      "amount": 0,
+      "pnl": 0,
+      "details": {
+        "status": "OPEN"
+      },
+      "timestamp": "2026-10-02T11:09:53.840Z",
+      "positionId": "pos_b",
+      "status": "OPEN",
+      "openedAt": "2026-10-02T11:09:53.840Z"
+    },
+    {
+      "id": "trade_1790939395150_aad80f4e2a61ebde",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-02T11:09:55.150Z"
     }
   ],
   "userState": {

@@ -35,3 +35,7 @@ contracts/broadcast/
 
 # Accumulated scan history. Local research data, not source.
 data/scan-history.jsonl
+
+# Scanner logs and accumulated history. Local research data.
+data/logs/
+data/scan-history.jsonl

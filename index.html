@@ -3151,9 +3151,180 @@ function downloadFile(content, filename, type) {
 }
 
 // ══════════════════════════════════════════════════════
-// CIRCUIT BREAKERS
+// FLASH-LOAN SCANNER PANEL (read-only)
 // ══════════════════════════════════════════════════════
-function togglePanel(name) {
+//
+// Displays recorded scan history. It cannot start a scan — see the note in the
+// panel markup. Everything below is presentation of data the scanner already
+// produced; the panel makes no independent judgement about the market.
+//
+// The one judgement it DOES make is refusing to overstate the evidence: a scan
+// that could not price most of its routes is shown as unreliable and excluded
+// from the headline number, because "no edge found" from a scan that saw 3% of
+// the market means nothing at all.
+const FLASHSCAN_MIN_RUNS = 20;
+
+function fmtWhen(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toISOString().slice(5, 16).replace('T', ' ') + 'Z';
+}
+
+function flashScanVerdictText(v) {
+  if (v === 'NOT_ENOUGH_DATA') {
+    return {
+      color: 'var(--muted)',
+      label: 'NOT ENOUGH DATA',
+      detail: 'Nothing conclusive recorded yet. A single run is not evidence — keep scanning.',
+    };
+  }
+  if (v === 'NO_EDGE_OBSERVED') {
+    return {
+      color: 'var(--amber)',
+      label: 'NO EDGE OBSERVED',
+      detail: 'No viable route appeared in any conclusive scan. On these pairs, at this size, the market looks efficient.',
+    };
+  }
+  return {
+    color: 'var(--green)',
+    label: 'EDGE OBSERVED',
+    detail: 'A viable route appeared. Check the hit rate against per-attempt gas before sizing anything.',
+  };
+}
+
+function metric(label, value, color, sub) {
+  return '<div style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:6px 8px">' +
+    '<div style="color:var(--muted);font-size:8px;letter-spacing:1px">' + label + '</div>' +
+    '<div style="font-size:14px;font-weight:700;color:' + (color || 'var(--text)') + '">' + value + '</div>' +
+    (sub ? '<div style="font-size:8px;color:var(--muted)">' + sub + '</div>' : '') +
+    '</div>';
+}
+
+/**
+ * Surface the cross-venue result when the scan actually covered one.
+ *
+ * Comparing Uniswap fee tiers against each other is not arbitrage - both legs
+ * are the same AMM. The Aerodrome-vs-Uniswap pass is the one that measures a
+ * real cross-venue spread, so it is worth distinguishing from the headline
+ * "no edge" verdict rather than burying it.
+ */
+function crossVenueNote(records) {
+  const withXV = records.filter((r) => r.scanner && r.scanner.crossVenueRoundTrips > 0);
+  if (!withXV.length) {
+    return '<div style="margin-top:6px;color:var(--muted);font-size:10px">' +
+      'Cross-venue (Aerodrome vs Uniswap) not yet covered by any recorded scan.</div>';
+  }
+  const rt = withXV.reduce((a, r) => a + (r.scanner.crossVenueRoundTrips || 0), 0);
+  const viable = withXV.reduce((a, r) => a + (r.scanner.crossVenueViable || 0), 0);
+  // Widest spread across the runs. Negative means every round trip lost money
+  // before costs - the market was efficient between the two venues.
+  let widest = null;
+  for (const r of withXV) {
+    const w = r.scanner.widestCrossVenueSpreadBps;
+    if (typeof w === 'number' && (widest === null || w > widest)) widest = w;
+  }
+  const spreadTxt = widest === null ? 'n/a' : widest.toFixed(1) + ' bps';
+  const spreadColor = widest !== null && widest > 15 ? 'var(--amber)' : 'var(--muted)';
+  return '<div style="margin-top:6px;font-size:10px;line-height:1.5">' +
+    '<span style="color:var(--muted)">Cross-venue (Aerodrome vs Uniswap, same block): </span>' +
+    rt + ' round trips, ' + viable + ' viable. ' +
+    'Widest gross spread <span style="color:' + spreadColor + '">' + spreadTxt + '</span>' +
+    '<span style="color:var(--muted)"> — break-even is ~15 bps after the 5 bps flash premium and fixed costs.</span>' +
+    '</div>';
+}
+
+async function loadFlashScanHistory() {
+  const summaryEl = document.getElementById('flashscanSummary');
+  const noteEl = document.getElementById('flashscanNote');
+  const rowsEl = document.getElementById('flashscanRows');
+  const statusEl = document.getElementById('flashscanStatus');
+  if (!summaryEl) return;
+
+  try {
+    const r = await fetch('/api/scans/history?limit=50');
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'request failed');
+
+    if (!d.total) {
+      summaryEl.innerHTML = '<span style="color:var(--muted)">No scans recorded yet.</span>';
+      noteEl.textContent =
+        'Run "npm run scan:flash:record" in the project directory. Suggested cadence: every ~30 minutes — a minute apart just re-reads the same block.';
+      statusEl.textContent = 'NO DATA';
+      statusEl.className = 'breaker-status bs-warn';
+      return;
+    }
+
+    const v = flashScanVerdictText(d.verdict);
+    const hit = d.hitRate === null ? '—' : (d.hitRate * 100).toFixed(1) + '%';
+    const best = d.bestNetProfitUSD === null ? '—' : '$' + Number(d.bestNetProfitUSD).toFixed(2);
+    const cov = d.avgCoverage === null ? '—' : (d.avgCoverage * 100).toFixed(0) + '%';
+
+    summaryEl.innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px">' +
+      metric('SCANS', d.total) +
+      metric('RELIABLE', d.conclusive, d.conclusive < d.total ? 'var(--amber)' : null,
+        d.conclusive < d.total ? d.total - d.conclusive + ' unreliable' : null) +
+      metric('HIT RATE', hit) +
+      metric('BEST NET', best, d.bestNetProfitUSD > 0 ? 'var(--green)' : null) +
+      metric('AVG COVERAGE', cov) +
+      '</div>' +
+      '<div style="margin-top:8px;font-weight:700;color:' + v.color + '">' + v.label + '</div>' +
+      '<div style="color:var(--muted)">' + v.detail + '</div>' +
+      crossVenueNote(d.records);
+
+    if (d.conclusive < FLASHSCAN_MIN_RUNS) {
+      noteEl.innerHTML =
+        '<span style="color:var(--amber)">⚠ Only ' + d.conclusive + ' of ' + FLASHSCAN_MIN_RUNS +
+        ' reliable scans so far. Treat any verdict above as provisional — it is a sample, not a statistic.</span>';
+    } else {
+      noteEl.textContent =
+        'Historical observation only. These are indicative quotes, not executable trades: by the time a transaction lands, the spread is usually gone. Public-mempool submission also means a searcher sees it first.';
+    }
+
+    rowsEl.innerHTML = d.records.map(function (rec) {
+      const covPct = ((rec.coverage || 0) * 100).toFixed(0) + '%';
+      const covColor = rec.conclusive ? 'var(--green)' : 'var(--amber)';
+      const edges = rec.viableCount || 0;
+      const edgeCell = edges > 0
+        ? '<span style="color:var(--green)">' + edges + '</span>'
+        : '<span style="color:var(--muted)">0</span>';
+      const bestCell = rec.bestNetProfitUSD === null || rec.bestNetProfitUSD === undefined
+        ? '<span style="color:var(--muted)">—</span>'
+        : '$' + Number(rec.bestNetProfitUSD).toFixed(2);
+      const rel = rec.conclusive
+        ? '<span style="color:var(--green)">yes</span>'
+        : '<span style="color:var(--amber)" title="Below 50% quote coverage — this run could not price most routes, so its silence proves nothing">no</span>';
+      return '<tr style="border-bottom:1px solid var(--border)">' +
+        '<td style="padding:4px 6px">' + fmtWhen(rec.ts) + '</td>' +
+        '<td style="padding:4px 6px;color:var(--muted)">' + (rec.block || '—') + '</td>' +
+        '<td style="padding:4px 6px;color:' + covColor + '">' + covPct + '</td>' +
+        '<td style="padding:4px 6px">' + edgeCell + '</td>' +
+        '<td style="padding:4px 6px">' + bestCell + '</td>' +
+        '<td style="padding:4px 6px">' + rel + '</td>' +
+        '</tr>';
+    }).join('');
+
+    statusEl.textContent = v.label;
+    statusEl.className = 'breaker-status ' + (d.verdict === 'EDGE_OBSERVED' ? 'bs-ok' : 'bs-warn');
+  } catch (e) {
+    summaryEl.innerHTML =
+      '<span style="color:var(--red)">Could not load scan history: ' + escapeHTML(String(e.message)) + '</span>';
+    statusEl.textContent = 'OFFLINE';
+    statusEl.className = 'breaker-status bs-warn';
+  }
+}
+
+// Load on paint, and refresh when the panel opens so the numbers are current
+// without polling a server that nothing writes to between scans.
+document.addEventListener('DOMContentLoaded', function () {
+  loadFlashScanHistory();
+  const hd = document.getElementById('flashscanHd');
+  if (hd) hd.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePanel('flashscan'); }
+  });
+});
+
   const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle', navBtnId=name+'NavBtn';
   const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId), hd=document.getElementById(hdId), navBtn=document.getElementById(navBtnId);
   if(!body||!toggle) return;

@@ -30,6 +30,7 @@ const { DEFAULT_FLASH_ARB_CONFIG, scanCrossDexFlashArb, calculateFlashLoanArb } 
 const tokenManager = require(path.join(__dirname, '..', 'services', 'TokenManager.js'));
 const { FailoverProvider, DEFAULT_ENDPOINTS } = require('./rpc-failover.js');
 const { ScanRecorder, buildSnapshot } = require('./scan-recorder.js');
+const { AerodromeAdapter } = require('./aerodrome-adapter.js');
 
 const args = process.argv.slice(2);
 const argOf = (flag, fallback) => {
@@ -402,19 +403,186 @@ async function main() {
     return;
   }
   console.log('');
-
-  const quoteProvider = makeQuoter(quoter, cache, blockNum, usdPrices);
-
-  // ── Scan: every ordered pair x size x fee-tier combination ───────────────
-  // A genuine round trip needs TWO DIFFERENT price points. Comparing fee
-  // tiers on one venue is the cheapest available proxy for that; real
-  // cross-venue arb needs a second DEX quoted in the same block.
+  // Scan accumulators. Declared BEFORE the cross-venue pass, which reports
+  // into the same tallies - a scan that printed its own results separately
+  // could not tell you how much of the market it actually managed to price.
   const found = [];
   const stats = { pairs: 0, ok: 0, failed: 0, inconclusive: 0, grossProfitable: 0 };
   // Why quotes failed, grouped. A bare "176 failed" is useless; the reason
   // tells you whether the market is uninteresting or the scan is broken.
   const failReasons = new Map();
 
+  const quoteProvider = makeQuoter(quoter, cache, blockNum, usdPrices);
+
+  // ── Cross-venue scan: Aerodrome vs Uniswap, same block ────────────────
+  //
+  // The fee-tier scan below compares two pools on ONE AMM, so any gap it finds
+  // is a curve artifact rather than a market dislocation. This pass compares
+  // two genuinely independent venues, which is what cross-venue arbitrage
+  // actually means.
+  //
+  // Aerodrome is the venue that matters: it turns its USDC/WETH pool over ~32x
+  // per day while Uniswap's sits near idle, so any real dislocation between them
+  // should show up here. Measured live: ~40 bps apart on the same block.
+  const crossVenue = [];
+  if (process.env.SKIP_CROSS_VENUE !== '1') {
+    let aero = null;
+    try {
+      aero = new AerodromeAdapter(fp);
+      console.log('cross-venue : Aerodrome vs Uniswap v3 (both pinned to this block)');
+    } catch (e) {
+      console.log('cross-venue : UNAVAILABLE - ' + (e.message || e));
+      aero = null;
+    }
+
+    if (aero) {
+      // Convert a USD budget to a raw token amount.
+      //
+      // Returns 0n for a token with no derivable price, which the caller treats
+      // as "skip this route". Returning NaN instead would reach parseUnits and
+      // throw "The number NaN cannot be converted to a BigInt", aborting the
+      // entire scan because of one bad price.
+      const rawOf = (t, usd) => {
+        const SCALE = 10n ** 18n;
+        const price = usdPrices[t.symbol];
+        if (!Number.isFinite(price) || price <= 0) return 0n;
+        const usdScaled = BigInt(Math.round(Number(usd) * 1e6)) * SCALE;
+        const priceScaled = BigInt(Math.round(price * 1e6));
+        if (priceScaled <= 0n) return 0n;
+        return (usdScaled * 10n ** BigInt(t.decimals)) / (priceScaled * SCALE);
+      };
+
+      for (const A of good) {
+        for (const B of good) {
+          if (A.symbol === B.symbol) continue;
+          for (const size of SIZES) {
+            const rawIn = rawOf(A, size);
+            if (rawIn <= 0n) continue;
+
+            // Leg 1: buy B on Uniswap, sell B back on Aerodrome.
+            const uni = await quoteProvider({ tokenIn: A, tokenOut: B, amountIn: size, fee: 500 });
+            if (uni.error) {
+              stats.failed++;
+              failReasons.set(
+                `cross ${A.symbol}->${B.symbol} uniswap: ${uni.error}`,
+                (failReasons.get(`cross ${A.symbol}->${B.symbol} uniswap: ${uni.error}`) || 0) + 1,
+              );
+              continue;
+            }
+            stats.ok++;
+
+            // The second leg spends exactly what the first produced, so it is a
+            // quantity, not a dollar budget. Passing a quantity through the USD
+            // path would re-price it from scratch and invent an edge - which is
+            // exactly how a phantom 11,000% ROI appeared in this scanner before.
+            const rawMid = ethers.parseUnits(String(uni.amountOut), B.decimals);
+
+            // Cheap pre-check: if there is no Aerodrome pool for this pair, the
+            // quote cannot succeed, and letting it retry across four endpoints
+            // with backoff turns a routine miss into a multi-second stall. The
+            // scan runs this for every ordered pair, so a slow miss is a slow
+            // scan.
+            const poolInfo = await aero.getPool(B.address, A.address);
+            if (!poolInfo.address) {
+              stats.failed++;
+              const k = `cross ${B.symbol}->${A.symbol} aerodrome: no pool`;
+              failReasons.set(k, (failReasons.get(k) || 0) + 1);
+              continue;
+            }
+
+            const aeroQ = await aero.quote({
+              tokenIn: B, tokenOut: A, rawAmount: rawMid, blockTag: blockNum,
+            });
+            if (aeroQ.error) {
+              stats.failed++;
+              failReasons.set(
+                `cross ${B.symbol}->${A.symbol} aerodrome: ${aeroQ.error}`,
+                (failReasons.get(`cross ${B.symbol}->${A.symbol} aerodrome: ${aeroQ.error}`) || 0) + 1,
+              );
+              continue;
+            }
+            stats.ok++;
+
+            const returnedQty = Number(ethers.formatUnits(aeroQ.amountOut, A.decimals));
+
+            // Only price a pair when BOTH sides have a real USD price.
+            //
+            // `uni.amountOut` is a decimal STRING and parseUnits throws on
+            // anything non-numeric, including "NaN". A token whose on-chain
+            // price could not be derived is still a real contract and so is
+            // still in `good`, so without this guard a single unpriceable pair
+            // aborts the whole scan instead of skipping one route.
+            const aPrice = usdPrices[A.symbol];
+            const bPrice = usdPrices[B.symbol];
+            if (!Number.isFinite(aPrice) || !Number.isFinite(bPrice)) {
+              const k = `cross ${A.symbol}->${B.symbol}: no USD price for one side`;
+              stats.failed++;
+              failReasons.set(k, (failReasons.get(k) || 0) + 1);
+              continue;
+            }
+
+            // Compare in the SAME unit. `uni.amountIn` is the real quantity of
+            // A that was sent; `returnedQty` is how much of A came back.
+            const sentQty = uni.amountIn;
+            if (returnedQty > sentQty) stats.grossProfitable++;
+
+            const borrowedUSD = sentQty * aPrice;
+            const midUSD = uni.amountOut * bPrice;
+            const returnedUSD = returnedQty * aPrice;
+
+            const economics = calculateFlashLoanArb({
+              borrowAmountUSD: borrowedUSD,
+              buyQuote: { amountOut: midUSD, slippageUSD: 0 },
+              sellQuote: { amountOut: returnedUSD, slippageUSD: 0 },
+            });
+
+            crossVenue.push({
+              pair: `${A.symbol}/${B.symbol}`,
+              size,
+              buyVenue: 'uniswap-v3-500',
+              sellVenue: 'aerodrome',
+              pool: aeroQ.pool,
+              grossSpreadBps: borrowedUSD > 0
+                ? ((returnedUSD - borrowedUSD) / borrowedUSD) * 10000
+                : 0,
+              borrowedUSD,
+              returnedUSD,
+              ...economics,
+            });
+          }
+        }
+      }
+
+      crossVenue.sort((a, b) => b.grossSpreadBps - a.grossSpreadBps);
+      console.log('');
+      console.log(`CROSS-VENUE RESULTS (${crossVenue.length} round trips):`);
+      console.log('-'.repeat(74));
+      if (!crossVenue.length) {
+        console.log('  no cross-venue round trips could be priced');
+      } else {
+        const widest = crossVenue[0];
+        console.log(`  widest gross spread: ${widest.grossSpreadBps.toFixed(1)} bps ` +
+          `on ${widest.pair} at $${widest.size}`);
+        console.log(`  break-even needs   : ~${(
+          (DEFAULT_FLASH_ARB_CONFIG.flashLoanFeeRate * 10000) + 10
+        ).toFixed(0)} bps of NET edge (flash premium + fixed costs)`);
+        console.log('');
+        const viableXV = crossVenue.filter((c) => c.isViable);
+        console.log(`  viable after costs : ${viableXV.length}`);
+        for (const v of crossVenue.slice(0, 8)) {
+          const flag = v.isViable ? 'VIABLE' : (v.grossProfitUSD > 0 ? 'gross+' : '      ');
+          console.log(
+            `  ${flag}  ${v.pair.padEnd(14)} $${String(v.size).padStart(6)}  ` +
+            `spread ${v.grossSpreadBps.toFixed(1).padStart(7)} bps  ` +
+            `net $${v.netProfitUSD.toFixed(2).padStart(9)}`,
+          );
+        }
+      }
+      console.log('');
+    }
+  }
+
+  // ── Scan: every ordered pair x size x fee-tier combination ───────────────
   // Iterate the VALIDATED list. Using the unvalidated one is what let two
   // code-less addresses generate hundreds of doomed quotes.
   for (const A of good) {
@@ -555,7 +723,17 @@ async function main() {
         gasUSD: DEFAULT_FLASH_ARB_CONFIG.gasUSD ?? DEFAULT_FLASH_ARB_CONFIG.defaultGasUSD,
         mevBufferUSD: DEFAULT_FLASH_ARB_CONFIG.mevBufferUSD,
         minNetProfitUSD: DEFAULT_FLASH_ARB_CONFIG.minNetProfitUSD,
-        venues: 'uniswap-v3-fee-tiers-only',
+        // Record what was ACTUALLY scanned, not what was originally intended.
+        // A history that labels cross-venue runs as fee-tier-only would
+        // misrepresent what the dataset can support conclusions about.
+        venues: process.env.SKIP_CROSS_VENUE === '1'
+          ? 'uniswap-v3-fee-tiers-only'
+          : 'uniswap-v3-fee-tiers+aerodrome-cross-venue',
+        crossVenueRoundTrips: crossVenue.length,
+        crossVenueViable: crossVenue.filter((c) => c.isViable).length,
+        widestCrossVenueSpreadBps: crossVenue.length
+          ? Number(crossVenue[0].grossSpreadBps.toFixed(2))
+          : null,
       },
     });
     const res = new ScanRecorder().record(snapshot);

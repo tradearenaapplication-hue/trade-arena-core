@@ -38,7 +38,8 @@
     "wallet:address": "mm wallet address --json",
     "wallet:auth": "mm login browser --no-wait",
     "test:ui": "node scripts/test-ui.js",
-    "test:currency": "node scripts/test-currency.js"
+    "test:currency": "node scripts/test-currency.js",
+    "test:aerodrome": "node scripts/test-aerodrome.js"
   },
   "dependencies": {
     "axios": "^1.18.0",

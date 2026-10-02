@@ -1757,6 +1757,54 @@ a, button, input, select, textarea {
     </div>
   </div>
 
+  <!-- ★ FLASH-LOAN SCANNER ★ -->
+  <div class="cpanel" id="flashscanPanel">
+    <div class="cpanel-hd" id="flashscanHd" onclick="togglePanel('flashscan')" style="background:linear-gradient(90deg,rgba(0,229,255,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="flashscanBody">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px">⚡</span>
+        <span class="cpanel-title" style="color:var(--cyan)">FLASH-LOAN SCANNER</span>
+        <span class="breaker-status bs-ok" id="flashscanStatus">LOADING</span>
+      </div>
+      <span class="cpanel-toggle" id="flashscanToggle">▼ HISTORY</span>
+    </div>
+    <div class="cpanel-body" id="flashscanBody">
+      <!--
+        READ ONLY, and deliberately so.
+
+        This panel reports what past scans OBSERVED. It cannot start a scan:
+        a scan is hundreds of eth_calls, so a click-to-run button would let any
+        visitor burn the free RPC budget - and would imply the scanner is
+        something to poke at interactively. Run it with:
+
+            npm run scan:flash:record
+
+        The panel also refuses to render a confident verdict from thin data.
+        One run is not evidence; below the threshold it says so.
+      -->
+      <div id="flashscanSummary" style="font-size:11px;line-height:1.7;margin-bottom:10px">
+        <span style="color:var(--muted)">Loading scan history…</span>
+      </div>
+      <div id="flashscanNote" style="font-size:9px;color:var(--muted);line-height:1.6;margin-bottom:10px"></div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:10px">
+          <thead>
+            <tr style="color:var(--muted);text-align:left;border-bottom:1px solid var(--border)">
+              <th style="padding:4px 6px">WHEN</th>
+              <th style="padding:4px 6px">BLOCK</th>
+              <th style="padding:4px 6px">COVERAGE</th>
+              <th style="padding:4px 6px">EDGES</th>
+              <th style="padding:4px 6px">BEST</th>
+              <th style="padding:4px 6px">RELIABLE?</th>
+            </tr>
+          </thead>
+          <tbody id="flashscanRows">
+            <tr><td colspan="6" style="padding:8px;color:var(--muted)">No scan history yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- ★ CIRCUIT BREAKERS ★ -->
   <div class="cpanel" id="breakerPanel">
     <div class="cpanel-hd" id="breakerHd" onclick="togglePanel('breaker')" style="background:linear-gradient(90deg,rgba(255,179,0,.06),transparent)" role="button" tabindex="0" aria-expanded="false" aria-controls="breakerBody">

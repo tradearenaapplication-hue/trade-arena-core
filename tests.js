@@ -2399,7 +2399,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("ASIC Regulatory Exposure & AFSL Compliance Assessment");
+    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });
@@ -2544,9 +2544,9 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
     const mainContent = fs.readFileSync(mainDocPath, "utf8");
     const assessmentContent = fs.readFileSync(assessmentDocPath, "utf8");
 
-    expect(mainContent).toContain("Gate 3 Clearance Criteria");
+    expect(mainContent).toContain("Gate 3 Compliance Checklist");
     expect(mainContent).toContain("AFSL_COMPLIANT");
-    expect(assessmentContent).toContain("Gate 3 Status");
+    expect(assessmentContent).toContain("Pre-Gate 3 Regulatory Compliance Assessment");
   });
 
   it("hard-locks TradingEngine.executeTrade when AFSL_COMPLIANT is not 'true'", async () => {
@@ -2609,6 +2609,21 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
         process.env.AFSL_COMPLIANT = originalEnv;
       }
     }
+  });
+});
+
+describe("Dynamic Status Feedback Accessibility (index.html)", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines role=status and aria-live=polite on #cStatus, #busStatus, and #staffResponse", () => {
+    expect(html).toContain('id="cStatus" role="status" aria-live="polite"');
+    expect(html).toContain('id="busStatus" role="status" aria-live="polite"');
+    expect(html).toContain('id="staffResponse" role="status" aria-live="polite"');
+  });
+
+  it("defines role=alert and aria-live=assertive on #depositError", () => {
+    expect(html).toContain('id="depositError" role="alert" aria-live="assertive"');
   });
 });
 

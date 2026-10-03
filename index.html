@@ -707,8 +707,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div style="display:flex;gap:8px;font-size:10px;color:var(--dim);justify-content:center;flex-wrap:wrap;text-align:center">
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
-  <div style="width:100%;max-width:440px;padding:8px 12px;background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.25);border-radius:8px;font-size:9px;color:var(--dim);line-height:1.5;text-align:center;">
-    ⚠️ <strong>NON-CUSTODIAL & REGULATORY DISCLOSURE:</strong> Trade Arena is a non-custodial software interface and does not hold an Australian Financial Services Licence (AFSL) or provide financial product advice under ASIC regulations. Trading bots execute automated user parameters. Crypto trading carries substantial risk of financial loss.
+  <div id="regulatoryNoticeBanner" style="width:100%;max-width:440px;padding:8px 12px;background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.25);border-radius:8px;font-size:9px;color:var(--dim);line-height:1.5;text-align:center;">
+    ⚠️ <strong>ASIC REGULATORY NOTICE & NON-CUSTODIAL DISCLOSURE:</strong> Trade Arena is a non-custodial software interface and does not hold an Australian Financial Services Licence (AFSL) or provide financial product advice under Corporations Act 2001 & ASIC regulations. Trading bots execute automated user parameters. Crypto trading carries substantial risk of financial loss.
   </div>
 <div class="login-card">
     <div class="login-card-hd">SIGN IN TO THE FLOOR</div>
@@ -759,7 +759,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <div style="font-size:11px;line-height:1.6;color:#ccc;margin-bottom:16px;">
           <p style="margin-bottom:10px;">Before proceeding to Live Mode, please review and confirm the following legal and regulatory disclosures:</p>
           <ul style="padding-left:18px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:10px;">
-            <li><strong>No AFS Licence / No Financial Product Advice:</strong> Trade Arena does not hold an Australian Financial Services Licence (AFSL) and does not provide financial advice or manage assets under ASIC regulations. All automated strategies and signals are software tools operated directly by you.</li>
+            <li><strong>ASIC & AFSL Regulatory Status:</strong> Trade Arena is currently a technical software demonstration tool undergoing legal and AFSL assessment under Australian Corporations Act regulations prior to Gate 3 real-money clearance. Trade Arena never takes custody of real user funds.</li>
+            <li><strong>No AFS Licence / No Financial Product Advice:</strong> Trade Arena does not hold an Australian Financial Services Licence (AFSL) under s 766B of the Corporations Act 2001 and does not provide financial advice or manage assets under ASIC regulations. All automated strategies and signals are software tools operated directly by you.</li>
             <li><strong>Non-Custodial Interface:</strong> Trade Arena is a purely non-custodial software interface. You retain sole custody and full control of your private keys and wallet at all times.</li>
             <li><strong>Automated Execution & Market Risk:</strong> Automated bots execute trade orders directly on your self-sovereign wallet according to your parameters. Crypto trading is high-risk and volatile; you may lose all deposited funds. Past performance is not indicative of future results.</li>
             <li><strong>User Responsibility & Risk Controls:</strong> You are solely responsible for setting appropriate safety controls, daily loss limits, and monitoring your positions.</li>
@@ -776,7 +777,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </div>
     </div>
   </div>
-  <p id="cStatus" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
+  <p id="cStatus" role="status" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
   <div class="setup-note">
     <strong>Optional: Anthropic API Key</strong> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
     <input type="password" id="apiKeyInput" aria-label="Anthropic API Key" placeholder="sk-ant-api03-..." style="width:100%;margin-top:5px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
@@ -818,7 +819,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
 
     <!-- Error State -->
-    <div id="depositError" style="background:rgba(255,45,120,.07);border:1px solid rgba(255,45,120,.2);border-radius:8px;padding:10px;color:var(--hot);display:none;">
+    <div id="depositError" role="alert" aria-live="assertive" style="background:rgba(255,45,120,.07);border:1px solid rgba(255,45,120,.2);border-radius:8px;padding:10px;color:var(--hot);display:none;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
@@ -956,7 +957,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model">⚡ OPTIMIZED</button>
       <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
     </div>
-    <div class="bus-status" id="busStatus"></div>
+    <div class="bus-status" id="busStatus" role="status" aria-live="polite"></div>
   </div>
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
@@ -1225,7 +1226,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <input type="text" id="staffInput" aria-label="Ask staff a question" placeholder="I lost money on that last trade, why?" onkeydown="if(event.key==='Enter') sendStaffQuery()" style="flex:1; background:var(--bg); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:10px;">
           <button onclick="sendStaffQuery()" style="background:var(--cyan); color:#000; border:none; border-radius:6px; padding:0 15px; font-family:'Bungee'; font-size:10px; cursor:pointer;">ASK</button>
         </div>
-        <div id="staffResponse" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
+        <div id="staffResponse" role="status" aria-live="polite" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
       </div>
     </div>
   </div>

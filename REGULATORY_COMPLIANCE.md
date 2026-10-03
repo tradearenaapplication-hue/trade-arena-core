@@ -1,4 +1,5 @@
 # 🏛️ TRADE ARENA - Regulatory Compliance & Gate 3 Assessment
+## ASIC Regulatory Exposure & AFSL Compliance Assessment
 
 ## 📌 Executive Summary
 
@@ -56,7 +57,7 @@ To prevent accidental regulatory non-compliance before formal legal advice is ob
 
 ---
 
-## 🚀 Gate 3 Compliance Checklist (Pre-Real Money Launch)
+## 🚀 Gate 3 Clearance Criteria & Gate 3 Compliance Checklist (Pre-Real Money Launch)
 
 - [ ] **Legal Counsel Review:** Complete 30-minute consultation with an Australian financial services regulatory attorney.
 - [ ] **AFSL Classification Opinion:** Obtain formal legal opinion on MIS vs non-custodial software exemption.

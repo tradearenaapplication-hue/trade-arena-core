@@ -371,7 +371,7 @@ app.post('/api/webhooks/moonpay/deposit', (req, res) => {
 /**
  * POST /api/analyze/arbitrage - Detect arbitrage opportunities using real prices
  */
-app.post('/api/analyze/arbitrage', async (req, res) => {
+app.post('/api/analyze/arbitrage', userApiLimiter, async (req, res) => {
     try {
         const { tokens, amount } = req.body || {};
         const numAmount = amount !== undefined ? Number(amount) : undefined;
@@ -476,7 +476,7 @@ app.post('/api/analyze/arbitrage', async (req, res) => {
 /**
  * POST /api/analyze/volatility - Volatility prediction
  */
-app.post('/api/analyze/volatility', async (req, res) => {
+app.post('/api/analyze/volatility', userApiLimiter, async (req, res) => {
     try {
         const { priceHistory } = req.body || {};
 
@@ -520,7 +520,7 @@ app.post('/api/analyze/volatility', async (req, res) => {
 /**
  * POST /api/flash-loan/simulate - Simulate flash loan opportunity
  */
-app.post('/api/flash-loan/simulate', async (req, res) => {
+app.post('/api/flash-loan/simulate', userApiLimiter, async (req, res) => {
     try {
         const { loanAmount, tokens } = req.body || {};
         const numLoanAmount = Number(loanAmount);
@@ -555,7 +555,7 @@ app.post('/api/flash-loan/simulate', async (req, res) => {
 /**
  * POST /api/execute/swap - Execute token swap
  */
-app.post('/api/execute/swap', async (req, res) => {
+app.post('/api/execute/swap', userApiLimiter, async (req, res) => {
     try {
         // Gate 3 Regulatory Check: Require AFSL Compliance Clearance for real-money trade execution
         if (process.env.AFSL_COMPLIANT !== 'true') {
@@ -616,7 +616,7 @@ app.post('/api/execute/swap', async (req, res) => {
 /**
  * POST /api/bot/create - Create trading bot
  */
-app.post('/api/bot/create', async (req, res) => {
+app.post('/api/bot/create', userApiLimiter, async (req, res) => {
     try {
         const { name, strategy, riskLevel, initialCapital, userAddress } = req.body || {};
 
@@ -651,7 +651,7 @@ app.post('/api/bot/create', async (req, res) => {
 /**
  * GET /api/market/prices - Get real-time market data
  */
-app.get('/api/market/prices', async (req, res) => {
+app.get('/api/market/prices', userApiLimiter, async (req, res) => {
     try {
         const rawSymbols = req.query.symbols;
         let symbols = ['WETH', 'USDC', 'ARB'];

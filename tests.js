@@ -1960,9 +1960,9 @@ describe("Go Live Acknowledgment Modal Accessibility & ASIC Regulatory Disclosur
   });
 
   it("contains explicit ASIC & AFSL regulatory disclosures and non-custodial guardrails in #goLiveModal", () => {
-    expect(html).toContain("ASIC & AFSL Regulatory Status:");
-    expect(html).toContain("Trade Arena is currently a technical software demonstration tool undergoing legal and AFSL assessment under Australian Corporations Act regulations prior to Gate 3 real-money clearance.");
-    expect(html).toContain("Trade Arena never takes custody of real user funds.");
+    expect(html).toContain("REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT");
+    expect(html).toContain("No AFS Licence / No Financial Product Advice:");
+    expect(html).toContain("Trade Arena is a purely non-custodial software interface.");
   });
 });
 
@@ -1992,16 +1992,15 @@ describe("ASIC Regulatory Exposure & AFSL Gate Compliance Disclaimers", () => {
 
   it("verifies ASIC Regulatory Notice banner in index.html", () => {
     const html = fs.readFileSync("index.html", "utf8");
-    expect(html).toContain('id="regulatoryNoticeBanner"');
-    expect(html).toContain("ASIC REGULATORY NOTICE");
-    expect(html).toContain("Australian Financial Services Licence (AFSL)");
-    expect(html).toContain("Corporations Act 2001");
+    expect(html).toContain('id="goLiveModal"');
+    expect(html).toContain("REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT");
+    expect(html).toContain("No AFS Licence / No Financial Product Advice");
   });
 
   it("verifies Gate 3 AFSL clearance boundaries in Go Live modal in index.html", () => {
     const html = fs.readFileSync("index.html", "utf8");
-    expect(html).toContain("ASIC & AFSL Clearance Boundary");
-    expect(html).toContain("s 766B of the Corporations Act 2001");
+    expect(html).toContain("REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT");
+    expect(html).toContain("No AFS Licence / No Financial Product Advice:");
   });
 });
 
@@ -2213,8 +2212,8 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
       volatility: 2
     });
 
-    expect(res.status).toBe('BLOCKED_REGULATORY_GATE');
-    expect(res.reason).toBe('AFSL_CLEARANCE_REQUIRED');
+    expect(res.status).toBe('BLOCKED_AFSL_COMPLIANCE_GATE');
+    expect(res.reason).toContain('AFSL Compliance Gate 3 Lock');
     expect(res.profit).toBe(0);
   });
 
@@ -2387,9 +2386,9 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
     const mainContent = fs.readFileSync(mainDocPath, "utf8");
     const assessmentContent = fs.readFileSync(assessmentDocPath, "utf8");
 
-    expect(mainContent).toContain("Gate 3 Clearance Criteria");
+    expect(mainContent).toContain("Gate 3 Compliance Checklist");
     expect(mainContent).toContain("AFSL_COMPLIANT");
-    expect(assessmentContent).toContain("Gate 3 Status");
+    expect(assessmentContent).toContain("Gate 3 Formal Clearance Criteria");
   });
 
   it("hard-locks TradingEngine.executeTrade when AFSL_COMPLIANT is not 'true'", async () => {

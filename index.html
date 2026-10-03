@@ -3411,11 +3411,11 @@ function renderBot(bot){
         <div class="think-spinner"></div><div class="think-label">AI SCANNING</div>
         <div class="think-step" id="mstep-${bot.id}">Fetching data…</div>
       </div>
-      <div class="m-result" id="mresult-${bot.id}">
+      <div class="m-result" id="mresult-${bot.id}" role="dialog" aria-modal="true" aria-labelledby="mrtitle-${bot.id}">
         <div class="m-r-title" id="mrtitle-${bot.id}">WIN!</div>
         <div class="m-r-amt" id="mramt-${bot.id}">+$0</div>
         <div class="m-r-detail" id="mrdetail-${bot.id}"></div>
-        <button class="m-r-close" onclick="closeResult(${bot.id})">CLOSE</button>
+        <button class="m-r-close" onclick="closeResult(${bot.id})" aria-label="Close result for Bot #${bot.id}">CLOSE</button>
       </div>
     </div>
     <div class="m-strats">
@@ -3437,8 +3437,8 @@ function renderBot(bot){
       <div class="m-settings-bar">
         <div class="m-bet-display" id="mbetdisp-${bot.id}">$1.00 <span>per trade</span></div>
         <div style="display:flex;gap:4px;align-items:center">
-          <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})">AUTO</button>
-          <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})" style="padding:6px 12px;font-size:11px">🎰 SPIN</button>
+          <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})" aria-pressed="false" aria-label="Toggle auto-trading for Bot #${bot.id}">AUTO</button>
+          <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})" style="padding:6px 12px;font-size:11px" aria-label="Spin Bot #${bot.id}">🎰 SPIN</button>
           <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings" aria-label="Bot ${bot.id} settings" aria-expanded="false" aria-controls="mdrop-${bot.id}">⚙</button>
         </div>
       </div>
@@ -3593,13 +3593,14 @@ function toggleAuto(id){
   const bot=bots.find(b=>b.id===id); if(!bot) return;
   bot.auto=!bot.auto;
   const btn=document.getElementById('mauto-'+id), card=document.getElementById('bot-'+id);
+  if(btn) btn.setAttribute('aria-pressed', bot.auto ? 'true' : 'false');
   if(bot.auto){btn.textContent='⏸ STOP';btn.classList.add('on');card.classList.add('auto-on');scheduleAuto(bot);}
   else{btn.textContent='AUTO';btn.classList.remove('on');card.classList.remove('auto-on');if(bot.autoTimer)clearTimeout(bot.autoTimer);}
   // keep global auto button in sync
   const allOn=bots.length>0&&bots.every(b=>b.auto);
   _ghAutoOn=allOn;
   const ghBtn=document.getElementById('ghAutoBtn');
-  if(ghBtn){ghBtn.textContent=allOn?'⏸ STOP':'AUTO';ghBtn.classList.toggle('on',allOn);}
+  if(ghBtn){ghBtn.textContent=allOn?'⏸ STOP':'AUTO';ghBtn.classList.toggle('on',allOn);ghBtn.setAttribute('aria-pressed', allOn ? 'true' : 'false');}
 }
 function scheduleAuto(bot){
   if(!bot.auto) return;

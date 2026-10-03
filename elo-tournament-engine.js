@@ -172,6 +172,19 @@ function loadEloState() {
 }
 
 /**
+ * Helper to escape HTML and prevent XSS
+ */
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/**
  * UI: Render ELO Arena
  */
 function renderEloArena() {
@@ -185,15 +198,21 @@ function renderEloArena() {
         const rank = data.rating > 1800 ? 'GRANDMASTER' : data.rating > 1500 ? 'ELITE' : data.rating > 1200 ? 'PRO' : 'NOVICE';
         const rankColor = data.rating > 1800 ? 'var(--purple)' : data.rating > 1500 ? 'var(--cyan)' : data.rating > 1200 ? 'var(--green)' : 'var(--dim)';
 
+        const safeKey = escapeHTML(key.toUpperCase());
+        const safeIcon = escapeHTML(data.icon);
+        const safeRank = escapeHTML(rank);
+        const safeRankColor = escapeHTML(rankColor);
+        const safeRating = escapeHTML(data.rating);
+
         return `
             <div class="elo-row" style="display:flex; align-items:center; gap:10px; padding:8px; border-bottom:1px solid var(--border)">
-                <div style="font-size:18px">${data.icon}</div>
+                <div style="font-size:18px">${safeIcon}</div>
                 <div style="flex:1">
-                    <div style="font-family:'Bungee'; font-size:10px">${key.toUpperCase()} <span style="color:${rankColor}; font-size:8px">[${rank}]</span></div>
-                    <div style="font-size:8px; color:var(--dim)">WR: ${wr}% | Matches: ${data.matches}</div>
+                    <div style="font-family:'Bungee'; font-size:10px">${safeKey} <span style="color:${safeRankColor}; font-size:8px">[${safeRank}]</span></div>
+                    <div style="font-size:8px; color:var(--dim)">WR: ${Number(wr)}% | Matches: ${Number(data.matches)}</div>
                 </div>
                 <div style="text-align:right">
-                    <div style="font-family:'Oswald'; font-size:16px; color:var(--gold)">${data.rating}</div>
+                    <div style="font-family:'Oswald'; font-size:16px; color:var(--gold)">${safeRating}</div>
                     <div style="font-size:7px; color:var(--dim)">ELO RATING</div>
                 </div>
             </div>

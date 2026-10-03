@@ -39,3 +39,6 @@ data/scan-history.jsonl
 # Scanner logs and accumulated history. Local research data.
 data/logs/
 data/scan-history.jsonl
+
+# Scans recorded before price cross-validation. Superseded - do not analyse.
+data/scan-history.UNTRUSTED-*.jsonl

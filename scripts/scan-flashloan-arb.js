@@ -57,6 +57,8 @@ const FEES = argOf('--fees', '500,3000').split(',').map(Number);
 //   `ticksCrossed` is a uint32 COUNT, not an array - declaring it uint32[]
 //      makes decoding fail with BAD_DATA on otherwise-valid quotes.
 const QUOTER = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a';
+const WETH_FOR_PRICE = '0x4200000000000000000000000000000000000006';
+const USDC_FOR_PRICE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const QUOTER_ABI = [
   'function quoteExactInputSingle((address tokenIn, address tokenOut, uint256 amountIn, uint24 fee, uint160 sqrtPriceLimitX96) params) returns (uint256 amountOut, uint160 sqrtPriceX96After, uint32 ticksCrossed, uint256 gasEstimate)',
 ];
@@ -258,7 +260,7 @@ function makeQuoter(quoter, cache, blockTag, usdPrices) {
  * is enough to size a USD budget, and it comes from the same source as the
  * quotes themselves.
  */
-async function fetchUsdPrices(provider, quoter, blockTag, tokens) {
+async function fetchUsdPrices(provider, quoter, blockTag, tokens, aeroCrossCheck = null) {
   const WETH = '0x4200000000000000000000000000000000000006';
   const USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
   const prices = {};
@@ -327,6 +329,88 @@ async function fetchUsdPrices(provider, quoter, blockTag, tokens) {
     // A wrong price is worse than no price: it silently over- or under-sizes
     // every quote built from it.
     if (!Number.isFinite(price) || price <= 0 || price > 1e7) price = NaN;
+
+    // ── CROSS-PATH VALIDATION ──────────────────────────────────────────
+    // A numeric sanity band is NOT sufficient, and that is a lesson this
+    // scanner learned the hard way.
+    //
+    // Observed on live Base: WBTC priced at $77,996 and cbBTC at $84,438 while
+    // WETH was $2,660 — both roughly 30x too high, and both passing every
+    // "positive, finite, under 1e7" check. The fee-500 Uniswap pools for these
+    // wrappers are near-dead, and QuoterV2 returns a garbage quote from a
+    // one-sided pool rather than reverting.
+    //
+    // The general test is to price the token along TWO independent paths and
+    // require agreement:
+    //
+    //     token -> USDC              (direct)
+    //     token -> WETH -> USDC      (the path used above)
+    //
+    // A wrong price corrupts both legs of the round-trip economics and then
+    // lands in the recorded history as fact, so a token whose two paths disagree
+    // is dropped rather than trusted.
+    if (Number.isFinite(price)) {
+      let direct = NaN;
+      try {
+        const probeRaw = unit / 100n;
+        const out = await get(t.address, USDC, probeRaw, 500);
+        const units = Number(ethers.formatUnits(probeRaw, t.decimals));
+        if (units > 0) direct = Number(ethers.formatUnits(out, 6)) / units;
+      } catch (e) {
+        direct = NaN; // no direct pair exists; validation is simply unavailable
+      }
+
+      if (Number.isFinite(direct) && direct > 0) {
+        const ratio = price / direct;
+        if (Math.abs(ratio - 1) > 0.2) {
+          console.log(
+            `  PRICE REJECTED ${t.symbol}: via-WETH $${price.toFixed(2)} vs direct ` +
+              `$${direct.toFixed(2)} (${ratio.toFixed(2)}x apart). The fee-500 pool is ` +
+              `likely one-sided - QuoterV2 returns garbage instead of reverting.`,
+          );
+          price = NaN;
+        }
+      }
+    }
+
+    // ── SECOND-VENUE VALIDATION ──────────────────────────────────────
+    // The cross-path check above cannot catch a pool that is wrong but
+    // CONSISTENTLY wrong, and cbBTC is exactly that case:
+    //
+    //     cbBTC $84,462   WETH $2,663   =>  31.7 WETH per cbBTC
+    //
+    // BTC/ETH is ~1.0, so that is a 31x error - yet the cbBTC quote agrees
+    // with itself across three order sizes (0.1% spread), across two fee
+    // tiers, across two independent pricing paths, AND with an external
+    // aggregator. Every self-consistent check passes it.
+    //
+    // The only remaining independent witness is a different venue. The same
+    // principle as the cross-venue arb pass applies to price discovery: one
+    // venue cannot confirm its own price. If Aerodrome says a radically
+    // different number, one of them is unusable and refusing to guess is the
+    // honest move.
+    if (Number.isFinite(price) && aeroCrossCheck) {
+      try {
+        const rawOut = await aeroCrossCheck(t, blockTag);
+        if (rawOut && rawOut.units > 0) {
+          const aeroPrice = rawOut.usdPerUnit;
+          if (Number.isFinite(aeroPrice) && aeroPrice > 0) {
+            const ratio = price / aeroPrice;
+            if (Math.abs(ratio - 1) > 0.5) {
+              console.log(
+                `  PRICE REJECTED ${t.symbol}: Uniswap $${price.toFixed(2)} vs ` +
+                  `Aerodrome $${aeroPrice.toFixed(2)} (${ratio.toFixed(2)}x apart). ` +
+                  `One venue is wrong and self-consistency cannot say which.`,
+              );
+              price = NaN;
+            }
+          }
+        }
+      } catch (e) {
+        // No Aerodrome pool for this token - cross-check unavailable, keep the price.
+      }
+    }
+
     prices[t.symbol] = price;
   }
   return prices;
@@ -378,8 +462,59 @@ async function main() {
   // token quantity. A token whose price cannot be derived is reported rather
   // than silently sized at a wrong notional.
   let usdPrices = {};
+  // Derive each token's USD price from Aerodrome, as an independent witness to the
+  // Uniswap-derived price. Passing null disables the check.
+  //
+  // One venue cannot confirm its own price. This exists because a cbBTC pool on
+  // Uniswap was consistently wrong by ~31x while agreeing with itself across
+  // sizes, fee tiers and pricing paths - see fetchUsdPrices.
+  const aeroPriceProbe = async (token, blockTag) => {
+    const adapter = new AerodromeAdapter(fp);
+    const probeRaw = (10n ** BigInt(token.decimals)) / 100n; // 0.01 of a unit
+    const q = await adapter.quote({
+      tokenIn: token,
+      tokenOut: { symbol: 'WETH', address: WETH_FOR_PRICE, decimals: 18 },
+      rawAmount: probeRaw,
+      blockTag,
+    });
+    if (q.error) throw new Error(q.error);
+    const units = Number(ethers.formatUnits(probeRaw, token.decimals));
+    const wethOut = Number(ethers.formatUnits(q.amountOut, 18));
+    if (!(units > 0)) return null;
+    const ethUsd = await (async () => {
+      const w = await fp.withFailover((p) => {
+        const c = new ethers.Contract(
+          QUOTER,
+          QUOTER_ABI,
+          p,
+        );
+        return p.call({
+          to: QUOTER,
+          data: c.interface.encodeFunctionData('quoteExactInputSingle', [
+            {
+              tokenIn: WETH_FOR_PRICE,
+              tokenOut: USDC_FOR_PRICE,
+              amountIn: ethers.parseEther('1'),
+              fee: 500,
+              sqrtPriceLimitX96: 0,
+            },
+          ]),
+          blockTag,
+        });
+      });
+      if (!w.ok) throw new Error(w.error);
+      return Number(
+        ethers.formatUnits(
+          ethers.AbiCoder.defaultAbiCoder().decode(['uint256'], w.value)[0],
+          6,
+        ),
+      );
+    })();
+    return { units, usdPerUnit: (wethOut / units) * ethUsd };
+  };
+
   try {
-    usdPrices = await fetchUsdPrices(fp, quoter, blockNum, good);
+    usdPrices = await fetchUsdPrices(fp, quoter, blockNum, good, aeroPriceProbe);
   } catch (e) {
     console.log('FATAL: could not derive on-chain USD prices: ' + (e.shortMessage || e.message));
     console.log('Without them a USD budget cannot be converted to a tradeable size.');

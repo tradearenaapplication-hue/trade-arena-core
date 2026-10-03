@@ -2016,6 +2016,8 @@ describe("Voice Agent Modal & Session Warning Banner Accessibility", () => {
 
   it("defines role=alert and aria-live=polite on #sessionWarningBanner", () => {
     expect(html).toContain('id="sessionWarningBanner" role="alert" aria-live="polite"');
+    expect(html).toContain('aria-label="Pause all trading bots"');
+    expect(html).toContain('aria-label="Dismiss session time warning banner"');
   });
 });
 

@@ -5819,10 +5819,10 @@ Respond in JSON format:
     <div id="sessionWarningDetails" style="font-size:10px;color:#ccc;">Active session: 30 mins · Net P&L: +$0.00</div>
   </div>
   <div style="display:flex;gap:6px;flex-shrink:0;">
-    <button onclick="pauseBotsFromSessionWarning()" style="padding:6px 12px;background:var(--amber);color:#000;font-family:'Bungee',display;font-size:9px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;">
+    <button onclick="pauseBotsFromSessionWarning()" aria-label="Pause all trading bots" style="padding:6px 12px;background:var(--amber);color:#000;font-family:'Bungee',display;font-size:9px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;">
       PAUSE BOTS
     </button>
-    <button onclick="dismissSessionWarning()" style="padding:6px 10px;background:transparent;border:1px solid var(--border);color:var(--dim);font-size:9px;border-radius:4px;cursor:pointer;">
+    <button onclick="dismissSessionWarning()" aria-label="Dismiss session time warning banner" style="padding:6px 10px;background:transparent;border:1px solid var(--border);color:var(--dim);font-size:9px;border-radius:4px;cursor:pointer;">
       DISMISS
     </button>
   </div>

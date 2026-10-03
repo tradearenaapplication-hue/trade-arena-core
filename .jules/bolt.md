@@ -18,6 +18,6 @@
 **Learning:** `TRADE_OLYMPICS.getSummary()` was triggering full leaderboard array allocations and sorting (`getLeaderboard("elo")`), multiple array `.reduce()` passes, and `Object.keys()` calls every time ELO summaries were rendered or queried.
 **Action:** Cache total static entity counts (`_bracketCount`) during initialization/load and perform single-pass `for...in` loop accumulation over standings objects to gather totals and max values in a single O(N) scalar pass without array allocations or sorting overhead.
 
-## 2026-12-02 - Multi-pass Array Slicing and Transformation in Volatility Evaluation Rules
-**Learning:** `validateExecutionRules` in `ai-arena.js` was using `.slice(0, 8).map().reduce()` on `marketData` on every execution check, creating multiple temporary array allocations and intermediate iteration passes for calculating average 24h market volatility.
-**Action:** Replace functional `.slice().map().reduce()` chains in execution validation and risk evaluation routines with a single-pass `for` loop over `Math.min(limit, array.length)` using scalar accumulators to prevent GC pressure and optimize check throughput (~11x speedup).
+## 2026-11-18 - Redundant Config Object Clones in High-Frequency Opportunity Scanners
+**Learning:** Arbitrage and sports prediction scanners (`calculatePredictionMarketEdge`, `calculateFlashLoanArb`, `removeVig`) were executing redundant object spread cloning (`{ ...DEFAULT_CONFIG, ...config }`) and intermediate array projections for every market outcome and quote pair in high-frequency loops. This caused significant object allocation overhead and GC pressure during multi-market scanning passes.
+**Action:** Access configuration properties directly with nullish coalescing defaults (`config.prop ?? DEFAULT.prop`) and construct output objects in a single pass without intermediate array or object spread allocations.

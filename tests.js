@@ -2000,7 +2000,7 @@ describe("ASIC Regulatory Exposure & AFSL Gate Compliance Disclaimers", () => {
 
   it("verifies Gate 3 AFSL clearance boundaries in Go Live modal in index.html", () => {
     const html = fs.readFileSync("index.html", "utf8");
-    expect(html).toContain("ASIC & AFSL Clearance Boundary");
+    expect(html).toContain("ASIC & AFSL Regulatory Status:");
     expect(html).toContain("s 766B of the Corporations Act 2001");
   });
 });
@@ -2110,6 +2110,53 @@ describe("Trade Olympics XSS Sanitization Security", () => {
     expect(rowsHTML).toContain("&lt;script&gt;alert(&#039;xss&#039;)&lt;/script&gt;");
     expect(rowsHTML).toContain("&lt;img src=x onerror=alert(1)&gt;");
 
+    delete global.document;
+  });
+});
+
+describe("ELO Tournament Engine XSS Sanitization Security", () => {
+  it("uses escapeHTML when rendering agent properties in renderEloArena", () => {
+    const fs = require("fs");
+    const eloCode = fs.readFileSync("./elo-tournament-engine.js", "utf8");
+    expect(eloCode).toContain("escapeHTML(key.toUpperCase())");
+    expect(eloCode).toContain("escapeHTML(data.icon)");
+    expect(eloCode).toContain("escapeHTML(rawRank)");
+  });
+
+  it("escapes malicious XSS payloads in agent keys and icons when rendering arena rows", () => {
+    const eloEngine = require("./elo-tournament-engine.js");
+
+    const elements = {};
+    const mockElement = (id) => {
+      if (!elements[id]) {
+        elements[id] = { innerHTML: "", textContent: "" };
+      }
+      return elements[id];
+    };
+
+    global.document = {
+      getElementById: (id) => mockElement(id),
+    };
+
+    const originalAgents = JSON.parse(JSON.stringify(eloEngine.eloState.agents));
+
+    eloEngine.eloState.agents["<script>alert('xss')</script>"] = {
+      rating: 1600,
+      matches: 10,
+      wins: 8,
+      losses: 2,
+      icon: "<img src=x onerror=alert(1)>"
+    };
+
+    eloEngine.renderEloArena();
+
+    const rowsHTML = mockElement("eloArenaRows").innerHTML;
+    expect(rowsHTML.includes("<script>")).toBe(false);
+    expect(rowsHTML.includes("<img")).toBe(false);
+    expect(rowsHTML).toContain("&lt;SCRIPT&gt;ALERT(&#039;XSS&#039;)&lt;/SCRIPT&gt;");
+    expect(rowsHTML).toContain("&lt;img src=x onerror=alert(1)&gt;");
+
+    eloEngine.eloState.agents = originalAgents;
     delete global.document;
   });
 });
@@ -2244,7 +2291,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Australian Securities and Investments Commission (ASIC)");
+    expect(content).toContain("ASIC Regulatory Exposure & AFSL Compliance Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });
@@ -2403,8 +2450,8 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
     const bot = { id: 'bot-1', isRealMoney: true, amount: 10, risk: 'Moderate (5x leverage)' };
 
     const res = await engine.executeTrade(bot, { type: 'ARBITRAGE', profitMargin: 0.8, volatility: 2 });
-    expect(res.status).toBe('BLOCKED_AFSL_COMPLIANCE_GATE');
-    expect(res.reason).toContain('AFSL Compliance Gate 3 Lock');
+    expect(res.status).toBe('BLOCKED_REGULATORY_GATE');
+    expect(res.reason).toBe('AFSL_CLEARANCE_REQUIRED');
 
     if (originalEnv !== undefined) {
       process.env.AFSL_COMPLIANT = originalEnv;

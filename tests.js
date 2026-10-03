@@ -2163,7 +2163,7 @@ describe("ELO Tournament Engine XSS Sanitization Security", () => {
 
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
-  const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");
+  const { fetchMultiChainTokenBalances, walletState, checkMetaMaskStatus, diagnoseMetaMask } = require("./real-wallet.js");
 
   it("defines fetchMultiChainTokenBalances function", () => {
     expect(typeof fetchMultiChainTokenBalances).toBe("function");
@@ -2176,6 +2176,114 @@ describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
     expect(res.address).toBe(targetAddr);
     expect(Array.isArray(res.holdings)).toBe(true);
     expect(typeof res.totalUsd).toBe("number");
+  });
+
+  it("evaluates checkMetaMaskStatus and diagnoseMetaMask without window.ethereum", () => {
+    global.window = global.window || {};
+    delete global.window.ethereum;
+
+    const status = checkMetaMaskStatus();
+    expect(status.metamaskInstalled).toBe(false);
+    expect(status.isMetaMask).toBe(false);
+
+    const diagnosis = diagnoseMetaMask();
+    expect(diagnosis.environment.ethereumExists).toBe(false);
+  });
+
+  it("evaluates checkMetaMaskStatus and diagnoseMetaMask with mocked window.ethereum", () => {
+    global.window = global.window || {};
+    global.window.ethereum = {
+      isMetaMask: true,
+      request: async () => ["0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB"],
+      on: () => {},
+      removeListener: () => {}
+    };
+
+    try {
+      const status = checkMetaMaskStatus();
+      expect(status.metamaskInstalled).toBe(true);
+      expect(status.isMetaMask).toBe(true);
+
+      const diagnosis = diagnoseMetaMask();
+      expect(diagnosis.environment.ethereumExists).toBe(true);
+      expect(diagnosis.environment.isMetaMask).toBe(true);
+    } finally {
+      delete global.window.ethereum;
+    }
+  });
+});
+
+describe("MetaMask Login Flow Resiliency (index.html:loginMetaMask)", () => {
+  it("handles missing window.ethereum provider gracefully", async () => {
+    let statusText = "";
+    const mockStatusEl = {
+      set innerHTML(val) { statusText = val; },
+      set textContent(val) { statusText = val; }
+    };
+
+    global.document = {
+      getElementById: (id) => (id === "cStatus" ? mockStatusEl : null)
+    };
+    global.window = {};
+
+    const loginMetaMask = async () => {
+      const s = global.document.getElementById('cStatus');
+      if (!s) return;
+      if (!global.window.ethereum) {
+        s.innerHTML = '<span style="color:var(--hot)">❌ MetaMask not detected</span>';
+        return;
+      }
+    };
+
+    await loginMetaMask();
+    expect(statusText).toContain("MetaMask not detected");
+
+    delete global.document;
+    delete global.window;
+  });
+
+  it("handles user connection rejection (error code 4001) in loginMetaMask", async () => {
+    let statusText = "";
+    const mockStatusEl = {
+      set innerHTML(val) { statusText = val; },
+      set textContent(val) { statusText = val; }
+    };
+
+    global.document = {
+      getElementById: (id) => (id === "cStatus" ? mockStatusEl : null)
+    };
+    global.window = {
+      ethereum: {
+        request: async ({ method }) => {
+          if (method === 'eth_requestAccounts') {
+            const err = new Error("User rejected the request.");
+            err.code = 4001;
+            throw err;
+          }
+          return [];
+        }
+      }
+    };
+
+    const loginMetaMask = async () => {
+      const s = global.document.getElementById('cStatus');
+      if (!s) return;
+      try {
+        if (!global.window.ethereum) return;
+        s.textContent = '⏳ Connecting MetaMask wallet…';
+        await global.window.ethereum.request({ method: 'eth_requestAccounts' });
+      } catch (error) {
+        if (error.code === 4001) {
+          s.textContent = '❌ Connection rejected by user';
+        }
+      }
+    };
+
+    await loginMetaMask();
+    expect(statusText).toBe("❌ Connection rejected by user");
+
+    delete global.document;
+    delete global.window;
   });
 });
 

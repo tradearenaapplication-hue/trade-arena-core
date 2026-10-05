@@ -210,7 +210,7 @@ function renderEloArena() {
                     <div style="font-size:8px; color:var(--dim)">WR: ${wr}% | Matches: ${data.matches}</div>
                 </div>
                 <div style="text-align:right">
-                    <div style="font-family:'Oswald'; font-size:16px; color:var(--gold)">${data.rating}</div>
+                    <div style="font-family:'Oswald'; font-size:16px; color:var(--gold)">${safeRating}</div>
                     <div style="font-size:7px; color:var(--dim)">ELO RATING</div>
                 </div>
             </div>

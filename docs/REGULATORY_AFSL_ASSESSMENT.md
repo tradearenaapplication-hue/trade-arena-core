@@ -3,7 +3,7 @@
 **Platform:** Trade Arena
 **Target Jurisdiction:** Australia (Australian Securities and Investments Commission - ASIC)
 **Applicable Legislation:** *Corporations Act 2001* (Cth), ASIC Regulatory Guides (RG 104, RG 175, RG 240, RG 259)
-**Status:** Pre-Gate 3 Regulatory Compliance Assessment (Gate 3 Status: PENDING LEGAL REVIEW)
+**Gate 3 Status:** Pre-Gate 3 Regulatory Compliance Assessment
 
 ---
 

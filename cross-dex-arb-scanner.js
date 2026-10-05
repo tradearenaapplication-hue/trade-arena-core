@@ -13,15 +13,22 @@ const DEFAULT_FLASH_ARB_CONFIG = {
   minLiquidityUSD: 50000,
 };
 
-function calculateFlashLoanArb({ borrowAmountUSD, buyQuote, sellQuote, config = {} }) {
-  const cfg = { ...DEFAULT_FLASH_ARB_CONFIG, ...config };
+/**
+ * Optimized: Accesses config properties directly with fallback to DEFAULT_FLASH_ARB_CONFIG.
+ * Eliminates redundant object cloning per quote evaluation in high-frequency cross-DEX scanning loops.
+ */
+function calculateFlashLoanArb({ borrowAmountUSD, buyQuote, sellQuote, config = DEFAULT_FLASH_ARB_CONFIG }) {
+  const flashLoanFeeRate = config.flashLoanFeeRate ?? DEFAULT_FLASH_ARB_CONFIG.flashLoanFeeRate;
+  const minNetProfitUSD = config.minNetProfitUSD ?? DEFAULT_FLASH_ARB_CONFIG.minNetProfitUSD;
+  const minROI = config.minROI ?? DEFAULT_FLASH_ARB_CONFIG.minROI;
+  const gasUSD = Number(config.gasUSD ?? config.defaultGasUSD ?? DEFAULT_FLASH_ARB_CONFIG.defaultGasUSD);
+  const mevBufferUSD = Number(config.mevBufferUSD ?? DEFAULT_FLASH_ARB_CONFIG.mevBufferUSD);
+
   const amount = Number(borrowAmountUSD || 0);
   const buyOut = Number(buyQuote?.amountOut || 0);
   const finalOut = Number(sellQuote?.amountOut || 0);
-  const flashLoanFeeUSD = amount * cfg.flashLoanFeeRate;
-  const gasUSD = Number(cfg.gasUSD ?? cfg.defaultGasUSD);
+  const flashLoanFeeUSD = amount * flashLoanFeeRate;
   const slippageUSD = Number(buyQuote?.slippageUSD || 0) + Number(sellQuote?.slippageUSD || 0);
-  const mevBufferUSD = Number(cfg.mevBufferUSD || 0);
   const grossProfitUSD = finalOut - amount;
   const netProfitUSD = grossProfitUSD - flashLoanFeeUSD - gasUSD - slippageUSD - mevBufferUSD;
   const roi = amount > 0 ? netProfitUSD / amount : 0;
@@ -37,7 +44,7 @@ function calculateFlashLoanArb({ borrowAmountUSD, buyQuote, sellQuote, config = 
     mevBufferUSD,
     netProfitUSD,
     roi,
-    isViable: netProfitUSD >= cfg.minNetProfitUSD && roi >= cfg.minROI,
+    isViable: netProfitUSD >= minNetProfitUSD && roi >= minROI,
   };
 }
 

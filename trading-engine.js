@@ -826,8 +826,8 @@ class TradingEngine {
             return {
                 id: this.generateId(),
                 botId: bot.id,
-                status: 'BLOCKED_REGULATORY_GATE',
-                reason: 'AFSL_CLEARANCE_REQUIRED',
+                status: 'BLOCKED_AFSL_COMPLIANCE_GATE',
+                reason: 'AFSL Compliance Gate 3 Lock: Real-money execution requires AFS license clearance or AFSL_COMPLIANT=true',
                 message: this.regulatoryGateNotice,
                 profit: 0,
                 timestamp: Date.now()

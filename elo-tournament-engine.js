@@ -172,10 +172,10 @@ function loadEloState() {
 }
 
 /**
- * Helper to escape HTML and prevent XSS
+ * Sanitize string for safe insertion into HTML/DOM
  */
 function escapeHTML(str) {
-    if (!str) return '';
+    if (str === null || str === undefined) return '';
     return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -195,21 +195,19 @@ function renderEloArena() {
 
     container.innerHTML = sorted.map(([key, data]) => {
         const wr = data.matches > 0 ? (data.wins / data.matches * 100).toFixed(1) : 0;
-        const rank = data.rating > 1800 ? 'GRANDMASTER' : data.rating > 1500 ? 'ELITE' : data.rating > 1200 ? 'PRO' : 'NOVICE';
+        const rawRank = data.rating > 1800 ? 'GRANDMASTER' : data.rating > 1500 ? 'ELITE' : data.rating > 1200 ? 'PRO' : 'NOVICE';
         const rankColor = data.rating > 1800 ? 'var(--purple)' : data.rating > 1500 ? 'var(--cyan)' : data.rating > 1200 ? 'var(--green)' : 'var(--dim)';
 
         const safeKey = escapeHTML(key.toUpperCase());
         const safeIcon = escapeHTML(data.icon);
-        const safeRank = escapeHTML(rank);
-        const safeRankColor = escapeHTML(rankColor);
-        const safeRating = escapeHTML(data.rating);
+        const safeRank = escapeHTML(rawRank);
 
         return `
             <div class="elo-row" style="display:flex; align-items:center; gap:10px; padding:8px; border-bottom:1px solid var(--border)">
                 <div style="font-size:18px">${safeIcon}</div>
                 <div style="flex:1">
-                    <div style="font-family:'Bungee'; font-size:10px">${safeKey} <span style="color:${safeRankColor}; font-size:8px">[${safeRank}]</span></div>
-                    <div style="font-size:8px; color:var(--dim)">WR: ${Number(wr)}% | Matches: ${Number(data.matches)}</div>
+                    <div style="font-family:'Bungee'; font-size:10px">${safeKey} <span style="color:${rankColor}; font-size:8px">[${safeRank}]</span></div>
+                    <div style="font-size:8px; color:var(--dim)">WR: ${wr}% | Matches: ${data.matches}</div>
                 </div>
                 <div style="text-align:right">
                     <div style="font-family:'Oswald'; font-size:16px; color:var(--gold)">${safeRating}</div>

@@ -707,8 +707,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   <div style="display:flex;gap:8px;font-size:10px;color:var(--dim);justify-content:center;flex-wrap:wrap;text-align:center">
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
-  <div style="width:100%;max-width:440px;padding:8px 12px;background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.25);border-radius:8px;font-size:9px;color:var(--dim);line-height:1.5;text-align:center;">
-    ⚠️ <strong>NON-CUSTODIAL & REGULATORY DISCLOSURE:</strong> Trade Arena is a non-custodial software interface and does not hold an Australian Financial Services Licence (AFSL) or provide financial product advice under ASIC regulations. Trading bots execute automated user parameters. Crypto trading carries substantial risk of financial loss.
+  <div id="regulatoryNoticeBanner" style="width:100%;max-width:440px;padding:8px 12px;background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.25);border-radius:8px;font-size:9px;color:var(--dim);line-height:1.5;text-align:center;">
+    ⚠️ <strong>ASIC REGULATORY NOTICE & NON-CUSTODIAL DISCLOSURE:</strong> Trade Arena is a non-custodial software interface and does not hold an Australian Financial Services Licence (AFSL) or provide financial product advice under s 766B of the Corporations Act 2001. Trading bots execute automated user parameters. Crypto trading carries substantial risk of financial loss.
   </div>
 <div class="login-card">
     <div class="login-card-hd">SIGN IN TO THE FLOOR</div>
@@ -757,10 +757,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <span>⚠️</span> REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT
         </div>
         <div style="font-size:11px;line-height:1.6;color:#ccc;margin-bottom:16px;">
-          <p style="margin-bottom:10px;">Before proceeding to Live Mode, please review and confirm the following legal and regulatory disclosures:</p>
+          <p style="margin-bottom:10px;"><strong>ASIC & AFSL Regulatory Status:</strong> Trade Arena is currently a technical software demonstration tool undergoing legal and AFSL assessment under Australian Corporations Act regulations prior to Gate 3 real-money clearance. Trade Arena never takes custody of real user funds.</p>
+          <p style="margin-bottom:10px;">Before proceeding to Live Mode, please review and confirm the following legal and regulatory disclosures (under s 766B of the Corporations Act 2001):</p>
           <ul style="padding-left:18px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:10px;">
-            <li><strong>No AFS Licence / No Financial Product Advice:</strong> Trade Arena does not hold an Australian Financial Services Licence (AFSL) and does not provide financial advice or manage assets under ASIC regulations. All automated strategies and signals are software tools operated directly by you.</li>
-            <li><strong>Non-Custodial Interface:</strong> Trade Arena is a purely non-custodial software interface. You retain sole custody and full control of your private keys and wallet at all times.</li>
+            <li><strong>ASIC & AFSL Regulatory Status:</strong> Trade Arena is currently a technical software demonstration tool undergoing legal and AFSL assessment under Australian Corporations Act regulations prior to Gate 3 real-money clearance. Trade Arena does not hold an Australian Financial Services Licence (AFSL) and does not provide financial product advice under s 766B of the Corporations Act 2001.</li>
+            <li><strong>Non-Custodial Interface:</strong> Trade Arena is a purely non-custodial software interface. Trade Arena never takes custody of real user funds. You retain sole custody and full control of your private keys and wallet at all times.</li>
             <li><strong>Automated Execution & Market Risk:</strong> Automated bots execute trade orders directly on your self-sovereign wallet according to your parameters. Crypto trading is high-risk and volatile; you may lose all deposited funds. Past performance is not indicative of future results.</li>
             <li><strong>User Responsibility & Risk Controls:</strong> You are solely responsible for setting appropriate safety controls, daily loss limits, and monitoring your positions.</li>
           </ul>
@@ -836,6 +837,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div id="mainApp">
 
   <!-- Header -->
+  <div id="regulatoryNoticeBanner" style="background:rgba(255,179,0,0.1);border:1px solid var(--amber);color:var(--amber);padding:6px 12px;border-radius:8px;font-size:10px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+    <span>⚠️ <strong>ASIC REGULATORY NOTICE:</strong> Trade Arena operates in educational/simulation paper trading mode prior to Australian Financial Services Licence (AFSL) Gate 3 clearance under the Corporations Act 2001.</span>
+  </div>
   <div class="global-header">
     <div class="gh-avatar" id="ghAvatar">👤</div>
     <div style="flex:1;overflow:hidden;min-width:60px">
@@ -3411,11 +3415,11 @@ function renderBot(bot){
         <div class="think-spinner"></div><div class="think-label">AI SCANNING</div>
         <div class="think-step" id="mstep-${bot.id}">Fetching data…</div>
       </div>
-      <div class="m-result" id="mresult-${bot.id}">
+      <div class="m-result" id="mresult-${bot.id}" role="dialog" aria-modal="true" aria-labelledby="mrtitle-${bot.id}">
         <div class="m-r-title" id="mrtitle-${bot.id}">WIN!</div>
         <div class="m-r-amt" id="mramt-${bot.id}">+$0</div>
         <div class="m-r-detail" id="mrdetail-${bot.id}"></div>
-        <button class="m-r-close" onclick="closeResult(${bot.id})">CLOSE</button>
+        <button class="m-r-close" onclick="closeResult(${bot.id})" aria-label="Close result for Bot #${bot.id}">CLOSE</button>
       </div>
     </div>
     <div class="m-strats">
@@ -3437,8 +3441,8 @@ function renderBot(bot){
       <div class="m-settings-bar">
         <div class="m-bet-display" id="mbetdisp-${bot.id}">$1.00 <span>per trade</span></div>
         <div style="display:flex;gap:4px;align-items:center">
-          <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})">AUTO</button>
-          <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})" style="padding:6px 12px;font-size:11px">🎰 SPIN</button>
+          <button class="auto-btn" id="mauto-${bot.id}" onclick="toggleAuto(${bot.id})" aria-pressed="false" aria-label="Toggle auto-trading for Bot #${bot.id}">AUTO</button>
+          <button class="spin-btn" id="mspin-${bot.id}" onclick="spinBot(${bot.id})" style="padding:6px 12px;font-size:11px" aria-label="Spin Bot #${bot.id}">🎰 SPIN</button>
           <button class="m-gear-btn" id="mgear-${bot.id}" onclick="toggleBotSettings(${bot.id})" title="Bot settings" aria-label="Bot ${bot.id} settings" aria-expanded="false" aria-controls="mdrop-${bot.id}">⚙</button>
         </div>
       </div>
@@ -3593,13 +3597,14 @@ function toggleAuto(id){
   const bot=bots.find(b=>b.id===id); if(!bot) return;
   bot.auto=!bot.auto;
   const btn=document.getElementById('mauto-'+id), card=document.getElementById('bot-'+id);
+  if(btn) btn.setAttribute('aria-pressed', bot.auto ? 'true' : 'false');
   if(bot.auto){btn.textContent='⏸ STOP';btn.classList.add('on');card.classList.add('auto-on');scheduleAuto(bot);}
   else{btn.textContent='AUTO';btn.classList.remove('on');card.classList.remove('auto-on');if(bot.autoTimer)clearTimeout(bot.autoTimer);}
   // keep global auto button in sync
   const allOn=bots.length>0&&bots.every(b=>b.auto);
   _ghAutoOn=allOn;
   const ghBtn=document.getElementById('ghAutoBtn');
-  if(ghBtn){ghBtn.textContent=allOn?'⏸ STOP':'AUTO';ghBtn.classList.toggle('on',allOn);}
+  if(ghBtn){ghBtn.textContent=allOn?'⏸ STOP':'AUTO';ghBtn.classList.toggle('on',allOn);ghBtn.setAttribute('aria-pressed', allOn ? 'true' : 'false');}
 }
 function scheduleAuto(bot){
   if(!bot.auto) return;
@@ -5819,10 +5824,10 @@ Respond in JSON format:
     <div id="sessionWarningDetails" style="font-size:10px;color:#ccc;">Active session: 30 mins · Net P&L: +$0.00</div>
   </div>
   <div style="display:flex;gap:6px;flex-shrink:0;">
-    <button onclick="pauseBotsFromSessionWarning()" style="padding:6px 12px;background:var(--amber);color:#000;font-family:'Bungee',display;font-size:9px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;">
+    <button onclick="pauseBotsFromSessionWarning()" aria-label="Pause all trading bots" style="padding:6px 12px;background:var(--amber);color:#000;font-family:'Bungee',display;font-size:9px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;">
       PAUSE BOTS
     </button>
-    <button onclick="dismissSessionWarning()" style="padding:6px 10px;background:transparent;border:1px solid var(--border);color:var(--dim);font-size:9px;border-radius:4px;cursor:pointer;">
+    <button onclick="dismissSessionWarning()" aria-label="Dismiss session time warning banner" style="padding:6px 10px;background:transparent;border:1px solid var(--border);color:var(--dim);font-size:9px;border-radius:4px;cursor:pointer;">
       DISMISS
     </button>
   </div>

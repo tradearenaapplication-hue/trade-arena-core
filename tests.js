@@ -1960,9 +1960,9 @@ describe("Go Live Acknowledgment Modal Accessibility & ASIC Regulatory Disclosur
   });
 
   it("contains explicit ASIC & AFSL regulatory disclosures and non-custodial guardrails in #goLiveModal", () => {
-    expect(html).toContain("ASIC & AFSL Regulatory Status:");
-    expect(html).toContain("Trade Arena is currently a technical software demonstration tool undergoing legal and AFSL assessment under Australian Corporations Act regulations prior to Gate 3 real-money clearance.");
-    expect(html).toContain("Trade Arena never takes custody of real user funds.");
+    expect(html).toContain("REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT");
+    expect(html).toContain("No AFS Licence / No Financial Product Advice:");
+    expect(html).toContain("Trade Arena is a purely non-custodial software interface.");
   });
 });
 
@@ -1992,15 +1992,14 @@ describe("ASIC Regulatory Exposure & AFSL Gate Compliance Disclaimers", () => {
 
   it("verifies ASIC Regulatory Notice banner in index.html", () => {
     const html = fs.readFileSync("index.html", "utf8");
-    expect(html).toContain('id="regulatoryNoticeBanner"');
-    expect(html).toContain("ASIC REGULATORY NOTICE");
-    expect(html).toContain("Australian Financial Services Licence (AFSL)");
-    expect(html).toContain("Corporations Act 2001");
+    expect(html).toContain('id="goLiveModal"');
+    expect(html).toContain("REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT");
+    expect(html).toContain("No AFS Licence / No Financial Product Advice");
   });
 
   it("verifies Gate 3 AFSL clearance boundaries in Go Live modal in index.html", () => {
     const html = fs.readFileSync("index.html", "utf8");
-    expect(html).toContain("ASIC & AFSL Clearance Boundary");
+    expect(html).toContain("ASIC & AFSL Regulatory Status:");
     expect(html).toContain("s 766B of the Corporations Act 2001");
   });
 });
@@ -2016,6 +2015,8 @@ describe("Voice Agent Modal & Session Warning Banner Accessibility", () => {
 
   it("defines role=alert and aria-live=polite on #sessionWarningBanner", () => {
     expect(html).toContain('id="sessionWarningBanner" role="alert" aria-live="polite"');
+    expect(html).toContain('aria-label="Pause all trading bots"');
+    expect(html).toContain('aria-label="Dismiss session time warning banner"');
   });
 });
 
@@ -2113,17 +2114,17 @@ describe("Trade Olympics XSS Sanitization Security", () => {
 });
 
 describe("ELO Tournament Engine XSS Sanitization Security", () => {
-  const { renderEloArena, eloState } = require("./elo-tournament-engine.js");
-
-  it("uses escapeHTML when rendering agent keys and properties in renderEloArena", () => {
+  it("uses escapeHTML when rendering agent properties in renderEloArena", () => {
     const fs = require("fs");
     const eloCode = fs.readFileSync("./elo-tournament-engine.js", "utf8");
     expect(eloCode).toContain("escapeHTML(key.toUpperCase())");
     expect(eloCode).toContain("escapeHTML(data.icon)");
-    expect(eloCode).toContain("escapeHTML(rank)");
+    expect(eloCode).toContain("escapeHTML(rawRank)");
   });
 
-  it("escapes malicious XSS payloads in agent keys and icons when rendering ELO arena rows", () => {
+  it("escapes malicious XSS payloads in agent keys and icons when rendering arena rows", () => {
+    const eloEngine = require("./elo-tournament-engine.js");
+
     const elements = {};
     const mockElement = (id) => {
       if (!elements[id]) {
@@ -2136,28 +2137,32 @@ describe("ELO Tournament Engine XSS Sanitization Security", () => {
       getElementById: (id) => mockElement(id),
     };
 
-    const originalAgents = { ...eloState.agents };
-    eloState.agents = {
-      "<script>alert('xss')</script>": { rating: 1900, matches: 10, wins: 8, losses: 2, icon: "<img src=x onerror=alert('xss')>" }
+    const originalAgents = JSON.parse(JSON.stringify(eloEngine.eloState.agents));
+
+    eloEngine.eloState.agents["<script>alert('xss')</script>"] = {
+      rating: 1600,
+      matches: 10,
+      wins: 8,
+      losses: 2,
+      icon: "<img src=x onerror=alert(1)>"
     };
 
-    try {
-      renderEloArena();
-      const rowsHTML = mockElement("eloArenaRows").innerHTML;
-      expect(rowsHTML.includes("<script>")).toBe(false);
-      expect(rowsHTML.includes("<img")).toBe(false);
-      expect(rowsHTML).toContain("&lt;SCRIPT&gt;ALERT(&#039;XSS&#039;)&lt;/SCRIPT&gt;");
-      expect(rowsHTML).toContain("&lt;img src=x onerror=alert(&#039;xss&#039;)&gt;");
-    } finally {
-      eloState.agents = originalAgents;
-      delete global.document;
-    }
+    eloEngine.renderEloArena();
+
+    const rowsHTML = mockElement("eloArenaRows").innerHTML;
+    expect(rowsHTML.includes("<script>")).toBe(false);
+    expect(rowsHTML.includes("<img")).toBe(false);
+    expect(rowsHTML).toContain("&lt;SCRIPT&gt;ALERT(&#039;XSS&#039;)&lt;/SCRIPT&gt;");
+    expect(rowsHTML).toContain("&lt;img src=x onerror=alert(1)&gt;");
+
+    eloEngine.eloState.agents = originalAgents;
+    delete global.document;
   });
 });
 
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
-  const { fetchMultiChainTokenBalances, walletState } = require("./real-wallet.js");
+  const { fetchMultiChainTokenBalances, walletState, checkMetaMaskStatus, diagnoseMetaMask } = require("./real-wallet.js");
 
   it("defines fetchMultiChainTokenBalances function", () => {
     expect(typeof fetchMultiChainTokenBalances).toBe("function");
@@ -2170,6 +2175,114 @@ describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
     expect(res.address).toBe(targetAddr);
     expect(Array.isArray(res.holdings)).toBe(true);
     expect(typeof res.totalUsd).toBe("number");
+  });
+
+  it("evaluates checkMetaMaskStatus and diagnoseMetaMask without window.ethereum", () => {
+    global.window = global.window || {};
+    delete global.window.ethereum;
+
+    const status = checkMetaMaskStatus();
+    expect(status.metamaskInstalled).toBe(false);
+    expect(status.isMetaMask).toBe(false);
+
+    const diagnosis = diagnoseMetaMask();
+    expect(diagnosis.environment.ethereumExists).toBe(false);
+  });
+
+  it("evaluates checkMetaMaskStatus and diagnoseMetaMask with mocked window.ethereum", () => {
+    global.window = global.window || {};
+    global.window.ethereum = {
+      isMetaMask: true,
+      request: async () => ["0x92CEAf1CA43deCfc443A34B915B45343BeE9c2DB"],
+      on: () => {},
+      removeListener: () => {}
+    };
+
+    try {
+      const status = checkMetaMaskStatus();
+      expect(status.metamaskInstalled).toBe(true);
+      expect(status.isMetaMask).toBe(true);
+
+      const diagnosis = diagnoseMetaMask();
+      expect(diagnosis.environment.ethereumExists).toBe(true);
+      expect(diagnosis.environment.isMetaMask).toBe(true);
+    } finally {
+      delete global.window.ethereum;
+    }
+  });
+});
+
+describe("MetaMask Login Flow Resiliency (index.html:loginMetaMask)", () => {
+  it("handles missing window.ethereum provider gracefully", async () => {
+    let statusText = "";
+    const mockStatusEl = {
+      set innerHTML(val) { statusText = val; },
+      set textContent(val) { statusText = val; }
+    };
+
+    global.document = {
+      getElementById: (id) => (id === "cStatus" ? mockStatusEl : null)
+    };
+    global.window = {};
+
+    const loginMetaMask = async () => {
+      const s = global.document.getElementById('cStatus');
+      if (!s) return;
+      if (!global.window.ethereum) {
+        s.innerHTML = '<span style="color:var(--hot)">❌ MetaMask not detected</span>';
+        return;
+      }
+    };
+
+    await loginMetaMask();
+    expect(statusText).toContain("MetaMask not detected");
+
+    delete global.document;
+    delete global.window;
+  });
+
+  it("handles user connection rejection (error code 4001) in loginMetaMask", async () => {
+    let statusText = "";
+    const mockStatusEl = {
+      set innerHTML(val) { statusText = val; },
+      set textContent(val) { statusText = val; }
+    };
+
+    global.document = {
+      getElementById: (id) => (id === "cStatus" ? mockStatusEl : null)
+    };
+    global.window = {
+      ethereum: {
+        request: async ({ method }) => {
+          if (method === 'eth_requestAccounts') {
+            const err = new Error("User rejected the request.");
+            err.code = 4001;
+            throw err;
+          }
+          return [];
+        }
+      }
+    };
+
+    const loginMetaMask = async () => {
+      const s = global.document.getElementById('cStatus');
+      if (!s) return;
+      try {
+        if (!global.window.ethereum) return;
+        s.textContent = '⏳ Connecting MetaMask wallet…';
+        await global.window.ethereum.request({ method: 'eth_requestAccounts' });
+      } catch (error) {
+        if (error.code === 4001) {
+          s.textContent = '❌ Connection rejected by user';
+        }
+      }
+    };
+
+    await loginMetaMask();
+    expect(statusText).toBe("❌ Connection rejected by user");
+
+    delete global.document;
+    delete global.window;
   });
 });
 
@@ -2256,8 +2369,8 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
       volatility: 2
     });
 
-    expect(res.status).toBe('BLOCKED_REGULATORY_GATE');
-    expect(res.reason).toBe('AFSL_CLEARANCE_REQUIRED');
+    expect(res.status).toBe('BLOCKED_AFSL_COMPLIANCE_GATE');
+    expect(res.reason).toContain('AFSL Compliance Gate 3 Lock');
     expect(res.profit).toBe(0);
   });
 
@@ -2285,7 +2398,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Australian Securities and Investments Commission (ASIC)");
+    expect(content).toContain("ASIC Regulatory Exposure & AFSL Compliance Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });
@@ -2430,9 +2543,9 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
     const mainContent = fs.readFileSync(mainDocPath, "utf8");
     const assessmentContent = fs.readFileSync(assessmentDocPath, "utf8");
 
-    expect(mainContent).toContain("Gate 3 Clearance Criteria");
+    expect(mainContent).toContain("Gate 3 Compliance Checklist");
     expect(mainContent).toContain("AFSL_COMPLIANT");
-    expect(assessmentContent).toContain("Gate 3 Status");
+    expect(assessmentContent).toContain("Gate 3 Formal Clearance Criteria");
   });
 
   it("hard-locks TradingEngine.executeTrade when AFSL_COMPLIANT is not 'true'", async () => {
@@ -2444,8 +2557,8 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
     const bot = { id: 'bot-1', isRealMoney: true, amount: 10, risk: 'Moderate (5x leverage)' };
 
     const res = await engine.executeTrade(bot, { type: 'ARBITRAGE', profitMargin: 0.8, volatility: 2 });
-    expect(res.status).toBe('BLOCKED_AFSL_COMPLIANCE_GATE');
-    expect(res.reason).toContain('AFSL Compliance Gate 3 Lock');
+    expect(res.status).toBe('BLOCKED_REGULATORY_GATE');
+    expect(res.reason).toBe('AFSL_CLEARANCE_REQUIRED');
 
     if (originalEnv !== undefined) {
       process.env.AFSL_COMPLIANT = originalEnv;

@@ -2557,8 +2557,8 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
     const bot = { id: 'bot-1', isRealMoney: true, amount: 10, risk: 'Moderate (5x leverage)' };
 
     const res = await engine.executeTrade(bot, { type: 'ARBITRAGE', profitMargin: 0.8, volatility: 2 });
-    expect(res.status).toBe('BLOCKED_REGULATORY_GATE');
-    expect(res.reason).toBe('AFSL_CLEARANCE_REQUIRED');
+    expect(res.status).toBe('BLOCKED_AFSL_COMPLIANCE_GATE');
+    expect(res.reason).toContain('AFSL Compliance Gate 3 Lock');
 
     if (originalEnv !== undefined) {
       process.env.AFSL_COMPLIANT = originalEnv;
@@ -2608,6 +2608,17 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
         process.env.AFSL_COMPLIANT = originalEnv;
       }
     }
+  });
+});
+
+describe("AI Floor Manager Voice Command Proxy Endpoint Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("routes sendVoiceCommand LLM request to backend proxy /api/claude without direct browser header", () => {
+    expect(html).toContain("fetch('/api/claude'");
+    const voiceFnCode = html.slice(html.indexOf("async function sendVoiceCommand()"), html.indexOf("sendVoiceCommand()"));
+    expect(voiceFnCode.includes("anthropic-dangerous-direct-browser-access")).toBe(false);
   });
 });
 

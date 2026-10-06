@@ -2020,6 +2020,21 @@ describe("Voice Agent Modal & Session Warning Banner Accessibility", () => {
   });
 });
 
+describe("Task Center ARIA Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+  const taskCenterCode = fs.readFileSync("task-center.js", "utf8");
+
+  it("defines aria-label on #claimFaucetBtn in index.html and task-center.js", () => {
+    expect(html).toContain('id="claimFaucetBtn" onclick="claimFaucet()" aria-label="Claim $50 starting capital"');
+    expect(taskCenterCode).toContain("faucetBtn.setAttribute('aria-label', taskState.faucetClaimed ? 'Faucet $50 starting capital already claimed' : 'Claim $50 starting capital');");
+  });
+
+  it("defines descriptive aria-label on task action buttons in renderTaskCenter", () => {
+    expect(taskCenterCode).toContain("aria-label=\"${task.completed ? escapeHTML(task.label) + ' task completed' : 'Complete task ' + escapeHTML(task.label) + ' for $' + Number(task.reward) + ' reward'}\"");
+  });
+});
+
 describe("Task Center XSS Sanitization Security", () => {
   const fs = require("fs");
   const taskCenterCode = fs.readFileSync("task-center.js", "utf8");
@@ -2557,8 +2572,8 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
     const bot = { id: 'bot-1', isRealMoney: true, amount: 10, risk: 'Moderate (5x leverage)' };
 
     const res = await engine.executeTrade(bot, { type: 'ARBITRAGE', profitMargin: 0.8, volatility: 2 });
-    expect(res.status).toBe('BLOCKED_REGULATORY_GATE');
-    expect(res.reason).toBe('AFSL_CLEARANCE_REQUIRED');
+    expect(res.status).toBe('BLOCKED_AFSL_COMPLIANCE_GATE');
+    expect(res.reason).toContain('AFSL Compliance Gate 3 Lock');
 
     if (originalEnv !== undefined) {
       process.env.AFSL_COMPLIANT = originalEnv;

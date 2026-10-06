@@ -103,6 +103,7 @@ function renderTaskCenter() {
     if (faucetBtn) {
         faucetBtn.disabled = taskState.faucetClaimed;
         faucetBtn.textContent = taskState.faucetClaimed ? 'CLAIMED' : 'CLAIM $50 STARTING CAPITAL';
+        faucetBtn.setAttribute('aria-label', taskState.faucetClaimed ? 'Faucet $50 starting capital already claimed' : 'Claim $50 starting capital');
     }
 
     container.innerHTML = taskState.tasks.map(task => `
@@ -112,7 +113,7 @@ function renderTaskCenter() {
                 <div style="font-size:11px; font-weight:bold; color:${task.completed ? 'var(--green)' : 'white'}">${escapeHTML(task.label)}</div>
                 <div style="font-size:8px; color:var(--dim)">REWARD: $${Number(task.reward)}</div>
             </div>
-            <button data-task-id="${escapeHTML(task.id)}" onclick="completeTask(this.getAttribute('data-task-id'))" ${task.completed ? 'disabled' : ''} style="padding:5px 10px; border-radius:4px; border:none; background:${task.completed ? 'var(--dim)' : 'var(--cyan)'}; color:black; font-family:'Bungee'; font-size:9px; cursor:pointer">
+            <button data-task-id="${escapeHTML(task.id)}" onclick="completeTask(this.getAttribute('data-task-id'))" ${task.completed ? 'disabled' : ''} aria-label="${task.completed ? escapeHTML(task.label) + ' task completed' : 'Complete task ' + escapeHTML(task.label) + ' for $' + Number(task.reward) + ' reward'}" style="padding:5px 10px; border-radius:4px; border:none; background:${task.completed ? 'var(--dim)' : 'var(--cyan)'}; color:black; font-family:'Bungee'; font-size:9px; cursor:pointer">
                 ${task.completed ? 'DONE' : 'GO'}
             </button>
         </div>

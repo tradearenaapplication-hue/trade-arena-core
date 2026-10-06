@@ -32,3 +32,8 @@
 **Vulnerability:** In `elo-tournament-engine.js`, `renderEloArena` interpolated unescaped agent keys (`key`), icons (`data.icon`), and ranks (`rank`) into `container.innerHTML` strings.
 **Learning:** Dynamic agent metadata stored in state or local storage can serve as DOM XSS sinks if rendered directly via template literals into `innerHTML`.
 **Prevention:** Always define an `escapeHTML` helper and wrap all dynamic text/metadata fields before rendering HTML templates into DOM containers.
+
+## 2026-10-06 - [MEDIUM] Unhandled ReferenceError in Sanitized DOM Template
+**Vulnerability:** In `elo-tournament-engine.js`, `renderEloArena` referenced `${safeRating}` in the HTML template string without assigning `const safeRating = escapeHTML(data.rating)`, causing a runtime `ReferenceError` during DOM rendering.
+**Learning:** When retrofitting XSS sanitization (`escapeHTML`) across dynamic template literals, missing variable declarations in sanitization assignments cause runtime UI rendering crashes.
+**Prevention:** Ensure unit tests simulate rendering of sanitized DOM components to verify all sanitized template variables are properly declared and in scope.

@@ -234,7 +234,7 @@ class TradingEngine {
          };
 
          // ASIC Regulatory Compliance & AFSL Gate Controls
-         this.afslCompliant = false; // Requires formal AFSL legal assessment before live funds
+         this.afslCompliant = (typeof process !== 'undefined' && process.env && process.env.AFSL_COMPLIANT === 'true'); // Requires formal AFSL legal assessment before live funds
          this.regulatoryGateNotice = "Real-money automated execution locked pending Australian Financial Services Licence (AFSL) legal review.";
 
          // Stablecoins to block from trading

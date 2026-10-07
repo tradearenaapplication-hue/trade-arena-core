@@ -1961,7 +1961,7 @@ describe("Go Live Acknowledgment Modal Accessibility & ASIC Regulatory Disclosur
 
   it("contains explicit ASIC & AFSL regulatory disclosures and non-custodial guardrails in #goLiveModal", () => {
     expect(html).toContain("REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT");
-    expect(html).toContain("No AFS Licence / No Financial Product Advice:");
+    expect(html).toContain("does not hold an Australian Financial Services Licence (AFSL)");
     expect(html).toContain("Trade Arena is a purely non-custodial software interface.");
   });
 });
@@ -1974,6 +1974,21 @@ describe("Bus Panel Preset Accessibility", () => {
     expect(html).toContain('class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false"');
     expect(html).toContain("b.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
     expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
+  });
+});
+
+describe("Bot Settings Trade Amount Preset Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines initial aria-pressed and aria-label attributes on bot trade amount preset buttons", () => {
+    expect(html).toContain('aria-pressed="${v===1.00?\'true\':\'false\'}"');
+    expect(html).toContain('aria-label="Set trade amount to $${v%1===0?v.toFixed(0):v.toFixed(2)} for Bot #${bot.id}"');
+  });
+
+  it("dynamically updates aria-pressed in setBet and setCustomBet functions", () => {
+    expect(html).toContain("b.setAttribute('aria-pressed',isMatch?'true':'false')");
+    expect(html).toContain("document.querySelectorAll(`#mbets-\${id} .m-dd-bet`).forEach(b=>b.setAttribute('aria-pressed','false'))");
   });
 });
 
@@ -1994,7 +2009,7 @@ describe("ASIC Regulatory Exposure & AFSL Gate Compliance Disclaimers", () => {
     const html = fs.readFileSync("index.html", "utf8");
     expect(html).toContain('id="goLiveModal"');
     expect(html).toContain("REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT");
-    expect(html).toContain("No AFS Licence / No Financial Product Advice");
+    expect(html).toContain("does not hold an Australian Financial Services Licence (AFSL)");
   });
 
   it("verifies Gate 3 AFSL clearance boundaries in Go Live modal in index.html", () => {

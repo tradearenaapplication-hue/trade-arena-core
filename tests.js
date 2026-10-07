@@ -2074,6 +2074,52 @@ describe("ASIC Regulatory Exposure & AFSL Gate Compliance Disclaimers", () => {
   });
 });
 
+describe("Quant Report Verdict Box XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("uses escapeHTML when rendering variables in drawVerdict function", () => {
+    expect(html).toContain("const safeWr = escapeHTML((wr*100).toFixed(1));");
+    expect(html).toContain("const safePf = escapeHTML(pf.toFixed(2));");
+    expect(html).toContain("const safeAvg = escapeHTML(avg.toFixed(2));");
+    expect(html).toContain("const safeN = escapeHTML(n);");
+    expect(html).toContain("Win rate ${safeWr}% · PF ${safePf} · Avg +$${safeAvg}/trade.");
+    expect(html).toContain("🔴 NO EDGE AFTER ${safeN} TRADES");
+  });
+
+  it("escapes malicious XSS payloads when rendering drawVerdict to the DOM", () => {
+    const elements = {};
+    const mockElement = (id) => {
+      if (!elements[id]) {
+        elements[id] = { innerHTML: "", textContent: "", className: "" };
+      }
+      return elements[id];
+    };
+
+    global.document = {
+      getElementById: (id) => mockElement(id),
+    };
+
+    // Extract drawVerdict and escapeHTML functions from index.html code for execution test
+    const drawVerdictCode = html.slice(
+      html.indexOf("function drawVerdict("),
+      html.indexOf("function updateOpenCount()")
+    );
+
+    const fn = new Function("escapeHTML", "document", drawVerdictCode + "\nreturn drawVerdict;");
+    const drawVerdict = fn(escapeHTML, global.document);
+
+    const maliciousN = "<script>alert('xss')</script>";
+    drawVerdict(maliciousN, 0.2, 0.5, -1.0);
+
+    const boxHTML = mockElement("verdictBox").innerHTML;
+    expect(boxHTML.includes("<script>")).toBe(false);
+    expect(boxHTML).toContain("&lt;script&gt;alert(&#039;xss&#039;)&lt;/script&gt;");
+
+    delete global.document;
+  });
+});
+
 describe("Voice Agent Modal & Session Warning Banner Accessibility", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");
@@ -2483,7 +2529,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
+    expect(content).toContain("ASIC Regulatory Exposure & AFSL Compliance Assessment & Gate 3 Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });

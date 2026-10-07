@@ -2626,6 +2626,17 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
   });
 });
 
+describe("AI Floor Manager Voice Command Proxy Endpoint Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("routes sendVoiceCommand LLM request to backend proxy /api/claude without direct browser header", () => {
+    expect(html).toContain("fetch('/api/claude'");
+    const voiceFnCode = html.slice(html.indexOf("async function sendVoiceCommand()"), html.indexOf("sendVoiceCommand()"));
+    expect(voiceFnCode.includes("anthropic-dangerous-direct-browser-access")).toBe(false);
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

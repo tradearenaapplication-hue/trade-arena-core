@@ -32,3 +32,8 @@
 **Vulnerability:** In `elo-tournament-engine.js`, `renderEloArena` interpolated unescaped agent keys (`key`), icons (`data.icon`), and ranks (`rank`) into `container.innerHTML` strings.
 **Learning:** Dynamic agent metadata stored in state or local storage can serve as DOM XSS sinks if rendered directly via template literals into `innerHTML`.
 **Prevention:** Always define an `escapeHTML` helper and wrap all dynamic text/metadata fields before rendering HTML templates into DOM containers.
+
+## 2026-10-06 - [HIGH] Direct Client-Side LLM Browser Access & Key Exposure
+**Vulnerability:** In `index.html`, `sendVoiceCommand` used direct browser `fetch` requests to `https://api.anthropic.com/v1/messages` with `anthropic-dangerous-direct-browser-access: true`, exposing client-side API key handling and bypassing backend rate limits.
+**Learning:** Features added directly in frontend templates often bypass established backend proxies (`/api/claude`), introducing dangerous direct browser headers and removing server-side rate limits and validation.
+**Prevention:** Route all frontend AI and LLM requests exclusively through backend proxy endpoints protected by rate limiting (`aiLimiter`) and server-side secret management.

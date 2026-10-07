@@ -1961,7 +1961,7 @@ describe("Go Live Acknowledgment Modal Accessibility & ASIC Regulatory Disclosur
 
   it("contains explicit ASIC & AFSL regulatory disclosures and non-custodial guardrails in #goLiveModal", () => {
     expect(html).toContain("REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT");
-    expect(html).toContain("No AFS Licence / No Financial Product Advice:");
+    expect(html).toContain("does not hold an Australian Financial Services Licence (AFSL)");
     expect(html).toContain("Trade Arena is a purely non-custodial software interface.");
   });
 });
@@ -1974,6 +1974,21 @@ describe("Bus Panel Preset Accessibility", () => {
     expect(html).toContain('class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false"');
     expect(html).toContain("b.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
     expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
+  });
+});
+
+describe("Bot Settings Trade Amount Preset Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines initial aria-pressed and aria-label attributes on bot trade amount preset buttons", () => {
+    expect(html).toContain('aria-pressed="${v===1.00?\'true\':\'false\'}"');
+    expect(html).toContain('aria-label="Set trade amount to $${v%1===0?v.toFixed(0):v.toFixed(2)} for Bot #${bot.id}"');
+  });
+
+  it("dynamically updates aria-pressed in setBet and setCustomBet functions", () => {
+    expect(html).toContain("b.setAttribute('aria-pressed',isMatch?'true':'false')");
+    expect(html).toContain("document.querySelectorAll(`#mbets-\${id} .m-dd-bet`).forEach(b=>b.setAttribute('aria-pressed','false'))");
   });
 });
 
@@ -1994,7 +2009,7 @@ describe("ASIC Regulatory Exposure & AFSL Gate Compliance Disclaimers", () => {
     const html = fs.readFileSync("index.html", "utf8");
     expect(html).toContain('id="goLiveModal"');
     expect(html).toContain("REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT");
-    expect(html).toContain("No AFS Licence / No Financial Product Advice");
+    expect(html).toContain("does not hold an Australian Financial Services Licence (AFSL)");
   });
 
   it("verifies Gate 3 AFSL clearance boundaries in Go Live modal in index.html", () => {
@@ -2017,6 +2032,21 @@ describe("Voice Agent Modal & Session Warning Banner Accessibility", () => {
     expect(html).toContain('id="sessionWarningBanner" role="alert" aria-live="polite"');
     expect(html).toContain('aria-label="Pause all trading bots"');
     expect(html).toContain('aria-label="Dismiss session time warning banner"');
+  });
+});
+
+describe("Task Center ARIA Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+  const taskCenterCode = fs.readFileSync("task-center.js", "utf8");
+
+  it("defines aria-label on #claimFaucetBtn in index.html and task-center.js", () => {
+    expect(html).toContain('id="claimFaucetBtn" onclick="claimFaucet()" aria-label="Claim $50 starting capital"');
+    expect(taskCenterCode).toContain("faucetBtn.setAttribute('aria-label', taskState.faucetClaimed ? 'Faucet $50 starting capital already claimed' : 'Claim $50 starting capital');");
+  });
+
+  it("defines descriptive aria-label on task action buttons in renderTaskCenter", () => {
+    expect(taskCenterCode).toContain("aria-label=\"${task.completed ? escapeHTML(task.label) + ' task completed' : 'Complete task ' + escapeHTML(task.label) + ' for $' + Number(task.reward) + ' reward'}\"");
   });
 });
 
@@ -2557,8 +2587,8 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
     const bot = { id: 'bot-1', isRealMoney: true, amount: 10, risk: 'Moderate (5x leverage)' };
 
     const res = await engine.executeTrade(bot, { type: 'ARBITRAGE', profitMargin: 0.8, volatility: 2 });
-    expect(res.status).toBe('BLOCKED_REGULATORY_GATE');
-    expect(res.reason).toBe('AFSL_CLEARANCE_REQUIRED');
+    expect(res.status).toBe('BLOCKED_AFSL_COMPLIANCE_GATE');
+    expect(res.reason).toContain('AFSL Compliance Gate 3 Lock');
 
     if (originalEnv !== undefined) {
       process.env.AFSL_COMPLIANT = originalEnv;
@@ -2608,6 +2638,17 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
         process.env.AFSL_COMPLIANT = originalEnv;
       }
     }
+  });
+});
+
+describe("AI Floor Manager Voice Command Proxy Endpoint Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("routes sendVoiceCommand LLM request to backend proxy /api/claude without direct browser header", () => {
+    expect(html).toContain("fetch('/api/claude'");
+    const voiceFnCode = html.slice(html.indexOf("async function sendVoiceCommand()"), html.indexOf("sendVoiceCommand()"));
+    expect(voiceFnCode.includes("anthropic-dangerous-direct-browser-access")).toBe(false);
   });
 });
 

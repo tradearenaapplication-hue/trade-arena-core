@@ -7658,10 +7658,12 @@ function revokeAllSessions() {
 }
 
 // TOTP functions
+let tradeArenaTOTPSecret = null;
+
 function generateTOTPSetup() {
   // Generate a random secret (in real app, this comes from backend)
   const secret = generateRandomSecret();
-  localStorage.setItem('tradeArenaTOTPSecret', secret);
+  tradeArenaTOTPSecret = secret;
   
   const secretEl = document.getElementById('totpSecret');
   if (secretEl) secretEl.textContent = formatSecret(secret);
@@ -7682,11 +7684,12 @@ function verifyTOTP() {
   
   // In real app, verify against backend
   // For demo, accept any 6-digit code
-  const secret = localStorage.getItem('tradeArenaTOTPSecret');
+  const secret = tradeArenaTOTPSecret;
   if (secret) {
     showToast('2FA enabled successfully!', 'success');
     document.getElementById('totpSetup').style.display = 'none';
     document.getElementById('totpCode').value = '';
+    tradeArenaTOTPSecret = null;
   }
 }
 

@@ -1,5 +1,4 @@
-# 🏛️ TRADE ARENA - Regulatory Compliance & Gate 3 Assessment
-## ASIC Regulatory Exposure & AFSL Compliance Assessment
+# 🏛️ TRADE ARENA - ASIC Regulatory Exposure & AFSL Compliance Assessment & Gate 3 Assessment
 
 ## 📌 Executive Summary
 
@@ -37,9 +36,10 @@ ASIC's regulatory focus on automated trading platforms and crypto-asset financia
 To prevent accidental regulatory non-compliance before formal legal advice is obtained, Trade Arena implements strict programmatic locks at the engine and server levels.
 
 ### 1. Real-Money Automated Trading Lock
-- **Engine Control (`trading-engine.js`):** The `TradingEngine.executeTrade()` method checks `this.afslCompliant`. If a bot is flagged for real-money execution (`bot.isRealMoney === true`) while `afslCompliant` is `false`, the order is immediately rejected with `status: 'BLOCKED_REGULATORY_GATE'` and `reason: 'AFSL_CLEARANCE_REQUIRED'`.
-- **Backend API (`server.js`):** The `/api/execute/swap` endpoint evaluates `regulatoryState.afslCompliant`. Real-money swaps without active AFSL clearance return HTTP `403 Forbidden`.
-- **Status Endpoint (`server.js`):** `/api/regulatory/status` exposes platform jurisdiction, AFSL assessment state (`PENDING_LEGAL_REVIEW`), and Gate 3 clearance flags.
+- **Engine Control (`trading-engine.js`):** The `TradingEngine.executeTrade()` method checks `this.afslCompliant`. If a bot is flagged for real-money execution (`bot.isRealMoney === true` or `bot.realMoney === true`) while `afslCompliant` is `false`, the order is immediately rejected with `status: 'BLOCKED_AFSL_COMPLIANCE_GATE'` and `reason: 'AFSL Compliance Gate 3 Lock: Real-money execution requires AFS license clearance or AFSL_COMPLIANT=true'`.
+- **Execution Engine (`execution-engine.js`):** `executeOnChainTrade()` checks `process.env.AFSL_COMPLIANT === 'true'`. If false, execution throws an Error: `AFSL Compliance Gate 3 Lock: Real-money execution requires AFS license clearance or AFSL_COMPLIANT=true`.
+- **Backend API (`server.js`):** The `/api/execute/swap` endpoint evaluates `regulatoryState.afslCompliant`. Real-money swap requests without active AFSL clearance (`process.env.AFSL_COMPLIANT === 'true'`) return HTTP `403 Forbidden` with `{ success: false, error: 'AFSL Compliance Gate 3 Lock: Real-money execution requires AFS license clearance or AFSL_COMPLIANT=true' }`.
+- **Status Endpoint (`server.js`):** `/api/regulatory/status` exposes platform jurisdiction (`Australia (ASIC)`), AFSL assessment state (`PENDING_LEGAL_REVIEW`), and Gate 3 clearance flags (`requiresAfsl: true`, `afslCompliant: false`).
 
 ### 2. Paper Trading & Demo Mode Exemption
 - All simulation, paper trading, and Crucible test modes operate strictly with virtual capital or demo feeds.
@@ -57,7 +57,7 @@ To prevent accidental regulatory non-compliance before formal legal advice is ob
 
 ---
 
-## 🚀 Gate 3 Clearance Criteria & Gate 3 Compliance Checklist (Pre-Real Money Launch)
+## 🚀 Gate 3 Compliance Checklist & Gate 3 Clearance Criteria (Pre-Real Money Launch)
 
 - [ ] **Legal Counsel Review:** Complete 30-minute consultation with an Australian financial services regulatory attorney.
 - [ ] **AFSL Classification Opinion:** Obtain formal legal opinion on MIS vs non-custodial software exemption.

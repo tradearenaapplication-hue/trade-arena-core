@@ -2020,6 +2020,21 @@ describe("Voice Agent Modal & Session Warning Banner Accessibility", () => {
   });
 });
 
+describe("Task Center ARIA Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+  const taskCenterCode = fs.readFileSync("task-center.js", "utf8");
+
+  it("defines aria-label on #claimFaucetBtn in index.html and task-center.js", () => {
+    expect(html).toContain('id="claimFaucetBtn" onclick="claimFaucet()" aria-label="Claim $50 starting capital"');
+    expect(taskCenterCode).toContain("faucetBtn.setAttribute('aria-label', taskState.faucetClaimed ? 'Faucet $50 starting capital already claimed' : 'Claim $50 starting capital');");
+  });
+
+  it("defines descriptive aria-label on task action buttons in renderTaskCenter", () => {
+    expect(taskCenterCode).toContain("aria-label=\"${task.completed ? escapeHTML(task.label) + ' task completed' : 'Complete task ' + escapeHTML(task.label) + ' for $' + Number(task.reward) + ' reward'}\"");
+  });
+});
+
 describe("Task Center XSS Sanitization Security", () => {
   const fs = require("fs");
   const taskCenterCode = fs.readFileSync("task-center.js", "utf8");

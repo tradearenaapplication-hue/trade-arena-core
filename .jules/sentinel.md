@@ -33,7 +33,7 @@
 **Learning:** Dynamic agent metadata stored in state or local storage can serve as DOM XSS sinks if rendered directly via template literals into `innerHTML`.
 **Prevention:** Always define an `escapeHTML` helper and wrap all dynamic text/metadata fields before rendering HTML templates into DOM containers.
 
-## 2026-10-06 - [MEDIUM] Unhandled ReferenceError in Sanitized DOM Template
-**Vulnerability:** In `elo-tournament-engine.js`, `renderEloArena` referenced `${safeRating}` in the HTML template string without assigning `const safeRating = escapeHTML(data.rating)`, causing a runtime `ReferenceError` during DOM rendering.
-**Learning:** When retrofitting XSS sanitization (`escapeHTML`) across dynamic template literals, missing variable declarations in sanitization assignments cause runtime UI rendering crashes.
-**Prevention:** Ensure unit tests simulate rendering of sanitized DOM components to verify all sanitized template variables are properly declared and in scope.
+## 2026-10-06 - [HIGH] Direct Client-Side LLM Browser Access & Key Exposure
+**Vulnerability:** In `index.html`, `sendVoiceCommand` used direct browser `fetch` requests to `https://api.anthropic.com/v1/messages` with `anthropic-dangerous-direct-browser-access: true`, exposing client-side API key handling and bypassing backend rate limits.
+**Learning:** Features added directly in frontend templates often bypass established backend proxies (`/api/claude`), introducing dangerous direct browser headers and removing server-side rate limits and validation.
+**Prevention:** Route all frontend AI and LLM requests exclusively through backend proxy endpoints protected by rate limiting (`aiLimiter`) and server-side secret management.

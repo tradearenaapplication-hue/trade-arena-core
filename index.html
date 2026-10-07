@@ -777,7 +777,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </div>
     </div>
   </div>
-  <p id="cStatus" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
+  <p id="cStatus" role="status" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--cyan);text-align:center;transition:all .3s"></p>
   <div class="setup-note">
     <strong>Optional: Anthropic API Key</strong> — enables full Claude AI agents. Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
     <input type="password" id="apiKeyInput" aria-label="Anthropic API Key" placeholder="sk-ant-api03-..." style="width:100%;margin-top:5px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);color:var(--cyan);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px;" oninput="if(this.value.trim().startsWith('sk-'))window._userApiKey=this.value.trim()">
@@ -819,7 +819,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
 
     <!-- Error State -->
-    <div id="depositError" style="background:rgba(255,45,120,.07);border:1px solid rgba(255,45,120,.2);border-radius:8px;padding:10px;color:var(--hot);display:none;">
+    <div id="depositError" role="alert" aria-live="assertive" style="background:rgba(255,45,120,.07);border:1px solid rgba(255,45,120,.2);border-radius:8px;padding:10px;color:var(--hot);display:none;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
@@ -960,7 +960,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model">⚡ OPTIMIZED</button>
       <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
     </div>
-    <div class="bus-status" id="busStatus"></div>
+    <div class="bus-status" id="busStatus" role="status" aria-live="polite"></div>
   </div>
 
   <!-- ★ AGENT AUDIT PANEL ★ -->
@@ -1229,7 +1229,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <input type="text" id="staffInput" aria-label="Ask staff a question" placeholder="I lost money on that last trade, why?" onkeydown="if(event.key==='Enter') sendStaffQuery()" style="flex:1; background:var(--bg); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:10px;">
           <button onclick="sendStaffQuery()" style="background:var(--cyan); color:#000; border:none; border-radius:6px; padding:0 15px; font-family:'Bungee'; font-size:10px; cursor:pointer;">ASK</button>
         </div>
-        <div id="staffResponse" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
+        <div id="staffResponse" role="status" aria-live="polite" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
       </div>
     </div>
   </div>
@@ -1263,7 +1263,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <span class="cpanel-toggle" id="taskToggle">▼ EXPAND</span>
     </div>
     <div class="cpanel-body" id="taskBody">
-      <button id="claimFaucetBtn" onclick="claimFaucet()" style="width:100%; padding:12px; margin-bottom:15px; background:linear-gradient(90deg, var(--gold), var(--amber)); border:none; border-radius:8px; font-family:'Bungee'; font-size:12px; cursor:pointer; box-shadow:0 0 15px rgba(255,215,0,0.3)">
+      <button id="claimFaucetBtn" onclick="claimFaucet()" aria-label="Claim $50 starting capital" style="width:100%; padding:12px; margin-bottom:15px; background:linear-gradient(90deg, var(--gold), var(--amber)); border:none; border-radius:8px; font-family:'Bungee'; font-size:12px; cursor:pointer; box-shadow:0 0 15px rgba(255,215,0,0.3)">
         CLAIM $50 STARTING CAPITAL
       </button>
       <div id="taskCenterRows"></div>
@@ -3450,7 +3450,7 @@ function renderBot(bot){
         <div class="m-dd-section">
           <div class="m-dd-label">Trade Amount</div>
           <div class="m-dd-bets" id="mbets-${bot.id}">
-            ${[0.10,0.25,0.50,1.00,2.00,5.00,20.00,100.00].map(v=>`<button class="m-dd-bet${v===1.00?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`).join('')}
+            ${[0.10,0.25,0.50,1.00,2.00,5.00,20.00,100.00].map(v=>`<button class="m-dd-bet${v===1.00?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})" aria-pressed="${v===1.00?'true':'false'}" aria-label="Set trade amount to $${v%1===0?v.toFixed(0):v.toFixed(2)} for Bot #${bot.id}">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`).join('')}
           </div>
           <div class="m-dd-custom">
             <input type="number" id="mcustom-${bot.id}" aria-label="Custom trade amount for Bot #${bot.id} in dollars" placeholder="Custom $" min="0.01" step="0.01">
@@ -3554,7 +3554,11 @@ function setBet(id,amt){
   if(isNaN(amt)||amt<0.01) return;
   bot.bet=amt;
   // highlight matching preset, clear others
-  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>b.classList.toggle('on',parseFloat(b.dataset.bet)===amt));
+  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>{
+    const isMatch=parseFloat(b.dataset.bet)===amt;
+    b.classList.toggle('on',isMatch);
+    b.setAttribute('aria-pressed',isMatch?'true':'false');
+  });
   // update display
   const disp=document.getElementById('mbetdisp-'+id);
   if(disp) disp.innerHTML=`$${amt%1===0?amt.toFixed(0):amt.toFixed(2)} <span>per trade</span>`;
@@ -3566,6 +3570,7 @@ function setCustomBet(id){
   inp.style.borderColor='';
   setBet(id,val);
   inp.value='';
+  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>b.setAttribute('aria-pressed','false'));
 }
 function toggleBotSettings(id){
   const drop=document.getElementById('mdrop-'+id);
@@ -5722,9 +5727,8 @@ async function sendVoiceCommand() {
 
     status.textContent = 'Agent Thinking...';
 
-    // Real LLM AI Floor Manager
-    const apiKey = getApiKey();
-  const systemPrompt = `You are the AI Floor Manager for Trade Arena. You have FULL AGENCY over the trading floor.
+    // Real LLM AI Floor Manager (Proxied securely through backend /api/claude)
+    const systemPrompt = `You are the AI Floor Manager for Trade Arena. You have FULL AGENCY over the trading floor.
 Your goal is to assist the user in managing their fleet of ${bots.length} trading bots.
 
 CURRENT STATE:
@@ -5753,34 +5757,27 @@ Respond in JSON format:
 
   let aiResponse;
 
-  if (!apiKey) {
-    // Fallback if no API key
+  try {
+    const res = await fetch('/api/claude', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: `USER COMMAND: ${cmd}\n\n${systemPrompt}` }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    aiResponse = JSON.parse((data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim());
+  } catch (e) {
+    console.error('Floor Manager LLM Error:', e);
     aiResponse = {
-      reply: "I'm operating in rule-based fallback mode (no API key). " + (cmd.toLowerCase().includes('balance') ? `Your balance is $${balance.toFixed(2)}.` : "How can I help with the fleet?"),
+      reply: "I'm operating in rule-based fallback mode. " + (cmd.toLowerCase().includes('balance') ? `Your balance is $${balance.toFixed(2)}.` : "How can I help with the fleet?"),
       action: cmd.toLowerCase().includes('stop') ? 'EMERGENCY_STOP' : 'NONE'
     };
-  } else {
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-haiku-20240307',
-          max_tokens: 300,
-          messages: [{ role: 'user', content: `USER COMMAND: ${cmd}\n\n${systemPrompt}` }]
-        })
-      });
-      const data = await res.json();
-      aiResponse = JSON.parse((data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim());
-    } catch (e) {
-      console.error('Floor Manager LLM Error:', e);
-      aiResponse = { reply: "I'm having trouble connecting to my cognitive core, but I'm still monitoring the telemetry.", action: 'NONE' };
-    }
   }
 
   // Handle Actions

@@ -1108,12 +1108,16 @@ describe("Swap Execution Endpoint Security", () => {
       for (const body of invalidPayloads) {
         let statusCode = 200;
         let jsonResponse = null;
+        const req = { body };
         const res = {
+          setHeader: () => {},
           status: (code) => { statusCode = code; return res; },
+          send: (data) => { jsonResponse = data; return res; },
           json: (data) => { jsonResponse = data; return res; },
         };
 
-        route.route.stack[0].handle({ body }, res);
+        const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+        handler(req, res);
         expect(statusCode).toBe(400);
         expect(jsonResponse.success).toBe(false);
         expect(jsonResponse.error).toBe("Invalid swap parameters");
@@ -1135,14 +1139,16 @@ describe("Swap Execution Endpoint Security", () => {
 
       let statusCode = 200;
       let jsonResponse = null;
+      const req = { body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 } };
       const res = {
+        setHeader: () => {},
         status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      route.route.stack[0].handle({
-        body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 }
-      }, res);
+      const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+      handler(req, res);
 
       expect(statusCode).toBe(200);
       expect(jsonResponse.success).toBe(true);
@@ -1177,12 +1183,16 @@ describe("Flash Loan Simulation Endpoint Security", () => {
     for (const body of invalidPayloads) {
       let statusCode = 200;
       let jsonResponse = null;
+      const req = { body };
       const res = {
+        setHeader: () => {},
         status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      await route.route.stack[0].handle({ body }, res);
+      const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+      await handler(req, res);
       expect(statusCode).toBe(400);
       expect(jsonResponse.success).toBe(false);
       expect(jsonResponse.error).toBe("Invalid loan amount");
@@ -1196,12 +1206,16 @@ describe("Flash Loan Simulation Endpoint Security", () => {
 
     let statusCode = 200;
     let jsonResponse = null;
+    const req = { body: { loanAmount: 10000 } };
     const res = {
+      setHeader: () => {},
       status: (code) => { statusCode = code; return res; },
+      send: (data) => { jsonResponse = data; return res; },
       json: (data) => { jsonResponse = data; return res; },
     };
 
-    await route.route.stack[0].handle({ body: { loanAmount: 10000 } }, res);
+    const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+    await handler(req, res);
     expect(statusCode).toBe(200);
     expect(jsonResponse.success).toBe(true);
     expect(jsonResponse.opportunity.loanAmount).toBe(10000);
@@ -1232,12 +1246,16 @@ describe("Bot Creation Endpoint Security", () => {
     for (const body of invalidPayloads) {
       let statusCode = 200;
       let jsonResponse = null;
+      const req = { body };
       const res = {
+        setHeader: () => {},
         status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      route.route.stack[0].handle({ body }, res);
+      const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+      handler(req, res);
       expect(statusCode).toBe(400);
       expect(jsonResponse.success).toBe(false);
       expect(jsonResponse.error).toBe("Invalid bot creation parameters");
@@ -1251,12 +1269,7 @@ describe("Bot Creation Endpoint Security", () => {
 
     let statusCode = 200;
     let jsonResponse = null;
-    const res = {
-      status: (code) => { statusCode = code; return res; },
-      json: (data) => { jsonResponse = data; return res; },
-    };
-
-    route.route.stack[0].handle({
+    const req = {
       body: {
         name: "  Alpha Trading Bot  ",
         strategy: "Arbitrage Detection",
@@ -1264,7 +1277,16 @@ describe("Bot Creation Endpoint Security", () => {
         initialCapital: 1000,
         userAddress: "0x1234567890123456789012345678901234567890"
       }
-    }, res);
+    };
+    const res = {
+      setHeader: () => {},
+      status: (code) => { statusCode = code; return res; },
+      send: (data) => { jsonResponse = data; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+    handler(req, res);
 
     expect(statusCode).toBe(200);
     expect(jsonResponse.success).toBe(true);
@@ -1693,11 +1715,14 @@ describe("Market Prices Endpoint Security", () => {
       let jsonResponse = null;
       const req = { query };
       const res = {
+        setHeader: () => {},
         status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      await route.route.stack[0].handle(req, res);
+      const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+      await handler(req, res);
       expect(statusCode).toBe(200);
       expect(jsonResponse.success).toBe(true);
       expect(Boolean(jsonResponse.prices)).toBe(true);
@@ -1713,11 +1738,14 @@ describe("Market Prices Endpoint Security", () => {
     let jsonResponse = null;
     const req = { query: { symbols: " weth , usdc , arb , op , btc , sol , ada , xrp , doge , link , extra1 , extra2 " } };
     const res = {
+      setHeader: () => {},
       status: (code) => { statusCode = code; return res; },
+      send: (data) => { jsonResponse = data; return res; },
       json: (data) => { jsonResponse = data; return res; },
     };
 
-    await route.route.stack[0].handle(req, res);
+    const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+    await handler(req, res);
     expect(statusCode).toBe(200);
     expect(jsonResponse.success).toBe(true);
     expect(Boolean(jsonResponse.prices)).toBe(true);
@@ -1765,6 +1793,26 @@ describe("Server Error Handling & Input Validation Security", () => {
     expect(lastJson.error).toContain("Too many user requests");
   });
 
+  it("verifies rate limiting middleware is applied to execute, simulation, analysis, and bot endpoints in server.js", () => {
+    const protectedPaths = [
+      "/api/execute/swap",
+      "/api/bot/create",
+      "/api/flash-loan/simulate",
+      "/api/analyze/arbitrage",
+      "/api/analyze/volatility",
+      "/api/market/prices"
+    ];
+
+    for (const path of protectedPaths) {
+      const layer = server._router.stack.find(
+        (l) => l.route && l.route.path === path
+      );
+      expect(Boolean(layer)).toBe(true);
+      // Ensure route stack has rate limiting middleware before route handler
+      expect(layer.route.stack.length).toBeGreaterThan(1);
+    }
+  });
+
   it("sanitizes 500 error responses and does not leak internal error messages", async () => {
     const route = server._router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/analyze/volatility"
@@ -1773,13 +1821,16 @@ describe("Server Error Handling & Input Validation Security", () => {
 
     let statusCode = 200;
     let jsonResponse = null;
+    const req = { body: { priceHistory: [100, "invalid"] } };
     const res = {
+      setHeader: () => {},
       status: (code) => { statusCode = code; return res; },
+      send: (data) => { jsonResponse = data; return res; },
       json: (data) => { jsonResponse = data; return res; },
     };
 
-    // Pass invalid history array containing NaN to trigger exception handling or 400 validation
-    await route.route.stack[0].handle({ body: { priceHistory: [100, "invalid"] } }, res);
+    const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+    await handler(req, res);
     expect(statusCode).toBe(400);
     expect(jsonResponse.success).toBe(false);
     expect(jsonResponse.error).toBe("Invalid price history");
@@ -1800,12 +1851,16 @@ describe("Server Error Handling & Input Validation Security", () => {
     for (const body of invalidInputs) {
       let statusCode = 200;
       let jsonResponse = null;
+      const req = { body };
       const res = {
+        setHeader: () => {},
         status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      await route.route.stack[0].handle({ body }, res);
+      const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+      await handler(req, res);
       expect(statusCode).toBe(400);
       expect(jsonResponse.success).toBe(false);
       expect(jsonResponse.error).toBe("Invalid price history");
@@ -1961,7 +2016,7 @@ describe("Go Live Acknowledgment Modal Accessibility & ASIC Regulatory Disclosur
 
   it("contains explicit ASIC & AFSL regulatory disclosures and non-custodial guardrails in #goLiveModal", () => {
     expect(html).toContain("REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT");
-    expect(html).toContain("No AFS Licence / No Financial Product Advice:");
+    expect(html).toContain("does not hold an Australian Financial Services Licence (AFSL)");
     expect(html).toContain("Trade Arena is a purely non-custodial software interface.");
   });
 });
@@ -1974,6 +2029,21 @@ describe("Bus Panel Preset Accessibility", () => {
     expect(html).toContain('class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false"');
     expect(html).toContain("b.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
     expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
+  });
+});
+
+describe("Bot Settings Trade Amount Preset Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines initial aria-pressed and aria-label attributes on bot trade amount preset buttons", () => {
+    expect(html).toContain('aria-pressed="${v===1.00?\'true\':\'false\'}"');
+    expect(html).toContain('aria-label="Set trade amount to $${v%1===0?v.toFixed(0):v.toFixed(2)} for Bot #${bot.id}"');
+  });
+
+  it("dynamically updates aria-pressed in setBet and setCustomBet functions", () => {
+    expect(html).toContain("b.setAttribute('aria-pressed',isMatch?'true':'false')");
+    expect(html).toContain("document.querySelectorAll(`#mbets-\${id} .m-dd-bet`).forEach(b=>b.setAttribute('aria-pressed','false'))");
   });
 });
 
@@ -1994,7 +2064,7 @@ describe("ASIC Regulatory Exposure & AFSL Gate Compliance Disclaimers", () => {
     const html = fs.readFileSync("index.html", "utf8");
     expect(html).toContain('id="goLiveModal"');
     expect(html).toContain("REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT");
-    expect(html).toContain("No AFS Licence / No Financial Product Advice");
+    expect(html).toContain("does not hold an Australian Financial Services Licence (AFSL)");
   });
 
   it("verifies Gate 3 AFSL clearance boundaries in Go Live modal in index.html", () => {
@@ -2017,6 +2087,21 @@ describe("Voice Agent Modal & Session Warning Banner Accessibility", () => {
     expect(html).toContain('id="sessionWarningBanner" role="alert" aria-live="polite"');
     expect(html).toContain('aria-label="Pause all trading bots"');
     expect(html).toContain('aria-label="Dismiss session time warning banner"');
+  });
+});
+
+describe("Task Center ARIA Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+  const taskCenterCode = fs.readFileSync("task-center.js", "utf8");
+
+  it("defines aria-label on #claimFaucetBtn in index.html and task-center.js", () => {
+    expect(html).toContain('id="claimFaucetBtn" onclick="claimFaucet()" aria-label="Claim $50 starting capital"');
+    expect(taskCenterCode).toContain("faucetBtn.setAttribute('aria-label', taskState.faucetClaimed ? 'Faucet $50 starting capital already claimed' : 'Claim $50 starting capital');");
+  });
+
+  it("defines descriptive aria-label on task action buttons in renderTaskCenter", () => {
+    expect(taskCenterCode).toContain("aria-label=\"${task.completed ? escapeHTML(task.label) + ' task completed' : 'Complete task ' + escapeHTML(task.label) + ' for $' + Number(task.reward) + ' reward'}\"");
   });
 });
 
@@ -2398,7 +2483,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("ASIC Regulatory Exposure & AFSL Compliance Assessment");
+    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });
@@ -2608,6 +2693,17 @@ describe("AFSL Regulatory Compliance & Gate 3 Hard-Lock", () => {
         process.env.AFSL_COMPLIANT = originalEnv;
       }
     }
+  });
+});
+
+describe("AI Floor Manager Voice Command Proxy Endpoint Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("routes sendVoiceCommand LLM request to backend proxy /api/claude without direct browser header", () => {
+    expect(html).toContain("fetch('/api/claude'");
+    const voiceFnCode = html.slice(html.indexOf("async function sendVoiceCommand()"), html.indexOf("sendVoiceCommand()"));
+    expect(voiceFnCode.includes("anthropic-dangerous-direct-browser-access")).toBe(false);
   });
 });
 

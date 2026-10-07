@@ -191,6 +191,10 @@ function renderEloArena() {
     const container = typeof document !== 'undefined' ? document.getElementById('eloArenaRows') : null;
     if (!container) return;
 
+    // ⚡ OPTIMIZATION: Skip expensive Object.entries sorting, string allocations and DOM overwrites when panel is closed
+    const body = typeof document !== 'undefined' ? document.getElementById('eloBody') : null;
+    if (body && body.classList && typeof body.classList.contains === 'function' && !body.classList.contains('open')) return;
+
     const sorted = Object.entries(eloState.agents).sort((a, b) => b[1].rating - a[1].rating);
 
     container.innerHTML = sorted.map(([key, data]) => {

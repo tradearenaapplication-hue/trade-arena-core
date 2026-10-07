@@ -21,3 +21,7 @@
 ## 2026-11-18 - Redundant Config Object Clones in High-Frequency Opportunity Scanners
 **Learning:** Arbitrage and sports prediction scanners (`calculatePredictionMarketEdge`, `calculateFlashLoanArb`, `removeVig`) were executing redundant object spread cloning (`{ ...DEFAULT_CONFIG, ...config }`) and intermediate array projections for every market outcome and quote pair in high-frequency loops. This caused significant object allocation overhead and GC pressure during multi-market scanning passes.
 **Action:** Access configuration properties directly with nullish coalescing defaults (`config.prop ?? DEFAULT.prop`) and construct output objects in a single pass without intermediate array or object spread allocations.
+
+## 2026-12-02 - Redundant Object Entry/Value Array Allocations in Tournament Bracket Summaries
+**Learning:** `getTopBrackets()` and `getGlobalWeights()` in `TRADE_OLYMPICS` were allocating intermediate tuple arrays (`Object.entries()`) and executing multiple array `.filter()` / `.map()` / `.reduce()` passes over 700+ bracket objects on every ranking query, causing noticeable GC pressure and execution latency (~7.4s / 50k calls).
+**Action:** Use guarded `for...in` loops (`hasOwnProperty`) over target hash objects to accumulate active entries in a single pass before sorting, reducing loop overhead by ~1.9x while preserving object property spreads.

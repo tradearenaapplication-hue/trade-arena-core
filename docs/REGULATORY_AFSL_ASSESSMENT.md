@@ -3,7 +3,7 @@
 **Platform:** Trade Arena
 **Target Jurisdiction:** Australia (Australian Securities and Investments Commission - ASIC)
 **Applicable Legislation:** *Corporations Act 2001* (Cth), ASIC Regulatory Guides (RG 104, RG 175, RG 240, RG 259)
-**Status:** Pre-Gate 3 Regulatory Compliance Assessment
+**Gate 3 Status:** Pre-Gate 3 Regulatory Compliance Assessment
 
 ---
 
@@ -57,7 +57,7 @@ While regulatory classification is the legal existential risk, public reputation
 
 ---
 
-## 4. Phase Architecture & Gate 3 Clearance Boundary
+## 4. Phase Architecture, Gate 3 Status & Gate 3 Clearance Boundary
 
 To protect the business and maintain 100% legal compliance, Trade Arena enforces strict operational boundaries across product launch gates:
 

@@ -708,7 +708,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     <span>5 AI agents · Real prices · Self-learning · Politician filings</span>
   </div>
   <div id="regulatoryNoticeBanner" style="width:100%;max-width:440px;padding:8px 12px;background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.25);border-radius:8px;font-size:9px;color:var(--dim);line-height:1.5;text-align:center;">
-    ⚠️ <strong>ASIC REGULATORY NOTICE & NON-CUSTODIAL DISCLOSURE:</strong> Trade Arena is a non-custodial software interface and does not hold an Australian Financial Services Licence (AFSL) or provide financial product advice under Corporations Act 2001 & ASIC regulations. Trading bots execute automated user parameters. Crypto trading carries substantial risk of financial loss.
+    ⚠️ <strong>ASIC REGULATORY NOTICE & NON-CUSTODIAL DISCLOSURE:</strong> Trade Arena is a non-custodial software interface and does not hold an Australian Financial Services Licence (AFSL) or provide financial product advice under s 766B of the Corporations Act 2001. Trading bots execute automated user parameters. Crypto trading carries substantial risk of financial loss.
   </div>
 <div class="login-card">
     <div class="login-card-hd">SIGN IN TO THE FLOOR</div>
@@ -757,11 +757,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <span>⚠️</span> REGULATORY DISCLOSURE & NON-CUSTODIAL RISK ACKNOWLEDGMENT
         </div>
         <div style="font-size:11px;line-height:1.6;color:#ccc;margin-bottom:16px;">
-          <p style="margin-bottom:10px;">Before proceeding to Live Mode, please review and confirm the following legal and regulatory disclosures:</p>
+          <p style="margin-bottom:10px;"><strong>ASIC & AFSL Regulatory Status:</strong> Trade Arena is currently a technical software demonstration tool undergoing legal and AFSL assessment under Australian Corporations Act regulations prior to Gate 3 real-money clearance. Trade Arena never takes custody of real user funds.</p>
+          <p style="margin-bottom:10px;">Before proceeding to Live Mode, please review and confirm the following legal and regulatory disclosures (under s 766B of the Corporations Act 2001):</p>
           <ul style="padding-left:18px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:10px;">
-            <li><strong>ASIC & AFSL Regulatory Status:</strong> Trade Arena is currently a technical software demonstration tool undergoing legal and AFSL assessment under Australian Corporations Act regulations prior to Gate 3 real-money clearance. Trade Arena never takes custody of real user funds.</li>
-            <li><strong>No AFS Licence / No Financial Product Advice:</strong> Trade Arena does not hold an Australian Financial Services Licence (AFSL) under s 766B of the Corporations Act 2001 and does not provide financial advice or manage assets under ASIC regulations. All automated strategies and signals are software tools operated directly by you.</li>
-            <li><strong>Non-Custodial Interface:</strong> Trade Arena is a purely non-custodial software interface. You retain sole custody and full control of your private keys and wallet at all times.</li>
+            <li><strong>No AFS Licence / No Financial Product Advice:</strong> Trade Arena is a purely non-custodial software interface. Trade Arena is currently a technical software demonstration tool undergoing legal and AFSL assessment under Australian Corporations Act regulations prior to Gate 3 real-money clearance. Trade Arena does not hold an Australian Financial Services Licence (AFSL) and does not provide financial product advice under s 766B of the Corporations Act 2001.</li>
+            <li><strong>Non-Custodial Interface:</strong> Trade Arena is a purely non-custodial software interface. Trade Arena never takes custody of real user funds. You retain sole custody and full control of your private keys and wallet at all times.</li>
             <li><strong>Automated Execution & Market Risk:</strong> Automated bots execute trade orders directly on your self-sovereign wallet according to your parameters. Crypto trading is high-risk and volatile; you may lose all deposited funds. Past performance is not indicative of future results.</li>
             <li><strong>User Responsibility & Risk Controls:</strong> You are solely responsible for setting appropriate safety controls, daily loss limits, and monitoring your positions.</li>
           </ul>
@@ -837,6 +837,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 <div id="mainApp">
 
   <!-- Header -->
+  <div id="regulatoryNoticeBanner" style="background:rgba(255,179,0,0.1);border:1px solid var(--amber);color:var(--amber);padding:6px 12px;border-radius:8px;font-size:10px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+    <span>⚠️ <strong>ASIC REGULATORY NOTICE:</strong> Trade Arena operates in educational/simulation paper trading mode prior to Australian Financial Services Licence (AFSL) Gate 3 clearance under the Corporations Act 2001.</span>
+  </div>
   <div class="global-header">
     <div class="gh-avatar" id="ghAvatar">👤</div>
     <div style="flex:1;overflow:hidden;min-width:60px">
@@ -1260,7 +1263,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <span class="cpanel-toggle" id="taskToggle">▼ EXPAND</span>
     </div>
     <div class="cpanel-body" id="taskBody">
-      <button id="claimFaucetBtn" onclick="claimFaucet()" style="width:100%; padding:12px; margin-bottom:15px; background:linear-gradient(90deg, var(--gold), var(--amber)); border:none; border-radius:8px; font-family:'Bungee'; font-size:12px; cursor:pointer; box-shadow:0 0 15px rgba(255,215,0,0.3)">
+      <button id="claimFaucetBtn" onclick="claimFaucet()" aria-label="Claim $50 starting capital" style="width:100%; padding:12px; margin-bottom:15px; background:linear-gradient(90deg, var(--gold), var(--amber)); border:none; border-radius:8px; font-family:'Bungee'; font-size:12px; cursor:pointer; box-shadow:0 0 15px rgba(255,215,0,0.3)">
         CLAIM $50 STARTING CAPITAL
       </button>
       <div id="taskCenterRows"></div>
@@ -3447,7 +3450,7 @@ function renderBot(bot){
         <div class="m-dd-section">
           <div class="m-dd-label">Trade Amount</div>
           <div class="m-dd-bets" id="mbets-${bot.id}">
-            ${[0.10,0.25,0.50,1.00,2.00,5.00,20.00,100.00].map(v=>`<button class="m-dd-bet${v===1.00?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`).join('')}
+            ${[0.10,0.25,0.50,1.00,2.00,5.00,20.00,100.00].map(v=>`<button class="m-dd-bet${v===1.00?' on':''}" data-bet="${v}" onclick="setBet(${bot.id},${v})" aria-pressed="${v===1.00?'true':'false'}" aria-label="Set trade amount to $${v%1===0?v.toFixed(0):v.toFixed(2)} for Bot #${bot.id}">$${v%1===0?v.toFixed(0):v.toFixed(2)}</button>`).join('')}
           </div>
           <div class="m-dd-custom">
             <input type="number" id="mcustom-${bot.id}" aria-label="Custom trade amount for Bot #${bot.id} in dollars" placeholder="Custom $" min="0.01" step="0.01">
@@ -3551,7 +3554,11 @@ function setBet(id,amt){
   if(isNaN(amt)||amt<0.01) return;
   bot.bet=amt;
   // highlight matching preset, clear others
-  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>b.classList.toggle('on',parseFloat(b.dataset.bet)===amt));
+  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>{
+    const isMatch=parseFloat(b.dataset.bet)===amt;
+    b.classList.toggle('on',isMatch);
+    b.setAttribute('aria-pressed',isMatch?'true':'false');
+  });
   // update display
   const disp=document.getElementById('mbetdisp-'+id);
   if(disp) disp.innerHTML=`$${amt%1===0?amt.toFixed(0):amt.toFixed(2)} <span>per trade</span>`;
@@ -3563,6 +3570,7 @@ function setCustomBet(id){
   inp.style.borderColor='';
   setBet(id,val);
   inp.value='';
+  document.querySelectorAll(`#mbets-${id} .m-dd-bet`).forEach(b=>b.setAttribute('aria-pressed','false'));
 }
 function toggleBotSettings(id){
   const drop=document.getElementById('mdrop-'+id);
@@ -5719,9 +5727,8 @@ async function sendVoiceCommand() {
 
     status.textContent = 'Agent Thinking...';
 
-    // Real LLM AI Floor Manager
-    const apiKey = getApiKey();
-  const systemPrompt = `You are the AI Floor Manager for Trade Arena. You have FULL AGENCY over the trading floor.
+    // Real LLM AI Floor Manager (Proxied securely through backend /api/claude)
+    const systemPrompt = `You are the AI Floor Manager for Trade Arena. You have FULL AGENCY over the trading floor.
 Your goal is to assist the user in managing their fleet of ${bots.length} trading bots.
 
 CURRENT STATE:
@@ -5750,34 +5757,27 @@ Respond in JSON format:
 
   let aiResponse;
 
-  if (!apiKey) {
-    // Fallback if no API key
+  try {
+    const res = await fetch('/api/claude', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: `USER COMMAND: ${cmd}\n\n${systemPrompt}` }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    aiResponse = JSON.parse((data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim());
+  } catch (e) {
+    console.error('Floor Manager LLM Error:', e);
     aiResponse = {
-      reply: "I'm operating in rule-based fallback mode (no API key). " + (cmd.toLowerCase().includes('balance') ? `Your balance is $${balance.toFixed(2)}.` : "How can I help with the fleet?"),
+      reply: "I'm operating in rule-based fallback mode. " + (cmd.toLowerCase().includes('balance') ? `Your balance is $${balance.toFixed(2)}.` : "How can I help with the fleet?"),
       action: cmd.toLowerCase().includes('stop') ? 'EMERGENCY_STOP' : 'NONE'
     };
-  } else {
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-haiku-20240307',
-          max_tokens: 300,
-          messages: [{ role: 'user', content: `USER COMMAND: ${cmd}\n\n${systemPrompt}` }]
-        })
-      });
-      const data = await res.json();
-      aiResponse = JSON.parse((data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim());
-    } catch (e) {
-      console.error('Floor Manager LLM Error:', e);
-      aiResponse = { reply: "I'm having trouble connecting to my cognitive core, but I'm still monitoring the telemetry.", action: 'NONE' };
-    }
   }
 
   // Handle Actions

@@ -191,6 +191,10 @@ function renderEloArena() {
     const container = typeof document !== 'undefined' ? document.getElementById('eloArenaRows') : null;
     if (!container) return;
 
+    // ⚡ OPTIMIZATION: Skip expensive Object.entries sorting, string allocations and DOM overwrites when panel is closed
+    const body = typeof document !== 'undefined' ? document.getElementById('eloBody') : null;
+    if (body && body.classList && typeof body.classList.contains === 'function' && !body.classList.contains('open')) return;
+
     const sorted = Object.entries(eloState.agents).sort((a, b) => b[1].rating - a[1].rating);
 
     container.innerHTML = sorted.map(([key, data]) => {
@@ -201,6 +205,7 @@ function renderEloArena() {
         const safeKey = escapeHTML(key.toUpperCase());
         const safeIcon = escapeHTML(data.icon);
         const safeRank = escapeHTML(rawRank);
+        const safeRating = Math.round(data.rating || 0);
 
         return `
             <div class="elo-row" style="display:flex; align-items:center; gap:10px; padding:8px; border-bottom:1px solid var(--border)">
@@ -210,7 +215,7 @@ function renderEloArena() {
                     <div style="font-size:8px; color:var(--dim)">WR: ${wr}% | Matches: ${data.matches}</div>
                 </div>
                 <div style="text-align:right">
-                    <div style="font-family:'Oswald'; font-size:16px; color:var(--gold)">${data.rating}</div>
+                    <div style="font-family:'Oswald'; font-size:16px; color:var(--gold)">${safeRating}</div>
                     <div style="font-size:7px; color:var(--dim)">ELO RATING</div>
                 </div>
             </div>

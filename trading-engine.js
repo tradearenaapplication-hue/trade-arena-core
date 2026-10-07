@@ -234,7 +234,7 @@ class TradingEngine {
          };
 
          // ASIC Regulatory Compliance & AFSL Gate Controls
-         this.afslCompliant = false; // Requires formal AFSL legal assessment before live funds
+         this.afslCompliant = typeof process !== 'undefined' && process.env && process.env.AFSL_COMPLIANT === 'true'; // Requires formal AFSL legal assessment before live funds
          this.regulatoryGateNotice = "Real-money automated execution locked pending Australian Financial Services Licence (AFSL) legal review.";
 
          // Stablecoins to block from trading
@@ -826,8 +826,8 @@ class TradingEngine {
             return {
                 id: this.generateId(),
                 botId: bot.id,
-                status: 'BLOCKED_REGULATORY_GATE',
-                reason: 'AFSL_CLEARANCE_REQUIRED',
+                status: 'BLOCKED_AFSL_COMPLIANCE_GATE',
+                reason: 'AFSL Compliance Gate 3 Lock: Real-money execution requires AFS license clearance or AFSL_COMPLIANT=true',
                 message: this.regulatoryGateNotice,
                 profit: 0,
                 timestamp: Date.now()

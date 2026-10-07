@@ -1108,12 +1108,16 @@ describe("Swap Execution Endpoint Security", () => {
       for (const body of invalidPayloads) {
         let statusCode = 200;
         let jsonResponse = null;
+        const req = { body };
         const res = {
+          setHeader: () => {},
           status: (code) => { statusCode = code; return res; },
+          send: (data) => { jsonResponse = data; return res; },
           json: (data) => { jsonResponse = data; return res; },
         };
 
-        route.route.stack[0].handle({ body }, res);
+        const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+        handler(req, res);
         expect(statusCode).toBe(400);
         expect(jsonResponse.success).toBe(false);
         expect(jsonResponse.error).toBe("Invalid swap parameters");
@@ -1135,14 +1139,16 @@ describe("Swap Execution Endpoint Security", () => {
 
       let statusCode = 200;
       let jsonResponse = null;
+      const req = { body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 } };
       const res = {
+        setHeader: () => {},
         status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      route.route.stack[0].handle({
-        body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 }
-      }, res);
+      const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+      handler(req, res);
 
       expect(statusCode).toBe(200);
       expect(jsonResponse.success).toBe(true);
@@ -1177,12 +1183,16 @@ describe("Flash Loan Simulation Endpoint Security", () => {
     for (const body of invalidPayloads) {
       let statusCode = 200;
       let jsonResponse = null;
+      const req = { body };
       const res = {
+        setHeader: () => {},
         status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      await route.route.stack[0].handle({ body }, res);
+      const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+      await handler(req, res);
       expect(statusCode).toBe(400);
       expect(jsonResponse.success).toBe(false);
       expect(jsonResponse.error).toBe("Invalid loan amount");
@@ -1196,12 +1206,16 @@ describe("Flash Loan Simulation Endpoint Security", () => {
 
     let statusCode = 200;
     let jsonResponse = null;
+    const req = { body: { loanAmount: 10000 } };
     const res = {
+      setHeader: () => {},
       status: (code) => { statusCode = code; return res; },
+      send: (data) => { jsonResponse = data; return res; },
       json: (data) => { jsonResponse = data; return res; },
     };
 
-    await route.route.stack[0].handle({ body: { loanAmount: 10000 } }, res);
+    const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+    await handler(req, res);
     expect(statusCode).toBe(200);
     expect(jsonResponse.success).toBe(true);
     expect(jsonResponse.opportunity.loanAmount).toBe(10000);
@@ -1232,12 +1246,16 @@ describe("Bot Creation Endpoint Security", () => {
     for (const body of invalidPayloads) {
       let statusCode = 200;
       let jsonResponse = null;
+      const req = { body };
       const res = {
+        setHeader: () => {},
         status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      route.route.stack[0].handle({ body }, res);
+      const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+      handler(req, res);
       expect(statusCode).toBe(400);
       expect(jsonResponse.success).toBe(false);
       expect(jsonResponse.error).toBe("Invalid bot creation parameters");
@@ -1251,12 +1269,7 @@ describe("Bot Creation Endpoint Security", () => {
 
     let statusCode = 200;
     let jsonResponse = null;
-    const res = {
-      status: (code) => { statusCode = code; return res; },
-      json: (data) => { jsonResponse = data; return res; },
-    };
-
-    route.route.stack[0].handle({
+    const req = {
       body: {
         name: "  Alpha Trading Bot  ",
         strategy: "Arbitrage Detection",
@@ -1264,7 +1277,16 @@ describe("Bot Creation Endpoint Security", () => {
         initialCapital: 1000,
         userAddress: "0x1234567890123456789012345678901234567890"
       }
-    }, res);
+    };
+    const res = {
+      setHeader: () => {},
+      status: (code) => { statusCode = code; return res; },
+      send: (data) => { jsonResponse = data; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+
+    const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+    handler(req, res);
 
     expect(statusCode).toBe(200);
     expect(jsonResponse.success).toBe(true);
@@ -1693,11 +1715,14 @@ describe("Market Prices Endpoint Security", () => {
       let jsonResponse = null;
       const req = { query };
       const res = {
+        setHeader: () => {},
         status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      await route.route.stack[0].handle(req, res);
+      const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+      await handler(req, res);
       expect(statusCode).toBe(200);
       expect(jsonResponse.success).toBe(true);
       expect(Boolean(jsonResponse.prices)).toBe(true);
@@ -1713,11 +1738,14 @@ describe("Market Prices Endpoint Security", () => {
     let jsonResponse = null;
     const req = { query: { symbols: " weth , usdc , arb , op , btc , sol , ada , xrp , doge , link , extra1 , extra2 " } };
     const res = {
+      setHeader: () => {},
       status: (code) => { statusCode = code; return res; },
+      send: (data) => { jsonResponse = data; return res; },
       json: (data) => { jsonResponse = data; return res; },
     };
 
-    await route.route.stack[0].handle(req, res);
+    const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+    await handler(req, res);
     expect(statusCode).toBe(200);
     expect(jsonResponse.success).toBe(true);
     expect(Boolean(jsonResponse.prices)).toBe(true);
@@ -1765,6 +1793,26 @@ describe("Server Error Handling & Input Validation Security", () => {
     expect(lastJson.error).toContain("Too many user requests");
   });
 
+  it("verifies rate limiting middleware is applied to execute, simulation, analysis, and bot endpoints in server.js", () => {
+    const protectedPaths = [
+      "/api/execute/swap",
+      "/api/bot/create",
+      "/api/flash-loan/simulate",
+      "/api/analyze/arbitrage",
+      "/api/analyze/volatility",
+      "/api/market/prices"
+    ];
+
+    for (const path of protectedPaths) {
+      const layer = server._router.stack.find(
+        (l) => l.route && l.route.path === path
+      );
+      expect(Boolean(layer)).toBe(true);
+      // Ensure route stack has rate limiting middleware before route handler
+      expect(layer.route.stack.length).toBeGreaterThan(1);
+    }
+  });
+
   it("sanitizes 500 error responses and does not leak internal error messages", async () => {
     const route = server._router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/analyze/volatility"
@@ -1773,13 +1821,16 @@ describe("Server Error Handling & Input Validation Security", () => {
 
     let statusCode = 200;
     let jsonResponse = null;
+    const req = { body: { priceHistory: [100, "invalid"] } };
     const res = {
+      setHeader: () => {},
       status: (code) => { statusCode = code; return res; },
+      send: (data) => { jsonResponse = data; return res; },
       json: (data) => { jsonResponse = data; return res; },
     };
 
-    // Pass invalid history array containing NaN to trigger exception handling or 400 validation
-    await route.route.stack[0].handle({ body: { priceHistory: [100, "invalid"] } }, res);
+    const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+    await handler(req, res);
     expect(statusCode).toBe(400);
     expect(jsonResponse.success).toBe(false);
     expect(jsonResponse.error).toBe("Invalid price history");
@@ -1800,12 +1851,16 @@ describe("Server Error Handling & Input Validation Security", () => {
     for (const body of invalidInputs) {
       let statusCode = 200;
       let jsonResponse = null;
+      const req = { body };
       const res = {
+        setHeader: () => {},
         status: (code) => { statusCode = code; return res; },
+        send: (data) => { jsonResponse = data; return res; },
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      await route.route.stack[0].handle({ body }, res);
+      const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+      await handler(req, res);
       expect(statusCode).toBe(400);
       expect(jsonResponse.success).toBe(false);
       expect(jsonResponse.error).toBe("Invalid price history");

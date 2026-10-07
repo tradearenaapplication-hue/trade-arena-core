@@ -201,7 +201,7 @@ function renderEloArena() {
         const safeKey = escapeHTML(key.toUpperCase());
         const safeIcon = escapeHTML(data.icon);
         const safeRank = escapeHTML(rawRank);
-        const safeRating = escapeHTML(String(data.rating));
+        const safeRating = Math.round(data.rating || 0);
 
         return `
             <div class="elo-row" style="display:flex; align-items:center; gap:10px; padding:8px; border-bottom:1px solid var(--border)">

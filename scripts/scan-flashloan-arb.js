@@ -64,7 +64,25 @@ const QUOTER_ABI = [
 ];
 
 function whitelisted() {
-  return ['USDC', 'WETH', 'WBTC', 'CBBTC', 'PEPE', 'SOL']
+  // cbBTC is EXCLUDED pending resolution.
+  //
+  // Root cause found on-chain: the Uniswap cbBTC/USDC pool is CORRUPT, not
+  // merely thin. getReserves() reverts, symbol() returns null, liquidity is
+  // 2.3e12 against a MAX_INT128 of 1.7e38, and slot0.tick is an out-of-range
+  // garbage value. QuoterV2 still returns a confident quote from it — $84,7xx
+  // when BTC is ~$2,660 — and Aerodrome reports the same number, so the
+  // second-venue corroboration cannot separate "two corrupt sources" from a
+  // genuine price.
+  //
+  // Every self-consistency check passes it: stable across 3 order sizes
+  // (0.1% spread), 2 fee tiers, 2 pricing paths, and an external aggregator.
+  // This is the clearest example yet that consistency is not correctness.
+  //
+  // It stays excluded until a pool-health gate (reserves readable + real
+  // liquidity) replaces the agreement heuristic. Leaving it in means a
+  // provably-unusable market keeps contributing fabricated numbers to the
+  // recorded history.
+  return ['USDC', 'WETH', 'WBTC', 'PEPE', 'SOL']
     .map((s) => tokenManager.resolveToken(s))
     .filter(Boolean)
     .map((t) => ({ symbol: t.symbol, address: t.address, decimals: t.decimals }));
@@ -334,21 +352,20 @@ async function fetchUsdPrices(provider, quoter, blockTag, tokens, aeroCrossCheck
     // A numeric sanity band is NOT sufficient, and that is a lesson this
     // scanner learned the hard way.
     //
-    // Observed on live Base: WBTC priced at $77,996 and cbBTC at $84,438 while
-    // WETH was $2,660 — both roughly 30x too high, and both passing every
-    // "positive, finite, under 1e7" check. The fee-500 Uniswap pools for these
-    // wrappers are near-dead, and QuoterV2 returns a garbage quote from a
-    // one-sided pool rather than reverting.
+    // Observed on live Base: WBTC priced at $77,996 while WETH was $2,662, both
+    // passing every "positive, finite, under 1e7" check. QuoterV2 returns a
+    // confident quote from a broken pool rather than reverting, so a bound alone
+    // cannot catch it.
     //
-    // The general test is to price the token along TWO independent paths and
-    // require agreement:
+    // This first layer prices the token along TWO independent paths and
+    // requires agreement:
     //
     //     token -> USDC              (direct)
     //     token -> WETH -> USDC      (the path used above)
     //
-    // A wrong price corrupts both legs of the round-trip economics and then
-    // lands in the recorded history as fact, so a token whose two paths disagree
-    // is dropped rather than trusted.
+    // It catches pools that are broken in one direction only. It cannot catch a
+    // pool that is broken consistently - the second-venue check below exists
+    // for exactly that case.
     if (Number.isFinite(price)) {
       let direct = NaN;
       try {
@@ -375,39 +392,53 @@ async function fetchUsdPrices(provider, quoter, blockTag, tokens, aeroCrossCheck
 
     // ── SECOND-VENUE VALIDATION ──────────────────────────────────────
     // The cross-path check above cannot catch a pool that is wrong but
-    // CONSISTENTLY wrong, and cbBTC is exactly that case:
+    // CONSISTENTLY wrong, and cbBTC is exactly that case. Investigated to the
+    // root: the Uniswap cbBTC/USDC pool is CORRUPT, not merely thin.
     //
-    //     cbBTC $84,462   WETH $2,663   =>  31.7 WETH per cbBTC
+    //   getReserves()  -> reverts
+    //   symbol()       -> null
+    //   liquidity      -> 2.3e12, dust against a MAX_INT128 of 1.7e38
+    //   slot0.tick     -> 1.157e77, an out-of-range garbage value
     //
-    // BTC/ETH is ~1.0, so that is a 31x error - yet the cbBTC quote agrees
-    // with itself across three order sizes (0.1% spread), across two fee
-    // tiers, across two independent pricing paths, AND with an external
-    // aggregator. Every self-consistent check passes it.
+    // QuoterV2 nonetheless returns a confident quote from it ($84,412 when BTC
+    // is ~$2,662), and that quote agrees with itself across three order sizes,
+    // two fee tiers, two pricing paths and an external aggregator. Every
+    // self-consistency check passes a corrupt pool.
     //
-    // The only remaining independent witness is a different venue. The same
-    // principle as the cross-venue arb pass applies to price discovery: one
-    // venue cannot confirm its own price. If Aerodrome says a radically
-    // different number, one of them is unusable and refusing to guess is the
-    // honest move.
-    if (Number.isFinite(price) && aeroCrossCheck) {
+    // So: the only remaining independent witness is a DIFFERENT venue. The same
+    // principle as the cross-venue arb pass applies to price discovery - one
+    // venue cannot confirm its own price.
+    //
+    // Critically, a price that could NOT be corroborated is also not trusted.
+    // Previously an absent Aerodrome pool was treated as "check unavailable,
+    // keep the price", which is precisely how a dead Uniswap pool sailed
+    // through. Silence is not corroboration.
+    if (Number.isFinite(price)) {
+      let corroborated = false;
       try {
         const rawOut = await aeroCrossCheck(t, blockTag);
-        if (rawOut && rawOut.units > 0) {
-          const aeroPrice = rawOut.usdPerUnit;
-          if (Number.isFinite(aeroPrice) && aeroPrice > 0) {
-            const ratio = price / aeroPrice;
-            if (Math.abs(ratio - 1) > 0.5) {
-              console.log(
-                `  PRICE REJECTED ${t.symbol}: Uniswap $${price.toFixed(2)} vs ` +
-                  `Aerodrome $${aeroPrice.toFixed(2)} (${ratio.toFixed(2)}x apart). ` +
-                  `One venue is wrong and self-consistency cannot say which.`,
-              );
-              price = NaN;
-            }
+        if (rawOut && rawOut.units > 0 && rawOut.usdPerUnit > 0) {
+          corroborated = true;
+          const ratio = price / rawOut.usdPerUnit;
+          if (Math.abs(ratio - 1) > 0.5) {
+            console.log(
+              `  PRICE REJECTED ${t.symbol}: Uniswap $${price.toFixed(2)} vs ` +
+                `Aerodrome $${rawOut.usdPerUnit.toFixed(2)} (${ratio.toFixed(2)}x apart). ` +
+                `One venue is wrong and self-consistency cannot say which.`,
+            );
+            price = NaN;
           }
         }
       } catch (e) {
-        // No Aerodrome pool for this token - cross-check unavailable, keep the price.
+        corroborated = false; // no live Aerodrome pool for this token
+      }
+      if (!corroborated && Number.isFinite(price)) {
+        console.log(
+          `  PRICE REJECTED ${t.symbol}: $${price.toFixed(2)} could not be ` +
+            `corroborated on a second venue. A quote only one venue can produce ` +
+            `is not a price - it is a claim.`,
+        );
+        price = NaN;
       }
     }
 

@@ -5187,8 +5187,8 @@ function renderLog(){
     const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
     return`<div class="log-row">
       <div class="log-bot">#${t.botId}</div>
-      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
-      <div class="log-method">${t.method}</div>
+      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${escapeHTML(t.token)}</div>
+      <div class="log-method">${escapeHTML(t.method)}</div>
       <div class="log-entry">${ep}</div>
       <div class="log-exit">${xp}</div>
       <div class="log-pnl ${pnlCls}">${pnlStr}</div>

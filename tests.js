@@ -2483,7 +2483,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
+    expect(content).toContain("ASIC Regulatory Exposure & AFSL Compliance Assessment & Gate 3 Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });
@@ -2704,6 +2704,91 @@ describe("AI Floor Manager Voice Command Proxy Endpoint Security", () => {
     expect(html).toContain("fetch('/api/claude'");
     const voiceFnCode = html.slice(html.indexOf("async function sendVoiceCommand()"), html.indexOf("sendVoiceCommand()"));
     expect(voiceFnCode.includes("anthropic-dangerous-direct-browser-access")).toBe(false);
+  });
+});
+
+describe("Trade Ledger renderLog XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("uses escapeHTML when rendering token and method in renderLog in index.html", () => {
+    expect(html).toContain("${escapeHTML(t.token)}");
+    expect(html).toContain("${escapeHTML(t.method)}");
+  });
+
+  it("escapes malicious XSS payloads in token and method when rendering globalLog entries", () => {
+    const mockElement = (id) => {
+      let content = "";
+      return {
+        id,
+        set innerHTML(val) { content = val; },
+        get innerHTML() { return content; },
+        set textContent(val) { content = val; },
+        get textContent() { return content; }
+      };
+    };
+
+    const elements = {};
+    global.document = {
+      getElementById: (id) => {
+        if (!elements[id]) {
+          elements[id] = mockElement(id);
+        }
+        return elements[id];
+      }
+    };
+
+    global.escapeHTML = function(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    global.setVal = function(id, val) {
+      const el = global.document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    global.closedTrades = [];
+    global.globalLog = [
+      {
+        botId: 1,
+        status: 'closed',
+        isWin: true,
+        netPnl: 10.5,
+        entryPrice: 100,
+        exitPrice: 110,
+        costs: { total: 0.5 },
+        time: '12:00 PM',
+        token: "<script>alert('xss_token')</script>",
+        method: "<img src=x onerror=alert('xss_method')>"
+      }
+    ];
+
+    // Extract and run renderLog from index.html
+    const renderLogStart = html.indexOf("function renderLog(){");
+    const renderLogEnd = html.indexOf("function closeResult(", renderLogStart);
+    const renderLogCode = html.slice(renderLogStart, renderLogEnd);
+    const renderLogFn = new Function("closedTrades", "globalLog", "escapeHTML", "setVal", "document", renderLogCode + "\nreturn renderLog;")
+      (global.closedTrades, global.globalLog, global.escapeHTML, global.setVal, global.document);
+
+    renderLogFn();
+
+    const logHTML = global.document.getElementById("globalLog").innerHTML;
+    expect(logHTML.includes("<script>")).toBe(false);
+    expect(logHTML.includes("<img")).toBe(false);
+    expect(logHTML).toContain("&lt;script&gt;alert(&#039;xss_token&#039;)&lt;/script&gt;");
+    expect(logHTML).toContain("&lt;img src=x onerror=alert(&#039;xss_method&#039;)&gt;");
+
+    delete global.document;
+    delete global.escapeHTML;
+    delete global.setVal;
+    delete global.closedTrades;
+    delete global.globalLog;
   });
 });
 

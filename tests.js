@@ -1924,6 +1924,18 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain("add.title = isFull ? `Maximum bot limit reached (${MAX_BOTS} bots)` : `Add bot (Bot #${bots.length + 1})`");
     expect(html).toContain("rem.title = isEmpty ? 'No bots to remove' : `Remove last bot (Bot #${bots[bots.length - 1].id})`");
   });
+
+  it("defines aria-label and aria-pressed attributes in Acoustic Core UI control buttons", () => {
+    const acousticCode = fs.readFileSync("ACOUSTIC_CORE.js", "utf8");
+    expect(acousticCode).toContain('aria-label="Toggle sound effects"');
+    expect(acousticCode).toContain('aria-label="Toggle visual effects"');
+    expect(acousticCode).toContain('aria-label="Toggle voice announcements"');
+    expect(acousticCode).toContain('aria-label="Toggle synth pad sequencer"');
+    expect(acousticCode).toContain("btn.setAttribute('aria-pressed', String(CONFIG.sfx.enabled))");
+    expect(acousticCode).toContain("btn.setAttribute('aria-pressed', String(CONFIG.fx.enabled))");
+    expect(acousticCode).toContain("btn.setAttribute('aria-pressed', String(CONFIG.voice.enabled))");
+    expect(acousticCode).toContain("btn.setAttribute('aria-pressed', String(CONFIG.audio.enabled))");
+  });
 });
 
 describe("Collapsible Control Panel Accessibility", () => {
@@ -2483,7 +2495,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
+    expect(content).toContain("ASIC Regulatory Exposure & AFSL Compliance Assessment & Gate 3 Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });

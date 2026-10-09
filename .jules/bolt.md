@@ -25,3 +25,7 @@
 ## 2026-12-02 - Redundant Object Entry/Value Array Allocations in Tournament Bracket Summaries
 **Learning:** `getTopBrackets()` and `getGlobalWeights()` in `TRADE_OLYMPICS` were allocating intermediate tuple arrays (`Object.entries()`) and executing multiple array `.filter()` / `.map()` / `.reduce()` passes over 700+ bracket objects on every ranking query, causing noticeable GC pressure and execution latency (~7.4s / 50k calls).
 **Action:** Use guarded `for...in` loops (`hasOwnProperty`) over target hash objects to accumulate active entries in a single pass before sorting, reducing loop overhead by ~1.9x while preserving object property spreads.
+
+## 2026-12-16 - Per-Invocation Array Allocations in High-Frequency Security & Token Helpers
+**Learning:** Security and token validation helper functions (`SecurityHelper.isStablecoin`, `isStablecoin`, `isStablecoinQuoteOk`) were constructing new local string arrays (`["USDC", "USDT", "DAI", ...]` or calling `.includes()`) on every single invocation in high-frequency trading and token filter loops. This led to unnecessary garbage collection churn and linear array scan overhead.
+**Action:** Lift array constants to module/class-level static `Set` instances (e.g. `SecurityHelper.STABLECOINS_SET`, `STABLECOIN_BLOCKLIST_SET`) to convert per-call array allocations and linear `.includes()` scans into O(1) constant-time `Set.has()` membership checks (~2x speedup with zero GC allocations).

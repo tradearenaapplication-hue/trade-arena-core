@@ -5626,6 +5626,24 @@ document.addEventListener('keydown', function(e) {
       });
       return;
     }
+    const openCpanel = document.querySelector('.cpanel-body.open');
+    if (openCpanel && openCpanel.id) {
+      const panelName = openCpanel.id.replace('Body', '');
+      if (typeof togglePanel === 'function') {
+        togglePanel(panelName);
+        return;
+      }
+    }
+    const auditBody = document.getElementById('auditBody');
+    if (auditBody && auditBody.classList.contains('open')) {
+      if (typeof toggleAudit === 'function') toggleAudit();
+      return;
+    }
+    const learnBody = document.getElementById('learnBody');
+    if (learnBody && learnBody.classList.contains('open')) {
+      if (typeof toggleLearn === 'function') toggleLearn();
+      return;
+    }
   }
 
   if (e.key === 'Enter' || e.key === ' ') {

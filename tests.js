@@ -1924,6 +1924,13 @@ describe("Header Toggle Controls Accessibility", () => {
     expect(html).toContain("add.title = isFull ? `Maximum bot limit reached (${MAX_BOTS} bots)` : `Add bot (Bot #${bots.length + 1})`");
     expect(html).toContain("rem.title = isEmpty ? 'No bots to remove' : `Remove last bot (Bot #${bots[bots.length - 1].id})`");
   });
+
+  it("handles Escape key dismissal for open collapsible panels", () => {
+    expect(html).toContain("const openCpanel = document.querySelector('.cpanel-body.open');");
+    expect(html).toContain("if (typeof togglePanel === 'function') {");
+    expect(html).toContain("if (auditBody && auditBody.classList.contains('open')) {");
+    expect(html).toContain("if (learnBody && learnBody.classList.contains('open')) {");
+  });
 });
 
 describe("Collapsible Control Panel Accessibility", () => {
@@ -2483,7 +2490,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
+    expect(content).toContain("ASIC Regulatory Exposure & AFSL Compliance Assessment & Gate 3 Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });

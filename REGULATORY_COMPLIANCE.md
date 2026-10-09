@@ -1,4 +1,4 @@
-# 🏛️ TRADE ARENA - ASIC Regulatory Exposure & AFSL Compliance Assessment & Gate 3 Assessment
+# 🏛️ TRADE ARENA - ASIC Regulatory Exposure, AFSL Regulatory Compliance & Gate 3 Assessment
 
 ## 📌 Executive Summary
 

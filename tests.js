@@ -2245,6 +2245,19 @@ describe("ELO Tournament Engine XSS Sanitization Security", () => {
   });
 });
 
+describe("Trade Arena UI XSS Sanitization Security (drawStratBreakdown, updateAgentPerfUI, renderLogUI)", () => {
+  it("uses escapeHTML when rendering dynamic strategy, agent, and trade log fields in index.html", () => {
+    const fs = require("fs");
+    const indexCode = fs.readFileSync("./index.html", "utf8");
+    expect(indexCode).toContain("${escapeHTML(name)}");
+    expect(indexCode).toContain("${escapeHTML(a.key)}");
+    expect(indexCode).toContain("${escapeHTML(t.botId)}");
+    expect(indexCode).toContain("${escapeHTML(t.token)}");
+    expect(indexCode).toContain("${escapeHTML(t.method)}");
+    expect(indexCode).toContain("${escapeHTML(t.time)}");
+  });
+});
+
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
   const { fetchMultiChainTokenBalances, walletState, checkMetaMaskStatus, diagnoseMetaMask } = require("./real-wallet.js");
@@ -2483,7 +2496,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
+    expect(content).toContain("AFSL Compliance Assessment & Gate 3 Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });

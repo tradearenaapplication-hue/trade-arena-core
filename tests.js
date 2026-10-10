@@ -2030,6 +2030,14 @@ describe("Bus Panel Preset Accessibility", () => {
     expect(html).toContain("b.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
     expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
   });
+
+  it("defines descriptive aria-label attributes on bus preset quick-apply buttons", () => {
+    expect(html).toContain('aria-label="Apply Safe Mode preset: small bets, high consensus, and stop loss enabled"');
+    expect(html).toContain('aria-label="Apply Balanced preset: medium bets with mixed bot personalities"');
+    expect(html).toContain('aria-label="Apply Degen Mode preset: large bets, aggressive personalities, and no stop loss"');
+    expect(html).toContain('aria-label="Apply Optimized preset: optimized spread based on learning model"');
+    expect(html).toContain('aria-label="Reset all bot parameters to default settings"');
+  });
 });
 
 describe("Bot Settings Trade Amount Preset Accessibility", () => {

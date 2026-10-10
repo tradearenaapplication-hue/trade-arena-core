@@ -954,11 +954,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
     <!-- Quick presets row -->
     <div class="bus-apply-row">
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('conservative')" title="Small bets, high consensus, stop loss on">🛡️ SAFE MODE</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('balanced')"    title="Medium bets, mixed personalities">⚖️ BALANCED</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('aggressive')"  title="Large bets, aggressive personalities, no SL">🔥 DEGEN MODE</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model">⚡ OPTIMIZED</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('conservative')" title="Small bets, high consensus, stop loss on" aria-label="Apply Safe Mode preset: small bets, high consensus, and stop loss enabled">🛡️ SAFE MODE</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('balanced')"    title="Medium bets, mixed personalities" aria-label="Apply Balanced preset: medium bets with mixed bot personalities">⚖️ BALANCED</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('aggressive')"  title="Large bets, aggressive personalities, no SL" aria-label="Apply Degen Mode preset: large bets, aggressive personalities, and no stop loss">🔥 DEGEN MODE</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model" aria-label="Apply Optimized preset: optimized spread based on learning model">⚡ OPTIMIZED</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults" aria-label="Reset all bot parameters to default settings">↺ RESET ALL</button>
     </div>
     <div class="bus-status" id="busStatus" role="status" aria-live="polite"></div>
   </div>

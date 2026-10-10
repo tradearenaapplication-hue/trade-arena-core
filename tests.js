@@ -2198,6 +2198,87 @@ describe("Trade Olympics XSS Sanitization Security", () => {
   });
 });
 
+describe("Learn & Audit Log XSS Sanitization Security", () => {
+  const fs = require("fs");
+
+  it("uses escapeHTML when rendering log fields in index.html renderLearnLog and renderAuditLog", () => {
+    const indexCode = fs.readFileSync("index.html", "utf8");
+    expect(indexCode).toContain("`<div class=\"ll-entry ${escapeHTML(e.type)}\">[${escapeHTML(e.ts)}] ${escapeHTML(e.msg)}</div>`");
+    expect(indexCode).toContain("`<div class=\"al-entry ${escapeHTML(e.type)}\"><span class=\"al-ts\">${escapeHTML(e.ts)}</span><span class=\"al-msg\">${escapeHTML(e.msg)}</span></div>`");
+  });
+
+  it("uses escapeHTML when rendering log fields in index-new.html renderAuditLog", () => {
+    const indexNewCode = fs.readFileSync("index-new.html", "utf8");
+    expect(indexNewCode).toContain("`<div class=\"al-entry ${escapeHTML(e.type)}\"><span class=\"al-ts\">${escapeHTML(e.ts)}</span><span class=\"al-icon\">•</span><span class=\"al-msg\">${escapeHTML(e.msg)}</span></div>`");
+  });
+
+  it("escapes malicious XSS payloads in learning log and audit log entries", () => {
+    const escapeHTML = (str) => {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const elements = {};
+    const mockElement = (id) => {
+      if (!elements[id]) {
+        elements[id] = { innerHTML: "", textContent: "" };
+      }
+      return elements[id];
+    };
+
+    global.document = { getElementById: (id) => mockElement(id) };
+
+    const learningLog = [
+      { type: "<script>alert('type')</script>", ts: "<img src=x onerror=alert('ts')>", msg: "<svg onload=alert('msg')>" }
+    ];
+
+    const auditHistory = [
+      { type: "<script>alert('type')</script>", ts: "<img src=x onerror=alert('ts')>", msg: "<svg onload=alert('msg')>" }
+    ];
+
+    function renderLearnLog() {
+      const el = document.getElementById('learnLog'); if (!el) return;
+      el.innerHTML = learningLog.slice(0, 30).map(e =>
+        `<div class="ll-entry ${escapeHTML(e.type)}">[${escapeHTML(e.ts)}] ${escapeHTML(e.msg)}</div>`
+      ).join('');
+    }
+
+    function renderAuditLog() {
+      const el = document.getElementById('auditLog'); if (!el) return;
+      el.innerHTML = auditHistory.slice(0, 40).map(e =>
+        `<div class="al-entry ${escapeHTML(e.type)}"><span class="al-ts">${escapeHTML(e.ts)}</span><span class="al-msg">${escapeHTML(e.msg)}</span></div>`
+      ).join('') || '<div class="al-entry audit"><span class="al-ts">—</span><span class="al-msg">No audits yet.</span></div>';
+    }
+
+    renderLearnLog();
+    renderAuditLog();
+
+    const learnHTML = mockElement("learnLog").innerHTML;
+    const auditHTML = mockElement("auditLog").innerHTML;
+
+    expect(learnHTML.includes("<script>")).toBe(false);
+    expect(learnHTML.includes("<img")).toBe(false);
+    expect(learnHTML.includes("<svg")).toBe(false);
+    expect(learnHTML).toContain("&lt;script&gt;");
+    expect(learnHTML).toContain("&lt;img");
+    expect(learnHTML).toContain("&lt;svg");
+
+    expect(auditHTML.includes("<script>")).toBe(false);
+    expect(auditHTML.includes("<img")).toBe(false);
+    expect(auditHTML.includes("<svg")).toBe(false);
+    expect(auditHTML).toContain("&lt;script&gt;");
+    expect(auditHTML).toContain("&lt;img");
+    expect(auditHTML).toContain("&lt;svg");
+
+    delete global.document;
+  });
+});
+
 describe("ELO Tournament Engine XSS Sanitization Security", () => {
   it("uses escapeHTML when rendering agent properties in renderEloArena", () => {
     const fs = require("fs");

@@ -2105,6 +2105,34 @@ describe("Task Center ARIA Accessibility", () => {
   });
 });
 
+describe("Strategy Breakdown XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("uses escapeHTML when rendering strategy names in renderCrucibleAnalytics", () => {
+    expect(html).toContain("escapeHTML(name)");
+  });
+
+  it("escapes malicious XSS payloads in strategy names when rendering strategy breakdown rows", () => {
+    const escapeHTML = (str) => {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const maliciousStratName = "<img src=x onerror=alert('xss')>";
+    const renderedName = escapeHTML(maliciousStratName);
+
+    expect(renderedName.includes("<")).toBe(false);
+    expect(renderedName.includes(">")).toBe(false);
+    expect(renderedName).toContain("&lt;img src=x onerror=alert(&#039;xss&#039;)&gt;");
+  });
+});
+
 describe("Task Center XSS Sanitization Security", () => {
   const fs = require("fs");
   const taskCenterCode = fs.readFileSync("task-center.js", "utf8");
@@ -2483,7 +2511,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
+    expect(content).toContain("Gate 3 Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });

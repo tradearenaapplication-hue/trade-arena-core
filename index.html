@@ -954,11 +954,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
     <!-- Quick presets row -->
     <div class="bus-apply-row">
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('conservative')" title="Small bets, high consensus, stop loss on">🛡️ SAFE MODE</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('balanced')"    title="Medium bets, mixed personalities">⚖️ BALANCED</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('aggressive')"  title="Large bets, aggressive personalities, no SL">🔥 DEGEN MODE</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model">⚡ OPTIMIZED</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('conservative')" title="Small bets, high consensus, stop loss on" aria-label="Apply Conservative Safe Mode preset to all bots">🛡️ SAFE MODE</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('balanced')"    title="Medium bets, mixed personalities" aria-label="Apply Balanced preset to all bots">⚖️ BALANCED</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('aggressive')"  title="Large bets, aggressive personalities, no SL" aria-label="Apply Aggressive Degen Mode preset to all bots">🔥 DEGEN MODE</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model" aria-label="Apply Optimized Spread preset to all bots">⚡ OPTIMIZED</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults" aria-label="Reset all bots to default settings">↺ RESET ALL</button>
     </div>
     <div class="bus-status" id="busStatus" role="status" aria-live="polite"></div>
   </div>
@@ -1354,7 +1354,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <tr id="cd-row-1"><td>3 more after resume</td><td>60 minutes</td><td>Strategy mismatched</td></tr>
         <tr id="cd-row-2"><td>Another streak</td><td>24 hrs — manual reset</td><td>Something is wrong</td></tr>
       </table>
-      <button class="global-kill-btn" id="killBtn" onclick="globalKill()">🔴 EMERGENCY STOP ALL BOTS</button>
+      <button class="global-kill-btn" id="killBtn" onclick="globalKill()" aria-pressed="false" aria-label="Emergency stop all trading bots">🔴 EMERGENCY STOP ALL BOTS</button>
     </div>
   </div>
 
@@ -2734,20 +2734,20 @@ function globalKill() {
   globalKilled=true;
   bots.forEach(b=>{ b.auto=false; if(b.autoTimer) clearTimeout(b.autoTimer);
     const btn=document.getElementById('mauto-'+b.id), card=document.getElementById('bot-'+b.id);
-    if(btn){btn.textContent='AUTO';btn.classList.remove('on');} if(card) card.classList.remove('auto-on'); });
+    if(btn){btn.textContent='AUTO';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');} if(card) card.classList.remove('auto-on'); });
   _ghAutoOn=false;
   const ghBtn=document.getElementById('ghAutoBtn');
-  if(ghBtn){ghBtn.textContent='AUTO';ghBtn.classList.remove('on');}
+  if(ghBtn){ghBtn.textContent='AUTO';ghBtn.classList.remove('on');ghBtn.setAttribute('aria-pressed','false');}
   checkGlobalBreakers();
   document.getElementById('breakerBody')?.classList.add('open');
   document.getElementById('breakerHd')?.classList.add('open');
   const kb=document.getElementById('killBtn');
-  if(kb){kb.textContent='🟢 RESET — RESUME TRADING';kb.onclick=resetKill;kb.style.background='linear-gradient(180deg,#004020,#002010)';}
+  if(kb){kb.textContent='🟢 RESET — RESUME TRADING';kb.onclick=resetKill;kb.style.background='linear-gradient(180deg,#004020,#002010)';kb.setAttribute('aria-pressed','true');kb.setAttribute('aria-label','Resume trading and clear emergency stop');}
 }
 function resetKill(){
   globalKilled=false;
   const kb=document.getElementById('killBtn');
-  if(kb){kb.textContent='🔴 EMERGENCY STOP ALL BOTS';kb.onclick=globalKill;kb.style.background='';}
+  if(kb){kb.textContent='🔴 EMERGENCY STOP ALL BOTS';kb.onclick=globalKill;kb.style.background='';kb.setAttribute('aria-pressed','false');kb.setAttribute('aria-label','Emergency stop all trading bots');}
   checkGlobalBreakers();
 }
 

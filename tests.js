@@ -2030,6 +2030,22 @@ describe("Bus Panel Preset Accessibility", () => {
     expect(html).toContain("b.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
     expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
   });
+
+  it("defines aria-label on bus apply quick preset buttons", () => {
+    expect(html).toContain('aria-label="Apply Conservative Safe Mode preset to all bots"');
+    expect(html).toContain('aria-label="Apply Balanced preset to all bots"');
+    expect(html).toContain('aria-label="Apply Aggressive Degen Mode preset to all bots"');
+    expect(html).toContain('aria-label="Apply Optimized Spread preset to all bots"');
+    expect(html).toContain('aria-label="Reset all bots to default settings"');
+  });
+
+  it("defines aria-pressed and aria-label on emergency kill button and updates them dynamically in globalKill and resetKill", () => {
+    expect(html).toContain('id="killBtn" onclick="globalKill()" aria-pressed="false" aria-label="Emergency stop all trading bots"');
+    expect(html).toContain("kb.setAttribute('aria-pressed','true')");
+    expect(html).toContain("kb.setAttribute('aria-label','Resume trading and clear emergency stop')");
+    expect(html).toContain("kb.setAttribute('aria-pressed','false')");
+    expect(html).toContain("kb.setAttribute('aria-label','Emergency stop all trading bots')");
+  });
 });
 
 describe("Bot Settings Trade Amount Preset Accessibility", () => {

@@ -9,3 +9,7 @@
 ## 2026-10-01 - [Bus Preset Toggle ARIA Accessibility]
 **Learning:** Grouped preset toggle buttons that alter multi-item settings require updating `aria-pressed="true|false"` dynamically alongside visual `.active` CSS classes so screen reader users perceive state updates when selecting presets.
 **Action:** Always pair visual active state updates with `aria-pressed` toggle logic in group selection helper functions (`_busHighlight`).
+
+## 2026-10-12 - [Dynamically Injected Panel Header ARIA Accessibility]
+**Learning:** Dynamically injected collapsible panels (such as `injectEloPanel` in `trade-olympics.js`) require explicit `role="button"`, `tabindex="0"`, `aria-expanded`, and `aria-controls` attributes on panel headers so keyboard users and screen readers can discover, focus, and toggle panel states.
+**Action:** When injecting panel HTML dynamically via JS string templates, ensure header elements mirror static panel accessibility attributes and update `aria-expanded` in toggle handlers.

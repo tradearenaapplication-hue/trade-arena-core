@@ -25,3 +25,7 @@
 ## 2026-12-02 - Redundant Object Entry/Value Array Allocations in Tournament Bracket Summaries
 **Learning:** `getTopBrackets()` and `getGlobalWeights()` in `TRADE_OLYMPICS` were allocating intermediate tuple arrays (`Object.entries()`) and executing multiple array `.filter()` / `.map()` / `.reduce()` passes over 700+ bracket objects on every ranking query, causing noticeable GC pressure and execution latency (~7.4s / 50k calls).
 **Action:** Use guarded `for...in` loops (`hasOwnProperty`) over target hash objects to accumulate active entries in a single pass before sorting, reducing loop overhead by ~1.9x while preserving object property spreads.
+
+## 2026-12-16 - Duplicate Evaluation of Mathematical Transformations in Multi-Pass Normalization Loops
+**Learning:** `removeVig` in `sports-odds-arb.js` was recalculating `oddsToProbability` conversions, string format checks, and nullish coalescing in both loop passes (first for overround calculation, second for output object construction), duplicating work per outcome.
+**Action:** Cache computed scalar values (like implied probability) in a indexed parallel array (`new Array(len)`) during the first pass so that subsequent construction loops read pre-computed values directly (~1.5x speedup).

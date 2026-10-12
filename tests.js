@@ -2245,6 +2245,24 @@ describe("ELO Tournament Engine XSS Sanitization Security", () => {
   });
 });
 
+describe("Dashboard XSS Sanitization Security (index.html)", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("uses escapeHTML when rendering trade ledger fields in renderLog", () => {
+    expect(html).toContain("${escapeHTML(t.botId)}");
+    expect(html).toContain("${escapeHTML(t.token)}");
+    expect(html).toContain("${escapeHTML(t.method)}");
+  });
+
+  it("uses escapeHTML when rendering strategy breakdown, regime matrix, audit, and learning logs", () => {
+    expect(html).toContain("${escapeHTML(name)}");
+    expect(html).toContain("${escapeHTML(r.s)}");
+    expect(html).toContain("${escapeHTML(e.msg)}");
+    expect(html).toContain("${escapeHTML(e.type)}");
+  });
+});
+
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
   const { fetchMultiChainTokenBalances, walletState, checkMetaMaskStatus, diagnoseMetaMask } = require("./real-wallet.js");

@@ -475,7 +475,15 @@ const provider = new ethers.JsonRpcProvider(RPC_URL);
  * two constants, never from user input, so this cannot write to an arbitrary
  * path.
  */
-app.post('/api/maintenance/log', (req, res) => {
+const maintenanceLogLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 60, // limit maintenance log writes per IP per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: 'Too many maintenance log requests, please try again later.' }
+});
+
+app.post('/api/maintenance/log', maintenanceLogLimiter, (req, res) => {
     try {
         const { agent, message, level } = req.body || {};
         if (typeof agent !== 'string' || !agent || typeof message !== 'string' || !message) {

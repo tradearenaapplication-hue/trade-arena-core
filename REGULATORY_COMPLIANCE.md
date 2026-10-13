@@ -1,4 +1,4 @@
-# 🏛️ TRADE ARENA - ASIC Regulatory Exposure & AFSL Compliance Assessment & Gate 3 Assessment
+# 🏛️ TRADE ARENA - ASIC Regulatory Exposure & AFSL Compliance Assessment & Regulatory Compliance & Gate 3 Assessment
 
 ## 📌 Executive Summary
 
@@ -8,7 +8,7 @@ If Trade Arena’s automated agents or trading bots execute autonomous trading d
 1. **A Managed Investment Scheme (MIS)** under Chapter 5C of the *Corporations Act 2001 (Cth)*.
 2. **A Financial Service Provider** providing automated financial product advice or dealing in financial products under an **Australian Financial Services Licence (AFSL)**.
 
-Operating without an AFSL when required carries severe regulatory penalties, civil liability, and potential platform shutdown. This document details the compliance architecture, Gate 3 prerequisites, legal assessment framework, and software-enforced regulatory safeguards.
+Operating without an AFSL when required carries severe regulatory penalties, civil liability, and potential platform shutdown. This document details the compliance architecture, Gate 3 prerequisites, legal assessment framework, and software-enforced regulatory safeguards. For the complete top 5 launch risk analysis and mitigation plan, see [`docs/LAUNCH_RISK_MITIGATION_PLAN.md`](docs/LAUNCH_RISK_MITIGATION_PLAN.md).
 
 ---
 

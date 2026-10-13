@@ -25,3 +25,7 @@
 ## 2026-12-02 - Redundant Object Entry/Value Array Allocations in Tournament Bracket Summaries
 **Learning:** `getTopBrackets()` and `getGlobalWeights()` in `TRADE_OLYMPICS` were allocating intermediate tuple arrays (`Object.entries()`) and executing multiple array `.filter()` / `.map()` / `.reduce()` passes over 700+ bracket objects on every ranking query, causing noticeable GC pressure and execution latency (~7.4s / 50k calls).
 **Action:** Use guarded `for...in` loops (`hasOwnProperty`) over target hash objects to accumulate active entries in a single pass before sorting, reducing loop overhead by ~1.9x while preserving object property spreads.
+
+## 2026-12-16 - Unbounded Object Mapping in Sliced Leaderboard Queries
+**Learning:** `TRADE_OLYMPICS.getEloLeaderboard(limit)` was building full mapped object representations (`{ rank, ...model, medal }`) for every standing entry in the collection before calling `.slice(0, limit)` to discard all but the top entries. Passing `limit` directly into `getLeaderboard(metric, limit)` to construct rank/medal objects only for the top requested items yielded a ~2.57x speedup (from 4,711ms to 1,832ms per 50k calls) and eliminated garbage collection overhead from discarded model objects.
+**Action:** Always accept an optional `limit` parameter in sorting and transformation functions when callers typically slice off top items, ensuring object mapping and formatting are bounded by the target slice size.

@@ -174,7 +174,7 @@ app.use((req, res, next) => {
     // cloudflare-eth.com returns "Internal error"). Every host in NETWORKS
     // must appear here or the browser refuses the request before it is sent.
     // Keep this list in sync with NETWORKS in wallet-core.js.
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.jsdelivr.net https://js.hcaptcha.com https://hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.frankfurter.app https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.coingecko.com https://api.0x.org https://mainnet.base.org https://base-rpc.publicnode.com https://base.drpc.org https://ethereum-rpc.publicnode.com https://eth.drpc.org https://1rpc.io https://arb1.arbitrum.io https://arbitrum-one-rpc.publicnode.com https://arbitrum.drpc.org https://mainnet.optimism.io https://optimism-rpc.publicnode.com https://optimism.drpc.org https://polygon-bor-rpc.publicnode.com https://polygon.drpc.org https://bsc-dataseed.binance.org https://bsc-rpc.publicnode.com https://bsc.drpc.org https://*.alchemyapi.io https://cdn.jsdelivr.net https://auth.privy.io https://explorer-api.walletconnect.com https://9cc5aa622a7b.w.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.jsdelivr.net https://js.hcaptcha.com https://hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.frankfurter.app https://api.frankfurter.dev https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.coingecko.com https://api.0x.org https://mainnet.base.org https://base-rpc.publicnode.com https://base.drpc.org https://ethereum-rpc.publicnode.com https://eth.drpc.org https://1rpc.io https://arb1.arbitrum.io https://arbitrum-one-rpc.publicnode.com https://arbitrum.drpc.org https://mainnet.optimism.io https://optimism-rpc.publicnode.com https://optimism.drpc.org https://polygon-bor-rpc.publicnode.com https://polygon.drpc.org https://bsc-dataseed.binance.org https://bsc-rpc.publicnode.com https://bsc.drpc.org https://*.alchemyapi.io https://cdn.jsdelivr.net https://auth.privy.io https://explorer-api.walletconnect.com https://9cc5aa622a7b.w.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
     next();
 });
 
@@ -2089,6 +2089,33 @@ app.get('/api/market/prices', async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+/**
+ * GET /api/market/batch-prices?ids=ethereum,bitcoin,...
+ *
+ * Bulk CoinGecko proxy for the v4.2 live ticker (app-rebuild.js). Returns the
+ * RAW CoinGecko { id: { usd: <price> } } shape so the client's getPrice()
+ * (`priceCache[id]?.usd`) works unchanged. Fetching server-side avoids the
+ * browser 429s / CORS failures that happen when many clients hit
+ * api.coingecko.com from shared IPs.
+ */
+app.get('/api/market/batch-prices', async (req, res) => {
+    try {
+        const ids = (req.query.ids?.split(',') || ['ethereum', 'bitcoin']).map((s) => s.trim()).filter(Boolean);
+        // Cap the batch so this endpoint can't be abused as an open CoinGecko proxy.
+        if (ids.length > 40) {
+            return res.status(400).json({ success: false, error: 'Too many ids (max 40)' });
+        }
+        const resp = await axios.get(
+            `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`,
+            { timeout: 8000 }
+        );
+        res.json(resp.data || {});
+    } catch (error) {
+        // Non-fatal: the ticker simply keeps its last-known prices.
+        res.status(502).json({ success: false, error: 'Price provider unavailable' });
     }
 });
 

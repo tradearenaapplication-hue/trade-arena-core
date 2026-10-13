@@ -551,7 +551,7 @@ class RealMarketPricing {
         "matic-network",
       ];
       const response = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${tokens.join(",")}&vs_currencies=usd`,
+        `/api/market/batch-prices?ids=${tokens.join(",")}`,
       );
 
       if (response.ok) {

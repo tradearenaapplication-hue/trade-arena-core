@@ -6,10 +6,11 @@
  * Updated: 2026-04-18
  */
 
-// Bumped to v6: the stylesheet parse fix (stray quote in var(--cyan')) and the
-// /api/ no-cache rule. v5 is dropped so returning users get the corrected CSS
-// instead of the cached, mostly-unparsed stylesheet.
-const CACHE_VERSION = 'trade-arena-v6';
+// Bumped to v7: the togglePanel orphan fix (stray code outside any function
+// caused "Illegal return statement", which killed the ENTIRE main script
+// block — checkGoLiveAck/loginMetaMask/loginDemo all undefined). v6 is
+// dropped so cached broken index.html is replaced on next load.
+const CACHE_VERSION = 'trade-arena-v7';
 const CRITICAL_ASSETS = [
   './',
   './index.html',

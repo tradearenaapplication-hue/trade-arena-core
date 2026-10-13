@@ -3321,9 +3321,11 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+// Generic collapsible panel toggle used by quant/elo/task/staff/safety/flashscan/breaker panels.
+function togglePanel(name){
   const bodyId=name+'Body', hdId=name+'Hd', toggleId=name+'Toggle', navBtnId=name+'NavBtn';
   const body=document.getElementById(bodyId), toggle=document.getElementById(toggleId), hd=document.getElementById(hdId), navBtn=document.getElementById(navBtnId);
-  if(!body||!toggle) return;
+  if(!body||!toggle) { return; }
   const isOpen=body.classList.toggle('open');
   hd?.classList.toggle('open',isOpen);
   hd?.setAttribute('aria-expanded', isOpen);

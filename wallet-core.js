@@ -628,30 +628,39 @@ const WalletCore = (() => {
 
     const injected = getInjected();
 
-    // eth_requestAccounts prompts the MetaMask popup. This must go through the
-    // injected provider directly - provider.send() does not exist on an
-    // ethers v6 BrowserProvider and silently broke the old flow.
-    const accounts = await injected.request({ method: 'eth_requestAccounts' });
-    if (!accounts || accounts.length === 0) {
-      const e = new Error('No account was selected in MetaMask.');
-      e.code = 'NO_ACCOUNTS';
-      throw e;
+    connectInProgress = true;
+    try {
+      // eth_requestAccounts prompts the MetaMask popup. This must go through the
+      // injected provider directly - provider.send() does not exist on an
+      // ethers v6 BrowserProvider and silently broke the old flow.
+      const accounts = await injected.request({ method: 'eth_requestAccounts' });
+      if (!accounts || accounts.length === 0) {
+        const e = new Error('No account was selected in MetaMask.');
+        e.code = 'NO_ACCOUNTS';
+        throw e;
+      }
+
+      const address = accounts[0];
+      const provider = await makeProvider();
+      const signer = await makeSigner(provider);
+
+      setConnected(address, provider, signer);
+      await refreshChainInfo();
+
+      // Preferred network, but a rejected switch must not abort the connection:
+      // read-only portfolio features still work on any chain.
+      if (!state.isCorrectChain) await ensureBaseNetwork();
+
+      await sync({ initial: true });
+      emit('connect', { address });
+      return { address, provider, signer };
+    } finally {
+      // The transient disconnect fired by wallet_switchEthereumChain lands
+      // synchronously; chainChanged follows on the same tick. Clear the guard
+      // on the next macrotask so a chainChanged that fires just after connect()
+      // still rebuilds correctly, while any later real disconnect is honoured.
+      setTimeout(() => { connectInProgress = false; }, 0);
     }
-
-    const address = accounts[0];
-    const provider = await makeProvider();
-    const signer = await makeSigner(provider);
-
-    setConnected(address, provider, signer);
-    await refreshChainInfo();
-
-    // Preferred network, but a rejected switch must not abort the connection:
-    // read-only portfolio features still work on any chain.
-    if (!state.isCorrectChain) await ensureBaseNetwork();
-
-    await sync({ initial: true });
-    emit('connect', { address });
-    return { address, provider, signer };
   }
 
   /**
@@ -689,6 +698,16 @@ const WalletCore = (() => {
   // ═══════════════════════════════════════════════════════════
 
   let listenersBound = false;
+
+  // MetaMask emits a transient `disconnect` (message: "Disconnected from
+  // chain. Attempting to connect.") the instant wallet_switchEthereumChain runs
+  // during connect(), right before it emits `chainChanged`. If we honoured that
+  // disconnect we would clear() the freshly-connected state and call
+  // TA_onWalletDisconnected, so the wallet appears to connect and then instantly
+  // vanish. While a connect() is in flight we swallow the disconnect and let the
+  // chainChanged handler rebuild + re-sync instead.
+  let connectInProgress = false;
+
 
   /**
    * React to wallet-side changes.
@@ -761,6 +780,12 @@ const WalletCore = (() => {
     });
 
     injected.on('disconnect', (error) => {
+      // Transient disconnect fired by MetaMask during a network switch inside
+      // connect(). Do not tear down the session; chainChanged will re-sync.
+      if (connectInProgress) {
+        console.info('[WalletCore] ignoring transient disconnect during connect:', error?.message || error);
+        return;
+      }
       console.warn('[WalletCore] wallet disconnected:', error?.message || error);
       clear();
       emit('disconnect', { reason: 'provider-disconnect', error: error?.message });

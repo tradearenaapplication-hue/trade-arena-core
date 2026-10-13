@@ -2088,6 +2088,12 @@ describe("Voice Agent Modal & Session Warning Banner Accessibility", () => {
     expect(html).toContain('aria-label="Pause all trading bots"');
     expect(html).toContain('aria-label="Dismiss session time warning banner"');
   });
+
+  it("handles Escape key dismissal for sessionWarningBanner", () => {
+    expect(html).toContain("const sessionBanner = document.getElementById('sessionWarningBanner');");
+    expect(html).toContain("if (sessionBanner && sessionBanner.style.display !== 'none' && sessionBanner.style.display !== '') {");
+    expect(html).toContain("if (typeof dismissSessionWarning === 'function') dismissSessionWarning();");
+  });
 });
 
 describe("Task Center ARIA Accessibility", () => {

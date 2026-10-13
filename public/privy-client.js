@@ -25,15 +25,20 @@ var PRIVY_CONFIG = {
     hideBlockchain: true,
 };
 
-// 🛡️ DYNAMIC CONFIG: Load Privy App ID from backend
+// 🛡️ DYNAMIC CONFIG: Load Privy Client ID from backend (/api/config allowlist).
+// Accepts both `privyClientId` (current) and `privyAppId` (legacy alias) so the
+// stale bundle keeps working until it is rebuilt from the root privy-client.js.
 (async function() {
     try {
-        const response = await fetch('/api/config');
+        const response = await fetch('/api/config', { cache: 'no-store' });
         const config = await response.json();
-        if (config.privyAppId) {
-            PRIVY_CONFIG.appId = config.privyAppId;
-            PRIVY_CONFIG.jwksUrl = `https://auth.privy.io/api/v1/apps/${config.privyAppId}/jwks.json`;
-            console.log('[Config] Privy App ID updated from backend');
+        const clientId = config.privyClientId || config.privyAppId;
+        if (clientId) {
+            PRIVY_CONFIG.appId = clientId;
+            PRIVY_CONFIG.jwksUrl = `https://auth.privy.io/api/v1/apps/${clientId}/jwks.json`;
+            console.log('[Config] Privy Client ID updated from backend');
+        } else {
+            console.warn('[Config] Privy Client ID missing from /api/config — social login disabled');
         }
     } catch (e) {
         console.warn('[Config] Failed to load dynamic Privy config');
@@ -126,101 +131,63 @@ async function loadPrivyScript() {
 }
 
 /**
- * Handle Google sign-in via Privy
+ * Handle Google sign-in via Privy (stale public copy).
+ *
+ * This file is superseded by the root privy-client.js. It stays only so the
+ * stale public/index.html bundle keeps loading, but it must never fabricate
+ * a session — delegate to the root client when present, otherwise fail loudly.
  */
 async function privyLoginGoogle() {
-    console.log('[Privy] Opening Google OAuth...');
-    
-    if (!window.Privy) {
-        // Fallback: direct Google sign-in without Privy SDK
-        return privyFallbackGoogleLogin();
-    }
-    
-    try {
-        // Show Privy modal for embedded login
-        window.Privy.loginWithGoogle({
-            // Base only - no network choice
-            chains: [{ 
-                id: PRIVY_CONFIG.chain,
-                rpcUrl: 'https://mainnet.base.org'
-            }],
-        });
-        
-        // Listen for login completion
-        window.Privy.once('login', (user) => {
-            privyUser = user;
-            privyWalletAddress = user.wallet?.address;
-            privyConnected = true;
-            console.log('[Privy] Logged in:', privyWalletAddress);
-            onPrivyLoginSuccess();
-        });
-    } catch (e) {
-        console.error('[Privy] Login error:', e);
-        privyFallbackGoogleLogin();
-    }
+    console.log('[Privy] Opening Google OAuth (stale public copy — delegating)...');
+    // This stale copy loads BEFORE the root client in some bundles. The root
+    // client overwrites window.privyLoginGoogle on load, so by the time a user
+    // clicks, this function may already be shadowed. If we are still the live
+    // handler, the root client is absent — fail loudly, never fake a session.
+    console.error('[Privy] Stale bundle: SDK unavailable — use MetaMask or Demo mode.');
+    if (window.showToast) window.showToast('Google sign-in unavailable. Use MetaMask or Demo mode.', 'error');
+    const s = document.getElementById('loginStatus');
+    if (s) s.textContent = '⚠️ Google sign-in unavailable — use MetaMask or Demo mode.';
+    return false;
 }
 
 /**
- * Fallback: Simple Google OAuth flow (no Privy SDK required)
+ * Fallback REMOVED (Google): the stale public copy previously fell through to
+ * a mock login. Now fails loudly. Stub kept for lingering references.
  */
 async function privyFallbackGoogleLogin() {
-    console.log('[Privy] Google Login Fallback disabled - please use real MetaMask or Privy connection.');
-    if (window.showToast) window.showToast('Please use real wallet connection.', 'error');
+    console.error('[Privy] Fallback login removed — social login requires the real Privy SDK.');
+    if (window.showToast) window.showToast('Google sign-in unavailable. Use MetaMask or Demo mode.', 'error');
+    return false;
 }
 
 /**
- * Handle Apple sign-in via Privy
+ * Handle Apple sign-in via Privy (stale public copy — same fail-loud policy).
  */
 async function privyLoginApple() {
-    console.log('[Privy] Opening Apple OAuth...');
-    
-    if (!window.Privy) {
-        return privyFallbackAppleLogin();
-    }
-    
-    try {
-        window.Privy.loginWithApple();
-        window.Privy.once('login', (user) => {
-            privyUser = user;
-            privyWalletAddress = user.wallet?.address;
-            privyConnected = true;
-            onPrivyLoginSuccess();
-        });
-    } catch (e) {
-        console.error('[Privy] Apple login error:', e);
-        privyFallbackAppleLogin();
-    }
+    console.log('[Privy] Opening Apple OAuth (stale public copy)...');
+    console.error('[Privy] Stale bundle: SDK unavailable — use MetaMask or Demo mode.');
+    if (window.showToast) window.showToast('Apple sign-in unavailable. Use MetaMask or Demo mode.', 'error');
+    const s = document.getElementById('loginStatus');
+    if (s) s.textContent = '⚠️ Apple sign-in unavailable — use MetaMask or Demo mode.';
+    return false;
 }
 
 /**
- * Fallback: Apple OAuth simulation
+ * Fallback REMOVED (Apple): previously minted a random address. Stub kept so
+ * old references fail loudly instead of throwing ReferenceError.
  */
 async function privyFallbackAppleLogin() {
-    console.log('[Privy] Using fallback Apple login...');
-    
-    const mockAddress = '0x' + generateRandomAddress();
-    
-    privyWalletAddress = mockAddress;
-    privyConnected = true;
-    privyUser = {
-        email: 'user@icloud.com',
-        name: 'Apple User',
-        id: 'mock-apple-user-id'
-    };
-    
-    onPrivyLoginSuccess();
+    console.error('[Privy] Fallback login removed — social login requires the real Privy SDK.');
+    if (window.showToast) window.showToast('Apple sign-in unavailable. Use MetaMask or Demo mode.', 'error');
+    return false;
 }
 
 /**
- * Generate random Ethereum address for fallback mode
+ * REMOVED: generateRandomAddress fabricated wallet addresses. Stub throws
+ * loudly so any lingering caller cannot silently mint an address.
  */
 function generateRandomAddress() {
-    const chars = '0123456789abcdef';
-    let addr = '';
-    for (let i = 0; i < 40; i++) {
-        addr += chars[Math.floor(Math.random() * 16)];
-    }
-    return addr;
+    throw new Error('generateRandomAddress removed: fake wallets are disabled for fund safety.');
 }
 
 /**
@@ -309,40 +276,39 @@ function isPrivyConnected() {
 }
 
 /**
- * Sign message (for transactions)
+ * Sign a message with the Privy embedded wallet (stale public copy).
+ *
+ * Fund-safety: never return a simulated signature. The old code returned the
+ * literal string '0xsignature...' which would fail verification while looking
+ * like success. Now throws instead.
  */
 async function privySignMessage(message) {
-    if (!privyConnected) {
-        throw new Error('Not connected');
+    if (!privyConnected || !privyWalletAddress) {
+        throw new Error('Privy wallet is not connected');
     }
-    
-    if (!window.Privy || !privyUser?.wallet) {
-        // Fallback: simulate signature
-        console.log('[Privy] Fallback sign:', message);
-        return '0xsignature...';
-    }
-    
-    try {
-        return await window.Privy.signMessage(message);
-    } catch (e) {
-        console.error('[Privy] Sign error:', e);
-        throw e;
-    }
+    throw new Error('Privy SDK is not available in this stale bundle; cannot sign — use the root privy-client.js flow');
 }
 
 /**
- * Disconnect wallet
+ * Disconnect wallet (stale public copy) — also clears persisted session keys
+ * so a reload cannot restore a session the user explicitly ended.
  */
 function privyDisconnect() {
     console.log('[Privy] Disconnecting...');
     privyUser = null;
     privyWalletAddress = null;
     privyConnected = false;
-    
-    if (window.Privy) {
-        window.Privy.logout();
+
+    try {
+        localStorage.removeItem('ta_wallet_address');
+        localStorage.removeItem('ta_provider');
+        localStorage.removeItem('ta_session_provider');
+    } catch (e) { /* storage unavailable */ }
+
+    if (window.Privy && typeof window.Privy.logout === 'function') {
+        try { window.Privy.logout(); } catch (e) { console.warn('[Privy] Logout error:', e.message); }
     }
-    
+
     showConnectScreen();
     hideMainApp();
 }

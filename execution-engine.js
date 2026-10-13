@@ -101,11 +101,22 @@ async function executeOnChainTrade(tradeRequest) {
     const { botId, token, method, amountUSD } = tradeRequest;
     console.log(`[Execution] Delegating to server engine: Bot #${botId} - ${method} ${token} $${amountUSD}`);
 
-    if (typeof window.privySignMessage !== 'function' || !window.isPrivyConnected()) {
-        throw new Error('Privy wallet not connected or ready');
+    // Accept EITHER a Privy embedded wallet OR an injected MetaMask wallet.
+    // Previously this only accepted Privy, so every MetaMask login silently
+    // skipped on-chain execution and fell back to paper simulation.
+    const hasPrivy = typeof window.privySignMessage === 'function'
+        && typeof window.isPrivyConnected === 'function'
+        && window.isPrivyConnected()
+        && typeof window.getPrivyAddress === 'function'
+        && window.getPrivyAddress();
+    const hasMetaMask = typeof WalletCore !== 'undefined'
+        && WalletCore.state && WalletCore.state.connected && WalletCore.state.address
+        && WalletCore.state.signer;
+    if (!hasPrivy && !hasMetaMask) {
+        throw new Error('No wallet connected (MetaMask or Privy) - connect a wallet to trade on-chain');
     }
 
-    const userAddress = window.getPrivyAddress();
+    const userAddress = hasPrivy ? window.getPrivyAddress() : WalletCore.state.address;
     if (!userAddress) throw new Error('No connected wallet address');
 
     ExecutionState.isExecuting = true;
@@ -145,7 +156,9 @@ async function executeOnChainTrade(tradeRequest) {
             throw new Error(nonceData.error || 'Could not obtain a trade authorisation nonce');
         }
 
-        const signature = await window.privySignMessage(nonceData.message);
+        const signature = hasPrivy
+            ? await window.privySignMessage(nonceData.message)
+            : await WalletCore.state.signer.signMessage(nonceData.message);
         if (!signature) throw new Error('Trade authorisation was not signed');
 
         // 2. Execute on the server.

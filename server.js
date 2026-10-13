@@ -158,7 +158,7 @@ async function ensureOpeningBalance(address) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || process.env.SERVER_PORT || 3001;
 
 // ===== SECURITY HEADERS =====
 app.use((req, res, next) => {
@@ -536,6 +536,44 @@ app.post('/api/user/signin', (req, res) => {
     } catch (err) {
         console.error('Error in /api/user/signin:', err);
         res.status(500).json({ success: false, error: 'Internal server error during sign in' });
+    }
+});
+
+// Aliases: both frontends POST /api/user/login and /api/user/balance, which
+// never existed — every MetaMask/Demo login therefore logged a 404 and fell
+// back to local-only state. Alias them to the canonical handlers so logins
+// persist server-side.
+app.post('/api/user/login', (req, res) => {
+    try {
+        // Demo logins send { email, provider:'demo' } with no wallet address;
+        // use the email as the stable key so the row persists per guest.
+        const body = req.body || {};
+        const address = body.address || body.email || body.userId;
+        if (!address) {
+            return res.status(400).json({ success: false, error: 'Wallet address required' });
+        }
+        const user = db.upsertUser(address, body.provider, body.name, body.holdings, body.sessionData);
+        const session = db.createSession(address, body.sessionData?.balance ?? body.balance ?? 0);
+        const tradeLogs = db.getTradeLogs(address);
+        res.json({ success: true, user, session, tradeLogs });
+    } catch (err) {
+        console.error('Error in /api/user/login:', err);
+        res.status(500).json({ success: false, error: 'Internal server error during login' });
+    }
+});
+
+app.post('/api/user/balance', (req, res) => {
+    try {
+        const { userId, address, balance } = req.body || {};
+        const key = address || userId;
+        if (!key || typeof balance !== 'number') {
+            return res.status(400).json({ success: false, error: 'address/userId and numeric balance required' });
+        }
+        const user = db.upsertUser(key, undefined, undefined, undefined, { balance });
+        res.json({ success: true, user });
+    } catch (err) {
+        console.error('Error in /api/user/balance:', err);
+        res.status(500).json({ success: false, error: 'Internal server error syncing balance' });
     }
 });
 
@@ -929,7 +967,10 @@ app.get('/api/scans/history', (req, res) => {
  * omitted from the allowlist and belong only in server-side calls.
  */
 const PUBLIC_CLIENT_CONFIG = {
-    privyClientId: () => process.env.PRIVY_CLIENT_ID || '',
+    privyClientId: () => process.env.PRIVY_CLIENT_ID || process.env.PRIVY_APP_ID || '',
+    // Legacy alias: public/privy-client.js still reads `privyAppId`. Keep both
+    // so old and new clients work during the migration window.
+    privyAppId: () => process.env.PRIVY_CLIENT_ID || process.env.PRIVY_APP_ID || '',
 };
 
 app.get('/api/config', (req, res) => {
@@ -1864,15 +1905,38 @@ app.post('/api/wallet/tokens', async (req, res) => {
             id: generateId(),
             name: name.trim(),
             strategy,
+            strategyId: strategy,
+            token: req.body?.token || 'WETH',
             riskLevel,
             initialCapital: numCapital,
             userAddress: typeof userAddress === 'string' ? userAddress : null,
             status: 'ACTIVE',
             created: Date.now(),
+            lastTradeTime: 0,
             trades: [],
             totalProfit: 0,
             config: generateBotConfig(strategy, riskLevel)
         };
+
+        // Persist so the AutonomousWorker (which reads users.json) can see it.
+        // Previously these routes returned a bot object without saving it, so
+        // the worker always reported "No ACTIVE bots found" and never traded.
+        try {
+            const { loadUsers, saveUsers } = require('./user_persistence');
+            const users = loadUsers() || {};
+            const owner = (typeof userAddress === 'string' && userAddress) || 'default';
+            users[owner] = users[owner] || { id: owner, bots: [], trades: [] };
+            users[owner].bots = users[owner].bots || [];
+            users[owner].bots.push({
+                id: bot.id, name: bot.name, token: bot.token,
+                strategyId: bot.strategyId, strategy: bot.strategy,
+                status: 'ACTIVE', initialCapital: bot.initialCapital,
+                config: bot.config, lastTradeTime: 0,
+            });
+            saveUsers(users);
+        } catch (persistErr) {
+            console.warn('[bot] could not persist bot for worker:', persistErr.message);
+        }
 
         res.json({ success: true, bot });
     } catch (error) {
@@ -1897,19 +1961,103 @@ app.post('/api/bot/create', async (req, res) => {
             id: generateId(),
             name: name.trim(),
             strategy,
+            strategyId: strategy,
+            token: req.body?.token || 'WETH',
             riskLevel,
             initialCapital: numCapital,
             userAddress: typeof userAddress === 'string' ? userAddress : null,
             status: 'ACTIVE',
             created: Date.now(),
+            lastTradeTime: 0,
             trades: [],
             totalProfit: 0,
             config: generateBotConfig(strategy, riskLevel)
         };
 
+        // Same persistence as /api/wallet/tokens above: the worker only sees bots in users.json.
+        try {
+            const { loadUsers, saveUsers } = require('./user_persistence');
+            const users = loadUsers() || {};
+            const owner = (typeof userAddress === 'string' && userAddress) || 'default';
+            users[owner] = users[owner] || { id: owner, bots: [], trades: [] };
+            users[owner].bots = users[owner].bots || [];
+            users[owner].bots.push({
+                id: bot.id, name: bot.name, token: bot.token,
+                strategyId: bot.strategyId, strategy: bot.strategy,
+                status: 'ACTIVE', initialCapital: bot.initialCapital,
+                config: bot.config, lastTradeTime: 0,
+            });
+            saveUsers(users);
+        } catch (persistErr) {
+            console.warn('[bot] could not persist bot for worker:', persistErr.message);
+        }
+
         res.json({ success: true, bot });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// ===== Autonomous bot status + registration for the frontend arena =====
+// The browser arena (index.html AUTO button) is one trading surface; the
+// AutonomousWorker (server-side, DRY_RUN or LIVE) is the other. Without this
+// bridge the two never meet: pressing AUTO spun paper positions locally while
+// the worker idled with zero bots. These endpoints let the frontend register
+// its bots server-side and let the UI show the worker's live state.
+app.get('/api/bot/autonomous-status', (req, res) => {
+    try {
+        const { loadUsers } = require('./user_persistence');
+        const users = loadUsers() || {};
+        let activeBots = 0;
+        for (const u of Object.values(users)) {
+            for (const b of (u?.bots || [])) if (b?.status === 'ACTIVE') activeBots++;
+        }
+        res.json({
+            success: true,
+            enabled: String(process.env.AUTONOMOUS_WORKER_ENABLED || '').toLowerCase() === 'true',
+            mode: process.env.DRY_RUN === 'true' ? 'DRY_RUN' : 'LIVE',
+            paused: process.env.TRADING_PAUSED === 'true',
+            activeBots,
+            limits: {
+                maxTradeUsd: Number(process.env.MAX_TRADE_USD || 0.5),
+                maxDailyLossUsd: Number(process.env.MAX_DAILY_LOSS_USD || 2),
+                maxOpenPositions: Number(process.env.MAX_OPEN_POSITIONS || 5),
+            },
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+app.post('/api/bot/register', (req, res) => {
+    try {
+        const { address, bots } = req.body || {};
+        if (!address || !Array.isArray(bots)) {
+            return res.status(400).json({ success: false, error: 'address and bots[] required' });
+        }
+        const { loadUsers, saveUsers } = require('./user_persistence');
+        const users = loadUsers() || {};
+        users[address] = users[address] || { id: address, bots: [], trades: [] };
+        const byId = new Map((users[address].bots || []).map(b => [String(b.id), b]));
+        for (const b of bots) {
+            if (!b || b.id === undefined) continue;
+            byId.set(String(b.id), {
+                id: String(b.id),
+                name: b.name || ('Arena Bot #' + b.id),
+                token: b.token || 'WETH',
+                strategyId: b.strategyId || 'rsi-strategy',
+                strategy: b.strategy || b.strategyId || 'rsi-strategy',
+                status: b.auto === false ? 'PAUSED' : 'ACTIVE',
+                initialCapital: Number(b.bet ?? b.initialCapital ?? 10) || 10,
+                config: b.config || {},
+                lastTradeTime: 0,
+            });
+        }
+        users[address].bots = [...byId.values()];
+        saveUsers(users);
+        res.json({ success: true, count: users[address].bots.length });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
     }
 });
 
@@ -2154,7 +2302,11 @@ if (String(process.env.AUTONOMOUS_WORKER_ENABLED || '').toLowerCase() === 'true'
 }
 
 // ===== START SERVER =====
-const server = app.listen(PORT, () => {
+// Guarded so `require('./server.js')` from tests.js does not bind a port or
+// keep the event loop alive. Only listen when run directly (`node server.js`).
+let server = null;
+if (require.main === module) {
+    server = app.listen(PORT, () => {
     console.log(`🚀 Trade Arena Server Started`);
     console.log(`📍 Server running on port ${PORT}`);
     console.log(`🏗️ Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -2179,18 +2331,19 @@ const server = app.listen(PORT, () => {
     console.log(`   POST   /api/deployments/webhook - MoonPay webhook`);
     console.log(`\n✅ Trade Arena server ready!\n`);
 });
+} // end require.main guard
 
 // ===== GRACEFUL SHUTDOWN =====
 process.on('SIGTERM', () => {
     console.log('SIGTERM received, shutting down gracefully');
-    server.close(() => {
+    if (server) server.close(() => {
         console.log('Process terminated');
     });
 });
 
 process.on('SIGINT', () => {
     console.log('SIGINT received, shutting down gracefully');
-    server.close(() => {
+    if (server) server.close(() => {
         console.log('Process terminated');
     });
 });

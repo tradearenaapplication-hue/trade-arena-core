@@ -1126,10 +1126,6 @@ a, button, input, select, textarea {
         <svg width="20" height="20" viewBox="0 0 318 318"><path d="M274 35L174 109l19-44z" fill="#E17726"/><path d="M44 35l99 75-18-44z" fill="#E27625"/><path d="M234 218l-27 41 58 16 17-56z" fill="#E27625"/><path d="M36 219l17 56 57-16-26-41z" fill="#E27625"/><path d="M107 143l-17 25 60 3-2-64z" fill="#E27625"/><path d="M211 143l-42-37-2 64 60-3z" fill="#E27625"/></svg>
         METAMASK
       </button>
-      <button class="cb-btn" onclick="checkGoLiveAck(loginCoinbase)">
-        <svg width="20" height="20" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#0052FF"/><path d="M24 12c-1.5 0-2.7.9-3.3 2.2l-4.3-2.6c.8-1.9 2.6-3.1 4.7-3.1 2.9 0 5.2 2.3 5.2 5.2s-2.3 5.2-5.2 5.2c-1.5 0-2.8-.6-3.8-1.6l-4.1 2.5c1.7 1.8 4.1 2.9 6.8 2.9 4.4 0 8-3.6 8-8s-3.6-8-8-8zm-1.1 10c2.5 0 4.5-2 4.5-4.5s-2-4.5-4.5-4.5-4.5 2-4.5 4.5 2 4.5 4.5 4.5z" fill="#fff"/></svg>
-        COINBASE
-      </button>
       <div class="divider">— or —</div>
       <button class="demo-btn" onclick="loginDemo()">🎮 ENTER DEMO MODE — NO SETUP NEEDED</button>
       <button type="button" class="advanced-toggle" onclick="document.getElementById('advancedSettings').style.display = 'block'; this.style.display = 'none'; this.setAttribute('aria-expanded', 'true');" aria-expanded="false" aria-controls="advancedSettings" style="background:none;border:none;width:100%;cursor:pointer;font-family:inherit;">
@@ -1139,8 +1135,8 @@ a, button, input, select, textarea {
         <button class="onramp-btn" onclick="window.openMoonpay && window.openMoonpay()">💳 DEPOSIT USDC</button>
         <button class="offramp-btn" onclick="openOskoRamp('offramp')">💵 WITHDRAW</button>
       </div>
-      <!-- Native MetaMask Login Integration -->
-      <button class="g-btn" onclick="checkGoLiveAck(nativeMetaMaskLogin)" style="background:linear-gradient(135deg, #0066cc, #004499);margin-top:12px">
+      <!-- Native MetaMask Login Integration (same flow as METAMASK above) -->
+      <button class="g-btn" onclick="checkGoLiveAck(loginMetaMask)" style="background:linear-gradient(135deg, #0066cc, #004499);margin-top:12px">
         <svg width="20" height="20" viewBox="0 0 318 318" style="margin-right:8px;"><path d="M274 35L174 109l19-44z" fill="#FFFFFF"/><path d="M44 35l99 75-18-44z" fill="#FFFFFF"/><path d="M234 218l-27 41 58 16 17-56z" fill="#FFFFFF"/><path d="M36 219l17 56 57-16-26-41z" fill="#FFFFFF"/><path d="M107 143l-17 25 60 3-2-64z" fill="#FFFFFF"/><path d="M211 143l-42-37-2 64 60-3z" fill="#FFFFFF"/></svg>
         NATIVE METAMASK LOGIN
       </button>
@@ -1154,9 +1150,9 @@ a, button, input, select, textarea {
     </div>
 
     <!-- Go Live Acknowledgment Modal -->
-    <div id="goLiveModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10005;align-items:center;justify-content:center;padding:16px;">
+    <div id="goLiveModal" role="dialog" aria-modal="true" aria-labelledby="goLiveTitle" aria-hidden="true" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10005;align-items:center;justify-content:center;padding:16px;">
       <div style="background:var(--panel);border:2px solid var(--gold2);border-radius:14px;max-width:480px;width:100%;padding:22px;box-shadow:0 8px 32px rgba(0,0,0,0.8);color:#fff;">
-        <div style="font-family:'Bungee',display;font-size:14px;color:var(--gold2);margin-bottom:12px;letter-spacing:1px;display:flex;align-items:center;gap:8px;">
+        <div id="goLiveTitle" style="font-family:'Bungee',display;font-size:14px;color:var(--gold2);margin-bottom:12px;letter-spacing:1px;display:flex;align-items:center;gap:8px;">
           <span>⚠️</span> NON-CUSTODIAL & RISK ACKNOWLEDGMENT
         </div>
         <div style="font-size:11px;line-height:1.6;color:#ccc;margin-bottom:16px;">
@@ -3622,19 +3618,30 @@ function startOverride(bot,btn){
 let pendingLiveLoginFn = null;
 
 function checkGoLiveAck(onAcknowledge) {
-  if (localStorage.getItem('ta_golive_ack') === 'true') {
-    if (typeof onAcknowledge === 'function') onAcknowledge();
-    return;
-  }
+  if (typeof onAcknowledge !== 'function') return;
+  try {
+    if (localStorage.getItem('ta_golive_ack') === 'true') {
+      onAcknowledge();
+      return;
+    }
+  } catch (e) { /* storage unavailable — still gate on the modal */ }
   pendingLiveLoginFn = onAcknowledge;
   const modal = document.getElementById('goLiveModal');
-  if (modal) modal.style.display = 'flex';
+  if (!modal) { onAcknowledge(); return; }
+  modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden', 'false');
+  // Focus the confirm button for keyboard/screen-reader users; remember where
+  // to return focus when the modal closes.
+  window._goLiveReturnFocus = document.activeElement;
+  const confirm = document.getElementById('goLiveConfirmBtn');
+  if (confirm && typeof confirm.focus === 'function') confirm.focus();
 }
 
 function confirmGoLiveAck() {
-  localStorage.setItem('ta_golive_ack', 'true');
+  try { localStorage.setItem('ta_golive_ack', 'true'); } catch (e) {}
   const modal = document.getElementById('goLiveModal');
-  if (modal) modal.style.display = 'none';
+  if (modal) { modal.style.display = 'none'; modal.setAttribute('aria-hidden', 'true'); }
+  restoreGoLiveFocus();
   if (typeof pendingLiveLoginFn === 'function') {
     const fn = pendingLiveLoginFn;
     pendingLiveLoginFn = null;
@@ -3645,7 +3652,16 @@ function confirmGoLiveAck() {
 function closeGoLiveModal() {
   pendingLiveLoginFn = null;
   const modal = document.getElementById('goLiveModal');
-  if (modal) modal.style.display = 'none';
+  if (modal) { modal.style.display = 'none'; modal.setAttribute('aria-hidden', 'true'); }
+  restoreGoLiveFocus();
+}
+
+function restoreGoLiveFocus() {
+  try {
+    const el = window._goLiveReturnFocus;
+    window._goLiveReturnFocus = null;
+    if (el && typeof el.focus === 'function') el.focus();
+  } catch (e) {}
 }
 
 // ══════════════════════════════════════════════════════
@@ -4115,138 +4131,19 @@ function loginDemo(){
 }
 
 // ══ NATIVE METAMASK LOGIN ══
-// Native MetaMask login with seamless balance integration - specifically designed for Trade Arena
+// Alias kept because older buttons/markup call nativeMetaMaskLogin().
+// There is exactly ONE MetaMask flow (loginMetaMask -> WalletCore.connect),
+// so every entry point lands on the same tested path.
 async function nativeMetaMaskLogin(){
-  const s=document.getElementById('cStatus'); if(!s) return;
-  
-  try{
-    // Accept any injected EIP-1193 wallet, not only MetaMask-branded ones.
-    if (typeof WalletCore === 'undefined' || !WalletCore.hasWallet()) {
-      s.innerHTML='<span style="color:var(--hot)">⚠️ No wallet detected</span><br><button onclick="nativeMetaMaskLogin()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:#000;cursor:pointer">RETRY NATIVE LOGIN</button>'; 
-      return; 
-    }
-    
-    s.textContent='⏳ Native MetaMask Login…';
-
-    // Delegates to WalletCore, which builds the provider/signer using the
-    // API matching the loaded ethers major version, switches to Base and
-    // performs a real multi-chain balance sync.
-    await WalletCore.connect();
-
-    const address   = WalletCore.state.address;
-    const ethBalance = WalletCore.state.ethBalance || 0;
-    const balanceUSD = WalletCore.state.usdBalance || 0;
-    const holdings   = WalletCore.state.holdings || [];
-    const chainName  = WalletCore.state.chainName;
-    const usdValue   = `${fmtUSD(balanceUSD, 2)}`;
-
-    // Render only real, on-chain data. The previous version showed hardcoded
-    // "USDC 1250 / WETH 0.20 / $2,450" figures whenever a read failed, making
-    // an unfunded wallet look funded.
-    const holdingRows = holdings.length
-      ? holdings.map(h => `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim)">
-            <span>${h.network} · ${h.symbol}</span>
-            <span>${Number(h.amount).toFixed(4)} (${fmtUSD(Number(h.valueUsd||0), 2)})</span>
-          </div>`).join('')
-      : '<div style="font-size:10px;color:var(--dim)">No token balances found on scanned networks.</div>';
-    
-    // Setup app with native MetaMask user data
-    const userData = {
-      name: address.slice(0, 6) + '···' + address.slice(-4),
-      address: address,
-      avatar: `https://api.dicebear.com/7b6940c8e15b95ad265f858e287f973a62c42f3/render?seed=${address}&size=64`,
-      badge: '🦊 NATIVE MM',
-      provider: 'metamask-native'
-    };
-    
-    // Update user interface with balance information
-    s.innerHTML = `
-      <div style="text-align:left;width:100%">
-        <div style="margin-bottom:8px"><strong>🔗 Native MetaMask Connected!</strong></div>
-        <div style="font-size:11px;color:var(--dim);margin-bottom:4px">Address: <code style="color:var(--cyan)">${address}</code></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;padding:8px;background:var(--chrome);border-radius:6px;">
-          <div><span style="color:var(--green);font-weight:600;">💰 ETH:</span> <span style="color:#fff;">${ethBalance.toFixed(6)}</span></div>
-          <div><span style="color:var(--cyan);font-weight:600;">💵 USD:</span> <span style="color:var(--gold);">${usdValue}</span></div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:8px">${holdingRows}</div>
-        <div style="margin-top:8px;font-size:10px;color:var(--dim);">
-          <div>📊 Live on-chain balance active</div>
-          <div>🌐 Network: ${chainName}${WalletCore.state.isCorrectChain ? '' : ' (switch to Base to trade)'}</div>
-        </div>
-        <button onclick="nativeMetaMaskLogin()" style="margin-top:12px;padding:6px 12px;background:var(--green);border:none;border-radius:4px;color:#000;cursor:pointer;width:100%;">
-          🔄 RECONNECT WALLET
-        </button>
-      </div>
-    `;
-    
-    setupApp(userData);
-
-    // Persist native MetaMask session
-    localStorage.setItem('ta_wallet_address', address);
-    localStorage.setItem('ta_provider', 'metamask-native');
-    localStorage.setItem('ta_session_provider', 'metamask-native');
-    window.currentUserAddress = address;
-    // Balance/startBalance are seeded by TA_syncWalletBalance during connect().
-    WalletCore.startPolling();
-    if (typeof refreshSettingsUI === 'function') refreshSettingsUI();
-    if (typeof syncUserSessionToDb === 'function') {
-      syncUserSessionToDb(address, 'metamask-native', holdings, balanceUSD);
-    }
-    if (typeof syncLearningStateToDb === 'function') {
-      syncLearningStateToDb(address);
-    }
-
-    // Log successful native MetaMask login
-    console.log('✅ Native MetaMask Login Successful - Balance Integrated:', { address, ethBalance, usdValue });
-    
-  } catch(error) {
-    console.error('Native MetaMask connection error:', error);
-    
-    const retry = '<br><button onclick="nativeMetaMaskLogin()" style="margin-top:8px;padding:6px 12px;background:var(--cyan);border:none;border-radius:4px;color:#000;cursor:pointer">TRY AGAIN NATIVE</button>';
-    if(error.code === 4001) {
-      s.innerHTML='<span style="color:var(--hot)">❌ Connection rejected by user</span>'+retry;
-    } else if(error.code === -32002) {
-      s.innerHTML='<span style="color:var(--hot)">⚠️ MetaMask request already pending</span>'+retry;
-    } else if(error.code === 'NO_WALLET') {
-      s.innerHTML='<span style="color:var(--hot)">⚠️ No wallet detected</span>'+retry;
-    } else {
-      s.innerHTML='<span style="color:var(--hot)">❌ Native MetaMask Error: '+(error.message||'Connection failed')+'</span>'+retry;
-    }
-  }
+  return loginMetaMask();
 }
 
-// Coinbase Wallet login - checks for window.coinbaseWalletExtension
+// Coinbase Wallet login - routed through the same WalletCore flow.
+// Coinbase Wallet injects a standard EIP-1193 provider at window.ethereum
+// (isCoinbaseWallet), so a separate code path is unnecessary and the old one
+// referenced undefined globals (etherscanBase, p) and crashed.
 async function loginCoinbase(){
-  const s=document.getElementById('cStatus'); if(!s) return;
-  try{
-    if(window.coinbaseWalletExtension){
-      const a=await window.coinbaseWalletExtension.request({method:'eth_requestAccounts'});
-      if(a&&a[0]){
-        const walletAddress=a[0];
-        s.innerHTML=`🔗 <a href="${etherscanBase}${walletAddress}" target="_blank" style="color:var(--accent)">${walletAddress.slice(0,6)}...${walletAddress.slice(-4)}</a><br>✅ Coinbase Wallet connected!`;
-        if(p) p.classList.add('live');
-
-        // Persist Coinbase session
-        localStorage.setItem('ta_wallet_address', walletAddress);
-        localStorage.setItem('ta_provider', 'coinbase');
-        localStorage.setItem('ta_session_provider', 'coinbase');
-        window.currentUserAddress = walletAddress;
-        if (typeof syncUserSessionToDb === 'function') {
-          syncUserSessionToDb(walletAddress, 'coinbase', [], 0);
-        }
-        if (typeof syncLearningStateToDb === 'function') {
-          syncLearningStateToDb(walletAddress);
-        }
-        if (typeof syncLearningStateFromDb === 'function') {
-          syncLearningStateFromDb(walletAddress);
-        }
-        return;        if (typeof syncLearningStateToDb === 'function') {
-          syncLearningStateToDb(walletAddress);
-        }
-        return;
-      }
-    }else{s.innerHTML='⚠️ Coinbase Wallet not found.<br><a href="https://www.coinbase.com/wallet" target="_blank" style="color:var(--hot)">Install Coinbase Wallet</a>';}
-  }catch(e){s.innerHTML='❌ '+e.message;console.error('Coinbase error:',e);}
+  return loginMetaMask();
 }
 
 // OSKO Fiat On/Off Ramp Functions
@@ -4653,7 +4550,34 @@ function _syncHeaderBotBtns(){
 }
 
 // ── Global auto toggle ──
+// This is the "autonomous trading bot" switch: it starts/stops the local
+// arena loop AND registers the fleet with the server-side AutonomousWorker
+// (POST /api/bot/register) so the backend stops idling with zero bots.
 let _ghAutoOn=false;
+// Push the current fleet to the server worker (best-effort, never blocks UI).
+function syncFleetToAutonomousWorker(){
+  try{
+    const addr = window.currentUserAddress || localStorage.getItem('ta_wallet_address');
+    if(!addr || !Array.isArray(bots) || bots.length===0) return;
+    fetch('/api/bot/register', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ address: addr, bots: bots.map(b=>({
+        id: b.id, auto: b.auto, bet: b.bet, token: 'WETH', strategyId: 'rsi-strategy'
+      }))})
+    }).then(r=>r.json()).then(d=>{
+      if(d && d.success) console.info('[Arena] fleet registered with autonomous worker:', d.count);
+    }).catch(()=>{});
+    // Refresh the worker status badge if present.
+    fetch('/api/bot/autonomous-status').then(r=>r.json()).then(st=>{
+      const el=document.getElementById('autonomousStatus');
+      if(el && st && st.success){
+        el.textContent = st.enabled
+          ? `🤖 AUTO-WORKER ${st.mode}${st.paused?' (PAUSED)':''} · ${st.activeBots} bots`
+          : '🤖 AUTO-WORKER OFF';
+      }
+    }).catch(()=>{});
+  }catch(e){}
+}
 function globalAutoToggle(){
   _ghAutoOn=!_ghAutoOn;
   bots.forEach(b=>{
@@ -4672,6 +4596,7 @@ function globalAutoToggle(){
   });
   const btn=document.getElementById('ghAutoBtn');
   if(btn){ btn.textContent=_ghAutoOn?'⏸ STOP':'AUTO'; btn.classList.toggle('on',_ghAutoOn); btn.setAttribute('aria-pressed', _ghAutoOn); }
+  syncFleetToAutonomousWorker();
 }
 
 // ── Header countdown + open-trade tally ──
@@ -5037,7 +4962,12 @@ async function spinBot(id){
     if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
 
     // ON-CHAIN EXECUTION TRIGGER
-    if (window.isPrivyConnected && window.isPrivyConnected() && !decision.method.includes('PAPER')) {
+    // Runs for ANY connected wallet (MetaMask via WalletCore, or Privy).
+    // Previously this only fired for Privy sessions, so MetaMask logins
+    // silently paper-traded forever even with AUTO on.
+    const mmConnected = (typeof WalletCore !== 'undefined' && WalletCore.state
+        && WalletCore.state.connected && WalletCore.state.address);
+    if (((window.isPrivyConnected && window.isPrivyConnected()) || mmConnected) && !decision.method.includes('PAPER')) {
         console.log('[Arena] Routing to On-Chain Execution Engine...');
         try {
             await window.executeOnChainTrade({
@@ -7440,14 +7370,17 @@ Respond in JSON format:
 
 <!-- ACCOUNT SETTINGS JAVASCRIPT -->
 <script>
-// Account Modal Functions
+// Account Modal Functions — focus is trapped inside while open, Escape and
+// backdrop click close it, and focus returns to the opener on close.
 function openAccountModal() {
   const modal = document.getElementById('accountModal');
-  if (modal) {
-    modal.classList.add('open');
-    document.body.style.overflow = 'hidden';
-    loadAccountData();
-  }
+  if (!modal) return;
+  window._accountReturnFocus = document.activeElement;
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  loadAccountData();
+  const close = modal.querySelector('.account-modal-close');
+  if (close && typeof close.focus === 'function') close.focus();
 }
 
 function closeAccountModal() {
@@ -7456,6 +7389,11 @@ function closeAccountModal() {
     modal.classList.remove('open');
     document.body.style.overflow = '';
   }
+  try {
+    const el = window._accountReturnFocus;
+    window._accountReturnFocus = null;
+    if (el && typeof el.focus === 'function') el.focus();
+  } catch (e) {}
 }
 
 function switchAccountTab(tabName) {
@@ -7805,14 +7743,31 @@ function saveNotificationSettings() {
   showToast('Notification settings saved', 'success');
 }
 
-// Keyboard shortcuts
+// Keyboard shortcuts + modal dismissal (Escape closes topmost open login modal,
+// backdrop click closes account modal, focus stays trapped while open).
 document.addEventListener('keydown', (e) => {
-  // Escape to close modal
+  // Escape closes the topmost open login modal first
   if (e.key === 'Escape') {
+    const goLive = document.getElementById('goLiveModal');
+    if (goLive && goLive.style.display === 'flex') { closeGoLiveModal(); return; }
     const modal = document.getElementById('accountModal');
     if (modal && modal.classList.contains('open')) {
       closeAccountModal();
     }
+    return;
+  }
+  // Trap Tab inside the open account modal
+  if (e.key === 'Tab') {
+    const modal = document.getElementById('accountModal');
+    if (modal && modal.classList.contains('open')) {
+      const focusables = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      const items = Array.prototype.filter.call(focusables, function(el) { return !el.disabled && el.offsetParent !== null; });
+      if (items.length === 0) { e.preventDefault(); return; }
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    return;
   }
   // Ctrl/Cmd + Shift + A to open account modal
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'A') {
@@ -7826,14 +7781,31 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('DOMContentLoaded', () => {
   // Add account settings button to header controls
   const headerControls = document.querySelector('.gh-controls');
-  if (headerControls) {
+  if (headerControls && !document.getElementById('ghAccountBtn')) {
     const accountBtn = document.createElement('button');
+    accountBtn.id = 'ghAccountBtn';
     accountBtn.className = 'gh-bus-btn';
     accountBtn.innerHTML = '⚙ ACCOUNT';
     accountBtn.onclick = openAccountModal;
     accountBtn.setAttribute('aria-label', 'Open Account Settings');
     accountBtn.title = 'Account Settings (Ctrl+Shift+A)';
     headerControls.insertBefore(accountBtn, headerControls.firstChild);
+  }
+  // Backdrop click closes the account modal (clicks on the overlay itself only)
+  const accountModal = document.getElementById('accountModal');
+  if (accountModal && !accountModal.dataset.backdropBound) {
+    accountModal.dataset.backdropBound = 'true';
+    accountModal.addEventListener('click', function(e) {
+      if (e.target === accountModal) closeAccountModal();
+    });
+  }
+  // Backdrop click cancels the go-live gate (clicks on the overlay only, not the card)
+  const goLive = document.getElementById('goLiveModal');
+  if (goLive && !goLive.dataset.backdropBound) {
+    goLive.dataset.backdropBound = 'true';
+    goLive.addEventListener('click', function(e) {
+      if (e.target === goLive) closeGoLiveModal();
+    });
   }
 });
 </script>

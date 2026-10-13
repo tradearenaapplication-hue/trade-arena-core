@@ -556,8 +556,24 @@ class RealMarketPricing {
 
       if (response.ok) {
         const data = await response.json();
-        this.priceCache = data;
+        // MERGE, don't replace: when the server is degraded it answers with
+        // whatever it has (marked stale/missing). Assigning the whole object
+        // would delete the coins that ARE cached here, so keep the last good
+        // value for every coin and only overwrite the ones the response
+        // carries. Non-price keys (stale/missing) are not price entries.
+        let merged = 0;
+        for (const [id, entry] of Object.entries(data || {})) {
+          if (entry && typeof entry.usd === "number" && entry.usd > 0) {
+            this.priceCache[id] = entry;
+            merged++;
+          }
+        }
         this.lastFetchTime = Date.now();
+        if (data && data.stale) {
+          console.info(
+            `[RealMarketPricing] prices are stale (server degraded), merged ${merged}/${tokens.length}`,
+          );
+        }
 
         // Update live P&L for all open positions
         this.updateOpenPositions();

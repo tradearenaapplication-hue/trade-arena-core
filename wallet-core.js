@@ -247,7 +247,17 @@ const WalletCore = (() => {
             const id = symbolToId[sym] || sym;
             mapped[id] = { usd };
           }
-          priceCache = { at: Date.now(), map: { ...priceCache.map, ...mapped } };
+          // NOTE: `at` records when we last got a SUCCESSFUL answer - the
+          // caller falls back to `priceCache.map` on failure, so moving
+          // the timestamp on an empty/failed response would poison the
+          // fallback with "fresh but empty". Only coins the server
+          // actually priced count as a refresh.
+          if (Object.keys(mapped).length > 0) {
+            priceCache = { at: Date.now(), map: { ...priceCache.map, ...mapped } };
+            if (data && data.stale) {
+              console.info('[WalletCore] prices are stale (server degraded) - wallet valued at last-known rates');
+            }
+          }
         } catch (e) {
           try {
             const url = 'https://api.coingecko.com/api/v3/simple/price?ids='

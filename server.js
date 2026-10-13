@@ -423,6 +423,99 @@ function queueBotDeployment(deposit) {
 }
 
 /**
+ * Resilient CoinGecko GET with in-process caching, request coalescing and
+ * automatic retry-after handling.
+ *
+ * Why this exists (2026-10 incident): every price read did a fresh,
+ * uncached, unauthenticated request - /api/market/prices loops N symbols
+ * sequentially, /api/market/batch-prices fires one, and the ticker + the
+ * wallet sync poll every 30s. From one Railway egress IP that is thousands
+ * of free-tier calls a day, so CoinGecko answered 429 and BOTH endpoints
+ * failed for hours at a time. With no prices the wallet sync valued every
+ * non-stable at $0, the trading balance fell back to the $50 default, and
+ * the app looked "not synchronised" with the wallet.
+ *
+ * Behaviour:
+ *  - Successful responses are cached `CG_CACHE_TTL_MS` (default 5 min) and
+ *    SHARED across endpoints via the URL as key - one upstream call serves
+ *    every symbol/endpoint until it expires.
+ *  - Concurrent callers for the same URL await ONE upstream request.
+ *  - A 429 is retried ONCE after the server's `Retry-After` header
+ *    (default 60s wait, capped) instead of burning the burst instantly.
+ *  - If upstream still fails but we hold a cached value (even stale), it is
+ *    returned with `stale: true` so the app can keep valuing the wallet at
+ *    the last known price instead of $0.
+ */
+const cgServerCache = new Map(); // url -> { at, data, ttlMs }
+const cgInflight = new Map();    // url -> Promise
+const CG_CACHE_TTL_MS = (() => {
+    const raw = Number(process.env.CG_CACHE_TTL_MS);
+    return Number.isFinite(raw) && raw > 0 ? raw : 5 * 60 * 1000;
+})();
+const CG_MAX_WAIT_MS = 70 * 1000;
+
+const singlePriceUrl = (coinId) =>
+    `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Optional CoinGecko key (see crucible-regime.js cgHeaders for precedent). */
+function coingeckoHeaders() {
+    const key = (process.env.COIN_GECKO_API_KEY || '').trim();
+    return key ? { 'x-cg-pro-api-key': key } : {};
+}
+
+async function coingeckoGet(url, { timeout = 8000, cacheTtlMs = CG_CACHE_TTL_MS, retryOnce = true } = {}) {
+    const now = Date.now();
+    const cached = cgServerCache.get(url);
+    if (cached && now - cached.at < (cached.ttlMs ?? cacheTtlMs)) {
+        return { data: cached.data, stale: false };
+    }
+    if (cgInflight.has(url)) return cgInflight.get(url);
+
+    const run = (async () => {
+        const headers = coingeckoHeaders();
+        try {
+            const resp = await axios.get(url, { timeout, headers });
+            cgServerCache.set(url, { at: Date.now(), data: resp.data, ttlMs: cacheTtlMs });
+            return { data: resp.data, stale: false };
+        } catch (e) {
+            const status = e?.response?.status;
+            if (retryOnce && status === 429) {
+                // Honour the throttle instead of bursting through it: wait out
+                // Retry-After once, then try a single last time.
+                const retryAfter = Number(e?.response?.headers?.['retry-after']);
+                const waitMs = Math.min(
+                    CG_MAX_WAIT_MS,
+                    (Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 60 * 1000)
+                );
+                console.warn(`[CoinGecko] 429 for ${url} - waiting ${Math.round(waitMs / 1000)}s once before retry`);
+                await sleep(waitMs);
+                try {
+                    const resp = await axios.get(url, { timeout, headers });
+                    cgServerCache.set(url, { at: Date.now(), data: resp.data, ttlMs: cacheTtlMs });
+                    return { data: resp.data, stale: false };
+                } catch (e2) {
+                    console.warn(`[CoinGecko] retry failed for ${url}:`, e2.message);
+                }
+            } else {
+                console.warn(`[CoinGecko] request failed for ${url}:`, e.message);
+            }
+            // Stale is better than zero: an old price keeps the wallet from
+            // being valued at $0 and the trading balance at the $50 default.
+            if (cached) {
+                console.warn(`[CoinGecko] serving STALE price for ${url} (${Math.round((now - cached.at) / 1000)}s old)`);
+                return { data: cached.data, stale: true };
+            }
+            throw e;
+        } finally {
+            cgInflight.delete(url);
+        }
+    })();
+    cgInflight.set(url, run);
+    return run;
+}
+
+/**
  * Helper: fetch CoinGecko price for a symbol
  */
 async function fetchCoinGeckoPrice(symbol) {
@@ -441,15 +534,77 @@ async function fetchCoinGeckoPrice(symbol) {
     if (!coinId) return null;
 
     try {
-        const resp = await axios.get(
-            `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`,
-            { timeout: 5000 }
-        );
-        return resp.data?.[coinId]?.usd || null;
+        const { data, stale } = await coingeckoGet(singlePriceUrl(coinId));
+        if (stale) console.warn(`[Price] ${symbol} is stale - wallet valued at last-known price`);
+        return data?.[coinId]?.usd || null;
     } catch (e) {
         console.warn(`[Price] Failed to fetch ${symbol}:`, e.message);
         return null;
     }
+}
+
+/**
+ * Tot up a batch price lookup from the shared per-id cache.
+ *
+ * Each coin's price is resolved through coingeckoGet() on its own single-id
+ * URL key, so the ticker and the wallet-pricing route reuse ONE upstream
+ * request per coin: ~2 CoinGecko calls per 5 minutes instead of the
+ * hundreds a day the old uncached code made - which is what earned the
+ * 429s and the permanent 502s in the log.
+ *
+ * Coins missing from the cache are fetched in a SINGLE combined upstream
+ * call (not one call each), then written back into the per-id cache entries
+ * so the next caller - on either endpoint - finds them fresh.
+ *
+ * @param {string[]} ids CoinGecko ids, e.g. ['ethereum','bitcoin']
+ * @returns {{ prices: object, stale: boolean, missing: string[] }}
+ */
+async function batchPricesFromCache(ids) {
+    const prices = {};
+    let stale = false;
+    const missing = [];
+    const now = Date.now();
+    for (const id of ids) {
+        const entry = cgServerCache.get(singlePriceUrl(id));
+        if (entry && now - entry.at < (entry.ttlMs ?? CG_CACHE_TTL_MS)) {
+            const usd = entry.data?.[id]?.usd;
+            if (usd != null) prices[id] = { usd };
+            else missing.push(id); // cached entry holds no value for this id
+        } else {
+            missing.push(id);
+        }
+    }
+    if (missing.length > 0) {
+        const combinedUrl =
+            `https://api.coingecko.com/api/v3/simple/price?ids=${missing.join(',')}&vs_currencies=usd`;
+        try {
+            const { data, stale: isStale } = await coingeckoGet(combinedUrl);
+            const stillMissing = [];
+            for (const id of missing) {
+                const usd = data?.[id]?.usd;
+                if (usd == null) {
+                    stillMissing.push(id);
+                    continue;
+                }
+                prices[id] = { usd };
+                if (isStale) stale = true;
+                // Write-through: the next caller on EITHER price endpoint
+                // finds this coin fresh instead of fetching again.
+                cgServerCache.set(singlePriceUrl(id), {
+                    at: Date.now(),
+                    data: { [id]: { usd } },
+                    ttlMs: CG_CACHE_TTL_MS,
+                });
+            }
+            missing.length = 0;
+            missing.push(...stillMissing);
+        } catch (e) {
+            // coingeckoGet already warned and had no stale combined value;
+            // per-id stale values (if any) are picked up by the callers'
+            // own fallbacks. `missing` stays as-is.
+        }
+    }
+    return { prices, stale, missing };
 }
 
 // Initialize provider
@@ -2300,9 +2455,30 @@ app.get('/api/market/prices', async (req, res) => {
             if (price) prices[symbol] = price;
         }
 
+        // If some symbols failed this round, fill them from the last-known
+        // values cached by the batch endpoint instead of dropping them:
+        // both routes share the per-id cache now, so a coin the ticker
+        // priced minutes ago is still a better answer than omitting it and
+        // having the wallet value that holding at $0.
+        const SYMBOL_TO_ID = { WETH: 'ethereum', ETH: 'ethereum', USDC: 'usd-coin', BTC: 'bitcoin', SOL: 'solana', ARB: 'arbitrum', OP: 'optimism', ADA: 'cardano', XRP: 'ripple' };
+        const missing = symbols.filter((s) => prices[s] == null && SYMBOL_TO_ID[s]);
+        if (missing.length > 0) {
+            const filler = await batchPricesFromCache(missing.map((s) => SYMBOL_TO_ID[s]));
+            for (const s of missing) {
+                const id = SYMBOL_TO_ID[s];
+                if (filler.prices[id]?.usd != null) {
+                    prices[s] = filler.prices[id].usd;
+                    if (filler.stale) {
+                        console.warn(`[CoinGecko] /api/market/prices serving STALE ${s} from shared cache`);
+                    }
+                }
+            }
+        }
+
         res.json({
             success: true,
             prices,
+            cached: true, // served from the 5-min shared server cache whenever fresh
             timestamp: Date.now()
         });
     } catch (error) {
@@ -2315,9 +2491,18 @@ app.get('/api/market/prices', async (req, res) => {
  *
  * Bulk CoinGecko proxy for the v4.2 live ticker (app-rebuild.js). Returns the
  * RAW CoinGecko { id: { usd: <price> } } shape so the client's getPrice()
- * (`priceCache[id]?.usd`) works unchanged. Fetching server-side avoids the
- * browser 429s / CORS failures that happen when many clients hit
- * api.coingecko.com from shared IPs.
+ * (`priceCache[id]?.usd`) works unchanged.
+ *
+ * Prices are resolved per-id through the shared 5-minute server cache
+ * (batchPricesFromCache), so the ticker and the wallet-pricing route reuse
+ * ONE upstream request per coin: ~2 CoinGecko calls per 5 minutes instead of
+ * the hundreds a day the old uncached code made - which is what earned the
+ * 429s and the permanent 502s in the log.
+ *
+ * Degraded rather than dead: if CoinGecko is unreachable the route answers
+ * with whatever it has (marked `stale: true`, and `missing` listing coins
+ * with no value at all) instead of a bare 502, so the wallet can still be
+ * valued at the last known prices instead of $0.
  */
 app.get('/api/market/batch-prices', async (req, res) => {
     try {
@@ -2326,11 +2511,14 @@ app.get('/api/market/batch-prices', async (req, res) => {
         if (ids.length > 40) {
             return res.status(400).json({ success: false, error: 'Too many ids (max 40)' });
         }
-        const resp = await axios.get(
-            `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`,
-            { timeout: 8000 }
-        );
-        res.json(resp.data || {});
+        // Resolved per-id from the shared cache, so the ticker and the
+        // wallet-pricing route reuse one upstream request per coin.
+        const { prices, stale, missing } = await batchPricesFromCache(ids);
+        if (Object.keys(prices).length === 0) {
+            // Nothing at all to serve - not even stale values.
+            return res.status(502).json({ success: false, error: 'Price provider unavailable', missing });
+        }
+        res.json({ ...prices, ...(stale ? { stale: true } : {}), ...(missing.length ? { missing } : {}) });
     } catch (error) {
         // Non-fatal: the ticker simply keeps its last-known prices.
         res.status(502).json({ success: false, error: 'Price provider unavailable' });

@@ -106,6 +106,48 @@
           "riskMultiplier": 1
         },
         "lastTradeTime": 0
+      },
+      {
+        "id": "mv74d5yynw6utgp3g2a",
+        "name": "Alpha Trading Bot",
+        "token": "WETH",
+        "strategyId": "Arbitrage Detection",
+        "strategy": "Arbitrage Detection",
+        "status": "ACTIVE",
+        "initialCapital": 1000,
+        "config": {
+          "name": "Arbitrage Detection Bot",
+          "strategy": "ARBITRAGE",
+          "params": {
+            "minSpread": 0.5,
+            "maxSlippage": 0.01,
+            "gasLimit": 500000
+          },
+          "risk": 0.5,
+          "riskMultiplier": 1
+        },
+        "lastTradeTime": 0
+      },
+      {
+        "id": "mv756uzklqe35db8mx",
+        "name": "Alpha Trading Bot",
+        "token": "WETH",
+        "strategyId": "Arbitrage Detection",
+        "strategy": "Arbitrage Detection",
+        "status": "ACTIVE",
+        "initialCapital": 1000,
+        "config": {
+          "name": "Arbitrage Detection Bot",
+          "strategy": "ARBITRAGE",
+          "params": {
+            "minSpread": 0.5,
+            "maxSlippage": 0.01,
+            "gasLimit": 500000
+          },
+          "risk": 0.5,
+          "riskMultiplier": 1
+        },
+        "lastTradeTime": 0
       }
     ],
     "trades": []

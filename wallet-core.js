@@ -220,8 +220,10 @@ const WalletCore = (() => {
   let priceInFlight = null;
 
   /**
-   * Cached CoinGecko spot prices. Never throws - on rate limit / offline it
-   * degrades to whatever is already cached, and stablecoins fall back to $1.
+   * Cached spot prices via the server proxy (GET /api/market/prices), which
+   * caches CoinGecko server-side. Browsers hitting api.coingecko.com directly
+   * get 429s + CORS blocks on shared IPs; the server route avoids both.
+   * Falls back to direct CoinGecko, then to cache/stables. Never throws.
    */
   async function getPrices(ids) {
     const unique = [...new Set((ids || []).filter(Boolean))];
@@ -231,14 +233,31 @@ const WalletCore = (() => {
     if (missing.length > 0) {
       // Coalesce concurrent callers onto a single in-flight request.
       priceInFlight = priceInFlight || (async () => {
+        // Map CoinGecko ids back to the server's symbol vocabulary.
+        const idToSymbol = { ethereum: 'WETH', 'usd-coin': 'USDC', bitcoin: 'BTC', solana: 'SOL' };
+        const symbols = missing.map((id) => idToSymbol[id] || id);
         try {
-          const url = 'https://api.coingecko.com/api/v3/simple/price?ids='
-            + encodeURIComponent(missing.join(',')) + '&vs_currencies=usd';
-          const res = await fetchWithTimeout(url, {}, 5000);
+          const res = await fetchWithTimeout(
+            '/api/market/prices?symbols=' + encodeURIComponent(symbols.join(',')), {}, 8000);
           const data = await res.json();
-          priceCache = { at: Date.now(), map: { ...priceCache.map, ...data } };
+          const prices = (data && data.prices) || {};
+          const symbolToId = { WETH: 'ethereum', USDC: 'usd-coin', BTC: 'bitcoin', SOL: 'solana' };
+          const mapped = {};
+          for (const [sym, usd] of Object.entries(prices)) {
+            const id = symbolToId[sym] || sym;
+            mapped[id] = { usd };
+          }
+          priceCache = { at: Date.now(), map: { ...priceCache.map, ...mapped } };
         } catch (e) {
-          console.warn('[WalletCore] price fetch failed:', e.message);
+          try {
+            const url = 'https://api.coingecko.com/api/v3/simple/price?ids='
+              + encodeURIComponent(missing.join(',')) + '&vs_currencies=usd';
+            const res = await fetchWithTimeout(url, {}, 5000);
+            const data = await res.json();
+            priceCache = { at: Date.now(), map: { ...priceCache.map, ...data } };
+          } catch (e2) {
+            console.warn('[WalletCore] price fetch failed:', e2.message || e.message);
+          }
         } finally {
           priceInFlight = null;
         }

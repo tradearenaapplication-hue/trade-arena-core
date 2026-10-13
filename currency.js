@@ -51,7 +51,7 @@ const Currency = (() => {
             // roughly 1/1000 of the true value.
             const sources = [
                 {
-                    url: 'https://api.frankfurter.app/latest?from=USD&to=AUD',
+                    url: 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=AUD',
                     read: (d) => Number(d && d.rates && d.rates.AUD)
                 },
                 {

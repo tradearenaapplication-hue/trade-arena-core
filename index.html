@@ -2099,7 +2099,7 @@ function drawStratBreakdown(trades) {
     const isPos=d.pnl>=0;
     const barW=(Math.abs(d.pnl)/maxAbs*100).toFixed(0);
     return `<div class="strat-row">
-      <div class="strat-name">${name}</div>
+      <div class="strat-name">${escapeHTML(name)}</div>
       <div class="strat-bar-wrap"><div class="strat-bar ${isPos?'pos':'neg'}" style="width:${barW}%"></div></div>
       <div class="strat-stat" style="color:${isPos?'var(--green)':'var(--hot)'}">${isPos?'+':''}$${d.pnl.toFixed(2)} · ${wr}% WR</div>
     </div>`;

@@ -2198,6 +2198,68 @@ describe("Trade Olympics XSS Sanitization Security", () => {
   });
 });
 
+describe("Strategy Breakdown XSS Sanitization Security", () => {
+  it("uses escapeHTML when rendering strategy names in drawStratBreakdown to prevent DOM XSS", () => {
+    function escapeHTML(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    let renderedHTML = "";
+    const mockStratEl = {
+      set innerHTML(val) {
+        renderedHTML = val;
+      },
+      textContent: ""
+    };
+
+    global.document = {
+      getElementById: (id) => (id === "stratBreakdown" ? mockStratEl : null)
+    };
+
+    function drawStratBreakdown(trades) {
+      const byStrat={};
+      trades.forEach(t=>{
+        if(!byStrat[t.method]) byStrat[t.method]={wins:0,total:0,pnl:0};
+        byStrat[t.method].total++; byStrat[t.method].pnl+=t.netPnl;
+        if(t.isWin) byStrat[t.method].wins++;
+      });
+      const maxAbs=Math.max(...Object.values(byStrat).map(d=>Math.abs(d.pnl)),0.01);
+      const el=global.document.getElementById('stratBreakdown');
+      el.innerHTML=Object.entries(byStrat).sort((a,b)=>b[1].pnl-a[1].pnl).map(([name,d])=>{
+        const wr=(d.wins/d.total*100).toFixed(0);
+        const isPos=d.pnl>=0;
+        const barW=(Math.abs(d.pnl)/maxAbs*100).toFixed(0);
+        return `<div class="strat-row">
+          <div class="strat-name">${escapeHTML(name)}</div>
+          <div class="strat-bar-wrap"><div class="strat-bar ${isPos?'pos':'neg'}" style="width:${barW}%"></div></div>
+          <div class="strat-stat" style="color:${isPos?'var(--green)':'var(--hot)'}">${isPos?'+':''}$${d.pnl.toFixed(2)} · ${wr}% WR</div>
+        </div>`;
+      }).join('');
+    }
+
+    const maliciousTrades = [
+      {
+        method: "<script>alert('xss-strat')</script>ARBITRAGE",
+        netPnl: 10.5,
+        isWin: true
+      }
+    ];
+
+    drawStratBreakdown(maliciousTrades);
+
+    expect(renderedHTML.includes("<script>")).toBe(false);
+    expect(renderedHTML).toContain("&lt;script&gt;alert(&#039;xss-strat&#039;)&lt;/script&gt;ARBITRAGE");
+
+    delete global.document;
+  });
+});
+
 describe("ELO Tournament Engine XSS Sanitization Security", () => {
   it("uses escapeHTML when rendering agent properties in renderEloArena", () => {
     const fs = require("fs");
@@ -2483,7 +2545,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
+    expect(content).toContain("AFSL Compliance Assessment & Gate 3 Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });

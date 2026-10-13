@@ -1357,16 +1357,34 @@ describe("Trade Authorisation Hardening", () => {
   // Throwaway test key. Never holds funds; used only to produce signatures.
   const TRADER_KEY = "0x" + "11".repeat(32);
   const STRANGER_KEY = "0x" + "22".repeat(32);
+  const OTHER_KEY = "0x" + "33".repeat(32); // second allowlisted wallet
   const trader = new ethers.Wallet(TRADER_KEY);
   const stranger = new ethers.Wallet(STRANGER_KEY);
+  const other = new ethers.Wallet(OTHER_KEY);
 
-  process.env.ALLOWED_TRADERS = trader.address;
+  process.env.ALLOWED_TRADERS = `${trader.address},${other.address}`;
+  // Short session TTL so the expiry test does not have to wait 15 minutes.
+  // Set BEFORE require: the server reads it once at module load.
+  process.env.TRADE_SESSION_TTL_MS = "1000";
   const server = require("./server.js");
 
-  const findRoute = (path) => {
-    const r = server._router.stack.find((l) => l.route && l.route.path === path);
+  const findRoute = (path, method = "post") => {
+    const r = server._router.stack.find(
+      (l) => l.route && l.route.path === path && l.route.methods[method],
+    );
     expect(Boolean(r)).toBe(true);
     return r.route;
+  };
+
+  /**
+   * The actual route handler, skipping any rate limiter registered in front
+   * of it. The session routes are `app.post(path, limiter, handler)`, so the
+   * handler is always the LAST layer - resolving by position-independent
+   * rule keeps these tests correct if more middleware is ever inserted.
+   */
+  const findRouteHandler = (path, method = "post") => {
+    const route = findRoute(path, method);
+    return route.stack[route.stack.length - 1].handle;
   };
 
   /**
@@ -1506,6 +1524,182 @@ describe("Trade Authorisation Hardening", () => {
     }, res, () => {});
 
     expect(res.statusCode).toBe(403);
+  });
+
+  it("REGRESSION: verifies a signature when the address case differs between issue and submit", async () => {
+    // MetaMask hands the page a LOWERCASE address (eth_accounts), but the
+    // nonce response and swap request carry the checksummed form. The signed
+    // message and the verified message must be identical regardless of which
+    // case arrived, or every trade dies with "Signature does not match".
+    const issued = await issueNonce(trader.address.toLowerCase(), baseTerms);
+    expect(issued.statusCode).toBe(200);
+    const signature = await trader.signMessage(issued.body.message);
+
+    const guard = findAuthGuard("/api/wallet/swap");
+    const res = mockRes();
+    let passed = false;
+    await guard(
+      {
+        body: { ...baseTerms, traderAddress: trader.address, nonce: issued.body.nonce, signature },
+        get: () => undefined, headers: {},
+      },
+      res,
+      () => { passed = true; },
+    );
+
+    expect(passed).toBe(true);
+    expect(res.statusCode).toBe(200);
+  });
+
+  it("REGRESSION: verifies a signature when the checksummed address is submitted lowercase", async () => {
+    // The mirror image of the previous test, so neither direction of the
+    // case mismatch can regress independently.
+    const issued = await issueNonce(trader.address, baseTerms);
+    const signature = await trader.signMessage(issued.body.message);
+
+    const guard = findAuthGuard("/api/wallet/swap");
+    const res = mockRes();
+    let passed = false;
+    await guard(
+      {
+        body: { ...baseTerms, traderAddress: trader.address.toLowerCase(), nonce: issued.body.nonce, signature },
+        get: () => undefined, headers: {},
+      },
+      res,
+      () => { passed = true; },
+    );
+
+    expect(passed).toBe(true);
+  });
+
+  // ── Trading sessions ──────────────────────────────────────────────
+
+  const requestSessionChallenge = async (address) => {
+    const res = mockRes();
+    await findRouteHandler("/api/wallet/trade-session/challenge")(
+      { body: { address } }, res, () => {},
+    );
+    return res;
+  };
+
+  const redeemSession = async (body) => {
+    const res = mockRes();
+    // NOTE: the handler reads req.body - the mock request must wrap it.
+    await findRouteHandler("/api/wallet/trade-session")({ body }, res, () => {});
+    return res;
+  };
+
+  /** Full happy path: challenge -> sign -> redeem. Returns both responses. */
+  const startSession = async (wallet) => {
+    const ch = await requestSessionChallenge(wallet.address.toLowerCase());
+    expect(ch.statusCode).toBe(200);
+    const signature = await wallet.signMessage(ch.body.message);
+    const sv = await redeemSession({
+      address: wallet.address.toLowerCase(),
+      nonce: ch.body.nonce,
+      signature,
+    });
+    return { challenge: ch, session: sv };
+  };
+
+  const guardWithSession = async (sessionToken, traderAddress) => {
+    const guard = findAuthGuard("/api/wallet/swap");
+    const res = mockRes();
+    let passed = false;
+    await guard(
+      {
+        body: { ...baseTerms, traderAddress, sessionToken },
+        get: () => undefined, headers: {},
+      },
+      res,
+      () => { passed = true; },
+    );
+    return { res, passed };
+  };
+
+  it("refuses to issue a session challenge to an address that is not allowlisted", async () => {
+    const ch = await requestSessionChallenge(stranger.address);
+    expect(ch.statusCode).toBe(403);
+    expect(ch.body.success).toBe(false);
+    expect(ch.body.nonce).toBeUndefined();
+  });
+
+  it("mints a session token from one signature", async () => {
+    const { session } = await startSession(trader);
+    expect(session.statusCode).toBe(200);
+    expect(typeof session.body.token).toBe("string");
+    expect(session.body.token.length).toBe(64); // 32 random bytes, hex
+    expect(session.body.address).toBe(trader.address);
+    expect(Date.parse(session.body.expiresAt)).toBeGreaterThan(Date.now());
+  });
+
+  it("lets a session token authorise a swap without a per-trade signature", async () => {
+    const { session } = await startSession(trader);
+    const { res, passed } = await guardWithSession(session.body.token, trader.address);
+    expect(passed).toBe(true);
+    expect(res.statusCode).toBe(200);
+  });
+
+  it("rejects a session token presented for a different allowlisted address", async () => {
+    // Token belongs to `trader`; `other` is also allowlisted, so this must
+    // fail on the token-address binding, not on the allowlist.
+    const { session } = await startSession(trader);
+    const { res, passed } = await guardWithSession(session.body.token, other.address);
+    expect(passed).toBe(false);
+    expect(res.statusCode).toBe(401);
+  });
+
+  it("rejects a session challenge that is not signed by the claimed wallet", async () => {
+    const ch = await requestSessionChallenge(trader.address);
+    const forged = await stranger.signMessage(ch.body.message);
+    const sv = await redeemSession({
+      address: trader.address,
+      nonce: ch.body.nonce,
+      signature: forged,
+    });
+    expect(sv.statusCode).toBe(401);
+    expect(sv.body.success).toBe(false);
+  });
+
+  it("rejects a replayed session challenge", async () => {
+    const ch = await requestSessionChallenge(trader.address);
+    const signature = await trader.signMessage(ch.body.message);
+    const body = { address: trader.address, nonce: ch.body.nonce, signature };
+
+    const first = await redeemSession({ ...body });
+    expect(first.statusCode).toBe(200);
+
+    const second = await redeemSession({ ...body });
+    expect(second.statusCode).toBe(401);
+  });
+
+  it("expires a session token after its TTL", async () => {
+    // The suite set TRADE_SESSION_TTL_MS=1000 before requiring the server.
+    const { session } = await startSession(trader);
+    expect(session.statusCode).toBe(200);
+    await new Promise((r) => setTimeout(r, 1100));
+
+    const { res, passed } = await guardWithSession(session.body.token, trader.address);
+    expect(passed).toBe(false);
+    expect(res.statusCode).toBe(401);
+    expect(res.body.sessionExpired).toBe(true);
+  });
+
+  it("revokes a session token via DELETE", async () => {
+    const { session } = await startSession(trader);
+    const before = await guardWithSession(session.body.token, trader.address);
+    expect(before.passed).toBe(true);
+
+    const del = mockRes();
+    await findRouteHandler("/api/wallet/trade-session", "delete")(
+      { body: { token: session.body.token } }, del, () => {},
+    );
+    expect(del.statusCode).toBe(200);
+    expect(del.body.success).toBe(true);
+
+    const after = await guardWithSession(session.body.token, trader.address);
+    expect(after.passed).toBe(false);
+    expect(after.res.statusCode).toBe(401);
   });
 });
 

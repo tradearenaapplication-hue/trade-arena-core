@@ -22,6 +22,90 @@
           "riskMultiplier": 1
         },
         "lastTradeTime": 0
+      },
+      {
+        "id": "mv71u8xwalxpu7ujd7s",
+        "name": "Alpha Trading Bot",
+        "token": "WETH",
+        "strategyId": "Arbitrage Detection",
+        "strategy": "Arbitrage Detection",
+        "status": "ACTIVE",
+        "initialCapital": 1000,
+        "config": {
+          "name": "Arbitrage Detection Bot",
+          "strategy": "ARBITRAGE",
+          "params": {
+            "minSpread": 0.5,
+            "maxSlippage": 0.01,
+            "gasLimit": 500000
+          },
+          "risk": 0.5,
+          "riskMultiplier": 1
+        },
+        "lastTradeTime": 0
+      },
+      {
+        "id": "mv721j0fbph638d3f8",
+        "name": "Alpha Trading Bot",
+        "token": "WETH",
+        "strategyId": "Arbitrage Detection",
+        "strategy": "Arbitrage Detection",
+        "status": "ACTIVE",
+        "initialCapital": 1000,
+        "config": {
+          "name": "Arbitrage Detection Bot",
+          "strategy": "ARBITRAGE",
+          "params": {
+            "minSpread": 0.5,
+            "maxSlippage": 0.01,
+            "gasLimit": 500000
+          },
+          "risk": 0.5,
+          "riskMultiplier": 1
+        },
+        "lastTradeTime": 0
+      },
+      {
+        "id": "mv724cmtb0gsqtj3dl6",
+        "name": "Alpha Trading Bot",
+        "token": "WETH",
+        "strategyId": "Arbitrage Detection",
+        "strategy": "Arbitrage Detection",
+        "status": "ACTIVE",
+        "initialCapital": 1000,
+        "config": {
+          "name": "Arbitrage Detection Bot",
+          "strategy": "ARBITRAGE",
+          "params": {
+            "minSpread": 0.5,
+            "maxSlippage": 0.01,
+            "gasLimit": 500000
+          },
+          "risk": 0.5,
+          "riskMultiplier": 1
+        },
+        "lastTradeTime": 0
+      },
+      {
+        "id": "mv7270qg39mqny6q0il",
+        "name": "Alpha Trading Bot",
+        "token": "WETH",
+        "strategyId": "Arbitrage Detection",
+        "strategy": "Arbitrage Detection",
+        "status": "ACTIVE",
+        "initialCapital": 1000,
+        "config": {
+          "name": "Arbitrage Detection Bot",
+          "strategy": "ARBITRAGE",
+          "params": {
+            "minSpread": 0.5,
+            "maxSlippage": 0.01,
+            "gasLimit": 500000
+          },
+          "risk": 0.5,
+          "riskMultiplier": 1
+        },
+        "lastTradeTime": 0
       }
     ],
     "trades": []

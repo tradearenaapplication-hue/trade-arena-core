@@ -72,6 +72,103 @@ async function getSwapQuote(buyTokenAddress, sellTokenAddress, sellAmountWei, ta
 }
 
 /**
+ * TRADING SESSION MANAGER
+ *
+ * One wallet signature authorises trades for a limited time, instead of a
+ * MetaMask popup on every bot fill. The token is cached in memory only (a
+ * page reload re-signs once) and is bound to the address that created it -
+ * switching accounts discards it. If the server reports the session expired
+ * mid-flight, callers retry once via ensureTradeSession().
+ */
+const TradeSession = {
+    token: null,
+    address: null,
+    expiresAt: 0,
+};
+
+/**
+ * Obtain a session token for `userAddress`, signing ONE message in the
+ * wallet on first use (or after expiry). Returns the token. Throws if the
+ * session cannot be established (user rejects, server error, old server
+ * without the endpoints) - the caller catches and falls back to the
+ * per-trade nonce flow, which still works.
+ *
+ * @param {string} userAddress
+ * @param {(message: string) => Promise<string>} signMessage
+ * @returns {Promise<string>} session token
+ */
+async function ensureTradeSession(userAddress, signMessage) {
+    // Compare case-insensitively: MetaMask reports lowercase, ethers and the
+    // server report checksummed; the same wallet must not force a re-sign.
+    const sameAccount = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
+
+    if (TradeSession.token
+        && sameAccount(TradeSession.address, userAddress)
+        && TradeSession.expiresAt > Date.now() + 30_000 /* refresh margin */) {
+        return TradeSession.token;
+    }
+
+    // A different account signed in: the old token must never be reused.
+    if (!sameAccount(TradeSession.address, userAddress)) {
+        TradeSession.token = null;
+        TradeSession.expiresAt = 0;
+    }
+
+    // 1. Ask the server for a challenge bound to this address.
+    const chRes = await fetch('/api/wallet/trade-session/challenge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: userAddress })
+    });
+    const ch = await chRes.json().catch(() => ({}));
+    if (!chRes.ok || !ch.success) {
+        throw new Error(ch.error || `Session challenge failed (HTTP ${chRes.status})`);
+    }
+
+    // 2. Sign it - the ONE wallet prompt for this whole session.
+    const signature = await signMessage(ch.message);
+    if (!signature) throw new Error('Session authorisation was not signed');
+
+    // 3. Redeem for a time-limited token.
+    const svRes = await fetch('/api/wallet/trade-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: userAddress, nonce: ch.nonce, signature })
+    });
+    const sv = await svRes.json().catch(() => ({}));
+    if (!svRes.ok || !sv.success) {
+        throw new Error(sv.error || `Session start failed (HTTP ${svRes.status})`);
+    }
+
+    TradeSession.token = sv.token;
+    TradeSession.address = sv.address;
+    TradeSession.expiresAt = Date.parse(sv.expiresAt) || (Date.now() + (sv.ttlMs || 0));
+    console.log(`[Execution] Trading session active until ${TradeSession.expiresAt ? new Date(TradeSession.expiresAt).toLocaleTimeString() : '?'}`);
+    return TradeSession.token;
+}
+
+/**
+ * Drop the cached session and tell the server it is dead (logout, account
+ * switch). Fire-and-forget: even if the server call fails, the local cache
+ * is cleared so no further trades ride the old token.
+ */
+function clearTradeSession() {
+    const token = TradeSession.token;
+    TradeSession.token = null;
+    TradeSession.address = null;
+    TradeSession.expiresAt = 0;
+    if (token) {
+        try {
+            fetch('/api/wallet/trade-session', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token })
+            }).catch(() => { /* server already forgot it */ });
+        } catch (e) { /* non-fatal */ }
+    }
+}
+
+/**
  * Execute a real on-chain trade by delegating to the server engine.
  *
  * This used to be a second, independent execution path: it built its own
@@ -84,8 +181,10 @@ async function getSwapQuote(buyTokenAddress, sellTokenAddress, sellAmountWei, ta
  * elsewhere fixed.
  *
  * There is now ONE engine. The browser proves it controls the trading
- * address by signing a server-issued nonce, and the server does the quoting,
- * risk-checking, wrapping, approving and broadcasting.
+ * address - either by presenting a trading session token (one signature
+ * per session, minted via /api/wallet/trade-session) or, as a fallback, by
+ * signing a server-issued per-trade nonce - and the server does the
+ * quoting, risk-checking, wrapping, approving and broadcasting.
  *
  * @param {Object} tradeRequest
  * @param {string} tradeRequest.botId
@@ -129,13 +228,6 @@ async function executeOnChainTrade(tradeRequest) {
         const fromToken = isLong ? 'USDC' : token;
         const toToken = isLong ? token : 'USDC';
 
-        // 1. Authorise: request a nonce for THIS exact trade, sign it, post it back.
-        //
-        // The nonce is bound to the terms below, and the server rejects any
-        // submission whose terms differ from the ones signed. The payload is
-        // therefore built once and sent identically to both calls - if the two
-        // ever disagreed, the signature would verify and the trade would still
-        // be refused.
         updateExecutionUI(botId, 'AUTHORISING');
         const tradeTerms = {
             address: userAddress,
@@ -146,35 +238,68 @@ async function executeOnChainTrade(tradeRequest) {
             slippage: 0.005
         };
 
-        const nonceRes = await fetch('/api/wallet/trade-nonce', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(tradeTerms)
-        });
-        const nonceData = await nonceRes.json();
-        if (!nonceRes.ok || !nonceData.success) {
-            throw new Error(nonceData.error || 'Could not obtain a trade authorisation nonce');
-        }
+        const signMessage = (message) => hasPrivy
+            ? window.privySignMessage(message)
+            : WalletCore.state.signer.signMessage(message);
 
-        const signature = hasPrivy
-            ? await window.privySignMessage(nonceData.message)
-            : await WalletCore.state.signer.signMessage(nonceData.message);
-        if (!signature) throw new Error('Trade authorisation was not signed');
+        // 1. Authorise. Preferred: a trading session (ONE wallet prompt per
+        //    session, not per fill). Fallback: the per-trade nonce + signature,
+        //    used when the session cannot be established (user rejects it, an
+        //    older server without the session endpoints, transient error).
+        //    The per-trade nonce is bound to the terms above, and the server
+        //    rejects any submission whose terms differ from the ones signed.
+        let authBody;
+        let usedSession = false;
+        try {
+            const sessionToken = await ensureTradeSession(userAddress, signMessage);
+            authBody = { traderAddress: userAddress, sessionToken };
+            usedSession = true;
+        } catch (e) {
+            console.warn('[Execution] No trading session, signing this trade individually:', e.message);
 
-        // 2. Execute on the server.
-        updateExecutionUI(botId, 'SIGNING');
-        const res = await fetch('/api/wallet/swap', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                ...tradeTerms,
+            const nonceRes = await fetch('/api/wallet/trade-nonce', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(tradeTerms)
+            });
+            const nonceData = await nonceRes.json();
+            if (!nonceRes.ok || !nonceData.success) {
+                throw new Error(nonceData.error || 'Could not obtain a trade authorisation nonce');
+            }
+
+            const signature = await signMessage(nonceData.message);
+            if (!signature) throw new Error('Trade authorisation was not signed');
+            authBody = {
                 traderAddress: nonceData.address,
                 nonce: nonceData.nonce,
                 signature
-            })
+            };
+        }
+
+        // 2. Execute on the server. If the session expired between trades the
+        //    server answers 401 {sessionExpired:true}; renew it (one prompt)
+        //    and retry the same trade exactly once.
+        updateExecutionUI(botId, 'SIGNING');
+        let res = await fetch('/api/wallet/swap', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...tradeTerms, ...authBody })
         });
 
-        const data = await res.json();
+        let data = await res.json();
+        if (!res.ok && usedSession && data && data.sessionExpired) {
+            console.warn('[Execution] Trading session expired, renewing...');
+            TradeSession.token = null;
+            TradeSession.expiresAt = 0;
+            const sessionToken = await ensureTradeSession(userAddress, signMessage);
+            res = await fetch('/api/wallet/swap', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...tradeTerms, traderAddress: userAddress, sessionToken })
+            });
+            data = await res.json();
+        }
+
         if (!res.ok || !data.success) {
             throw new Error(data.error || `Trade failed (HTTP ${res.status})`);
         }
@@ -280,3 +405,5 @@ function updateExecutionUI(botId, status, detail = '') {
 // Export
 window.executeOnChainTrade = executeOnChainTrade;
 window.getSwapQuote = getSwapQuote;
+window.clearTradeSession = clearTradeSession;
+window.TradeSessionState = TradeSession; // view-only: token, address, expiresAt

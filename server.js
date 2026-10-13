@@ -1457,6 +1457,19 @@ app.get('/api/wallet/balance', async (req, res) => {
 const TRADE_NONCES = new Map();
 const NONCE_TTL_MS = 5 * 60 * 1000;
 
+// Trading sessions: one wallet signature authorises many trades for a
+// limited time, instead of one MetaMask popup per bot fill.
+//
+// Tokens are random 32-byte values held ONLY in server memory - never sent
+// to disk, never logged - so a restart invalidates every session (clients
+// simply re-sign once). TTL is deliberately short and configurable; a
+// stolen token trades as its allowlisted address until it expires.
+const TRADE_SESSIONS = new Map(); // token -> { address, issuedAt, expiresAt }
+const TRADE_SESSION_TTL_MS = (() => {
+    const raw = Number(process.env.TRADE_SESSION_TTL_MS);
+    return Number.isFinite(raw) && raw > 0 ? raw : 15 * 60 * 1000; // default 15 min
+})();
+
 // Who may trade.
 //
 // The engine signs with a server-held key, so this route spends money that does
@@ -1534,10 +1547,21 @@ function issueTradeNonce(address, payloadHash) {
 }
 
 function tradeMessage(address, nonce, payloadHash) {
+    // Normalise to EIP-55 checksum INSIDE the message builder.
+    //
+    // MetaMask hands the app a LOWERCASE address (eth_accounts /
+    // eth_requestAccounts), but the nonce response and the swap request
+    // carry the checksummed form (ethers.getAddress). If the message text
+    // embeds whichever form arrived, the bytes signed at issuance differ
+    // from the bytes rebuilt at verification, verifyMessage recovers a
+    // different signer, and every trade dies with
+    // "Signature does not match the trading address". Canonicalising here -
+    // the single place both call sites go through - makes the message
+    // identical regardless of the case the caller used.
     return [
         'Trade Arena trade authorisation',
         '',
-        `Address: ${address}`,
+        `Address: ${ethers.getAddress(String(address).toLowerCase())}`,
         `Nonce: ${nonce}`,
         `Chain: ${process.env.BASE_CHAIN_ID || '8453'}`,
         `Trade: ${payloadHash}`,
@@ -1548,24 +1572,55 @@ function tradeMessage(address, nonce, payloadHash) {
 }
 
 function verifyTradeAuth(req, res, next) {
-    const { traderAddress, nonce, signature } = req.body || {};
-    if (!traderAddress || !nonce || !signature) {
-        return res.status(401).json({
-            success: false,
-            error: 'Trade authorisation required. Call POST /api/wallet/trade-nonce first, then sign the returned message.'
-        });
-    }
+    const { traderAddress, nonce, signature, sessionToken } = req.body || {};
 
-    if (!ethers.isAddress(traderAddress)) {
+    if (!traderAddress || !ethers.isAddress(traderAddress)) {
         return res.status(401).json({ success: false, error: 'Malformed trading address.' });
     }
 
-    // Allowlist BEFORE touching the nonce store, so a non-allowlisted caller
+    // Allowlist BEFORE touching any auth state, so a non-allowlisted caller
     // learns nothing about system state.
     if (!isAllowedTrader(traderAddress)) {
         return res.status(403).json({
             success: false,
             error: 'This address is not authorised to trade. Add it to ALLOWED_TRADERS on the server.'
+        });
+    }
+
+    // SESSION PATH: a token minted by POST /api/wallet/trade-session after a
+    // single wallet signature, accepted in place of a per-trade nonce +
+    // signature. Without it every bot fill pops a wallet dialog, which makes
+    // auto-trading unusable.
+    //
+    // The trade-off is explicit: while the session lives, whoever holds the
+    // token can authorise trades as this address (still gated by the
+    // allowlist and the swap rate limiter) until it expires or the server
+    // restarts. Keep TRADE_SESSION_TTL_MS tight.
+    if (sessionToken) {
+        const key = String(sessionToken);
+        const session = TRADE_SESSIONS.get(key);
+        if (!session || session.expiresAt <= Date.now()) {
+            if (session) TRADE_SESSIONS.delete(key);
+            return res.status(401).json({
+                success: false,
+                error: 'Trading session expired or unknown. Sign a new session authorisation.',
+                sessionExpired: true
+            });
+        }
+        if (session.address.toLowerCase() !== String(traderAddress).toLowerCase()) {
+            return res.status(401).json({
+                success: false,
+                error: 'Trading session was issued to a different address.'
+            });
+        }
+        req.traderAddress = ethers.getAddress(traderAddress);
+        return next();
+    }
+
+    if (!nonce || !signature) {
+        return res.status(401).json({
+            success: false,
+            error: 'Trade authorisation required. Call POST /api/wallet/trade-nonce first, then sign the returned message.'
         });
     }
 
@@ -1660,6 +1715,169 @@ app.post('/api/wallet/trade-nonce', (req, res) => {
             payloadHash,
             message: tradeMessage(address, nonce, payloadHash)
         });
+    } catch (error) {
+        errorHandler(error, req, res, () => {});
+    }
+});
+
+// ===== TRADING SESSIONS =====
+//
+// A session lets an allowlisted wallet sign ONE message and then trade
+// without a per-fill MetaMask popup. Two steps, mirroring the per-trade
+// flow so the client code stays symmetrical:
+//
+//   1. POST /api/wallet/trade-session/challenge  { address }
+//        -> { nonce, message }   (sign message in the wallet)
+//   2. POST /api/wallet/trade-session            { address, nonce, signature }
+//        -> { token, expiresAt }
+//   3. /api/wallet/swap then carries { ..., sessionToken } instead of
+//      { nonce, signature }; verifyTradeAuth accepts either.
+//   4. DELETE /api/wallet/trade-session { token } revokes early (logout).
+//
+// The signed message binds the address (checksummed, like tradeMessage), a
+// single-use nonce, the chain id, the TTL and a fixed purpose string, so a
+// session signature can never be confused with a trade signature and vice
+// versa. Tokens are 32 random bytes, held only in memory.
+const SESSION_PURPOSE = 'Trade Arena trading session authorisation';
+const SESSION_NONCE_TTL_MS = 5 * 60 * 1000; // challenge must be redeemed within 5 min
+const SESSION_CHALLENGES = new Map(); // `${addr}:${nonce}` -> { issuedAt }
+
+function sessionMessage(address, nonce, ttlMs) {
+    return [
+        SESSION_PURPOSE,
+        '',
+        `Address: ${ethers.getAddress(String(address).toLowerCase())}`,
+        `Nonce: ${nonce}`,
+        `Chain: ${process.env.BASE_CHAIN_ID || '8453'}`,
+        `Valid for: ${ttlMs}ms`,
+        '',
+        'Signing this starts a trading session: trades will be authorised',
+        'without further prompts until it expires. It cannot be reused,',
+        'and it does not authorise any transfer of funds to the site.'
+    ].join('\n');
+}
+
+function purgeExpired(map, getIssuedAt, ttlMs) {
+    const now = Date.now();
+    for (const [k, entry] of map) {
+        if (now - getIssuedAt(entry) > ttlMs) map.delete(k);
+    }
+}
+
+// Session endpoints are allowlist-gated (403 before any state is touched),
+// but rate-limit them anyway so no anonymous client can hammer the crypto.
+const tradeSessionRateLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 15, // a healthy client needs 2 calls per session renewal
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: 'Too many session requests. Please try again shortly.' }
+});
+
+/**
+ * Step 1: issue a single-use challenge for an allowlisted address.
+ */
+app.post('/api/wallet/trade-session/challenge', tradeSessionRateLimiter, (req, res) => {
+    try {
+        const address = String(req.body?.address || '').trim();
+        if (!ethers.isAddress(address)) {
+            return res.status(400).json({ success: false, error: 'A valid address is required' });
+        }
+        if (!isAllowedTrader(address)) {
+            return res.status(403).json({
+                success: false,
+                error: 'This address is not authorised to trade. Add it to ALLOWED_TRADERS on the server.'
+            });
+        }
+
+        purgeExpired(SESSION_CHALLENGES, (e) => e.issuedAt, SESSION_NONCE_TTL_MS);
+        const nonce = '0x' + crypto.randomBytes(16).toString('hex');
+        SESSION_CHALLENGES.set(`${address.toLowerCase()}:${nonce}`, { issuedAt: Date.now() });
+
+        res.json({
+            success: true,
+            address: ethers.getAddress(address),
+            nonce,
+            ttlMs: TRADE_SESSION_TTL_MS,
+            message: sessionMessage(address, nonce, TRADE_SESSION_TTL_MS)
+        });
+    } catch (error) {
+        errorHandler(error, req, res, () => {});
+    }
+});
+
+/**
+ * Step 2: redeem a signed challenge for a session token.
+ */
+app.post('/api/wallet/trade-session', tradeSessionRateLimiter, (req, res) => {
+    try {
+        const { address, nonce, signature } = req.body || {};
+        if (!ethers.isAddress(String(address || '').trim())) {
+            return res.status(400).json({ success: false, error: 'A valid address is required' });
+        }
+        if (!nonce || !signature) {
+            return res.status(400).json({
+                success: false,
+                error: 'Nonce and signature are required. Request a session challenge first.'
+            });
+        }
+        if (!isAllowedTrader(address)) {
+            return res.status(403).json({
+                success: false,
+                error: 'This address is not authorised to trade. Add it to ALLOWED_TRADERS on the server.'
+            });
+        }
+
+        const key = `${String(address).toLowerCase()}:${nonce}`;
+        const entry = SESSION_CHALLENGES.get(key);
+        if (!entry) {
+            return res.status(401).json({ success: false, error: 'Unknown or already-used session challenge. Request a new one.' });
+        }
+        if (Date.now() - entry.issuedAt > SESSION_NONCE_TTL_MS) {
+            SESSION_CHALLENGES.delete(key);
+            return res.status(401).json({ success: false, error: 'Session challenge expired. Request a new one.' });
+        }
+        // Single use whether or not verification succeeds below.
+        SESSION_CHALLENGES.delete(key);
+
+        let recovered;
+        try {
+            recovered = ethers.verifyMessage(sessionMessage(address, nonce, TRADE_SESSION_TTL_MS), signature);
+        } catch (e) {
+            return res.status(401).json({ success: false, error: 'Could not verify the session signature.' });
+        }
+        if (recovered.toLowerCase() !== String(address).toLowerCase()) {
+            return res.status(401).json({ success: false, error: 'Signature does not match the session address.' });
+        }
+
+        purgeExpired(TRADE_SESSIONS, (e) => e.issuedAt, TRADE_SESSION_TTL_MS);
+        const token = crypto.randomBytes(32).toString('hex');
+        const issuedAt = Date.now();
+        const expiresAt = issuedAt + TRADE_SESSION_TTL_MS;
+        TRADE_SESSIONS.set(token, { address: ethers.getAddress(address), issuedAt, expiresAt });
+
+        res.json({
+            success: true,
+            token,
+            address: ethers.getAddress(address),
+            expiresAt: new Date(expiresAt).toISOString(),
+            ttlMs: TRADE_SESSION_TTL_MS
+        });
+    } catch (error) {
+        errorHandler(error, req, res, () => {});
+    }
+});
+
+/**
+ * Revoke a session early (logout). Idempotent: revoking an unknown or
+ * already-expired token is a success, because the caller's goal - the token
+ * being dead - already holds.
+ */
+app.delete('/api/wallet/trade-session', (req, res) => {
+    try {
+        const token = String(req.body?.token || '').trim();
+        if (token) TRADE_SESSIONS.delete(token);
+        res.json({ success: true });
     } catch (error) {
         errorHandler(error, req, res, () => {});
     }

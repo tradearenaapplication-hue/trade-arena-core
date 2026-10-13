@@ -3932,6 +3932,11 @@ function logout() {
     // corresponded to anything on chain. Logout now starts clean.
     clearPersistedSession();
 
+    // Kill the server-side trading session too, so its token cannot authorise
+    // any further trades after logout. Local-first: even if the server call
+    // fails, the in-memory token is dropped by clearTradeSession().
+    try { if (typeof clearTradeSession === 'function') clearTradeSession(); } catch (e) { /* non-fatal */ }
+
     // Reset wallet + in-memory trading state to defaults.
     if (typeof WalletCore !== 'undefined' && WalletCore.disconnect) WalletCore.disconnect();
     if (typeof walletState !== 'undefined') {

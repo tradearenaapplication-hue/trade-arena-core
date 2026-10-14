@@ -37,3 +37,8 @@
 **Vulnerability:** In `index.html`, `sendVoiceCommand` used direct browser `fetch` requests to `https://api.anthropic.com/v1/messages` with `anthropic-dangerous-direct-browser-access: true`, exposing client-side API key handling and bypassing backend rate limits.
 **Learning:** Features added directly in frontend templates often bypass established backend proxies (`/api/claude`), introducing dangerous direct browser headers and removing server-side rate limits and validation.
 **Prevention:** Route all frontend AI and LLM requests exclusively through backend proxy endpoints protected by rate limiting (`aiLimiter`) and server-side secret management.
+
+## 2026-10-14 - [HIGH] DOM XSS Vulnerability in Global Trade Log Rendering
+**Vulnerability:** In `index.html`, `renderLog` interpolated unescaped properties (`t.botId`, `t.token`, `t.method`, `t.time`) into `innerHTML` string templates.
+**Learning:** Trade ledger and activity log components that display dynamic position metadata or agent output strings can serve as DOM XSS sinks when interpolated unescaped into `innerHTML`.
+**Prevention:** Always wrap dynamic metadata and user/agent inputs with `escapeHTML(...)` before constructing HTML string templates assigned to `innerHTML`.

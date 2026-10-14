@@ -1250,9 +1250,14 @@ a, button, input, select, textarea {
       <!-- Live on-chain wallet value. Kept separate from ghBalance (the
            trading balance) so a sync never appears to change P&L. -->
       <div id="walletChainValue" title="Live on-chain wallet value"
-           style="font-size:9px;color:var(--cyan);display:none">$0.00</div>
-      <button id="taLogoutBtn" onclick="logout()"
-              style="margin-top:3px;font-size:8px;padding:2px 7px;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:4px;cursor:pointer">LOG OUT</button>
+           style="font-size:11px;color:var(--cyan);display:none;margin-top:2px;font-weight:600">$0.00</div>
+      <div id="walletSyncStatus" style="font-size:8px;color:var(--dim);display:none;margin-top:1px">Last synced: —</div>
+      <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap">
+        <button id="taSyncWalletBtn" onclick="syncWalletNow()"
+                style="font-size:8px;padding:2px 7px;background:var(--cyan);border:none;color:#000;border-radius:4px;cursor:pointer;font-weight:600" title="Sync wallet balance now">🔄 SYNC</button>
+        <button id="taLogoutBtn" onclick="logout()"
+                style="font-size:8px;padding:2px 7px;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:4px;cursor:pointer">LOG OUT</button>
+      </div>
     </div>
     <!-- countdown + open trade tally -->
     <div class="gh-ticker" id="ghTicker" style="display:none">
@@ -3869,6 +3874,14 @@ window.TA_syncWalletBalance = function({ usdBalance, ethBalance, holdings, addre
     el.style.display = 'block';
   }
 
+  // Show last sync time
+  const syncEl = document.getElementById('walletSyncStatus');
+  if (syncEl) {
+    const now = new Date();
+    syncEl.textContent = 'Last synced: ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    syncEl.style.display = 'block';
+  }
+
   // Network badge: show only once we know which chain the wallet is on.
   const net = document.getElementById('ghNetwork');
   if (net && typeof WalletCore !== 'undefined' && WalletCore.state.chainId) {
@@ -3890,6 +3903,8 @@ window.TA_onWalletDisconnected = function(reason) {
   localStorage.removeItem('ta_session_provider');
   const el = document.getElementById('walletChainValue');
   if (el) el.style.display = 'none';
+  const syncEl = document.getElementById('walletSyncStatus');
+  if (syncEl) syncEl.style.display = 'none';
   const net = document.getElementById('ghNetwork');
   if (net) net.style.display = 'none';
   refreshSettingsUI();
@@ -3910,6 +3925,41 @@ window.TA_onWalletAccountChanged = function(address) {
   WalletCore.startPolling();
   console.info('[TradeArena] switched to account', address);
 };
+
+/**
+ * Manually trigger a wallet balance sync. Shows loading state while syncing.
+ */
+async function syncWalletNow() {
+  const btn = document.getElementById('taSyncWalletBtn');
+  if (!btn) return;
+
+  if (typeof WalletCore === 'undefined' || !WalletCore.sync) {
+    showToast('Wallet not initialized', 'error');
+    return;
+  }
+
+  if (!WalletCore.state.address) {
+    showToast('No wallet connected', 'error');
+    return;
+  }
+
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  btn.style.opacity = '0.7';
+
+  try {
+    await WalletCore.sync({ initial: false });
+    showToast('Wallet synced', 'success');
+  } catch (e) {
+    console.error('[TradeArena] manual sync failed:', e);
+    showToast('Sync failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+    btn.style.opacity = '1';
+  }
+}
 
 /**
  * Log out: clear the session, drop the wallet connection and return to the

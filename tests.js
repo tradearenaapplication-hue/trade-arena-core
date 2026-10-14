@@ -1872,18 +1872,23 @@ describe("Header Toggle Controls Accessibility", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");
 
-  it("defines aria-expanded and aria-controls on #voiceAgentBtn and #ghBusBtn", () => {
+  it("defines aria-expanded, aria-controls, and aria-label on header navigation buttons", () => {
     expect(html).toContain('id="voiceAgentBtn"');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('aria-controls="voiceAgentModal"');
+    expect(html).toContain('aria-label="AI Floor Manager Voice Chat"');
     expect(html).toContain('id="ghBusBtn"');
     expect(html).toContain('aria-controls="busPanel"');
+    expect(html).toContain('aria-label="Bus settings - apply to all bots"');
     expect(html).toContain('id="staffNavBtn"');
     expect(html).toContain('aria-controls="staffPanel"');
+    expect(html).toContain('aria-label="Staff Operations - Application Maintenance & Support"');
     expect(html).toContain('id="taskNavBtn"');
     expect(html).toContain('aria-controls="taskPanel"');
+    expect(html).toContain('aria-label="Task Center - Earn Trade Credits"');
     expect(html).toContain('id="eloNavBtn"');
     expect(html).toContain('aria-controls="eloPanel"');
+    expect(html).toContain('aria-label="ELO Arena - Recursive Improvement"');
   });
 
   it("defines aria-pressed on #fleetViewBtn, #ghAutoBtn, and #musicToggleBtn", () => {

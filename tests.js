@@ -36,6 +36,10 @@ const {
   getRiskAdjustment,
 } = require("./arb-risk-engine.js");
 const {
+  updateBotStateAfterTrade,
+  getBotStrategyInsights,
+} = require("./ai-strategies.js");
+const {
   americanToProbability,
   removeVig,
   findSportsPredictionEdges,
@@ -613,6 +617,51 @@ describe("Multi-AI Arena Global Weights", () => {
     } finally {
       Math.random = originalRandom;
     }
+  });
+});
+
+describe("AI Strategies Adaptive Sizing & Report Aggregation Optimization", () => {
+  it("computes bot strategy insights without array allocation errors", () => {
+    const strategy = {
+      tradesCount: 0,
+      consecutiveLosses: 0,
+      consecutiveWins: 0,
+      recentPnL: [10, -5, 15, 20, -10],
+      sessionPnL: 30,
+      riskMultiplier: 1.0,
+      methodBias: { "SPOT LONG": { wins: 3, losses: 2, avgPnL: 6 } },
+      profile: "BALANCED",
+      adaptiveEdgeAdjustment: 1.0,
+    };
+
+    updateBotStateAfterTrade(strategy, { method: "SPOT LONG" }, 12, 10);
+    expect(strategy.tradesCount).toBe(1);
+    expect(strategy.recentPnL.length).toBe(6);
+
+    const insights = getBotStrategyInsights(strategy);
+    expect(insights.sessionPnL).toBe("42.00");
+    expect(insights.recentWinRate).toBe("66.7%");
+    expect(insights.avgRecentPnL).toBe("$7.00");
+    expect(insights.bestPerformingMethod).toBe("SPOT LONG");
+  });
+
+  it("generates CrucibleRealTrading report cleanly in single pass without errors", async () => {
+    await CrucibleRealTrading.init({ startingBalance: 100, enableAILearning: true });
+    CrucibleRealTrading.startTime = Date.now() - 1000;
+    CrucibleRealTrading.endTime = Date.now();
+
+    CrucibleRealTrading.tradeState.currentBalance = 103.5;
+    CrucibleRealTrading.trades = [
+      { executed: true, isWin: true, pnlAUD: 5.5, balanceAfter: 105.5, timestamp: new Date(), crypto: "ETH", direction: "LONG", strategy: "MOMENTUM_LONG" },
+      { executed: true, isWin: false, pnlAUD: -2.0, balanceAfter: 103.5, timestamp: new Date(), crypto: "BTC", direction: "SHORT", strategy: "MOMENTUM_SHORT" }
+    ];
+
+    const report = await CrucibleRealTrading.generateReport();
+    expect(report.totalPnL).toBe(3.5);
+    expect(report.finalBalance).toBe(103.5);
+    expect(report.winRate).toBe(50);
+    expect(report.profitFactor).toBe(2.75);
+    expect(report.trades).toBe(2);
   });
 });
 

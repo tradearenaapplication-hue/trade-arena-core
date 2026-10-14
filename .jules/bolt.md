@@ -25,3 +25,7 @@
 ## 2026-12-02 - Redundant Object Entry/Value Array Allocations in Tournament Bracket Summaries
 **Learning:** `getTopBrackets()` and `getGlobalWeights()` in `TRADE_OLYMPICS` were allocating intermediate tuple arrays (`Object.entries()`) and executing multiple array `.filter()` / `.map()` / `.reduce()` passes over 700+ bracket objects on every ranking query, causing noticeable GC pressure and execution latency (~7.4s / 50k calls).
 **Action:** Use guarded `for...in` loops (`hasOwnProperty`) over target hash objects to accumulate active entries in a single pass before sorting, reducing loop overhead by ~1.9x while preserving object property spreads.
+
+## 2026-12-18 - Intermediate Array Allocations and Runtime Exceptions in Strategy Adaptive Calculations & Session Reports
+**Learning:** `ai-strategies.js` and `crucible-real-trading.js` were allocating temporary arrays (`.filter()`, `.reduce()`) during every strategy evaluation trade update and session reporting pass. Additionally, session reporting contained undefined property references causing runtime exceptions when formatting outputs.
+**Action:** Replace functional array transformations (`.filter()`, `.reduce()`) in high-frequency trading strategy loops and report aggregators with single-pass indexed loops that accumulate scalar counters, avoiding GC pressure and preventing runtime Reference/Type errors.

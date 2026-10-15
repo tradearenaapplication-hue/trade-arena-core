@@ -1208,6 +1208,43 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
+ * GET /api/version - build identity for the header badge.
+ *
+ * Answers "which deployment am I looking at?" so local-vs-Railway confusion
+ * is impossible: version comes from package.json, commit from the
+ * RAILWAY_GIT_COMMIT_SHA env (or local git), mode from DRY_RUN.
+ * Public and safe: version + short SHA reveal nothing sensitive.
+ */
+app.get('/api/version', (req, res) => {
+    try {
+        let pkgVersion = '4.1.0';
+        try { pkgVersion = require('./package.json').version || pkgVersion; } catch (e) {}
+        let commit = (process.env.RAILWAY_GIT_COMMIT_SHA || '').trim();
+        if (!commit) {
+            try {
+                commit = require('child_process')
+                    .execSync('git rev-parse --short HEAD', { timeout: 3000, windowsHide: true })
+                    .toString().trim();
+            } catch (e) { commit = 'local'; }
+        } else {
+            commit = commit.slice(0, 7);
+        }
+        const mode = process.env.DRY_RUN === 'true' ? 'DRY_RUN' : 'LIVE';
+        res.setHeader('Cache-Control', 'no-store');
+        res.json({
+            success: true,
+            version: pkgVersion,
+            commit,
+            mode,
+            display: `v${pkgVersion}-${commit} · ${mode}`,
+            builtAt: new Date().toISOString()
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, error: 'version unavailable' });
+    }
+});
+
+/**
  * Flash-loan scan history — READ ONLY.
  *
  * Exposes the recorded scan history so the UI can show what the scanner has

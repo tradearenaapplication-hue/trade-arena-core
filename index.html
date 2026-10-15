@@ -1296,7 +1296,39 @@ a, button, input, select, textarea {
      </div>
     <span class="gen-badge" id="genBadge">GEN 0</span>
     <span id="apiBreakerBadge" style="display:none"></span>
+    <span id="buildBadge" title="Build version — verifies which deployment this page came from. Hover after load for commit + mode."
+          style="font-size:8px;padding:1px 6px;border-radius:8px;background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.35);color:var(--gold2);white-space:nowrap;cursor:default">v4.1.0-local</span>
   </div>
+  <script>
+  // Header build stamp: answers "which deployment am I looking at?" from the
+  // server's own /api/version (source of truth). Critical when local edits
+  // exist that Railway doesn't have yet. Static text above is the fallback.
+  (function stampBuildBadge(){
+    function apply(text, title, live) {
+      var el = document.getElementById('buildBadge');
+      if (!el) return;
+      el.textContent = text;
+      if (title) el.title = title;
+      if (live) { el.style.borderColor = 'var(--hot)'; el.style.color = 'var(--hot)'; }
+    }
+    function fetchVersion(attempt) {
+      fetch('/api/version', { headers: { 'Accept': 'application/json' } })
+        .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+        .then(function(d){
+          if(!d || !d.success) throw new Error('bad payload');
+          apply(d.display || ('v'+d.version+'-'+String(d.commit||'').slice(0,7)),
+            'Build '+(d.display||d.version)+' · commit '+(d.commit||'?')+' · built '+(d.builtAt||'?')+' · mode '+(d.mode||'?'),
+            d.mode === 'LIVE');
+        })
+        .catch(function(){
+          if (attempt < 1) setTimeout(function(){ fetchVersion(attempt+1); }, 3000);
+        });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function(){ fetchVersion(0); });
+    } else { fetchVersion(0); }
+  })();
+  </script>
 
   <!-- ══ BUS SETTINGS PANEL ══ -->
   <div class="bus-panel" id="busPanel">

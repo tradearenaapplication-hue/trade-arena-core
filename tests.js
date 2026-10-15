@@ -2030,6 +2030,12 @@ describe("Bus Panel Preset Accessibility", () => {
     expect(html).toContain("b.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
     expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
   });
+
+  it("defines aria-pressed on bus quick apply preset buttons and updates aria-pressed in busApplyPreset", () => {
+    expect(html).toContain('class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset(\'conservative\')" aria-pressed="false"');
+    expect(html).toContain(".querySelectorAll('.bus-apply-row .bus-apply-btn')");
+    expect(html).toContain("btn.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
+  });
 });
 
 describe("Bot Settings Trade Amount Preset Accessibility", () => {

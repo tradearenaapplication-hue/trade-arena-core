@@ -954,11 +954,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
     <!-- Quick presets row -->
     <div class="bus-apply-row">
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('conservative')" title="Small bets, high consensus, stop loss on">🛡️ SAFE MODE</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('balanced')"    title="Medium bets, mixed personalities">⚖️ BALANCED</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('aggressive')"  title="Large bets, aggressive personalities, no SL">🔥 DEGEN MODE</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model">⚡ OPTIMIZED</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('conservative')" aria-pressed="false" title="Small bets, high consensus, stop loss on">🛡️ SAFE MODE</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('balanced')"    aria-pressed="false" title="Medium bets, mixed personalities">⚖️ BALANCED</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('aggressive')"  aria-pressed="false" title="Large bets, aggressive personalities, no SL">🔥 DEGEN MODE</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   aria-pressed="false" title="Optimized spread based on learning model">⚡ OPTIMIZED</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       aria-pressed="false" title="Reset all bots to defaults">↺ RESET ALL</button>
     </div>
     <div class="bus-status" id="busStatus" role="status" aria-live="polite"></div>
   </div>
@@ -5372,6 +5372,11 @@ function busApplyPreset(name) {
   busSetSL(p.sl);
   busSetTP(p.tp);
   const labels = { conservative:'🛡️ Safe Mode', balanced:'⚖️ Balanced', aggressive:'🔥 Degen Mode', optimized:'⚡ Optimized', reset:'↺ Reset' };
+  document.querySelectorAll('.bus-apply-row .bus-apply-btn').forEach(btn => {
+    const isMatch = name !== 'reset' && btn.getAttribute('onclick')?.includes(`'${name}'`);
+    btn.classList.toggle('active', isMatch);
+    btn.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
+  });
   _busStatus(`${labels[name]} applied to ${bots.length} bots`);
 }
 

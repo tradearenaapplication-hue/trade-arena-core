@@ -2198,6 +2198,16 @@ describe("Trade Olympics XSS Sanitization Security", () => {
   });
 });
 
+describe("Audit Log XSS Sanitization Security", () => {
+  it("uses escapeHTML when rendering audit fields in renderAuditLog", () => {
+    const fs = require("fs");
+    const indexCode = fs.readFileSync("./index.html", "utf8");
+    expect(indexCode).toContain("escapeHTML(e.type)");
+    expect(indexCode).toContain("escapeHTML(e.ts)");
+    expect(indexCode).toContain("escapeHTML(e.msg)");
+  });
+});
+
 describe("ELO Tournament Engine XSS Sanitization Security", () => {
   it("uses escapeHTML when rendering agent properties in renderEloArena", () => {
     const fs = require("fs");
@@ -2483,7 +2493,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
+    expect(content).toContain("ASIC Regulatory Exposure & AFSL Compliance Assessment & Gate 3 Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });

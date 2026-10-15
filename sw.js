@@ -6,11 +6,10 @@
  * Updated: 2026-04-18
  */
 
-// Bumped to v7: the togglePanel orphan fix (stray code outside any function
-// caused "Illegal return statement", which killed the ENTIRE main script
-// block — checkGoLiveAck/loginMetaMask/loginDemo all undefined). v6 is
-// dropped so cached broken index.html is replaced on next load.
-const CACHE_VERSION = 'trade-arena-v7';
+// Bumped to v8: same network-first, same-origin, never-cache-/api/ strategy as
+// v7, plus versioned static-asset runtime caching (immutable JS/CSS/fonts) for
+// faster repeat loads. v7 is dropped so the old cache is replaced on next load.
+const CACHE_VERSION = 'trade-arena-v8';
 const CRITICAL_ASSETS = [
   './',
   './index.html',
@@ -86,6 +85,26 @@ self.addEventListener('fetch', event => {
   // convincing-but-wrong numbers.
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(fetch(req));
+    return;
+  }
+
+  // Versioned static assets (JS/CSS/fonts/images) are immutable: serve stale
+  // from cache instantly while revalidating in the background
+  // (stale-while-revalidate). Documents stay network-first below so a new
+  // deploy is picked up immediately.
+  if (url.pathname.match(/\.(js|css|woff|woff2|ttf|otf|png|jpg|jpeg|gif|svg|ico|webp|avif|webmanifest)$/i)) {
+    event.respondWith(
+      caches.match(req).then(cached => {
+        const network = fetch(req).then(response => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const copy = response.clone();
+            caches.open(CACHE_VERSION).then(cache => cache.put(req, copy));
+          }
+          return response;
+        }).catch(() => cached);
+        return cached || network;
+      })
+    );
     return;
   }
 

@@ -4,7 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>TRADE ARENA — AI TRADING FLOOR</title>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+<!-- Perf: early connections for render-critical third parties (fonts + ethers
+     CDN + Google sign-in). DNS+TLS handshake overlaps with HTML parsing. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://accounts.google.com">
+<!-- Perf: non-blocking webfonts. preload + print-media swap keeps ALL families
+     (Bungee/Shade, JetBrains Mono, Oswald, Share Tech Mono, Space Grotesk) but
+     stops the render-blocking stylesheet request. -->
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" as="style">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet"></noscript>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js" defer></script>
 <!-- Currency: AUD display layer.
      Loaded here WITHOUT defer, and before the body, on purpose. The main
@@ -968,10 +979,12 @@ a, button, input, select, textarea {
 <!-- Theme Color -->
 <meta name="theme-color" content="#00f5ff">
 
-<!-- Service Worker Registration -->
+<!-- Service Worker Registration (deferred: never blocks first paint) -->
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
+    });
   }
 </script>
 
@@ -2071,6 +2084,18 @@ async function getLivePrice(symbol) {
   if (inFlightRequests.has(reqKey)) return inFlightRequests.get(reqKey);
 
   const p = (async () => {
+    // Tier-2: same-origin server proxy (cached server-side with stale fallback).
+    // Browsers hitting api.coingecko.com directly share a rate-limited egress IP
+    // and get 429s; the proxy absorbs that. Falls through to direct on miss
+    // (e.g. meme coins the proxy doesn't map).
+    try {
+      const r=await fetch(`/api/market/prices?symbols=${encodeURIComponent(symbol.toUpperCase())}`);
+      if(r.ok){
+        const d=await r.json();
+        const price=d?.prices?.[symbol.toUpperCase()];
+        if(price){ priceCache[symbol]={price,ts:Date.now()}; return price; }
+      }
+    } catch(e){ /* fall through to direct CoinGecko */ }
     try {
       const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`);
       const d=await r.json(); const price=d[id]?.usd;
@@ -2157,7 +2182,7 @@ function computeBaselines(entryPrice, exitPrice, bet, method, volumeUsd, priceCh
 // ══════════════════════════════════════════════════════
 // POSITION LIFECYCLE
 // ══════════════════════════════════════════════════════
-async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChangePct15m) {
+async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChangePct15m, onchain) {
   // CRITICAL: Check if sufficient balance exists before opening trade
   if(balance < bet) {
     const tick=document.getElementById('mtick-'+bot.id);
@@ -2186,7 +2211,13 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
     ensemble: decision.ensemble||null,
     polSignal: decision.polSignal||null,
     status:'open',
-    openedAt: Date.now()
+    openedAt: Date.now(),
+    // On-chain provenance: { mode:'LIVE'|'DRY_RUN'|'AGENT_WALLET', txHash } on a
+    // live fill, { paper:true, reason } when the trade stayed paper. Survives
+    // to the ledger so a row can always answer "did this move real funds?".
+    onchain: onchain && !onchain.paper
+      ? { live: onchain.mode !== 'DRY_RUN', mode: onchain.mode || 'LIVE', txHash: onchain.txHash || null }
+      : { live: false, paper: true, reason: (onchain && onchain.reason) || 'paper' }
   };
   openPositions.push(pos);
 
@@ -2211,7 +2242,11 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
     time: Date.now(),
     direction: isShort?'SHORT':'LONG',
     botId: bot.id,
-    personality: bot.personality
+    personality: bot.personality,
+    // Surface the fill venue in the per-bot ticker: ⛓️ tx hash on live,
+    // 📝 when the trade stayed paper (with the reason on hover via title).
+    live: !!(pos.onchain && pos.onchain.live),
+    txHash: (pos.onchain && pos.onchain.txHash) || null
   };
   bot.tradeHistory.push(bot.lastTrade);
   if(bot.tradeHistory.length > 10) bot.tradeHistory.shift();
@@ -2235,6 +2270,27 @@ async function openPosition(bot, decision, entryPrice, bet, volumeUsd, priceChan
   updateGlobalBalance();
 
   updateOpenCount();
+  // Live log: render the OPEN row immediately. checkExit() only runs on the
+  // SL/TP path, and conservative defaults (±20%/+50%) can take weeks to hit -
+  // without this the ledger sat at "No trades yet" the whole session even
+  // though positions were open and ticking.
+  addToLog(pos);
+  // Time exit: SL/TP alone can leave a position open for weeks (defaults are
+  // −20%/+50%), pinning the bet and freezing the log at OPEN. A position that
+  // is still open at exitTime closes at the live quote then. The exitTime
+  // countdown in the header already advertises this window, so behaviour
+  // matches display. Missed quotes retry (same rule as checkExit) rather than
+  // force-closing at a stale price.
+  pos.exitTimer = setTimeout(async () => {
+    if(pos.status !== 'open') return;
+    const exitPrice = await getLivePrice(pos.token);
+    if(exitPrice == null){ // transient feed failure: retry, never stale-close
+      pos.exitTimer = setTimeout(() => { if(pos.status==='open') checkExit(pos, bot); }, 30000);
+      return;
+    }
+    pos._earlyExitReason = 'TIME +' + Math.round((pos.exitDuration||0)/60000) + 'm';
+    checkExit(pos, bot);
+  }, pos.exitDuration || EXIT_TIMES[decision.method] || 6*60000);
   // NOTE: the timer is an ELAPSED-TIME display only.
   //
   // This used to be a forced exit:
@@ -2364,6 +2420,7 @@ async function checkExit(pos, bot) {
   if(!exitPrice) return;
 
   pos.exitPrice=exitPrice; pos.status='closed'; pos.closedAt=Date.now();
+  if(pos.exitTimer){ clearTimeout(pos.exitTimer); pos.exitTimer=null; }
 
   const delta=pos.direction==='long'
     ?(exitPrice-pos.entryPrice)/pos.entryPrice
@@ -3913,6 +3970,10 @@ window.TA_onWalletDisconnected = function(reason) {
 
 window.TA_onWalletAccountChanged = function(address) {
   localStorage.setItem('ta_wallet_address', address);
+  // New account == new authorisation. The old session token was issued to a
+  // different address and the server would reject it anyway; drop it now so
+  // the next trade mints a fresh session instead of failing once first.
+  try { if (typeof WalletCore !== 'undefined' && WalletCore.clearTradeSession) WalletCore.clearTradeSession(); } catch (e) {}
   if (typeof setupApp === 'function') {
     setupApp({
       name: address.slice(0, 6) + '···' + address.slice(-4),
@@ -3924,6 +3985,103 @@ window.TA_onWalletAccountChanged = function(address) {
   }
   WalletCore.startPolling();
   console.info('[TradeArena] switched to account', address);
+};
+
+/**
+ * ON-CHAIN EXECUTION BRIDGE (browser -> server -> Base).
+ *
+ * This is what spinBot() calls after the ensemble decides. Previously
+ * `window.executeOnChainTrade` did not exist anywhere, so the call threw,
+ * was swallowed by the surrounding try/catch, and every UI trade silently
+ * paper-traded even with a wallet connected and DRY_RUN=false.
+ *
+ * Flow: session token (ONE wallet signature per ~15 min via
+ * WalletCore.ensureTradeSession) -> POST /api/wallet/swap with
+ * { traderAddress, sessionToken, fromToken, toToken, amountUSD, slippage,
+ * botId } -> server validates (allowlist + session + risk caps) and
+ * broadcasts the Uniswap V3 swap with the server-held key.
+ *
+ * Direction mapping: LONG-family methods buy the token with USDC
+ * (USDC -> TOKEN); SHORT-family methods sell it back (TOKEN -> USDC).
+ * HOLD never reaches here (spinBot skips PAPER/HOLD decisions upstream).
+ *
+ * Returns { mode, txHash, ... } on success. Throws on:
+ *  - SIG_REJECTED: user declined the session signature -> caller stays paper
+ *  - NOT_AUTHORISED: address not in ALLOWED_TRADERS -> caller stays paper
+ *  - anything else: swap rejected/failed -> caller stays paper, error logged
+ *
+ * Fail-closed to paper: a failed on-chain leg must NEVER block the paper
+ * position. spinBot() always calls openPosition() afterwards regardless.
+ */
+window.executeOnChainTrade = async function({ botId, token, method, amountUSD }) {
+  const isShort = String(method || '').includes('SHORT');
+  const fromToken = isShort ? String(token || 'WETH').toUpperCase() : 'USDC';
+  const toToken = isShort ? 'USDC' : String(token || 'WETH').toUpperCase();
+
+  if (typeof WalletCore === 'undefined' || !WalletCore.state.connected || !WalletCore.state.address) {
+    throw new Error('No wallet connected.');
+  }
+  if (!WalletCore.state.isCorrectChain) {
+    throw new Error(`Wallet is on ${WalletCore.state.chainName || 'the wrong network'} - switch to Base to trade on-chain.`);
+  }
+
+  // ONE signature per session, not per trade. Rejected signature propagates
+  // as SIG_REJECTED so the caller can stay paper without an error toast
+  // storm on every AUTO tick.
+  const sessionToken = await WalletCore.ensureTradeSession();
+
+  const res = await fetch('/api/wallet/swap', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      traderAddress: WalletCore.state.address,
+      sessionToken,
+      fromToken,
+      toToken,
+      amountUSD: Number(amountUSD),
+      slippage: 0.005,
+      botId: String(botId ?? 'manual'),
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+
+  if (res.status === 401 && data && data.sessionExpired) {
+    // Token died between ensure and swap (server restart or TTL race):
+    // drop it and try ONCE with a fresh session.
+    WalletCore.clearTradeSession();
+    const fresh = await WalletCore.ensureTradeSession();
+    const retry = await fetch('/api/wallet/swap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        traderAddress: WalletCore.state.address,
+        sessionToken: fresh,
+        fromToken,
+        toToken,
+        amountUSD: Number(amountUSD),
+        slippage: 0.005,
+        botId: String(botId ?? 'manual'),
+      }),
+    });
+    const rdata = await retry.json().catch(() => ({}));
+    if (!retry.ok || !rdata.success) {
+      const err = new Error(rdata.error || `On-chain swap failed (HTTP ${retry.status}).`);
+      err.status = retry.status; err.data = rdata;
+      throw err;
+    }
+    console.log(`[Arena] ⛓️ On-chain fill: ${fromToken} -> ${toToken} $${amountUSD} (${rdata.mode}, tx ${rdata.txHash || 'n/a'})`);
+    if (typeof showToast === 'function' && rdata.txHash) showToast(`⛓️ On-chain: ${fromToken}→${toToken} $${amountUSD}`, 'success');
+    return rdata;
+  }
+
+  if (!res.ok || !data.success) {
+    const err = new Error(data.error || `On-chain swap failed (HTTP ${res.status}).`);
+    err.status = res.status; err.data = data;
+    throw err;
+  }
+  console.log(`[Arena] ⛓️ On-chain fill: ${fromToken} -> ${toToken} $${amountUSD} (${data.mode}, tx ${data.txHash || 'n/a'})`);
+  if (typeof showToast === 'function' && data.txHash) showToast(`⛓️ On-chain: ${fromToken}→${toToken} $${amountUSD}`, 'success');
+  return data;
 };
 
 /**
@@ -3983,9 +4141,13 @@ function logout() {
     clearPersistedSession();
 
     // Kill the server-side trading session too, so its token cannot authorise
-    // any further trades after logout. Local-first: even if the server call
-    // fails, the in-memory token is dropped by clearTradeSession().
-    try { if (typeof clearTradeSession === 'function') clearTradeSession(); } catch (e) { /* non-fatal */ }
+    // any further trades after logout. WalletCore.clearTradeSession drops the
+    // local token; revokeTradeSession also tells the server to forget it.
+    try {
+      if (typeof WalletCore !== 'undefined' && WalletCore.revokeTradeSession) WalletCore.revokeTradeSession();
+      else if (typeof WalletCore !== 'undefined' && WalletCore.clearTradeSession) WalletCore.clearTradeSession();
+      else if (typeof clearTradeSession === 'function') clearTradeSession();
+    } catch (e) { /* non-fatal */ }
 
     // Reset wallet + in-memory trading state to defaults.
     if (typeof WalletCore !== 'undefined' && WalletCore.disconnect) WalletCore.disconnect();
@@ -4827,12 +4989,19 @@ function startTicker(bot){
     const el=document.getElementById('mtick-'+bot.id);
     if(!el) return;
 
-    // Show actual trade info instead of generic tickers
+    // Show actual trade info instead of generic tickers.
+    // Venue badge: ⛓️ + short tx hash on a live fill, 📝 when paper.
     if(bot.lastTrade) {
       const trade = bot.lastTrade;
       const timeAgo = Math.floor((Date.now() - trade.time) / 1000);
       const timeStr = timeAgo < 60 ? `${timeAgo}s ago` : `${Math.floor(timeAgo/60)}m ago`;
-      el.textContent = `${trade.emoji} ${trade.token} ${trade.method} @ ${fmtUSD(trade.price)} - ${timeStr}`;
+      const venue = trade.live
+        ? `⛓️${trade.txHash ? ' ' + String(trade.txHash).slice(0,6) + '…' : ''}`
+        : '📝';
+      el.textContent = `${venue} ${trade.emoji} ${trade.token} ${trade.method} @ ${fmtUSD(trade.price)} - ${timeStr}`;
+      el.title = trade.live
+        ? ('Live on-chain fill' + (trade.txHash ? ' · tx ' + trade.txHash : ''))
+        : 'Paper position (no funds moved)';
     } else {
       // Default ticker while waiting for first trade
       const genericTickers = [
@@ -5014,6 +5183,10 @@ async function spinBot(id){
   bot.spinning=false;
 
   // Execute trade (on-chain if connected, else paper)
+  // Fail-closed to paper: whatever happens on-chain, the paper position
+  // below ALWAYS opens, so the log/P&L loop never stalls on a swap error.
+  // The per-bot ticker names the outcome: ⛓️ = live fill, 📝 = paper.
+  let onchain = null;
   try{
     if(typeof SFX!=='undefined') SFX.spin();
     if(typeof VOICE!=='undefined') VOICE.tradeOpen(bot.id, decision.token, decision.method);
@@ -5027,19 +5200,28 @@ async function spinBot(id){
     if (((window.isPrivyConnected && window.isPrivyConnected()) || mmConnected) && !decision.method.includes('PAPER')) {
         console.log('[Arena] Routing to On-Chain Execution Engine...');
         try {
-            await window.executeOnChainTrade({
+            onchain = await window.executeOnChainTrade({
                 botId: bot.id,
                 token: decision.token,
                 method: decision.method,
                 amountUSD: bot.bet
             });
         } catch (execError) {
-            console.error('[Arena] On-chain execution failed, falling back to simulation', execError);
+            // SIG_REJECTED (declined session signature) and NOT_AUTHORISED
+            // (address not in ALLOWED_TRADERS) are routine in paper mode:
+            // log once at info, not as an error, and stay paper quietly.
+            // Genuine swap failures keep the error so they are visible.
+            if (execError && (execError.code === 'SIG_REJECTED' || execError.code === 'NOT_AUTHORISED')) {
+                console.info('[Arena] On-chain skipped (%s) - paper position only.', execError.message);
+            } else {
+                console.error('[Arena] On-chain execution failed, falling back to simulation', execError);
+            }
+            onchain = { paper: true, reason: (execError && execError.message) || 'on-chain unavailable' };
         }
     }
   }catch(e){}
 
-  await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m);
+  await openPosition(bot,decision,entryPrice,bot.bet,volumeUsd,priceChangePct15m,onchain);
   updateQuantReport();
 }
 
@@ -6540,8 +6722,16 @@ function addToLog(pos){
       togglePanel('quant');
     }
   }
-  globalLog.unshift({...pos,time:new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})});
-  if(globalLog.length>60) globalLog.pop();
+  // Upsert by position id: an OPEN row rendered at openPosition() is updated
+  // in place by the later CLOSE of the same position (same id), instead of
+  // appearing as two rows. Rows for genuinely distinct positions append.
+  const ix = globalLog.findIndex(t => String(t.id) === String(pos.id));
+  const row = {...pos,time:new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})};
+  if(ix >= 0) globalLog[ix] = row;
+  else {
+    globalLog.unshift(row);
+    if(globalLog.length>60) globalLog.pop();
+  }
   renderLog();
 }
 function renderLog(){
@@ -6563,6 +6753,12 @@ function renderLog(){
     const ep=t.entryPrice?fmtUSD(t.entryPrice,t.entryPrice<1?5:2):'—';
     const xp=t.exitPrice?fmtUSD(t.exitPrice,t.exitPrice<1?5:2):(isOpen?'⏳':'—');
     const cost=t.costs?.total?'−'+fmtUSD(t.costs.total,2):'';
+    // Venue: ⛓️ links the live tx on Basescan; 📝 marks a paper position.
+    const venue=(t.onchain && t.onchain.live)
+      ? (t.onchain.txHash
+        ? `<a href="https://basescan.org/tx/${t.onchain.txHash}" target="_blank" rel="noopener" style="text-decoration:none" title="Live fill · ${t.onchain.mode} · tx ${t.onchain.txHash}">⛓️</a>`
+        : `<span title="Live fill · ${t.onchain.mode || 'LIVE'} (no tx hash)">⛓️</span>`)
+      : `<span title="Paper position - no funds moved">📝</span>`;
     return`<div class="log-row">
       <div class="log-bot">#${t.botId}</div>
       <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
@@ -6571,7 +6767,7 @@ function renderLog(){
       <div class="log-exit">${xp}</div>
       <div class="log-pnl ${pnlCls}">${pnlStr}</div>
       <div class="log-cost">${cost}</div>
-      <div class="log-t">${t.time}</div>
+      <div class="log-t">${venue} ${t.time}</div>
     </div>`;
   }).join('');
 }

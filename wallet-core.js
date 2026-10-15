@@ -615,6 +615,7 @@ const WalletCore = (() => {
     state.holdings = [];
     state.chainId = null;
     state.isCorrectChain = false;
+    clearSessionToken(); // wallet gone == trading authorisation gone
     mirrorToLegacyState();
   }
 
@@ -843,6 +844,124 @@ const WalletCore = (() => {
     return report;
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // TRADE AUTHORISATION (session-based, one signature per ~15 min)
+  //
+  // /api/wallet/swap spends the SERVER-held TRADING_PRIVATE_KEY, so every
+  // call must prove the caller controls the address they trade as. Signing
+  // every fill would pop a MetaMask dialog per bot trade (unusable for AUTO),
+  // so the server offers sessions: sign ONE challenge message, get a token,
+  // attach it to swaps until it expires. Tokens live in memory only -
+  // never persisted - so a reload or server restart cleanly ends them.
+  // ═══════════════════════════════════════════════════════════
+
+  const SESSION_KEY = 'ta_trade_session_token';
+  const SESSION_EXP_KEY = 'ta_trade_session_expires';
+
+  function getSessionToken() {
+    try {
+      const token = sessionStorage.getItem(SESSION_KEY);
+      const exp = Number(sessionStorage.getItem(SESSION_EXP_KEY) || 0);
+      if (!token || !exp || Date.now() >= exp - 30_000) return null; // 30s skew
+      return token;
+    } catch (e) { return null; }
+  }
+
+  function setSessionToken(token, expiresAt) {
+    try {
+      sessionStorage.setItem(SESSION_KEY, token);
+      sessionStorage.setItem(SESSION_EXP_KEY, String(new Date(expiresAt).getTime()));
+    } catch (e) { /* private mode: sessions just won't persist across reloads */ }
+  }
+
+  function clearSessionToken() {
+    try {
+      sessionStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem(SESSION_EXP_KEY);
+    } catch (e) { /* ignore */ }
+  }
+
+  /**
+   * Sign an arbitrary message with the connected wallet, tolerating both
+   * ethers major versions and falling back to raw personal_sign.
+   */
+  async function signMessage(message) {
+    if (!state.connected || !state.address) {
+      throw new Error('Wallet is not connected. Connect MetaMask first.');
+    }
+    // Prefer the ethers signer (handles v5/v6 message hashing identically).
+    if (state.signer && typeof state.signer.signMessage === 'function') {
+      try { return await state.signer.signMessage(message); }
+      catch (e) {
+        if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) {
+          const r = new Error('Signature rejected in wallet.');
+          r.code = 'SIG_REJECTED'; throw r;
+        }
+        throw e;
+      }
+    }
+    // Fallback: raw personal_sign over the injected provider.
+    const injected = getInjected();
+    if (!injected || typeof injected.request !== 'function') {
+      throw new Error('No signer available for this wallet.');
+    }
+    try {
+      return await injected.request({
+        method: 'personal_sign',
+        params: [message, state.address],
+      });
+    } catch (e) {
+      if (e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) {
+        const r = new Error('Signature rejected in wallet.');
+        r.code = 'SIG_REJECTED'; throw r;
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * Ensure a live trading session exists for the connected address.
+   * Returns the session token, signing ONE challenge message if needed.
+   * Throws SIG_REJECTED if the user declines (caller should surface + stay paper).
+   */
+  async function ensureTradeSession() {
+    const existing = getSessionToken();
+    if (existing) return existing;
+    if (!state.connected || !state.address) {
+      throw new Error('Wallet is not connected. Connect MetaMask first.');
+    }
+    // Step 1: challenge (allowlist enforced server-side; 403 = not authorised).
+    const chRes = await fetch('/api/wallet/trade-session/challenge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.address }),
+    });
+    const ch = await chRes.json().catch(() => ({}));
+    if (!chRes.ok || !ch.success) {
+      const err = new Error(ch.error || `Session challenge failed (HTTP ${chRes.status}).`);
+      err.code = chRes.status === 403 ? 'NOT_AUTHORISED' : 'CHALLENGE_FAILED';
+      err.status = chRes.status;
+      throw err;
+    }
+    // Step 2: sign the challenge in the wallet.
+    const signature = await signMessage(ch.message);
+    // Step 3: redeem for a token.
+    const tkRes = await fetch('/api/wallet/trade-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.address, nonce: ch.nonce, signature }),
+    });
+    const tk = await tkRes.json().catch(() => ({}));
+    if (!tkRes.ok || !tk.success) {
+      const err = new Error(tk.error || `Session authorisation failed (HTTP ${tkRes.status}).`);
+      err.code = 'SESSION_FAILED';
+      err.status = tkRes.status;
+      throw err;
+    }
+    setSessionToken(tk.token, tk.expiresAt);
+    return tk.token;
+  }
+
   let pollTimer = null;
 
   /**
@@ -927,6 +1046,23 @@ const WalletCore = (() => {
     bindWalletEvents,
     startPolling,
     stopPolling,
+    signMessage,
+    ensureTradeSession,
+    getSessionToken,
+    clearTradeSession: clearSessionToken,
+    revokeTradeSession: async () => {
+      const token = getSessionToken();
+      clearSessionToken();
+      if (!token) return true;
+      try {
+        await fetch('/api/wallet/trade-session', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+      } catch (e) { /* server already forgot or unreachable; local state is clear */ }
+      return true;
+    },
     diagnose,
     checkMetaMaskStatus: diagnose,
   };

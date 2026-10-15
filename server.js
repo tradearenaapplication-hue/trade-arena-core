@@ -1,6 +1,7 @@
-// ===== TRADE ARENA SERVER - FIXED =====
+// ===== TRADE ARENA SERVER - FIXED & OPTIMIZED =====
 // This server provides complete MetaMask wallet integration with real funds trading
-// Enhanced security, validation, and error handling
+// Enhanced security, validation, error handling, and performance optimizations
+// Lighthouse optimized for better performance scores
 
 // Load .env before anything reads process.env. This must come first.
 //
@@ -25,6 +26,149 @@ const rateLimit = require('express-rate-limit');
 const WebSocket = require('websocket').w3cwebsocket;
 const onchainEngine = require('./services/OnchainExecutionEngine');
 const accounting = require('./services/portfolio-accounting');
+const helmet = require('helmet');
+// compression is optional: Railway builds with --omit=dev but compression is a
+// runtime dep (added to package.json). If it is ever missing, the server must
+// still boot - just without gzip.
+let compression = null;
+try {
+    compression = require('compression');
+} catch (e) {
+    console.warn('[Performance] compression module not available, skipping gzip:', e.message);
+}
+
+// Single Express instance for the whole server. (A duplicate `const app`
+// further below previously made this file unparseable - `Identifier 'app'
+// has already been declared` - so the server could not boot at all.)
+const app = express();
+
+// Security headers via helmet. CSP is DISABLED here on purpose: the canonical,
+// hand-tuned Content-Security-Policy (all wallet RPC hosts, Privy, hCaptcha,
+// CoinGecko, 0x, frankfurter, AI APIs...) is set further below and must remain
+// the single source of truth. Enabling helmet's default CSP as well would send
+// TWO CSP headers (browser enforces the stricter intersection) and break wallet
+// RPC calls, Google sign-in and fonts.
+app.use(helmet({
+    contentSecurityPolicy: false,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    crossOriginEmbedderPolicy: false, // Required for some cross-origin resources
+    crossOriginOpenerPolicy: { policy: 'same-origin' },
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    dnsPrefetchControl: { allow: true },
+    frameguard: { action: 'deny' },
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    ieNoOpen: true,
+    noSniff: true,
+    permittedCrossDomainPolicies: { permittedPolicies: 'by-content-type' },
+    xssFilter: true
+}));
+
+// Gzip/deflate compression. Level 6 is the throughput sweet spot; level 9
+// burns CPU on Railway's small instances for ~1% extra savings.
+if (compression) {
+    app.use(compression({
+        filter: (req, res) => {
+            if (req.headers['x-no-compression']) {
+                return false;
+            }
+            return compression.filter(req, res);
+        },
+        threshold: 1024, // Only compress responses > 1KB
+        level: 6
+    }));
+}
+
+// Cache control for static assets. Runs before express.static (defined further
+// below), so it applies to every static file served from the repo root.
+// Versioned images/fonts are immutable for a year; JS/CSS/JSON get 1 hour so a
+// new deploy is picked up quickly; HTML is never cached here (SW + explicit
+// no-cache on document responses handle that).
+app.use((req, res, next) => {
+    if (req.method !== 'GET') return next();
+    if (req.path.startsWith('/api/')) return next();
+    if (req.path.match(/\.(png|jpg|jpeg|gif|svg|ico|webp|avif|woff|woff2|ttf|otf|mp3|wav|ogg)$/i)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (req.path.match(/\.(js|css|json|webmanifest)$/i)) {
+        res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
+    }
+    next();
+});
+
+// Performance monitoring: log slow requests. (Previously this tried to set an
+// X-Response-Time header inside the 'finish' event, after headers were already
+// sent - which throws ERR_HTTP_HEADERS_SENT on every slow request.)
+app.use((req, res, next) => {
+    const start = process.hrtime.bigint();
+    res.on('finish', () => {
+        const duration = Number(process.hrtime.bigint() - start) / 1e6;
+        if (duration > 1000) {
+            console.warn(`[Performance] Slow request: ${req.method} ${req.path} - ${duration.toFixed(2)}ms`);
+        }
+    });
+    next();
+});
+
+// Short-lived cache for SAFE, public, read-only GET endpoints only.
+// NEVER cache account state (/api/accounting, /api/wallet/*, /api/user/*,
+// /api/tasks, /api/config, /api/safety-controls, /api/bot/* ...): serving one
+// of those from cache shows a stale balance/P&L after a deposit, trade or
+// withdrawal, which looks authoritative but is wrong. Market/network status
+// endpoints are safe because they are public and already time-bounded.
+const apiCache = new Map();
+const API_CACHE_TTL = 5000; // 5 seconds
+const API_CACHE_ALLOWLIST = new Set([
+    '/api/status/connections',
+    '/api/market/prices',
+    '/api/market/batch-prices'
+]);
+
+app.use('/api/', (req, res, next) => {
+    // Only cache allowlisted GET requests. NOTE: inside a mounted middleware
+    // Express strips the mount point, so req.path is '/status/connections'
+    // while req.baseUrl is '/api' - compare against the recombined full path.
+    const fullPath = (req.baseUrl || '') + (req.path || '');
+    if (req.method !== 'GET' || !API_CACHE_ALLOWLIST.has(fullPath)) {
+        return next();
+    }
+
+    const cacheKey = req.originalUrl;
+    const cached = apiCache.get(cacheKey);
+
+    if (cached && Date.now() - cached.timestamp < API_CACHE_TTL) {
+        res.setHeader('X-Cache', 'HIT');
+        return res.json(cached.data);
+    }
+
+    // Override res.json to cache the response (header set BEFORE body sent)
+    const originalJson = res.json.bind(res);
+    res.json = (data) => {
+        if (res.statusCode === 200) {
+            apiCache.set(cacheKey, {
+                data,
+                timestamp: Date.now()
+            });
+            // Bound the map so it cannot grow without limit
+            if (apiCache.size > 100) {
+                const oldest = apiCache.keys().next().value;
+                apiCache.delete(oldest);
+            }
+        }
+        res.setHeader('X-Cache', 'MISS');
+        return originalJson(data);
+    };
+    next();
+});
+
+// Periodic cache cleanup (unref'd so it never keeps the process alive in tests)
+const apiCacheSweeper = setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of apiCache.entries()) {
+        if (now - value.timestamp > API_CACHE_TTL) {
+            apiCache.delete(key);
+        }
+    }
+}, 30000);
+if (apiCacheSweeper.unref) apiCacheSweeper.unref();
 
 /**
  * The arena's actual holdings, read from the chain.
@@ -157,10 +301,13 @@ async function ensureOpeningBalance(address) {
     return seeded;
 }
 
-const app = express();
 const PORT = process.env.PORT || process.env.SERVER_PORT || 3001;
 
-// ===== SECURITY HEADERS =====
+// ===== CANONICAL SECURITY HEADERS (single source of truth for CSP) =====
+// Helmet above already sets X-Content-Type-Options / X-Frame-Options / HSTS /
+// Referrer-Policy, so only the hand-tuned CSP (full wallet RPC + Privy +
+// hCaptcha + price/API host list) is set here. Keep this list in sync with
+// NETWORKS in wallet-core.js or the browser refuses RPC calls before send.
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');

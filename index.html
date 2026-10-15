@@ -4001,6 +4001,15 @@ window.TA_onWalletDisconnected = function(reason) {
 };
 
 window.TA_onWalletAccountChanged = function(address) {
+  // MetaMask re-emits `accountsChanged` on page load / unlock even when this
+  // app has no live session. Re-persisting the key here would resurrect a
+  // session the user just logged out of (logout() removed the key) and make
+  // the NEXT reload silently reconnect again. Only persist while a session
+  // is actually active.
+  if (!localStorage.getItem('ta_wallet_address')) {
+    console.info('[TradeArena] account change ignored - no active session:', address);
+    return;
+  }
   localStorage.setItem('ta_wallet_address', address);
   // New account == new authorisation. The old session token was issued to a
   // different address and the server would reject it anyway; drop it now so
@@ -4288,11 +4297,27 @@ async function autoReconnectWallet() {
   // Handle MetaMask auto-reconnect
   if (typeof WalletCore === 'undefined' || !WalletCore.hasWallet()) return;
 
+  // logout() clears the stored session key synchronously. The awaits below can
+  // take SECONDS (price fetches time out at 8s when the server is degraded),
+  // so the user can log out while this function is still in flight. Every
+  // continuation re-checks the key and aborts - otherwise the pending sync
+  // completed AFTER logout, re-seeded the trading balance, restarted the
+  // poller and left a "logged out" wallet silently reconnected (visible in
+  // the console as "logged out." followed seconds later by "Silent wallet
+  // reconnect successful").
+  const sessionStillValid = () => localStorage.getItem('ta_wallet_address') === storedAddress;
+
   try {
     // Only resume if the wallet is still authorised for the same account.
     const res = await WalletCore.silentReconnect(storedAddress);
-    if (!res) {
-      localStorage.removeItem('ta_wallet_address');
+    if (!res || !sessionStillValid()) {
+      if (!res) {
+        localStorage.removeItem('ta_wallet_address');
+      } else if (typeof WalletCore.disconnect === 'function') {
+        // Logged out while silentReconnect was in flight: drop the connection
+        // it just established so nothing keeps polling for a dead session.
+        WalletCore.disconnect();
+      }
       if (typeof walletState !== 'undefined') {
         walletState.isConnected = false;
         walletState.address = null;
@@ -4314,6 +4339,13 @@ async function autoReconnectWallet() {
     // `initial: true` so a returning wallet user gets their real balance
     // seeded into the trading account rather than the placeholder default.
     await WalletCore.sync({ initial: true });
+    if (!sessionStillValid()) {
+      // Logged out while the (slow) balance sync was in flight: tear down
+      // instead of restarting the poller for a session that no longer exists.
+      WalletCore.stopPolling();
+      if (typeof WalletCore.disconnect === 'function') WalletCore.disconnect();
+      return;
+    }
     WalletCore.startPolling();
     if (typeof syncLearningStateFromDb === 'function') syncLearningStateFromDb(address);
     console.log('✅ Silent wallet reconnect successful:', address);

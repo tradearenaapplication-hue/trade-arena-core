@@ -175,7 +175,120 @@ console.log('\n=== UI regression tests ===\n');
         concat.length ? `(${concat.length} left: ${[...new Set(concat)].slice(0, 3).join(' ')})` : '');
 }
 
+// ── 5. logout must survive the in-flight silent-reconnect race ─────────────
+// Regression: on page load autoReconnectWallet() awaits silentReconnect() and
+// a multi-second balance sync. Clicking LOGOUT while those are pending used to
+// be silently undone - the continuations re-seeded the balance, restarted the
+// poller and re-persisted the session key, so "logged out." was followed by
+// "Silent wallet reconnect successful" in the console and the wallet came
+// back by itself. Every continuation must now re-check the stored key.
+(async () => {
+{
+    console.log('\nlogout vs silent-reconnect race');
+
+    // Source-level guards in wallet-core.js: sync() must discard results when
+    // the session changed mid-fetch, and accountsChanged must be ignored when
+    // no session is live.
+    const WC = fs.readFileSync(path.join(ROOT, 'wallet-core.js'), 'utf8');
+    check('sync() captures the address at entry', /const syncAddress = state\.address/.test(WC));
+    check('sync() discards results after session teardown',
+        /sync result discarded - session changed during fetch/.test(WC));
+    check('accountsChanged ignored without a live session',
+        /ignoring accountsChanged - no active session/.test(WC));
+
+    // TA_onWalletAccountChanged must not re-persist the key after logout.
+    check('TA_onWalletAccountChanged guards on session key',
+        /account change ignored - no active session/.test(HTML));
+
+    const autoSrc = extractFunction(HTML, 'autoReconnectWallet');
+    check('autoReconnectWallet() found in index.html', !!autoSrc);
+    if (!autoSrc) return;
+    // extractFunction starts at `function`; keep it async so awaits parse.
+    const asyncAuto = autoSrc.replace(/^function/, 'async function');
+
+    function runScenario({ dropKeyDuring }) {
+        const store = new Map([['ta_wallet_address', '0xabc']]);
+        const calls = { setupApp: 0, sync: 0, startPolling: 0, stopPolling: 0, disconnect: 0, syncOpts: null };
+        let resolveReconnect, resolveSync;
+        const silentReconnect = () => new Promise((res) => { resolveReconnect = res; });
+        const sync = (opts) => { calls.sync++; calls.syncOpts = opts; return new Promise((res) => { resolveSync = res; }); };
+
+        const extra = {
+            localStorage: {
+                getItem: (k) => (store.has(k) ? store.get(k) : null),
+                setItem: (k, v) => store.set(k, String(v)),
+                removeItem: (k) => store.delete(k),
+            },
+            WalletCore: {
+                hasWallet: () => true,
+                silentReconnect,
+                sync,
+                startPolling: () => { calls.startPolling++; },
+                stopPolling: () => { calls.stopPolling++; },
+                disconnect: () => { calls.disconnect++; },
+            },
+            walletState: {},
+            refreshSettingsUI: () => {},
+            setupApp: () => { calls.setupApp++; },
+            _log: [],
+        };
+        extra.console = { log: (...a) => extra._log.push(a.join(' ')), info: () => {}, warn: () => {}, error: () => {} };
+
+        const { ctx } = makeSandbox(extra);
+        vm.runInContext(asyncAuto + '\nautoReconnectWallet();', ctx);
+
+        // Resolve silentReconnect; optionally simulate logout() clearing the
+        // stored key while the continuation is still pending.
+        resolveReconnect({ address: '0xabc', provider: {}, signer: {} });
+        if (dropKeyDuring === 'reconnect') store.delete('ta_wallet_address');
+
+        return new Promise((r) => setImmediate(async () => {
+            if (dropKeyDuring === 'sync' && resolveSync) {
+                store.delete('ta_wallet_address'); // logout() mid-sync
+                resolveSync({ address: '0xabc', totalUsd: 12, holdings: [] });
+            } else if (resolveSync) {
+                resolveSync({ address: '0xabc', totalUsd: 12, holdings: [] });
+            }
+            // let the remaining continuations flush
+            await new Promise((r2) => setImmediate(r2));
+            await new Promise((r2) => setImmediate(r2));
+            r({ calls, log: extra._log, store });
+        }));
+    }
+
+    // Happy path: a returning wallet user still gets the full resume.
+    {
+        const { calls, log } = await runScenario({});
+        check('valid session: setupApp() runs', calls.setupApp === 1, `(got ${calls.setupApp})`);
+        check('valid session: sync({initial:true}) runs',
+            calls.sync === 1 && calls.syncOpts && calls.syncOpts.initial === true);
+        check('valid session: poller starts', calls.startPolling === 1, `(got ${calls.startPolling})`);
+        check('valid session: success is logged',
+            log.some((l) => l.includes('Silent wallet reconnect successful')));
+    }
+
+    // Logout during silentReconnect: everything must abort.
+    {
+        const { calls, log } = await runScenario({ dropKeyDuring: 'reconnect' });
+        check('logout during reconnect: setupApp() does NOT run', calls.setupApp === 0, `(got ${calls.setupApp})`);
+        check('logout during reconnect: sync() does NOT run', calls.sync === 0, `(got ${calls.sync})`);
+        check('logout during reconnect: poller does NOT start', calls.startPolling === 0, `(got ${calls.startPolling})`);
+        check('logout during reconnect: connection is dropped', calls.disconnect >= 1, `(got ${calls.disconnect})`);
+        check('logout during reconnect: no success is logged',
+            !log.some((l) => l.includes('Silent wallet reconnect successful')));
+    }
+
+    // Logout during the (slow) balance sync: poller must not restart.
+    {
+        const { calls } = await runScenario({ dropKeyDuring: 'sync' });
+        check('logout during sync: poller does NOT start', calls.startPolling === 0, `(got ${calls.startPolling})`);
+        check('logout during sync: poller is stopped', calls.stopPolling >= 1, `(got ${calls.stopPolling})`);
+        check('logout during sync: connection is dropped', calls.disconnect >= 1, `(got ${calls.disconnect})`);
+    }
+}
+
 console.log('\n---');
 console.log(failures === 0 ? 'All UI regression checks passed.' : `${failures} check(s) failed.`);
 console.log('');
 process.exit(failures === 0 ? 0 : 1);
+})();

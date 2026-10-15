@@ -506,6 +506,12 @@ const WalletCore = (() => {
 
     state.syncing = true;
     state.error = null;
+    // Capture the address this sync belongs to. The multi-chain scan below can
+    // take several seconds; if the session is torn down meanwhile (logout(),
+    // accounts-empty, a disconnect), state.address is cleared and applying
+    // these results would resurrect the connection and re-seed the balance
+    // that the teardown just reset.
+    const syncAddress = state.address;
 
     try {
       await refreshChainInfo();
@@ -514,7 +520,7 @@ const WalletCore = (() => {
       let ethBalance = 0;
       if (state.provider) {
         try {
-          const wei = await state.provider.getBalance(state.address);
+          const wei = await state.provider.getBalance(syncAddress);
           ethBalance = parseFloat(formatEther(wei)) || 0;
         } catch (e) {
           console.warn('[WalletCore] native balance read failed:', e.message);
@@ -522,7 +528,14 @@ const WalletCore = (() => {
       }
 
       const ethPrice = await getEthPrice();
-      const { totalUsd, holdings } = await fetchMultiChainTokenBalances(state.address);
+      const { totalUsd, holdings } = await fetchMultiChainTokenBalances(syncAddress);
+
+      // Session was torn down while we were fetching: drop the results instead
+      // of re-marking the wallet connected and pushing a stale balance.
+      if (!state.address || state.address.toLowerCase() !== syncAddress.toLowerCase()) {
+        console.info('[WalletCore] sync result discarded - session changed during fetch');
+        return null;
+      }
 
       state.ethBalance = ethBalance;
       state.ethPrice = ethPrice;
@@ -747,6 +760,22 @@ const WalletCore = (() => {
 
         const address = accounts[0];
         console.info('[WalletCore] account changed ->', address);
+
+        // MetaMask re-emits `accountsChanged` on page load and after unlock,
+        // even when this app has no live session (the user logged out, or
+        // never logged in on this page). Rebuilding + syncing here would
+        // resurrect a logged-out session: it re-sets state.address, re-seeds
+        // the balance via TA_syncWalletBalance({initial:true}) and lets
+        // TA_onWalletAccountChanged re-persist the session key. Only act when
+        // a session is actually live: a connect() is in flight, we already
+        // hold a connection, or the page still has a persisted session key.
+        const sessionLive = connectInProgress
+          || !!state.address
+          || (typeof localStorage !== 'undefined' && !!localStorage.getItem('ta_wallet_address'));
+        if (!sessionLive) {
+          console.info('[WalletCore] ignoring accountsChanged - no active session for', address);
+          return;
+        }
 
         // Rebuild provider and signer: the old ones are bound to the
         // previous account and will fail or sign with the wrong key.

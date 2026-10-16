@@ -4664,7 +4664,7 @@ function logLearn(msg, type = 'info') {
 function renderLearnLog() {
   const el = document.getElementById('learnLog'); if (!el) return;
   el.innerHTML = learningLog.slice(0, 30).map(e =>
-    `<div class="ll-entry ${e.type}">[${e.ts}] ${e.msg}</div>`
+    `<div class="ll-entry ${escapeHTML(e.type)}">[${escapeHTML(e.ts)}] ${escapeHTML(e.msg)}</div>`
   ).join('');
 }
 
@@ -5052,7 +5052,7 @@ function logAudit(msg, type = 'audit') {
 function renderAuditLog() {
   const el = document.getElementById('auditLog'); if (!el) return;
   el.innerHTML = auditHistory.slice(0, 40).map(e =>
-    `<div class="al-entry ${e.type}"><span class="al-ts">${e.ts}</span><span class="al-msg">${e.msg}</span></div>`
+    `<div class="al-entry ${escapeHTML(e.type)}"><span class="al-ts">${escapeHTML(e.ts)}</span><span class="al-msg">${escapeHTML(e.msg)}</span></div>`
   ).join('') || '<div class="al-entry audit"><span class="al-ts">—</span><span class="al-msg">No audits yet.</span></div>';
 }
 

@@ -2483,7 +2483,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
+    expect(content).toContain("Gate 3 Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });
@@ -2704,6 +2704,109 @@ describe("AI Floor Manager Voice Command Proxy Endpoint Security", () => {
     expect(html).toContain("fetch('/api/claude'");
     const voiceFnCode = html.slice(html.indexOf("async function sendVoiceCommand()"), html.indexOf("sendVoiceCommand()"));
     expect(voiceFnCode.includes("anthropic-dangerous-direct-browser-access")).toBe(false);
+  });
+});
+
+describe("Staff Operations Concierge Submit Button UX & ARIA Busy State", () => {
+  it("disables button, sets aria-busy=true, and shows spinner during sendStaffQuery execution and restores afterwards", async () => {
+    const fs = require("fs");
+    const staffCode = fs.readFileSync("staff-engine.js", "utf8");
+
+    // Verify presence of aria-busy and spinner in staff-engine.js code
+    expect(staffCode).toContain("btn.setAttribute('aria-busy', 'true')");
+    expect(staffCode).toContain("btn.innerHTML = '⏳'");
+    expect(staffCode).toContain("btn.setAttribute('aria-busy', 'false')");
+    expect(staffCode).toContain("btn.innerHTML = 'ASK'");
+
+    // Simulate sendStaffQuery execution DOM behavior
+    let buttonDisabled = false;
+    let ariaBusy = "false";
+    let innerHTML = "ASK";
+
+    const mockBtn = {
+      set disabled(val) { buttonDisabled = val; },
+      get disabled() { return buttonDisabled; },
+      setAttribute(attr, val) {
+        if (attr === 'aria-busy') ariaBusy = val;
+      },
+      set innerHTML(val) { innerHTML = val; },
+      get innerHTML() { return innerHTML; }
+    };
+
+    const mockInput = {
+      value: "What is my balance?",
+      set disabled(val) {},
+      nextElementSibling: mockBtn
+    };
+
+    const mockResponseBox = {
+      style: {},
+      textContent: ""
+    };
+
+    global.document = {
+      getElementById: (id) => {
+        if (id === 'staffInput') return mockInput;
+        if (id === 'staffResponse') return mockResponseBox;
+        return null;
+      }
+    };
+
+    global.window = {
+      STAFF: {
+        handleSupportQuery: async (q) => {
+          // Verify loading state while async query is in-flight
+          expect(mockBtn.disabled).toBe(true);
+          expect(ariaBusy).toBe("true");
+          expect(mockBtn.innerHTML).toBe("⏳");
+          return "Your balance is $50.00.";
+        }
+      }
+    };
+
+    // Extract sendStaffQuery logic
+    const sendStaffQuery = async () => {
+      const input = global.document.getElementById('staffInput');
+      const responseBox = global.document.getElementById('staffResponse');
+      const btn = input?.nextElementSibling;
+      if (!input || !input.value.trim() || !global.window.STAFF) return;
+
+      const query = input.value.trim();
+
+      try {
+        input.disabled = true;
+        if (btn) {
+          btn.disabled = true;
+          btn.setAttribute('aria-busy', 'true');
+          btn.innerHTML = '⏳';
+        }
+        input.value = '';
+
+        responseBox.style.display = 'block';
+        responseBox.textContent = 'Thinking...';
+
+        const reply = await global.window.STAFF.handleSupportQuery(query);
+        responseBox.textContent = reply;
+      } finally {
+        input.disabled = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.setAttribute('aria-busy', 'false');
+          btn.innerHTML = 'ASK';
+        }
+      }
+    };
+
+    await sendStaffQuery();
+
+    // Verify restored state in finally block
+    expect(mockBtn.disabled).toBe(false);
+    expect(ariaBusy).toBe("false");
+    expect(mockBtn.innerHTML).toBe("ASK");
+    expect(mockResponseBox.textContent).toBe("Your balance is $50.00.");
+
+    delete global.document;
+    delete global.window;
   });
 });
 

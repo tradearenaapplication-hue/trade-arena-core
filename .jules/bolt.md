@@ -25,3 +25,7 @@
 ## 2026-12-02 - Redundant Object Entry/Value Array Allocations in Tournament Bracket Summaries
 **Learning:** `getTopBrackets()` and `getGlobalWeights()` in `TRADE_OLYMPICS` were allocating intermediate tuple arrays (`Object.entries()`) and executing multiple array `.filter()` / `.map()` / `.reduce()` passes over 700+ bracket objects on every ranking query, causing noticeable GC pressure and execution latency (~7.4s / 50k calls).
 **Action:** Use guarded `for...in` loops (`hasOwnProperty`) over target hash objects to accumulate active entries in a single pass before sorting, reducing loop overhead by ~1.9x while preserving object property spreads.
+
+## 2026-12-18 - Slicing Sorted Collections Prior to Object Mapping in Leaderboard Queries
+**Learning:** `TRADE_OLYMPICS.getLeaderboard()` was projecting and shallow-copying all standing model objects across every metric query before callers sliced top entries (e.g. `getEloLeaderboard(6)`), allocating hundreds of unneeded objects per render pass. Furthermore, `renderEloPanel()` was recalculating summaries and leaderboards even when the ELO DOM panel was collapsed.
+**Action:** Accept a limit parameter in ranking queries to slice sorted arrays prior to running `.map()` object projections. Always verify DOM panel visibility (`classList.contains('open')`) early in render handlers to bypass summary calculations, sorting, and DOM writes when panels are hidden.

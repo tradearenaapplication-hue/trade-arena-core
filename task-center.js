@@ -99,6 +99,10 @@ function renderTaskCenter() {
     const container = document.getElementById('taskCenterRows');
     if (!container) return;
 
+    // ⚡ OPTIMIZATION: Skip expensive string allocations and DOM overwrites when panel is closed
+    const body = typeof document !== 'undefined' ? document.getElementById('taskBody') : null;
+    if (body && body.classList && typeof body.classList.contains === 'function' && !body.classList.contains('open')) return;
+
     const faucetBtn = document.getElementById('claimFaucetBtn');
     if (faucetBtn) {
         faucetBtn.disabled = taskState.faucetClaimed;

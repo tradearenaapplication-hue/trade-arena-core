@@ -10,6 +10,6 @@
 **Learning:** Grouped preset toggle buttons that alter multi-item settings require updating `aria-pressed="true|false"` dynamically alongside visual `.active` CSS classes so screen reader users perceive state updates when selecting presets.
 **Action:** Always pair visual active state updates with `aria-pressed` toggle logic in group selection helper functions (`_busHighlight`).
 
-## 2026-10-16 - [Async Submit Button Busy & Spinner States]
-**Learning:** For async input submit buttons in customer service/chat UI, toggling `aria-busy="true|false"` alongside loading indicators (`⏳`) inside try...finally blocks ensures both visual and screen-reader perception of in-flight requests without losing focus or breaking keyboard flow.
-**Action:** Always set `aria-busy="true"` and a loading indicator on async submit buttons during fetch/handler execution, and restore in `finally`.
+## 2026-10-13 - [Floating Banner Escape Key Accessibility]
+**Learning:** Floating notification/warning banners (`role="alert"` / `aria-live`) positioned fixed on screen must be dismissible via the `Escape` key in addition to visible dismiss buttons to satisfy WCAG 2.1 keyboard interaction guidelines.
+**Action:** Include floating banners in global `Escape` key dismissal stacks alongside modal dialogs and dropdown menus.

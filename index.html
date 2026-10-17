@@ -2144,15 +2144,20 @@ function drawVerdict(n, wr, pf, avg) {
   if(n<MIN){ box.className='verdict waiting'; box.textContent=`${n}/${MIN} trades. Keep running paper trades — need ${MIN} closed for any verdict.`; return; }
   const hasEdge=pf>=1.5&&avg>0&&wr>=0.5;
   const isLosing=pf<0.8||avg<-0.5;
+  const safeWr = escapeHTML((wr*100).toFixed(1));
+  const safePf = escapeHTML(pf.toFixed(2));
+  const safeAvg = escapeHTML(avg.toFixed(2));
+  const safeN = escapeHTML(n);
+
   if(hasEdge){
     box.className='verdict edge';
-    box.innerHTML=`<strong>✅ EDGE SIGNAL DETECTED</strong><br>Win rate ${(wr*100).toFixed(1)}% · PF ${pf.toFixed(2)} · Avg +$${avg.toFixed(2)}/trade. Check cost sensitivity — if you're profitable at 1.5× costs, this is worth investigating with micro live trades ($5–10). If not, you're riding optimistic cost assumptions.`;
+    box.innerHTML=`<strong>✅ EDGE SIGNAL DETECTED</strong><br>Win rate ${safeWr}% · PF ${safePf} · Avg +$${safeAvg}/trade. Check cost sensitivity — if you're profitable at 1.5× costs, this is worth investigating with micro live trades ($5–10). If not, you're riding optimistic cost assumptions.`;
   } else if(isLosing){
     box.className='verdict losing';
-    box.innerHTML=`<strong>🔴 NO EDGE AFTER ${n} TRADES</strong><br>PF ${pf.toFixed(2)} · Avg $${avg.toFixed(2)}/trade. Strategy is losing after realistic costs. Do NOT go live. Use strategy attribution above to identify which methods are bleeding and cut them.`;
+    box.innerHTML=`<strong>🔴 NO EDGE AFTER ${safeN} TRADES</strong><br>PF ${safePf} · Avg $${safeAvg}/trade. Strategy is losing after realistic costs. Do NOT go live. Use strategy attribution above to identify which methods are bleeding and cut them.`;
   } else {
     box.className='verdict marginal';
-    box.innerHTML=`<strong>⚠️ MARGINAL — ${n} TRADES</strong><br>PF ${pf.toFixed(2)} · Avg $${avg.toFixed(2)}/trade. Edge is weak. Gas and slippage are eating most gains. Run 100+ trades and check if Claude beats the momentum baseline — that's the key test.`;
+    box.innerHTML=`<strong>⚠️ MARGINAL — ${safeN} TRADES</strong><br>PF ${safePf} · Avg $${safeAvg}/trade. Edge is weak. Gas and slippage are eating most gains. Run 100+ trades and check if Claude beats the momentum baseline — that's the key test.`;
   }
 }
 

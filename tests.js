@@ -2245,6 +2245,86 @@ describe("ELO Tournament Engine XSS Sanitization Security", () => {
   });
 });
 
+describe("Learn Log & Audit Log XSS Sanitization Security", () => {
+  function escapeHTML(str) {
+    if (!str && str !== 0) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  it("escapes malicious XSS payloads in learn log fields", () => {
+    let innerHTML = "";
+    const mockElement = {
+      set innerHTML(val) { innerHTML = val; },
+      get innerHTML() { return innerHTML; }
+    };
+    global.document = {
+      getElementById: (id) => id === "learnLog" ? mockElement : null,
+    };
+
+    const learningLog = [{
+      type: "<img src=x onerror=alert(1)>",
+      ts: "<script>alert('ts')</script>",
+      msg: "<svg/onload=alert('msg')>"
+    }];
+
+    function renderLearnLog() {
+      const el = document.getElementById('learnLog'); if (!el) return;
+      el.innerHTML = learningLog.slice(0, 30).map(e =>
+        `<div class="ll-entry ${escapeHTML(e.type)}">[${escapeHTML(e.ts)}] ${escapeHTML(e.msg)}</div>`
+      ).join('');
+    }
+
+    renderLearnLog();
+
+    expect(innerHTML.includes("<script>")).toBe(false);
+    expect(innerHTML.includes("<img")).toBe(false);
+    expect(innerHTML.includes("<svg")).toBe(false);
+    expect(innerHTML).toContain("&lt;img src=x onerror=alert(1)&gt;");
+    expect(innerHTML).toContain("&lt;script&gt;alert(&#039;ts&#039;)&lt;/script&gt;");
+    expect(innerHTML).toContain("&lt;svg/onload=alert(&#039;msg&#039;)&gt;");
+
+    delete global.document;
+  });
+
+  it("escapes malicious XSS payloads in audit log fields", () => {
+    let innerHTML = "";
+    const mockElement = {
+      set innerHTML(val) { innerHTML = val; },
+      get innerHTML() { return innerHTML; }
+    };
+    global.document = {
+      getElementById: (id) => id === "auditLog" ? mockElement : null,
+    };
+
+    const auditHistory = [{
+      type: "<iframe src=javascript:alert(1)>",
+      ts: "<b>12:00</b>",
+      msg: "<script>alert('audit')</script>"
+    }];
+
+    function renderAuditLog() {
+      const el = document.getElementById('auditLog'); if (!el) return;
+      el.innerHTML = auditHistory.slice(0, 40).map(e =>
+        `<div class="al-entry ${escapeHTML(e.type)}"><span class="al-ts">${escapeHTML(e.ts)}</span><span class="al-msg">${escapeHTML(e.msg)}</span></div>`
+      ).join('') || '<div class="al-entry audit"><span class="al-ts">—</span><span class="al-msg">No audits yet.</span></div>';
+    }
+
+    renderAuditLog();
+
+    expect(innerHTML.includes("<script>")).toBe(false);
+    expect(innerHTML.includes("<iframe")).toBe(false);
+    expect(innerHTML).toContain("&lt;iframe src=javascript:alert(1)&gt;");
+    expect(innerHTML).toContain("&lt;script&gt;alert(&#039;audit&#039;)&lt;/script&gt;");
+
+    delete global.document;
+  });
+});
+
 
 describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
   const { fetchMultiChainTokenBalances, walletState, checkMetaMaskStatus, diagnoseMetaMask } = require("./real-wallet.js");

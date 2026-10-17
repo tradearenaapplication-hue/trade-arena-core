@@ -5603,6 +5603,11 @@ document.addEventListener('keydown', function(e) {
       if (typeof closeGoLiveModal === 'function') closeGoLiveModal();
       return;
     }
+    const sessionBanner = document.getElementById('sessionWarningBanner');
+    if (sessionBanner && sessionBanner.style.display !== 'none' && sessionBanner.style.display !== '') {
+      if (typeof dismissSessionWarning === 'function') dismissSessionWarning();
+      return;
+    }
     const holdingsModal = document.getElementById('holdingsModal');
     if (holdingsModal && holdingsModal.style.display !== 'none') {
       holdingsModal.style.display = 'none';

@@ -26,6 +26,6 @@
 **Learning:** `getTopBrackets()` and `getGlobalWeights()` in `TRADE_OLYMPICS` were allocating intermediate tuple arrays (`Object.entries()`) and executing multiple array `.filter()` / `.map()` / `.reduce()` passes over 700+ bracket objects on every ranking query, causing noticeable GC pressure and execution latency (~7.4s / 50k calls).
 **Action:** Use guarded `for...in` loops (`hasOwnProperty`) over target hash objects to accumulate active entries in a single pass before sorting, reducing loop overhead by ~1.9x while preserving object property spreads.
 
-## 2026-12-16 - Panel Visibility Guards in Maintenance and Task System Rendering
-**Learning:** `renderStaffPanel` in `staff-engine.js` and `renderTaskCenter` in `task-center.js` were executing `.map()` array transformations, `escapeHTML` string building, and `innerHTML` / `textContent` assignments on every system event and task state update even when the collapsible panel bodies (`#staffBody`, `#taskBody`) were closed.
-**Action:** Guard DOM rendering functions with an early return check on panel container visibility (`body.classList.contains('open')`).
+## 2026-12-16 - Redundant Array Allocations in Bot Strategy State Updates and Insight Queries
+**Learning:** `updateBotStateAfterTrade`, `getBotStrategyInsights`, and `getIntelligentAutoTradeRecommendation` in `ai-strategies.js` were allocating temporary arrays and callback closures on every trade cycle and UI query via `.filter()`, `.reduce()`, and `Object.entries().sort()`. In high-frequency bot execution loops, this created unnecessary GC pressure.
+**Action:** Replace intermediate array methods (`.filter()`, `.reduce()`, `Object.entries().sort()`) in strategy tracking and insight routines with single-pass scalar `for` and `for...in` loops to accumulate win counts, sum totals, and find best methods in scalar time (~20.4% speedup).

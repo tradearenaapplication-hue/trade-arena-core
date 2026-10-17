@@ -5377,6 +5377,11 @@ function busApplyPreset(name) {
   busSetSL(p.sl);
   busSetTP(p.tp);
   const labels = { conservative:'🛡️ Safe Mode', balanced:'⚖️ Balanced', aggressive:'🔥 Degen Mode', optimized:'⚡ Optimized', reset:'↺ Reset' };
+  document.querySelectorAll('.bus-apply-row .bus-apply-btn').forEach(btn => {
+    const isMatch = name !== 'reset' && btn.getAttribute('onclick')?.includes(`'${name}'`);
+    btn.classList.toggle('active', isMatch);
+    btn.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
+  });
   _busStatus(`${labels[name]} applied to ${bots.length} bots`);
 }
 

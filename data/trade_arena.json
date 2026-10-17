@@ -12,7 +12,7 @@
           "valueUsd": 11.17
         }
       ],
-      "lastLogin": "2026-10-13T20:37:25.377Z",
+      "lastLogin": "2026-10-17T01:46:13.381Z",
       "sessionData": {
         "balance": 11.17
       }
@@ -24,6 +24,16 @@
       "holdings": [],
       "lastLogin": "2026-09-25T13:47:44.753Z",
       "sessionData": {}
+    },
+    "0xaee6f8812fcfeed920c18ae92e75789160a9a338": {
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "provider": "demo",
+      "name": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "holdings": [],
+      "lastLogin": "2026-10-16T10:21:03.058Z",
+      "sessionData": {
+        "balance": 50
+      }
     }
   },
   "sessions": {
@@ -48,6 +58,22 @@
       "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
       "startedAt": "2026-09-25T13:49:47.324Z",
       "updatedAt": "2026-09-25T13:49:47.324Z",
+      "balance": 0,
+      "status": "ACTIVE"
+    },
+    "session_1792146063060_6658ee527ff1d493": {
+      "id": "session_1792146063060_6658ee527ff1d493",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "startedAt": "2026-10-16T10:21:03.062Z",
+      "updatedAt": "2026-10-16T10:21:03.062Z",
+      "balance": 50,
+      "status": "ACTIVE"
+    },
+    "session_1792146068034_b29037688f6ce3a3": {
+      "id": "session_1792146068034_b29037688f6ce3a3",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "startedAt": "2026-10-16T10:21:08.036Z",
+      "updatedAt": "2026-10-16T10:21:08.036Z",
       "balance": 0,
       "status": "ACTIVE"
     }
@@ -1191,23 +1217,6 @@
       "timestamp": "2026-10-13T20:14:20.169Z"
     },
     {
-      "id": "trade_1791923843926_bdc345d021df53d3",
-      "address": "0x9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a",
-      "agentId": "agent-default",
-      "botName": "Trade Bot",
-      "action": "TRADE",
-      "symbol": "SOL/USD",
-      "amount": 0,
-      "pnl": 0,
-      "details": {
-        "status": "OPEN"
-      },
-      "timestamp": "2026-10-13T20:37:23.926Z",
-      "positionId": "pos_b",
-      "status": "OPEN",
-      "openedAt": "2026-10-13T20:37:23.926Z"
-    },
-    {
       "id": "trade_1791923845379_54d5bc3ffc3373a5",
       "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
       "agentId": "bot-1",
@@ -1220,6 +1229,1141 @@
         "isWin": true
       },
       "timestamp": "2026-10-13T20:37:25.379Z"
+    },
+    {
+      "id": "trade_1792146186679_8311149410580a82",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "FIGR_HELOC",
+      "amount": 0.17277125086385625,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1.031,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:23:06.638Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:23:06.679Z",
+      "positionId": "1792146186637.928",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:23:06.638Z"
+    },
+    {
+      "id": "trade_1792146187313_ddc7ce46d72ec4aa",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "FIGR_HELOC",
+      "amount": 0.17277125086385625,
+      "pnl": 0,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 1.031,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:23:07.305Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:23:07.313Z",
+      "positionId": "1792146187305.072",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:23:07.305Z"
+    },
+    {
+      "id": "trade_1792146193243_165286090ad6f88f",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "FIGR_HELOC",
+      "amount": 0.17277125086385625,
+      "pnl": 0,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 1.031,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:23:13.172Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:23:13.244Z",
+      "positionId": "1792146193172.9688",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:23:13.172Z"
+    },
+    {
+      "id": "trade_1792146262698_e4acf3567fc23b25",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0006176187287441956,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 81972,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:24:22.661Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:24:22.698Z",
+      "positionId": "1792146262661.018",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:24:22.661Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:30:22.680Z"
+    },
+    {
+      "id": "trade_1792146270009_0845d04561ffa14d",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0006176187287441956,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 81972,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:24:30.003Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:24:30.009Z",
+      "positionId": "1792146270003.1743",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:24:30.003Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:54:33.738Z"
+    },
+    {
+      "id": "trade_1792146277676_f014f91cb2ece736",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0006176187287441956,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 81972,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:24:37.670Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:24:37.676Z",
+      "positionId": "1792146277670.7449",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:24:37.670Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:54:37.811Z"
+    },
+    {
+      "id": "trade_1792146285022_a3010edc604fffce",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0006176187287441956,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 81972,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:24:45.009Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:24:45.022Z",
+      "positionId": "1792146285009.33",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:24:45.009Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:54:49.296Z"
+    },
+    {
+      "id": "trade_1792146291719_89e975ca0abc72ba",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0006176187287441956,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 81972,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:24:51.713Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:24:51.719Z",
+      "positionId": "1792146291713.5508",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:24:51.713Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:30:51.727Z"
+    },
+    {
+      "id": "trade_1792146299140_d19c24ba96831e0b",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0006176187287441956,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 81972,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:24:59.131Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:24:59.140Z",
+      "positionId": "1792146299131.1511",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:24:59.131Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:31:03.225Z"
+    },
+    {
+      "id": "trade_1792146305103_89a7b2927add864d",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0006176187287441956,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 81972,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:25:05.073Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:25:05.103Z",
+      "positionId": "1792146305073.7534",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:25:05.073Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:55:05.110Z"
+    },
+    {
+      "id": "trade_1792146311291_6dfc34a7cbaef73c",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005501727712508638,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 81940,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:25:11.286Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:25:11.291Z",
+      "positionId": "1792146311286.9688",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:25:11.286Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:55:18.790Z"
+    },
+    {
+      "id": "trade_1792146318179_607ea6b3cc6bb922",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005501727712508638,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 81940,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:25:18.166Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:25:18.179Z",
+      "positionId": "1792146318166.5657",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:25:18.166Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:55:18.768Z"
+    },
+    {
+      "id": "trade_1792146325033_57d098bcb316c654",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.000526982282306221,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 81951,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:25:25.025Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:25:25.033Z",
+      "positionId": "1792146325025.1057",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:25:25.025Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:31:25.039Z"
+    },
+    {
+      "id": "trade_1792146331942_a87f771e0edcd051",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005750909727041451,
+      "details": {
+        "method": "PERP LONG",
+        "regime": "CHOP",
+        "entryPrice": 81951,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:25:31.937Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:25:31.942Z",
+      "positionId": "1792146331937.634",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:25:31.937Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:35:33.095Z"
+    },
+    {
+      "id": "trade_1792146339977_4875420b09885757",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005733632601955065,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 81951,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:25:39.968Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:25:39.977Z",
+      "positionId": "1792146339968.3198",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:25:39.968Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:31:39.983Z"
+    },
+    {
+      "id": "trade_1792146346852_190fc48fce342f31",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005733632601955065,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 81951,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:25:46.247Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:25:46.852Z",
+      "positionId": "1792146346247.682",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:25:46.247Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:31:46.273Z"
+    },
+    {
+      "id": "trade_1792146354027_5c0694dc898c2076",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.000526982282306221,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 81951,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:25:54.022Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:25:54.027Z",
+      "positionId": "1792146354022.8325",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:25:54.022Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:31:54.037Z"
+    },
+    {
+      "id": "trade_1792146360132_6274958034e34c61",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.000526982282306221,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 81951,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:26:00.111Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:26:00.132Z",
+      "positionId": "1792146360111.425",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:26:00.111Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:32:00.126Z"
+    },
+    {
+      "id": "trade_1792146365958_e3678277c476c48f",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005733632601955065,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 81951,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:26:05.950Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:26:05.958Z",
+      "positionId": "1792146365950.7998",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:26:05.950Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:32:05.964Z"
+    },
+    {
+      "id": "trade_1792146372297_8ee0439fdd70ccc4",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005733632601955065,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 81951,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:26:12.291Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:26:12.297Z",
+      "positionId": "1792146372291.1956",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:26:12.291Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:56:18.772Z"
+    },
+    {
+      "id": "trade_1792146379487_aba8200201ffde91",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.000526982282306221,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 81951,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:26:19.479Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:26:19.487Z",
+      "positionId": "1792146379479.4573",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:26:19.479Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:32:19.492Z"
+    },
+    {
+      "id": "trade_1792146387232_3057a23a29f386bb",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005733632601955065,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 81951,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:26:27.222Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:26:27.232Z",
+      "positionId": "1792146387222.8035",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:26:27.222Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:56:33.798Z"
+    },
+    {
+      "id": "trade_1792146393278_80d2ce0fc4b90fec",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005750909727041451,
+      "details": {
+        "method": "PERP LONG",
+        "regime": "CHOP",
+        "entryPrice": 81951,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:26:33.273Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:26:33.278Z",
+      "positionId": "1792146393273.403",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:26:33.273Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:36:33.423Z"
+    },
+    {
+      "id": "trade_1792146401166_7b57f61a554667e0",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005501727712508638,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 81940,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:26:41.160Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:26:41.166Z",
+      "positionId": "1792146401160.721",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:26:41.160Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:32:46.357Z"
+    },
+    {
+      "id": "trade_1792146407742_a7d5d1e0124cb8c5",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005501727712508638,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 81940,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:26:47.734Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:26:47.742Z",
+      "positionId": "1792146407734.7207",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:26:47.734Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:56:48.794Z"
+    },
+    {
+      "id": "trade_1792146415192_c430afe8a611dfaa",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005501727712508638,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 81940,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:26:55.186Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:26:55.192Z",
+      "positionId": "1792146415186.8867",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:26:55.186Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:33:02.959Z"
+    },
+    {
+      "id": "trade_1792146421174_5c03bb2a12430a14",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005519004837595023,
+      "details": {
+        "method": "PERP LONG",
+        "regime": "CHOP",
+        "entryPrice": 81940,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:27:01.164Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:27:01.174Z",
+      "positionId": "1792146421164.6257",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:27:01.164Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:37:02.873Z"
+    },
+    {
+      "id": "trade_1792146429123_e34f718dcd4d47f0",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005501727712508638,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 81940,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:27:09.108Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:27:09.123Z",
+      "positionId": "1792146429108.764",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:27:09.108Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:57:19.040Z"
+    },
+    {
+      "id": "trade_1792146435150_e93aaa85a275d1a6",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005519004837595023,
+      "details": {
+        "method": "PERP LONG",
+        "regime": "CHOP",
+        "entryPrice": 81940,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:27:15.144Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:27:15.150Z",
+      "positionId": "1792146435144.6443",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:27:15.144Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:37:18.098Z"
+    },
+    {
+      "id": "trade_1792146441973_9d62ca6d06b88013",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0005519004837595023,
+      "details": {
+        "method": "PERP LONG",
+        "regime": "CHOP",
+        "entryPrice": 81940,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:27:21.965Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:27:21.974Z",
+      "positionId": "1792146441965.8125",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:27:21.965Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:37:21.988Z"
+    },
+    {
+      "id": "trade_1792146448641_0f177fd3055cb9bb",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0006155118396626135,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 81971,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:27:28.634Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:27:28.641Z",
+      "positionId": "1792146448634.551",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:27:28.634Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:33:33.018Z"
+    },
+    {
+      "id": "trade_1792146455618_f5046e4d152b25ff",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0006155118396626135,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 81971,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:27:35.613Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:27:35.618Z",
+      "positionId": "1792146455613.6072",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:27:35.613Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:57:35.649Z"
+    },
+    {
+      "id": "trade_1792146462575_07a9abd2d82f054f",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0006155118396626135,
+      "details": {
+        "method": "YIELD FARM",
+        "regime": "CHOP",
+        "entryPrice": 81971,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:27:42.563Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:27:42.575Z",
+      "positionId": "1792146462563.5754",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:27:42.563Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:57:48.842Z"
+    },
+    {
+      "id": "trade_1792146468711_3142825582720a78",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": 1,
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "BTC",
+      "amount": 0.17277125086385625,
+      "pnl": -0.0006172395521712521,
+      "details": {
+        "method": "PERP LONG",
+        "regime": "CHOP",
+        "entryPrice": 81971,
+        "exitPrice": 81940,
+        "isWin": false,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-16T10:27:48.703Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-16T10:27:48.711Z",
+      "positionId": "1792146468703.664",
+      "status": "OPEN",
+      "openedAt": "2026-10-16T10:27:48.703Z",
+      "closedAt": null,
+      "updatedAt": "2026-10-16T10:37:48.725Z"
+    },
+    {
+      "id": "trade_1792201213940_7f0e308df86c77aa",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-17T01:40:13.940Z"
+    },
+    {
+      "id": "trade_1792201332771_404d53c6d79127d2",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-17T01:42:12.771Z"
+    },
+    {
+      "id": "trade_1792201349707_88c00ea34c5894df",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-17T01:42:29.707Z"
+    },
+    {
+      "id": "trade_1792201375091_86a6ee2ded1ff011",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-17T01:42:55.091Z"
+    },
+    {
+      "id": "trade_1792201570320_95f33d1d30c79bfc",
+      "address": "0x9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "TRADE",
+      "symbol": "SOL/USD",
+      "amount": 0,
+      "pnl": 0,
+      "details": {
+        "status": "OPEN"
+      },
+      "timestamp": "2026-10-17T01:46:10.320Z",
+      "positionId": "pos_b",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T01:46:10.320Z"
+    },
+    {
+      "id": "trade_1792201573384_cae25c86e2b7ba9a",
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "agentId": "bot-1",
+      "botName": "Trend Bot",
+      "action": "BUY",
+      "symbol": "ETH/USD",
+      "amount": 10,
+      "pnl": 2.5,
+      "details": {
+        "isWin": true
+      },
+      "timestamp": "2026-10-17T01:46:13.385Z"
     }
   ],
   "userState": {
@@ -1235,6 +2379,226 @@
       "address": "0xc6f9948f5bc657e257c50e4c72249a36454940fe",
       "state": {},
       "updatedAt": "2026-09-25T13:47:44.757Z"
+    },
+    "0x92ceaf1ca43decfc443a34b915b45343bee9c2db": {
+      "address": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+      "state": {
+        "agentWeights": {
+          "mom": 0.2,
+          "vol": 0.515,
+          "pol": 0.2,
+          "sen": 0.344,
+          "risk": 0.344
+        },
+        "agentStats": {
+          "mom": {
+            "w": 4,
+            "t": 31
+          },
+          "vol": {
+            "w": 14,
+            "t": 31
+          },
+          "pol": {
+            "w": 0,
+            "t": 31
+          },
+          "sen": {
+            "w": 4,
+            "t": 31
+          },
+          "risk": {
+            "w": 4,
+            "t": 31
+          }
+        },
+        "strategyRegimeMatrix": {
+          "SPOT LONG": {
+            "CHOP": {
+              "w": 0,
+              "t": 9
+            }
+          },
+          "SPOT SHORT": {
+            "CHOP": {
+              "w": 0,
+              "t": 4
+            }
+          },
+          "PERP LONG": {
+            "CHOP": {
+              "w": 0,
+              "t": 6
+            }
+          },
+          "YIELD FARM": {
+            "CHOP": {
+              "w": 0,
+              "t": 12
+            }
+          }
+        },
+        "learningGeneration": 6,
+        "learningLog": [
+          {
+            "msg": "Gen 6: VOL ↑0.09 · SEN ↓0.03 · RISK ↓0.03",
+            "type": "warn",
+            "ts": "09:57:42 PM"
+          },
+          {
+            "msg": "Gen 5: MOM ↑0.15 · VOL ↑0.03 · POL ↑0.15 · SEN ↓0.03 · RISK ↓0.03",
+            "type": "warn",
+            "ts": "09:56:12 PM"
+          },
+          {
+            "msg": "⚠️ Risk/Veto ON NOTICE — 20% WR (below 40% threshold). 10-trade probation started.",
+            "type": "warn",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "⚠️ Sentiment ON NOTICE — 20% WR (below 40% threshold). 10-trade probation started.",
+            "type": "warn",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "🔴 Politician SUSPENDED — 0% WR after full probation. Weight → 0.05. Vote nearly muted.",
+            "type": "bad",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "⚠️ Volatility ON NOTICE — 33% WR (below 40% threshold). 10-trade probation started.",
+            "type": "warn",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "🔴 Momentum SUSPENDED — 13% WR after full probation. Weight → 0.05. Vote nearly muted.",
+            "type": "bad",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "🔍 AUTO AUDIT — 20 closed trades reviewed",
+            "type": "info",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "AUTO: Consensus adapted → 3/4. Win rate 0% — tightening to 3/4",
+            "type": "warn",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "Gen 4: MOM ↓0.03 · VOL ↓0.04 · POL ↓0.03 · SEN ↓0.08 · RISK ↓0.08",
+            "type": "warn",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "Gen 3: MOM ↓0.03 · VOL ↓0.05 · POL ↓0.03 · SEN ↓0.10 · RISK ↓0.10",
+            "type": "warn",
+            "ts": "09:37:01 PM"
+          },
+          {
+            "msg": "⚠️ Politician ON NOTICE — 0% WR (below 40% threshold). 10-trade probation started.",
+            "type": "warn",
+            "ts": "09:32:41 PM"
+          },
+          {
+            "msg": "⚠️ Momentum ON NOTICE — 10% WR (below 40% threshold). 10-trade probation started.",
+            "type": "warn",
+            "ts": "09:32:41 PM"
+          },
+          {
+            "msg": "🔍 AUTO AUDIT — 10 closed trades reviewed",
+            "type": "info",
+            "ts": "09:32:41 PM"
+          },
+          {
+            "msg": "Gen 2: MOM ↓0.10 · VOL ↓0.06 · POL ↓0.10 · SEN ↓0.04 · RISK ↓0.04",
+            "type": "warn",
+            "ts": "09:32:41 PM"
+          },
+          {
+            "msg": "Gen 1: MOM ↓0.12 · POL ↓0.12 · SEN ↓0.12 · RISK ↓0.12",
+            "type": "warn",
+            "ts": "09:31:46 PM"
+          }
+        ],
+        "agentStatus": {
+          "mom": "SUSPENDED",
+          "vol": "ON_NOTICE",
+          "pol": "SUSPENDED",
+          "sen": "ON_NOTICE",
+          "risk": "ON_NOTICE"
+        },
+        "agentProbation": {
+          "mom": 10,
+          "vol": 10,
+          "pol": 10,
+          "sen": 10,
+          "risk": 10
+        },
+        "agentProbationStart": {
+          "mom": 10,
+          "pol": 10,
+          "vol": 20,
+          "sen": 20,
+          "risk": 20
+        },
+        "auditHistory": [
+          {
+            "msg": "⚠️ Risk/Veto ON NOTICE — 20% WR (below 40% threshold). 10-trade probation started.",
+            "type": "notice",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "⚠️ Sentiment ON NOTICE — 20% WR (below 40% threshold). 10-trade probation started.",
+            "type": "notice",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "🔴 Politician SUSPENDED — 0% WR after full probation. Weight → 0.05. Vote nearly muted.",
+            "type": "suspend",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "⚠️ Volatility ON NOTICE — 33% WR (below 40% threshold). 10-trade probation started.",
+            "type": "notice",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "🔴 Momentum SUSPENDED — 13% WR after full probation. Weight → 0.05. Vote nearly muted.",
+            "type": "suspend",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "🔍 AUTO AUDIT — 20 closed trades reviewed",
+            "type": "audit",
+            "ts": "09:54:37 PM"
+          },
+          {
+            "msg": "⚠️ Politician ON NOTICE — 0% WR (below 40% threshold). 10-trade probation started.",
+            "type": "notice",
+            "ts": "09:32:41 PM"
+          },
+          {
+            "msg": "⚠️ Momentum ON NOTICE — 10% WR (below 40% threshold). 10-trade probation started.",
+            "type": "notice",
+            "ts": "09:32:41 PM"
+          },
+          {
+            "msg": "🔍 AUTO AUDIT — 10 closed trades reviewed",
+            "type": "audit",
+            "ts": "09:32:41 PM"
+          }
+        ],
+        "lastAuditAt": 20,
+        "lastWeightSnapshot": {
+          "mom": 0.2,
+          "vol": 0.515,
+          "pol": 0.2,
+          "sen": 0.344,
+          "risk": 0.344
+        }
+      },
+      "updatedAt": "2026-10-16T10:57:48.848Z"
     }
   },
   "taskClaims": {}

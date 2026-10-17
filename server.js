@@ -633,7 +633,7 @@ async function coingeckoGet(url, { timeout = 8000, cacheTtlMs = CG_CACHE_TTL_MS,
                 const retryAfter = Number(e?.response?.headers?.['retry-after']);
                 const waitMs = Math.min(
                     CG_MAX_WAIT_MS,
-                    (Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 60 * 1000)
+                    (Number.isFinite(retryAfter) && retryAfter >= 0 ? retryAfter * 1000 : 60 * 1000)
                 );
                 console.warn(`[CoinGecko] 429 for ${url} - waiting ${Math.round(waitMs / 1000)}s once before retry`);
                 await sleep(waitMs);

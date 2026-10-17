@@ -10,6 +10,12 @@
  *                            getBalanceUSD / ensureBaseNetwork /
  *                            fetchMultiChainTokenBalances / subscribe
  */
+// Browser-only test harness — no-op in Node.js (no window/ethereum).
+if (typeof window === 'undefined') {
+  console.log('wallet-console-test.js: browser-only script (requires window/ethereum). Skipping in Node.js.');
+  process.exit(0);
+}
+
 window.TA_TEST = (function () {
   'use strict';
 

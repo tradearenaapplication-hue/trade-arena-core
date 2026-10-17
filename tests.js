@@ -1770,8 +1770,8 @@ describe("Trade Authorisation Hardening", () => {
   it("bulk batch-prices serves a degrading response instead of dropping coins", async () => {
     // ethereum healthy, FAKE-B monitored nowhere else in the suite.
     const restore = stubAxiosCoinGecko([
-      { match: "FAKE-B", status: 500, body: {} },
-      { status: 200, body: {} },
+      { match: "ids=FAKE-B", status: 500, body: {} },
+      { status: 200, body: { ethereum: { usd: 3200 } } },
     ]);
     try {
       const res = mockRes();
@@ -3104,6 +3104,8 @@ async function run() {
   }
 
   console.log("=".repeat(50) + "\n");
+
+  process.exit(process.exitCode || 0);
 }
 
 run().catch((error) => {

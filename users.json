@@ -148,6 +148,150 @@
           "riskMultiplier": 1
         },
         "lastTradeTime": 0
+      },
+      {
+        "id": "mvbqbtuc44zoj2xhp6g",
+        "name": "Alpha Trading Bot",
+        "token": "WETH",
+        "strategyId": "Arbitrage Detection",
+        "strategy": "Arbitrage Detection",
+        "status": "ACTIVE",
+        "initialCapital": 1000,
+        "config": {
+          "name": "Arbitrage Detection Bot",
+          "strategy": "ARBITRAGE",
+          "params": {
+            "minSpread": 0.5,
+            "maxSlippage": 0.01,
+            "gasLimit": 500000
+          },
+          "risk": 0.5,
+          "riskMultiplier": 1
+        },
+        "lastTradeTime": 0
+      },
+      {
+        "id": "mvbqedjixn9gjetf36s",
+        "name": "Alpha Trading Bot",
+        "token": "WETH",
+        "strategyId": "Arbitrage Detection",
+        "strategy": "Arbitrage Detection",
+        "status": "ACTIVE",
+        "initialCapital": 1000,
+        "config": {
+          "name": "Arbitrage Detection Bot",
+          "strategy": "ARBITRAGE",
+          "params": {
+            "minSpread": 0.5,
+            "maxSlippage": 0.01,
+            "gasLimit": 500000
+          },
+          "risk": 0.5,
+          "riskMultiplier": 1
+        },
+        "lastTradeTime": 0
+      },
+      {
+        "id": "mvbqeqtimuq72gm7mjj",
+        "name": "Alpha Trading Bot",
+        "token": "WETH",
+        "strategyId": "Arbitrage Detection",
+        "strategy": "Arbitrage Detection",
+        "status": "ACTIVE",
+        "initialCapital": 1000,
+        "config": {
+          "name": "Arbitrage Detection Bot",
+          "strategy": "ARBITRAGE",
+          "params": {
+            "minSpread": 0.5,
+            "maxSlippage": 0.01,
+            "gasLimit": 500000
+          },
+          "risk": 0.5,
+          "riskMultiplier": 1
+        },
+        "lastTradeTime": 0
+      },
+      {
+        "id": "mvbqfactzb2ug63baig",
+        "name": "Alpha Trading Bot",
+        "token": "WETH",
+        "strategyId": "Arbitrage Detection",
+        "strategy": "Arbitrage Detection",
+        "status": "ACTIVE",
+        "initialCapital": 1000,
+        "config": {
+          "name": "Arbitrage Detection Bot",
+          "strategy": "ARBITRAGE",
+          "params": {
+            "minSpread": 0.5,
+            "maxSlippage": 0.01,
+            "gasLimit": 500000
+          },
+          "risk": 0.5,
+          "riskMultiplier": 1
+        },
+        "lastTradeTime": 0
+      },
+      {
+        "id": "mvbqji1ucnfb5hxeckk",
+        "name": "Alpha Trading Bot",
+        "token": "WETH",
+        "strategyId": "Arbitrage Detection",
+        "strategy": "Arbitrage Detection",
+        "status": "ACTIVE",
+        "initialCapital": 1000,
+        "config": {
+          "name": "Arbitrage Detection Bot",
+          "strategy": "ARBITRAGE",
+          "params": {
+            "minSpread": 0.5,
+            "maxSlippage": 0.01,
+            "gasLimit": 500000
+          },
+          "risk": 0.5,
+          "riskMultiplier": 1
+        },
+        "lastTradeTime": 0
+      }
+    ],
+    "trades": []
+  },
+  "0x92ceaf1ca43decfc443a34b915b45343bee9c2db": {
+    "id": "0x92ceaf1ca43decfc443a34b915b45343bee9c2db",
+    "bots": [
+      {
+        "id": "1",
+        "name": "Arena Bot #1",
+        "token": "WETH",
+        "strategyId": "rsi-strategy",
+        "strategy": "rsi-strategy",
+        "status": "PAUSED",
+        "initialCapital": 0.17277125086385625,
+        "config": {},
+        "lastTradeTime": 0
+      },
+      {
+        "id": "2",
+        "name": "Arena Bot #2",
+        "token": "WETH",
+        "strategyId": "rsi-strategy",
+        "strategy": "rsi-strategy",
+        "status": "ACTIVE",
+        "initialCapital": 0.17277125086385625,
+        "config": {},
+        "lastTradeTime": 0
+      },
+      {
+        "id": "3",
+        "name": "Arena Bot #3",
+        "token": "WETH",
+        "strategyId": "rsi-strategy",
+        "strategy": "rsi-strategy",
+        "status": "ACTIVE",
+        "initialCapital": 0.17277125086385625,
+        "config": {},
+        "lastTradeTime": 0
       }
     ],
     "trades": []

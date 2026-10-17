@@ -398,7 +398,11 @@ async function sendStaffQuery() {
 
     try {
         input.disabled = true;
-        if (btn) btn.disabled = true;
+        if (btn) {
+            btn.disabled = true;
+            btn.setAttribute('aria-busy', 'true');
+            btn.innerHTML = '⏳';
+        }
         input.value = '';
 
         responseBox.style.display = 'block';
@@ -411,7 +415,11 @@ async function sendStaffQuery() {
         if (typeof window.SFX !== 'undefined') window.SFX.tick();
     } finally {
         input.disabled = false;
-        if (btn) btn.disabled = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.setAttribute('aria-busy', 'false');
+            btn.innerHTML = 'ASK';
+        }
     }
 }
 

@@ -862,12 +862,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
      <!-- bot controls -->
      <div class="gh-controls">
-         <button class="gh-bus-btn" id="staffNavBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false" aria-controls="staffPanel">👷 STAFF</button>
-       <button class="gh-bus-btn" id="taskNavBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false" aria-controls="taskPanel">💰 EARN</button>
-       <button class="gh-bus-btn" id="eloNavBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false" aria-controls="eloPanel">🏆 ARENA</button>
-       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false" aria-controls="voiceAgentModal">🎙️ AGENT</button>
-       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-pressed="false">📊 FLEET</button>
-       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false" aria-controls="busPanel">⚙ BUS</button>
+         <button class="gh-bus-btn" id="staffNavBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-label="Staff Operations - Application Maintenance & Support" aria-expanded="false" aria-controls="staffPanel">👷 STAFF</button>
+       <button class="gh-bus-btn" id="taskNavBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-label="Task Center - Earn Trade Credits" aria-expanded="false" aria-controls="taskPanel">💰 EARN</button>
+       <button class="gh-bus-btn" id="eloNavBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-label="ELO Arena - Recursive Improvement" aria-expanded="false" aria-controls="eloPanel">🏆 ARENA</button>
+       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-label="AI Floor Manager Voice Chat" aria-expanded="false" aria-controls="voiceAgentModal">🎙️ AGENT</button>
+       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-label="Toggle Fleet View Compact Grid" aria-pressed="false">📊 FLEET</button>
+       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-label="Bus settings - apply to all bots" aria-expanded="false" aria-controls="busPanel">⚙ BUS</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot" aria-label="Add new bot">+</button>

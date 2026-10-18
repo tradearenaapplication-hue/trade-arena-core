@@ -1981,6 +1981,17 @@ describe("Crucible Mode & Regime Selection UX & Accessibility", () => {
     expect(html).toContain('id="crucibleBtn" onclick="toggleCrucible()" aria-pressed="false" aria-label="Toggle Crucible Mode"');
     expect(html).toContain("btn.setAttribute('aria-pressed', crucibleMode ? 'true' : 'false')");
   });
+
+  it("defines role=dialog, aria-modal, aria-labelledby, close button aria-label, and Escape key handling for crucibleResultsModal", () => {
+    expect(html).toContain("modalOverlay.id = 'crucibleResultsModal'");
+    expect(html).toContain("modalOverlay.setAttribute('role', 'dialog')");
+    expect(html).toContain("modalOverlay.setAttribute('aria-modal', 'true')");
+    expect(html).toContain("modalOverlay.setAttribute('aria-labelledby', 'crucibleResultsTitle')");
+    expect(html).toContain('id="crucibleResultsTitle"');
+    expect(html).toContain('aria-label="Close Crucible results dialog"');
+    expect(html).toContain("const crucibleModal = document.getElementById('crucibleResultsModal');");
+    expect(html).toContain("crucibleModal.remove();");
+  });
 });
 
 describe("Advanced Settings Toggle & Form Inputs Accessibility", () => {

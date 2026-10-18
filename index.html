@@ -2317,6 +2317,10 @@ function cancelCrucible() {
 function showCrucibleResults(results) {
    // Create modal overlay
    const modalOverlay = document.createElement('div');
+   modalOverlay.id = 'crucibleResultsModal';
+   modalOverlay.setAttribute('role', 'dialog');
+   modalOverlay.setAttribute('aria-modal', 'true');
+   modalOverlay.setAttribute('aria-labelledby', 'crucibleResultsTitle');
    modalOverlay.style.cssText = `
       position: fixed;
       top: 0;
@@ -2343,7 +2347,7 @@ function showCrucibleResults(results) {
    `;
 
    modalContent.innerHTML = `
-      <h2 style="color: var(--cyan); text-align: center; margin-bottom: 20px;">CRUCIBLE BATCH RESULTS</h2>
+      <h2 id="crucibleResultsTitle" style="color: var(--cyan); text-align: center; margin-bottom: 20px;">CRUCIBLE BATCH RESULTS</h2>
       <div style="margin-bottom: 15px;">
          <strong>Mode:</strong> ${escapeHTML(results.mode)}<br>
          <strong>Trades Executed:</strong> ${results.tradesRun}<br>
@@ -2353,7 +2357,8 @@ function showCrucibleResults(results) {
          <strong>Win Rate:</strong> ${results.winRate.toFixed(1)}%
       </div>
       <div style="margin-top: 20px; text-align: center;">
-         <button onclick="this.parentElement.parentElement.remove()"
+         <button onclick="this.closest('#crucibleResultsModal').remove()"
+                 aria-label="Close Crucible results dialog"
                  style="background: var(--purple); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
             CLOSE
          </button>
@@ -5598,6 +5603,11 @@ function toggleBackgroundMusic() {
 // Global keyboard listener for collapsible panels & modal dismissal
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' || e.key === 'Esc') {
+    const crucibleModal = document.getElementById('crucibleResultsModal');
+    if (crucibleModal) {
+      crucibleModal.remove();
+      return;
+    }
     const voiceModal = document.getElementById('voiceAgentModal');
     if (voiceModal && voiceModal.classList.contains('open')) {
       if (typeof toggleVoiceAgent === 'function') toggleVoiceAgent();

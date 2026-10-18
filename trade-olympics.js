@@ -335,30 +335,32 @@ const TRADE_OLYMPICS = {
     return 1 / (1 + Math.pow(10, (eloB - eloA) / 400));
   },
 
-  getLeaderboard(metric = "elo") {
+  // ⚡ OPTIMIZATION: Accepts optional limit to slice sorted standings prior to .map(), avoiding object allocations for unneeded entries.
+  getLeaderboard(metric = "elo", limit = Infinity) {
     this._ensureInitialized();
-    return Object.values(this.STANDINGS)
-      .sort((a, b) => {
-        if (metric === "winRate")
-          return b.overallWinRate - a.overallWinRate || b.elo - a.elo;
-        if (metric === "totalPnL")
-          return b.totalPnL - a.totalPnL || b.elo - a.elo;
-        if (metric === "trades")
-          return b.totalTrades - a.totalTrades || b.elo - a.elo;
-        if (metric === "avgTradeValue")
-          return b.avgTradeValue - a.avgTradeValue || b.elo - a.elo;
-        return b.elo - a.elo || b.totalPnL - a.totalPnL;
-      })
-      .map((model, index) => ({
-        rank: index + 1,
-        ...model,
-        medal:
-          index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "",
-      }));
+    const sorted = Object.values(this.STANDINGS).sort((a, b) => {
+      if (metric === "winRate")
+        return b.overallWinRate - a.overallWinRate || b.elo - a.elo;
+      if (metric === "totalPnL")
+        return b.totalPnL - a.totalPnL || b.elo - a.elo;
+      if (metric === "trades")
+        return b.totalTrades - a.totalTrades || b.elo - a.elo;
+      if (metric === "avgTradeValue")
+        return b.avgTradeValue - a.avgTradeValue || b.elo - a.elo;
+      return b.elo - a.elo || b.totalPnL - a.totalPnL;
+    });
+
+    const target = Number.isFinite(limit) && limit > 0 ? sorted.slice(0, limit) : sorted;
+    return target.map((model, index) => ({
+      rank: index + 1,
+      ...model,
+      medal:
+        index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "",
+    }));
   },
 
   getEloLeaderboard(limit = 20) {
-    return this.getLeaderboard("elo").slice(0, limit);
+    return this.getLeaderboard("elo", limit);
   },
 
   /**
@@ -534,6 +536,11 @@ const TRADE_OLYMPICS = {
     const rows = document.getElementById("eloTournamentRows");
     const summaryEl = document.getElementById("eloTournamentSummary");
     if (!rows || !summaryEl) return;
+
+    // ⚡ OPTIMIZATION: Return early if the panel is collapsed to skip summary calculations, leaderboard sorting, string allocations, and DOM overwrites.
+    const body = document.getElementById("eloTournamentBody");
+    if (body && body.classList && typeof body.classList.contains === "function" && !body.classList.contains("open")) return;
+
     const summary = this.getSummary();
     summaryEl.textContent = `${summary.totalModels} models · ${summary.totalMatches} ELO matches · leader ${summary.topModel || "N/A"} (${summary.topModelElo || 0})`;
     rows.innerHTML = this.getEloLeaderboard(6)

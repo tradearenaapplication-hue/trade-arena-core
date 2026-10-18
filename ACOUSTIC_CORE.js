@@ -120,16 +120,16 @@
     panel.style.cssText = 'margin-left:8px;display:flex;gap:4px;';
 
     panel.innerHTML = `
-      <button class="gh-bot-btn" id="acoustic-sfx-btn" onclick="ACOUSTIC.toggleSFX()" title="Toggle sound effects">
+      <button class="gh-bot-btn" id="acoustic-sfx-btn" onclick="ACOUSTIC.toggleSFX()" title="Toggle sound effects" aria-label="Toggle sound effects" aria-pressed="${CONFIG.sfx.enabled}">
         🔊
       </button>
-      <button class="gh-bot-btn" id="acoustic-fx-btn" onclick="ACOUSTIC.toggleFX()" title="Toggle visual effects">
+      <button class="gh-bot-btn" id="acoustic-fx-btn" onclick="ACOUSTIC.toggleFX()" title="Toggle visual effects" aria-label="Toggle visual effects" aria-pressed="${CONFIG.fx.enabled}">
         ✨
       </button>
-      <button class="gh-bot-btn" id="acoustic-voice-btn" onclick="ACOUSTIC.toggleVOICE()" title="Toggle voice announcements">
+      <button class="gh-bot-btn" id="acoustic-voice-btn" onclick="ACOUSTIC.toggleVOICE()" title="Toggle voice announcements" aria-label="Toggle voice announcements" aria-pressed="${CONFIG.voice.enabled}">
         🗣️
       </button>
-      <button class="gh-bot-btn" id="acoustic-audio-btn" onclick="ACOUSTIC.toggleAudio()" title="Toggle synth pad sequencer">
+      <button class="gh-bot-btn" id="acoustic-audio-btn" onclick="ACOUSTIC.toggleAudio()" title="Toggle synth pad sequencer" aria-label="Toggle synth pad sequencer" aria-pressed="${CONFIG.audio.enabled}">
         🎹
       </button>
     `;
@@ -154,6 +154,7 @@
     if (btn) {
       btn.textContent = CONFIG.sfx.enabled ? '🔊' : '🔇';
       btn.classList.toggle('av-on', CONFIG.sfx.enabled);
+      btn.setAttribute('aria-pressed', String(CONFIG.sfx.enabled));
     }
   }
 
@@ -166,6 +167,7 @@
     const btn = document.getElementById('acoustic-fx-btn');
     if (btn) {
       btn.classList.toggle('av-on', CONFIG.fx.enabled);
+      btn.setAttribute('aria-pressed', String(CONFIG.fx.enabled));
     }
   }
 
@@ -180,6 +182,7 @@
     if (btn) {
       btn.classList.toggle('av-on', CONFIG.voice.enabled);
       btn.textContent = CONFIG.voice.enabled ? '🗣️' : '🤐';
+      btn.setAttribute('aria-pressed', String(CONFIG.voice.enabled));
     }
   }
 
@@ -198,6 +201,7 @@
     const btn = document.getElementById('acoustic-audio-btn');
     if (btn) {
       btn.classList.toggle('av-on', CONFIG.audio.enabled);
+      btn.setAttribute('aria-pressed', String(CONFIG.audio.enabled));
     }
   }
 

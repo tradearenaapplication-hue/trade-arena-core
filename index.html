@@ -868,7 +868,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
        <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-label="AI Floor Manager Voice Chat" aria-expanded="false" aria-controls="voiceAgentModal">🎙️ AGENT</button>
        <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-label="Toggle Fleet View Compact Grid" aria-pressed="false">📊 FLEET</button>
        <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-label="Bus settings - apply to all bots" aria-expanded="false" aria-controls="busPanel">⚙ BUS</button>
-       <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
+       <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-label="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot" aria-label="Add new bot">+</button>
        <button class="gh-bot-btn" id="musicToggleBtn" onclick="toggleBackgroundMusic()" title="Toggle background music" aria-label="Toggle background music" aria-pressed="false">🎵</button>
@@ -984,7 +984,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           On notice if WR &lt; <input type="number" id="noticeThreshold" aria-label="Win rate notice threshold percentage" value="40" min="20" max="60" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--amber);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center">% ·
           Suspend after <input type="number" id="suspendWindow" aria-label="Probation trades before suspension" value="10" min="5" max="30" style="width:36px;background:var(--bg);border:1px solid var(--border);color:var(--hot);padding:2px 4px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center"> probation trades
         </div>
-        <button onclick="runManualAudit()" style="padding:4px 10px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--hot);color:var(--hot);border-radius:4px;cursor:pointer;letter-spacing:1px;margin-left:auto">RUN AUDIT NOW</button>
+        <button onclick="runManualAudit()" aria-label="Run agent audit now" title="Run agent audit now" style="padding:4px 10px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--hot);color:var(--hot);border-radius:4px;cursor:pointer;letter-spacing:1px;margin-left:auto">RUN AUDIT NOW</button>
       </div>
 
       <!-- Audit log -->
@@ -1036,8 +1036,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
       <!-- Controls -->
       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-        <button onclick="resetLearning()" style="padding:5px 12px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--border);color:var(--dim);border-radius:4px;cursor:pointer;letter-spacing:1px">RESET WEIGHTS</button>
-        <button onclick="exportLearning()" style="padding:5px 12px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--purple);color:var(--purple);border-radius:4px;cursor:pointer;letter-spacing:1px">EXPORT MODEL</button>
+        <button onclick="resetLearning()" aria-label="Reset self-learning model weights" title="Reset self-learning model weights" style="padding:5px 12px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--border);color:var(--dim);border-radius:4px;cursor:pointer;letter-spacing:1px">RESET WEIGHTS</button>
+        <button onclick="exportLearning()" aria-label="Export self-learning model weights" title="Export self-learning model weights" style="padding:5px 12px;font-family:'Bungee',display;font-size:9px;background:none;border:1px solid var(--purple);color:var(--purple);border-radius:4px;cursor:pointer;letter-spacing:1px">EXPORT MODEL</button>
         <span style="font-size:8px;color:var(--dim);align-self:center">Weights auto-persist in browser storage</span>
       </div>
     </div>
@@ -1177,9 +1177,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
         <!-- Export -->
         <div class="export-row">
-          <button class="export-btn export-csv" onclick="exportCSV()">📤 EXPORT CSV</button>
-          <button class="export-btn export-json" onclick="exportJSON()">📋 EXPORT JSON</button>
-          <button class="export-btn" id="pitchReportBtn" onclick="generatePitchReport()" style="background:linear-gradient(90deg,var(--purple),var(--blue));color:#fff;box-shadow:0 0 10px rgba(191,95,255,.2)">📊 PITCH REPORT</button>
+          <button class="export-btn export-csv" onclick="exportCSV()" aria-label="Export trade history as CSV file" title="Export trade history as CSV file">📤 EXPORT CSV</button>
+          <button class="export-btn export-json" onclick="exportJSON()" aria-label="Export trade history as JSON file" title="Export trade history as JSON file">📋 EXPORT JSON</button>
+          <button class="export-btn" id="pitchReportBtn" onclick="generatePitchReport()" aria-label="Generate pitch deck report" title="Generate pitch deck report" style="background:linear-gradient(90deg,var(--purple),var(--blue));color:#fff;box-shadow:0 0 10px rgba(191,95,255,.2)">📊 PITCH REPORT</button>
         </div>
       </div>
     </div>
@@ -1286,7 +1286,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <label for="dailyLossLimitInput">📉 Daily Loss Limit ($ Amount)</label>
           <div style="display:flex;gap:8px;align-items:center;">
             <input type="number" id="dailyLossLimitInput" value="50" min="1" max="10000" step="5" style="flex:1;">
-            <button onclick="requestDailyLossLimitIncrease()" style="padding:6px 12px;background:var(--chrome);border:1px solid var(--border);color:var(--cyan);font-family:'Bungee',display;font-size:9px;border-radius:4px;cursor:pointer;">
+            <button onclick="requestDailyLossLimitIncrease()" aria-label="Update daily loss limit" title="Update daily loss limit amount" style="padding:6px 12px;background:var(--chrome);border:1px solid var(--border);color:var(--cyan);font-family:'Bungee',display;font-size:9px;border-radius:4px;cursor:pointer;">
               UPDATE LIMIT
             </button>
           </div>
@@ -1300,10 +1300,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       </div>
 
       <div style="display:flex;gap:8px;margin-top:10px;margin-bottom:10px;flex-wrap:wrap;">
-        <button onclick="triggerTakeABreak(24)" style="flex:1;min-width:140px;padding:10px;font-family:'Bungee',display;font-size:10px;background:linear-gradient(135deg,var(--amber),#cc8800);border:none;border-radius:6px;color:#000;cursor:pointer;">
+        <button onclick="triggerTakeABreak(24)" aria-label="Activate 24-hour Take A Break trading pause" title="Pause trading for 24 hours" style="flex:1;min-width:140px;padding:10px;font-family:'Bungee',display;font-size:10px;background:linear-gradient(135deg,var(--amber),#cc8800);border:none;border-radius:6px;color:#000;cursor:pointer;">
           ⏸ TAKE A BREAK (24H LOCK)
         </button>
-        <button onclick="triggerTakeABreak(168)" style="flex:1;min-width:140px;padding:10px;font-family:'Bungee',display;font-size:10px;background:linear-gradient(135deg,var(--hot),#7a001e);border:none;border-radius:6px;color:#fff;cursor:pointer;">
+        <button onclick="triggerTakeABreak(168)" aria-label="Activate 7-day self-exclusion lock" title="Pause trading for 7 days" style="flex:1;min-width:140px;padding:10px;font-family:'Bungee',display;font-size:10px;background:linear-gradient(135deg,var(--hot),#7a001e);border:none;border-radius:6px;color:#fff;cursor:pointer;">
           🛑 7-DAY SELF-EXCLUSION
         </button>
       </div>
@@ -1311,7 +1311,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div id="coolingStatusBox" style="display:none;background:rgba(255,45,120,0.1);border:1px solid var(--hot);border-radius:6px;padding:10px;margin-bottom:10px;font-size:10px;color:#fff;">
         <div style="font-family:'Bungee',display;color:var(--hot);margin-bottom:4px;">🔒 TRADING PAUSED BY SAFETY CONTROLS</div>
         <div id="coolingStatusText" style="color:#ccc;">—</div>
-        <button id="coolingOverrideBtn" onclick="overrideCoolingOff()" style="margin-top:8px;padding:4px 10px;background:none;border:1px solid var(--dim);color:var(--dim);border-radius:4px;font-size:9px;cursor:pointer;">
+        <button id="coolingOverrideBtn" onclick="overrideCoolingOff()" aria-label="Override 24-hour break" title="Override 24-hour break" style="margin-top:8px;padding:4px 10px;background:none;border:1px solid var(--dim);color:var(--dim);border-radius:4px;font-size:9px;cursor:pointer;">
           OVERRIDE 24H BREAK
         </button>
       </div>
@@ -1354,7 +1354,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <tr id="cd-row-1"><td>3 more after resume</td><td>60 minutes</td><td>Strategy mismatched</td></tr>
         <tr id="cd-row-2"><td>Another streak</td><td>24 hrs — manual reset</td><td>Something is wrong</td></tr>
       </table>
-      <button class="global-kill-btn" id="killBtn" onclick="globalKill()">🔴 EMERGENCY STOP ALL BOTS</button>
+      <button class="global-kill-btn" id="killBtn" onclick="globalKill()" aria-label="Emergency stop all trading bots" title="Emergency stop all trading bots">🔴 EMERGENCY STOP ALL BOTS</button>
     </div>
   </div>
 
@@ -3194,12 +3194,12 @@ function showHoldingsModal() {
     holdingsHtml = holdings.map(h => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--chrome);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;">
         <div>
-          <span style="font-weight:bold;color:#fff;font-size:13px;">${h.symbol}</span>
-          <span style="font-size:10px;color:var(--cyan);margin-left:8px;padding:2px 6px;background:rgba(0,255,231,0.1);border:1px solid rgba(0,255,231,0.2);border-radius:4px;">${h.network}</span>
+          <span style="font-weight:bold;color:#fff;font-size:13px;">${escapeHTML(h.symbol)}</span>
+          <span style="font-size:10px;color:var(--cyan);margin-left:8px;padding:2px 6px;background:rgba(0,255,231,0.1);border:1px solid rgba(0,255,231,0.2);border-radius:4px;">${escapeHTML(h.network)}</span>
         </div>
         <div style="text-align:right;">
-          <div style="color:#fff;font-weight:bold;font-size:12px;">${h.amount.toFixed(6)} ${h.symbol}</div>
-          <div style="font-size:11px;color:var(--gold2);"><small style="color:var(--dim);">$${(h.priceUsd || 0).toFixed(2)}/ea → </small>$${(h.valueUsd || 0).toFixed(2)} USD</div>
+          <div style="color:#fff;font-weight:bold;font-size:12px;">${(Number(h.amount) || 0).toFixed(6)} ${escapeHTML(h.symbol)}</div>
+          <div style="font-size:11px;color:var(--gold2);"><small style="color:var(--dim);">$${(Number(h.priceUsd) || 0).toFixed(2)}/ea → </small>$${(Number(h.valueUsd) || 0).toFixed(2)} USD</div>
         </div>
       </div>
     `).join('');

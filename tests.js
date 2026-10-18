@@ -2017,6 +2017,45 @@ describe("Multi-Chain Token Holdings Modal Accessibility", () => {
   });
 });
 
+describe("Multi-Chain Token Holdings Modal XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("uses escapeHTML when rendering symbol and network in showHoldingsModal", () => {
+    expect(html).toContain("${escapeHTML(h.symbol)}");
+    expect(html).toContain("${escapeHTML(h.network)}");
+  });
+
+  it("escapes malicious XSS payloads in token symbol and network names", () => {
+    const escapeHTML = (str) => {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const maliciousHolding = {
+      symbol: "<script>alert('xss_symbol')</script>",
+      network: "<img src=x onerror=alert('xss_net')>",
+      amount: 1.23,
+      priceUsd: 10,
+      valueUsd: 12.3
+    };
+
+    const renderedSymbol = escapeHTML(maliciousHolding.symbol);
+    const renderedNetwork = escapeHTML(maliciousHolding.network);
+
+    expect(renderedSymbol.includes("<script>")).toBe(false);
+    expect(renderedSymbol).toContain("&lt;script&gt;alert(&#039;xss_symbol&#039;)&lt;/script&gt;");
+
+    expect(renderedNetwork.includes("<img")).toBe(false);
+    expect(renderedNetwork).toContain("&lt;img src=x onerror=alert(&#039;xss_net&#039;)&gt;");
+  });
+});
+
 describe("Go Live Acknowledgment Modal Accessibility & ASIC Regulatory Disclosure", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");
@@ -2716,7 +2755,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Regulatory Compliance");
+    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });

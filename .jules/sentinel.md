@@ -38,7 +38,7 @@
 **Learning:** Features added directly in frontend templates often bypass established backend proxies (`/api/claude`), introducing dangerous direct browser headers and removing server-side rate limits and validation.
 **Prevention:** Route all frontend AI and LLM requests exclusively through backend proxy endpoints protected by rate limiting (`aiLimiter`) and server-side secret management.
 
-## 2026-10-09 - [HIGH] DOM XSS Vulnerabilities in Trade Ledger & Strategy Breakdown UI
-**Vulnerability:** In `index.html`, `drawStratBreakdown`, `updateAgentPerfUI`, and `renderLogUI` interpolated dynamic strategy methods, agent keys, and trade fields (`t.botId`, `t.token`, `t.method`, `t.time`) directly into `innerHTML` template strings unescaped.
-**Learning:** Trade log metadata and strategy names that originate from client/server state or external feeds can be exploited for DOM XSS if interpolated into `innerHTML` sinks without sanitization.
-**Prevention:** Always wrap dynamic metadata and text properties with `escapeHTML()` when rendering HTML template strings into DOM containers.
+## 2026-10-16 - [HIGH] Stored/DOM XSS Vulnerability in Learn Log & Audit Log Rendering
+**Vulnerability:** In `index.html`, `renderLearnLog` and `renderAuditLog` interpolated unescaped entry properties (`e.type`, `e.ts`, `e.msg`) directly into `innerHTML` strings.
+**Learning:** Persisted or imported log entries (such as model learning logs and audit histories restored from local storage or JSON imports) can act as Stored/DOM XSS sinks if dynamic properties like `type`, `ts`, or `msg` are interpolated without escaping.
+**Prevention:** Wrap all dynamic properties of log entries with `escapeHTML()` when rendering templates into `innerHTML` sinks.

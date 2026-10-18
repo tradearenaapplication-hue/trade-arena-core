@@ -862,12 +862,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </div>
      <!-- bot controls -->
      <div class="gh-controls">
-         <button class="gh-bus-btn" id="staffNavBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-expanded="false" aria-controls="staffPanel">👷 STAFF</button>
-       <button class="gh-bus-btn" id="taskNavBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-expanded="false" aria-controls="taskPanel">💰 EARN</button>
-       <button class="gh-bus-btn" id="eloNavBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-expanded="false" aria-controls="eloPanel">🏆 ARENA</button>
-       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-expanded="false" aria-controls="voiceAgentModal">🎙️ AGENT</button>
-       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-pressed="false">📊 FLEET</button>
-       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-expanded="false" aria-controls="busPanel">⚙ BUS</button>
+         <button class="gh-bus-btn" id="staffNavBtn" onclick="togglePanel('staff')" title="Application Maintenance & Support" aria-label="Staff Operations - Application Maintenance & Support" aria-expanded="false" aria-controls="staffPanel">👷 STAFF</button>
+       <button class="gh-bus-btn" id="taskNavBtn" onclick="togglePanel('task')" title="Earn Trade Credits" aria-label="Task Center - Earn Trade Credits" aria-expanded="false" aria-controls="taskPanel">💰 EARN</button>
+       <button class="gh-bus-btn" id="eloNavBtn" onclick="togglePanel('elo')" title="ELO Arena - Recursive Improvement" aria-label="ELO Arena - Recursive Improvement" aria-expanded="false" aria-controls="eloPanel">🏆 ARENA</button>
+       <button class="gh-bus-btn" id="voiceAgentBtn" onclick="toggleVoiceAgent()" title="AI Floor Manager (Voice Chat)" aria-label="AI Floor Manager Voice Chat" aria-expanded="false" aria-controls="voiceAgentModal">🎙️ AGENT</button>
+       <button class="gh-bus-btn" id="fleetViewBtn" onclick="toggleFleetView()" title="Toggle Fleet View (Compact Grid)" aria-label="Toggle Fleet View Compact Grid" aria-pressed="false">📊 FLEET</button>
+       <button class="gh-bus-btn" id="ghBusBtn" onclick="toggleBusPanel()" title="Bus settings — apply to all bots" aria-label="Bus settings - apply to all bots" aria-expanded="false" aria-controls="busPanel">⚙ BUS</button>
        <button class="gh-auto-btn" id="ghAutoBtn" onclick="globalAutoToggle()" title="Toggle auto-trading on all bots" aria-pressed="false">AUTO</button>
        <button class="gh-bot-btn" id="ghRemoveBtn" onclick="removeLastBot()" title="Remove last bot" aria-label="Remove last bot" disabled>−</button>
        <button class="gh-bot-btn" id="ghAddBtn" onclick="addBot()" title="Add bot" aria-label="Add new bot">+</button>
@@ -954,11 +954,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
     <!-- Quick presets row -->
     <div class="bus-apply-row">
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('conservative')" title="Small bets, high consensus, stop loss on">🛡️ SAFE MODE</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('balanced')"    title="Medium bets, mixed personalities">⚖️ BALANCED</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('aggressive')"  title="Large bets, aggressive personalities, no SL">🔥 DEGEN MODE</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model">⚡ OPTIMIZED</button>
-      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults">↺ RESET ALL</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('conservative')" title="Small bets, high consensus, stop loss on" aria-label="Apply Safe Mode preset: small bets, high consensus, and stop loss enabled">🛡️ SAFE MODE</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('balanced')"    title="Medium bets, mixed personalities" aria-label="Apply Balanced preset: medium bets with mixed bot personalities">⚖️ BALANCED</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('aggressive')"  title="Large bets, aggressive personalities, no SL" aria-label="Apply Degen Mode preset: large bets, aggressive personalities, and no stop loss">🔥 DEGEN MODE</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('optimized')"   title="Optimized spread based on learning model" aria-label="Apply Optimized preset: optimized spread based on learning model">⚡ OPTIMIZED</button>
+      <button class="bus-apply-btn bus-apply-secondary" onclick="busApplyPreset('reset')"       title="Reset all bots to defaults" aria-label="Reset all bot parameters to default settings">↺ RESET ALL</button>
     </div>
     <div class="bus-status" id="busStatus" role="status" aria-live="polite"></div>
   </div>
@@ -2144,15 +2144,20 @@ function drawVerdict(n, wr, pf, avg) {
   if(n<MIN){ box.className='verdict waiting'; box.textContent=`${n}/${MIN} trades. Keep running paper trades — need ${MIN} closed for any verdict.`; return; }
   const hasEdge=pf>=1.5&&avg>0&&wr>=0.5;
   const isLosing=pf<0.8||avg<-0.5;
+  const safeWr = escapeHTML((wr*100).toFixed(1));
+  const safePf = escapeHTML(pf.toFixed(2));
+  const safeAvg = escapeHTML(avg.toFixed(2));
+  const safeN = escapeHTML(n);
+
   if(hasEdge){
     box.className='verdict edge';
-    box.innerHTML=`<strong>✅ EDGE SIGNAL DETECTED</strong><br>Win rate ${(wr*100).toFixed(1)}% · PF ${pf.toFixed(2)} · Avg +$${avg.toFixed(2)}/trade. Check cost sensitivity — if you're profitable at 1.5× costs, this is worth investigating with micro live trades ($5–10). If not, you're riding optimistic cost assumptions.`;
+    box.innerHTML=`<strong>✅ EDGE SIGNAL DETECTED</strong><br>Win rate ${safeWr}% · PF ${safePf} · Avg +$${safeAvg}/trade. Check cost sensitivity — if you're profitable at 1.5× costs, this is worth investigating with micro live trades ($5–10). If not, you're riding optimistic cost assumptions.`;
   } else if(isLosing){
     box.className='verdict losing';
-    box.innerHTML=`<strong>🔴 NO EDGE AFTER ${n} TRADES</strong><br>PF ${pf.toFixed(2)} · Avg $${avg.toFixed(2)}/trade. Strategy is losing after realistic costs. Do NOT go live. Use strategy attribution above to identify which methods are bleeding and cut them.`;
+    box.innerHTML=`<strong>🔴 NO EDGE AFTER ${safeN} TRADES</strong><br>PF ${safePf} · Avg $${safeAvg}/trade. Strategy is losing after realistic costs. Do NOT go live. Use strategy attribution above to identify which methods are bleeding and cut them.`;
   } else {
     box.className='verdict marginal';
-    box.innerHTML=`<strong>⚠️ MARGINAL — ${n} TRADES</strong><br>PF ${pf.toFixed(2)} · Avg $${avg.toFixed(2)}/trade. Edge is weak. Gas and slippage are eating most gains. Run 100+ trades and check if Claude beats the momentum baseline — that's the key test.`;
+    box.innerHTML=`<strong>⚠️ MARGINAL — ${safeN} TRADES</strong><br>PF ${safePf} · Avg $${safeAvg}/trade. Edge is weak. Gas and slippage are eating most gains. Run 100+ trades and check if Claude beats the momentum baseline — that's the key test.`;
   }
 }
 
@@ -4664,7 +4669,7 @@ function logLearn(msg, type = 'info') {
 function renderLearnLog() {
   const el = document.getElementById('learnLog'); if (!el) return;
   el.innerHTML = learningLog.slice(0, 30).map(e =>
-    `<div class="ll-entry ${e.type}">[${e.ts}] ${e.msg}</div>`
+    `<div class="ll-entry ${escapeHTML(e.type)}">[${escapeHTML(e.ts)}] ${escapeHTML(e.msg)}</div>`
   ).join('');
 }
 
@@ -5187,8 +5192,8 @@ function renderLog(){
     const cost=t.costs?.total?'-\$'+t.costs.total.toFixed(2):'';
     return`<div class="log-row">
       <div class="log-bot">#${t.botId}</div>
-      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${t.token}</div>
-      <div class="log-method">${t.method}</div>
+      <div class="log-coin" style="color:${isOpen?'var(--blue)':isHold?'var(--amber)':t.isWin?'var(--green)':'var(--hot)'}">${escapeHTML(t.token)}</div>
+      <div class="log-method">${escapeHTML(t.method)}</div>
       <div class="log-entry">${ep}</div>
       <div class="log-exit">${xp}</div>
       <div class="log-pnl ${pnlCls}">${pnlStr}</div>
@@ -5372,6 +5377,11 @@ function busApplyPreset(name) {
   busSetSL(p.sl);
   busSetTP(p.tp);
   const labels = { conservative:'🛡️ Safe Mode', balanced:'⚖️ Balanced', aggressive:'🔥 Degen Mode', optimized:'⚡ Optimized', reset:'↺ Reset' };
+  document.querySelectorAll('.bus-apply-row .bus-apply-btn').forEach(btn => {
+    const isMatch = name !== 'reset' && btn.getAttribute('onclick')?.includes(`'${name}'`);
+    btn.classList.toggle('active', isMatch);
+    btn.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
+  });
   _busStatus(`${labels[name]} applied to ${bots.length} bots`);
 }
 
@@ -5598,6 +5608,11 @@ document.addEventListener('keydown', function(e) {
       if (typeof closeGoLiveModal === 'function') closeGoLiveModal();
       return;
     }
+    const sessionBanner = document.getElementById('sessionWarningBanner');
+    if (sessionBanner && sessionBanner.style.display !== 'none' && sessionBanner.style.display !== '') {
+      if (typeof dismissSessionWarning === 'function') dismissSessionWarning();
+      return;
+    }
     const holdingsModal = document.getElementById('holdingsModal');
     if (holdingsModal && holdingsModal.style.display !== 'none') {
       holdingsModal.style.display = 'none';
@@ -5624,6 +5639,24 @@ document.addEventListener('keydown', function(e) {
           gear.setAttribute('aria-expanded', 'false');
         }
       });
+      return;
+    }
+    const openCpanel = document.querySelector('.cpanel-body.open');
+    if (openCpanel && openCpanel.id) {
+      const panelName = openCpanel.id.replace('Body', '');
+      if (typeof togglePanel === 'function') {
+        togglePanel(panelName);
+        return;
+      }
+    }
+    const auditBody = document.getElementById('auditBody');
+    if (auditBody && auditBody.classList.contains('open')) {
+      if (typeof toggleAudit === 'function') toggleAudit();
+      return;
+    }
+    const learnBody = document.getElementById('learnBody');
+    if (learnBody && learnBody.classList.contains('open')) {
+      if (typeof toggleLearn === 'function') toggleLearn();
       return;
     }
   }

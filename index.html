@@ -3194,12 +3194,12 @@ function showHoldingsModal() {
     holdingsHtml = holdings.map(h => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--chrome);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;">
         <div>
-          <span style="font-weight:bold;color:#fff;font-size:13px;">${h.symbol}</span>
-          <span style="font-size:10px;color:var(--cyan);margin-left:8px;padding:2px 6px;background:rgba(0,255,231,0.1);border:1px solid rgba(0,255,231,0.2);border-radius:4px;">${h.network}</span>
+          <span style="font-weight:bold;color:#fff;font-size:13px;">${escapeHTML(h.symbol)}</span>
+          <span style="font-size:10px;color:var(--cyan);margin-left:8px;padding:2px 6px;background:rgba(0,255,231,0.1);border:1px solid rgba(0,255,231,0.2);border-radius:4px;">${escapeHTML(h.network)}</span>
         </div>
         <div style="text-align:right;">
-          <div style="color:#fff;font-weight:bold;font-size:12px;">${h.amount.toFixed(6)} ${h.symbol}</div>
-          <div style="font-size:11px;color:var(--gold2);"><small style="color:var(--dim);">$${(h.priceUsd || 0).toFixed(2)}/ea → </small>$${(h.valueUsd || 0).toFixed(2)} USD</div>
+          <div style="color:#fff;font-weight:bold;font-size:12px;">${(Number(h.amount) || 0).toFixed(6)} ${escapeHTML(h.symbol)}</div>
+          <div style="font-size:11px;color:var(--gold2);"><small style="color:var(--dim);">$${(Number(h.priceUsd) || 0).toFixed(2)}/ea → </small>$${(Number(h.valueUsd) || 0).toFixed(2)} USD</div>
         </div>
       </div>
     `).join('');

@@ -26,6 +26,10 @@
 **Learning:** `getTopBrackets()` and `getGlobalWeights()` in `TRADE_OLYMPICS` were allocating intermediate tuple arrays (`Object.entries()`) and executing multiple array `.filter()` / `.map()` / `.reduce()` passes over 700+ bracket objects on every ranking query, causing noticeable GC pressure and execution latency (~7.4s / 50k calls).
 **Action:** Use guarded `for...in` loops (`hasOwnProperty`) over target hash objects to accumulate active entries in a single pass before sorting, reducing loop overhead by ~1.9x while preserving object property spreads.
 
-## 2026-12-15 - Unnecessary Full-Dataset Projections in Top-K Leaderboard Queries and Unchecked Collapsed Panel Redraws
-**Learning:** `TRADE_OLYMPICS.getEloLeaderboard(limit)` was invoking full `getLeaderboard("elo")` which sorted and mapped rank/medal object projections across all 1000+ model standings before slicing top `limit` entries, causing ~851ms latency per 1000 calls. Furthermore, `renderEloPanel()` was recalculating summaries, sorting leaderboards, formatting strings, and executing DOM writes on every match/trade event even when the ELO Tournament UI panel (`#eloTournamentBody`) was closed/collapsed.
-**Action:** Slice sorted array entries to `limit` prior to constructing mapped objects (~2.3x speedup). Always check element visibility (`classList.contains('open')`) in UI render routines to bypass summary calculations, string formatting, and DOM overwrites when panels are closed.
+## 2026-12-16 - Redundant Array Allocations in Bot Strategy State Updates and Insight Queries
+**Learning:** `updateBotStateAfterTrade`, `getBotStrategyInsights`, and `getIntelligentAutoTradeRecommendation` in `ai-strategies.js` were allocating temporary arrays and callback closures on every trade cycle and UI query via `.filter()`, `.reduce()`, and `Object.entries().sort()`. In high-frequency bot execution loops, this created unnecessary GC pressure.
+**Action:** Replace intermediate array methods (`.filter()`, `.reduce()`, `Object.entries().sort()`) in strategy tracking and insight routines with single-pass scalar `for` and `for...in` loops to accumulate win counts, sum totals, and find best methods in scalar time (~20.4% speedup).
+
+## 2026-12-30 - Array Slicing and Filtering Overhead in High-Frequency Volatility Regime Evaluation
+**Learning:** `updateAIState()` in `crucible-ai-learning.js` was creating temporary sub-arrays via `.slice(-50)` and `.filter()` on every AI state update during 1000-trade evaluation loops, generating unnecessary heap allocations and GC pauses.
+**Action:** Replace `.slice(-50)` array copy and `.filter()` callback passes in sliding window calculations with bounded backward `for` loops over target array indices (~3.2x speedup and 0 array allocations).

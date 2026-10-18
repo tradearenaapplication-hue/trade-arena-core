@@ -2099,7 +2099,7 @@ function drawStratBreakdown(trades) {
     const isPos=d.pnl>=0;
     const barW=(Math.abs(d.pnl)/maxAbs*100).toFixed(0);
     return `<div class="strat-row">
-      <div class="strat-name">${name}</div>
+      <div class="strat-name">${escapeHTML(name)}</div>
       <div class="strat-bar-wrap"><div class="strat-bar ${isPos?'pos':'neg'}" style="width:${barW}%"></div></div>
       <div class="strat-stat" style="color:${isPos?'var(--green)':'var(--hot)'}">${isPos?'+':''}$${d.pnl.toFixed(2)} · ${wr}% WR</div>
     </div>`;
@@ -4389,7 +4389,7 @@ function updateAgentPerfUI(){
     const col=wr>=0.55?'var(--green)':wr>=0.45?'var(--amber)':'var(--hot)';
     return`<div class="ep-agent-row">
       <div class="ep-agent-icon">${ICONS[a.key]||'🤖'}</div>
-      <div class="ep-agent-name" style="text-transform:capitalize">${a.key}</div>
+      <div class="ep-agent-name" style="text-transform:capitalize">${escapeHTML(a.key)}</div>
       <div class="ep-agent-bar-wrap"><div class="ep-agent-bar" style="width:${(wr*100).toFixed(0)}%;background:${col}"></div></div>
       <div class="ep-agent-stat" style="color:${col}">${(wr*100).toFixed(0)}% WR · ${a.total}t</div>
     </div>`;
@@ -5198,7 +5198,7 @@ function renderLog(){
       <div class="log-exit">${xp}</div>
       <div class="log-pnl ${pnlCls}">${pnlStr}</div>
       <div class="log-cost">${cost}</div>
-      <div class="log-t">${t.time}</div>
+      <div class="log-t">${escapeHTML(t.time)}</div>
     </div>`;
   }).join('');
 }

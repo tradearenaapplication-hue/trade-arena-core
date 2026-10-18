@@ -2739,20 +2739,20 @@ function globalKill() {
   globalKilled=true;
   bots.forEach(b=>{ b.auto=false; if(b.autoTimer) clearTimeout(b.autoTimer);
     const btn=document.getElementById('mauto-'+b.id), card=document.getElementById('bot-'+b.id);
-    if(btn){btn.textContent='AUTO';btn.classList.remove('on');} if(card) card.classList.remove('auto-on'); });
+    if(btn){btn.textContent='AUTO';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');} if(card) card.classList.remove('auto-on'); });
   _ghAutoOn=false;
   const ghBtn=document.getElementById('ghAutoBtn');
-  if(ghBtn){ghBtn.textContent='AUTO';ghBtn.classList.remove('on');}
+  if(ghBtn){ghBtn.textContent='AUTO';ghBtn.classList.remove('on');ghBtn.setAttribute('aria-pressed','false');}
   checkGlobalBreakers();
   document.getElementById('breakerBody')?.classList.add('open');
   document.getElementById('breakerHd')?.classList.add('open');
   const kb=document.getElementById('killBtn');
-  if(kb){kb.textContent='🟢 RESET — RESUME TRADING';kb.onclick=resetKill;kb.style.background='linear-gradient(180deg,#004020,#002010)';}
+  if(kb){kb.textContent='🟢 RESET — RESUME TRADING';kb.onclick=resetKill;kb.style.background='linear-gradient(180deg,#004020,#002010)';kb.setAttribute('aria-pressed','true');kb.setAttribute('aria-label','Resume trading and clear emergency stop');}
 }
 function resetKill(){
   globalKilled=false;
   const kb=document.getElementById('killBtn');
-  if(kb){kb.textContent='🔴 EMERGENCY STOP ALL BOTS';kb.onclick=globalKill;kb.style.background='';}
+  if(kb){kb.textContent='🔴 EMERGENCY STOP ALL BOTS';kb.onclick=globalKill;kb.style.background='';kb.setAttribute('aria-pressed','false');kb.setAttribute('aria-label','Emergency stop all trading bots');}
   checkGlobalBreakers();
 }
 

@@ -3092,6 +3092,72 @@ describe("Trade Ledger renderLog XSS Sanitization Security", () => {
   });
 });
 
+describe("Regime Table renderRegimeTable XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("uses escapeHTML when rendering strategy keys and bestRegime in renderRegimeTable in index.html", () => {
+    expect(html).toContain("<td>${escapeHTML(r.s)}</td>");
+    expect(html).toContain("<td style=\"color:var(--purple)\">${escapeHTML(r.bestRegime)}</td>");
+  });
+
+  it("escapes malicious XSS payloads in strategy keys and bestRegime when rendering regimeTable rows", () => {
+    const mockElement = (id) => {
+      let content = "";
+      return {
+        id,
+        set innerHTML(val) { content = val; },
+        get innerHTML() { return content; },
+        set textContent(val) { content = val; },
+        get textContent() { return content; }
+      };
+    };
+
+    const elements = {};
+    global.document = {
+      getElementById: (id) => {
+        if (!elements[id]) {
+          elements[id] = mockElement(id);
+        }
+        return elements[id];
+      }
+    };
+
+    global.escapeHTML = function(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const maliciousStrategyKey = "<script>alert('xss_strat')</script>";
+    global.strategyRegimeMatrix = {
+      [maliciousStrategyKey]: {
+        TREND: { w: 1, t: 1 }
+      }
+    };
+
+    const renderStart = html.indexOf("function renderRegimeTable() {");
+    const renderEnd = html.indexOf("function toggleLearn()", renderStart);
+    const renderCode = html.slice(renderStart, renderEnd);
+    const renderRegimeTableFn = new Function("strategyRegimeMatrix", "escapeHTML", "document", renderCode + "\nreturn renderRegimeTable;")
+      (global.strategyRegimeMatrix, global.escapeHTML, global.document);
+
+    renderRegimeTableFn();
+
+    const tableHTML = global.document.getElementById("regimeTable").innerHTML;
+    expect(tableHTML.includes("<script>")).toBe(false);
+    expect(tableHTML).toContain("&lt;script&gt;alert(&#039;xss_strat&#039;)&lt;/script&gt;");
+
+    delete global.document;
+    delete global.escapeHTML;
+    delete global.strategyRegimeMatrix;
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

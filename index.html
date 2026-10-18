@@ -4735,9 +4735,9 @@ function renderRegimeTable() {
 
   el.innerHTML = '<tr><th>Strategy</th><th>TREND</th><th>CHOP</th><th>THIN</th><th>Best</th></tr>' +
     rows.map(r => `<tr>
-      <td>${r.s}</td>
+      <td>${escapeHTML(r.s)}</td>
       ${r.cells.map((c,i) => `<td class="${c.wr >= 0.6 ? 'best' : c.wr >= 0 && c.wr < 0.4 ? 'worst' : ''}">${c.display}</td>`).join('')}
-      <td style="color:var(--purple)">${r.bestRegime}</td>
+      <td style="color:var(--purple)">${escapeHTML(r.bestRegime)}</td>
     </tr>`).join('');
 }
 

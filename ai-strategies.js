@@ -361,12 +361,19 @@ function updateBotStateAfterTrade(strategy, decision, actualPnL, bet) {
   }
   methodStat.avgPnL = (methodStat.avgPnL * (methodStat.wins + methodStat.losses - 1) + actualPnL) / (methodStat.wins + methodStat.losses);
 
-  // Adjust edge multiplier based on win rate
-  const recentWinRate = strategy.recentPnL.filter(p => p > 0).length / strategy.recentPnL.length;
-  if (recentWinRate > 0.58) {
-    strategy.adaptiveEdgeAdjustment = Math.min(1.3, strategy.adaptiveEdgeAdjustment + 0.02);
-  } else if (recentWinRate < 0.48) {
-    strategy.adaptiveEdgeAdjustment = Math.max(0.7, strategy.adaptiveEdgeAdjustment - 0.02);
+  // ⚡ OPTIMIZATION: Single-pass scalar loop to count positive P&L without creating intermediate .filter() arrays
+  const pnlLen = strategy.recentPnL.length;
+  if (pnlLen > 0) {
+    let winCount = 0;
+    for (let i = 0; i < pnlLen; i++) {
+      if (strategy.recentPnL[i] > 0) winCount++;
+    }
+    const recentWinRate = winCount / pnlLen;
+    if (recentWinRate > 0.58) {
+      strategy.adaptiveEdgeAdjustment = Math.min(1.3, strategy.adaptiveEdgeAdjustment + 0.02);
+    } else if (recentWinRate < 0.48) {
+      strategy.adaptiveEdgeAdjustment = Math.max(0.7, strategy.adaptiveEdgeAdjustment - 0.02);
+    }
   }
 }
 
@@ -405,30 +412,30 @@ function shouldBotPauseTrading(strategy, marketConditions) {
  * providing ~1.88x speedup on high-frequency status queries.
  */
 function getBotStrategyInsights(strategy) {
-  const pnlLen = strategy.recentPnL ? strategy.recentPnL.length : 0;
+  // ⚡ OPTIMIZATION: Single-pass scalar accumulator loop over strategy.recentPnL
+  // replaces intermediate .filter() and .reduce() array/function allocations.
+  const pnlLen = strategy.recentPnL.length;
   let winCount = 0;
   let pnlSum = 0;
-
   for (let i = 0; i < pnlLen; i++) {
     const val = strategy.recentPnL[i];
     if (val > 0) winCount++;
     pnlSum += val;
   }
 
-  const recentWinRateStr = pnlLen === 0 ? "0.0" : ((winCount / pnlLen) * 100).toFixed(1);
-  const avgRecentPnLStr = pnlLen === 0 ? "0.00" : (pnlSum / pnlLen).toFixed(2);
+  const recentWinRate = pnlLen === 0 ? 0 : ((winCount / pnlLen) * 100).toFixed(1);
+  const avgRecentPnL = pnlLen === 0 ? 0 : (pnlSum / pnlLen).toFixed(2);
 
-  let bestMethodName = "N/A";
+  // ⚡ OPTIMIZATION: Guarded for...in scalar search replaces Object.entries().sort() tuple array allocation
+  let bestMethodName = 'N/A';
   let maxAvgPnL = -Infinity;
-
-  if (strategy.methodBias) {
-    for (const mName in strategy.methodBias) {
-      if (Object.prototype.hasOwnProperty.call(strategy.methodBias, mName)) {
-        const avg = strategy.methodBias[mName].avgPnL || 0;
-        if (avg > maxAvgPnL) {
-          maxAvgPnL = avg;
-          bestMethodName = mName;
-        }
+  for (const m in strategy.methodBias) {
+    if (Object.prototype.hasOwnProperty.call(strategy.methodBias, m)) {
+      const stat = strategy.methodBias[m];
+      const avg = stat ? (stat.avgPnL || 0) : 0;
+      if (avg > maxAvgPnL) {
+        maxAvgPnL = avg;
+        bestMethodName = m;
       }
     }
   }
@@ -465,6 +472,14 @@ async function getIntelligentAutoTradeRecommendation(marketData, bet, botState, 
   // Check if should pause
   const pauseCheck = shouldBotPauseTrading(strategy, marketConditions);
 
+  // Compute recent win rate in a scalar loop without IIFE or array allocation
+  const pLen = strategy.recentPnL.length;
+  let wCount = 0;
+  for (let i = 0; i < pLen; i++) {
+    if (strategy.recentPnL[i] > 0) wCount++;
+  }
+  const recentWinRate = ((wCount / Math.max(1, pLen)) * 100).toFixed(1);
+
   return {
     ...aiDecision,
     // Enhanced adaptive values
@@ -477,7 +492,7 @@ async function getIntelligentAutoTradeRecommendation(marketData, bet, botState, 
     pauseReason: pauseCheck.reason,
     // Insights
     strategyProfile: strategy.profile,
-    recentWinRate: (strategy.recentPnL.filter(p => p > 0).length / Math.max(1, strategy.recentPnL.length) * 100).toFixed(1),
+    recentWinRate,
   };
 }
 

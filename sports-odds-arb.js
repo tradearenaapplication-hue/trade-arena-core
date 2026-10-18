@@ -226,7 +226,8 @@ function findSportsPredictionEdges({
     opportunity.status = risk.approved ? "CANDIDATE" : "REJECTED";
     if (edge.liquidityUSD < cfg.minLiquidityUSD) {
       opportunity.status = "REJECTED";
-      opportunity.risk.reasons = [...(opportunity.risk.reasons || []), "liquidity_below_minimum"];
+      if (!opportunity.risk.reasons) opportunity.risk.reasons = [];
+      opportunity.risk.reasons.push("liquidity_below_minimum");
     }
 
     opportunities.push(opportunity);

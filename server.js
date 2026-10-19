@@ -42,14 +42,24 @@ try {
 // has already been declared` - so the server could not boot at all.)
 const app = express();
 
-// Security headers via helmet. CSP is DISABLED here on purpose: the canonical,
-// hand-tuned Content-Security-Policy (all wallet RPC hosts, Privy, hCaptcha,
-// CoinGecko, 0x, frankfurter, AI APIs...) is set further below and must remain
-// the single source of truth. Enabling helmet's default CSP as well would send
-// TWO CSP headers (browser enforces the stricter intersection) and break wallet
-// RPC calls, Google sign-in and fonts.
+// Security headers via helmet. The canonical hand-tuned CSP (wallet RPC hosts,
+// Privy, hCaptcha, CoinGecko, 0x, frankfurter, AI APIs...) is passed INTO
+// helmet (fixes CodeQL js/insecure-helmet-configuration #650 which flags
+// contentSecurityPolicy:false) so exactly ONE CSP header is ever sent.
+// Keep connect-src in sync with NETWORKS in wallet-core.js.
 app.use(helmet({
-    contentSecurityPolicy: false,
+    // Canonical policy served through helmet = exactly ONE CSP header.
+    // `useDefaults:false` keeps helmet from merging its own defaults.
+    contentSecurityPolicy: { useDefaults: false, directives: {
+        'default-src': ["'self'"],
+        'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdnjs.cloudflare.com', 'https://accounts.google.com', 'https://cdn.jsdelivr.net', 'https://js.hcaptcha.com', 'https://hcaptcha.com'],
+        'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        'font-src': ["'self'", 'https://fonts.gstatic.com'],
+        'img-src': ["'self'", 'data:', 'https:'],
+        'connect-src': ["'self'", 'https://api.frankfurter.app', 'https://api.frankfurter.dev', 'https://api.anthropic.com', 'https://api.openai.com', 'https://generativelanguage.googleapis.com', 'https://api.coingecko.com', 'https://api.0x.org', 'https://mainnet.base.org', 'https://base-rpc.publicnode.com', 'https://base.drpc.org', 'https://ethereum-rpc.publicnode.com', 'https://eth.drpc.org', 'https://1rpc.io', 'https://arb1.arbitrum.io', 'https://arbitrum-one-rpc.publicnode.com', 'https://arbitrum.drpc.org', 'https://mainnet.optimism.io', 'https://optimism-rpc.publicnode.com', 'https://optimism.drpc.org', 'https://polygon-bor-rpc.publicnode.com', 'https://polygon.drpc.org', 'https://bsc-dataseed.binance.org', 'https://bsc-rpc.publicnode.com', 'https://bsc.drpc.org', 'https://*.alchemyapi.io', 'https://cdn.jsdelivr.net', 'https://auth.privy.io', 'https://explorer-api.walletconnect.com', 'https://9cc5aa622a7b.w.hcaptcha.com', 'https://js.hcaptcha.com', 'https://hcaptcha.com'],
+        'frame-src': ["'self'", 'https://auth.privy.io', 'https://newassets.hcaptcha.com', 'https://js.hcaptcha.com', 'https://hcaptcha.com'],
+        'child-src': ["'self'", 'https://auth.privy.io', 'https://newassets.hcaptcha.com', 'https://js.hcaptcha.com', 'https://hcaptcha.com']
+    } },
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     crossOriginEmbedderPolicy: false, // Required for some cross-origin resources
     crossOriginOpenerPolicy: { policy: 'same-origin' },
@@ -123,6 +133,9 @@ const API_CACHE_ALLOWLIST = new Set([
 ]);
 
 app.use('/api/', (req, res, next) => {
+    // njsscan node_ssrf #649 is a false positive: req.originalUrl is used ONLY
+    // as an in-memory cache key (Map.get) below - never passed to fetch/axios.
+    // No outbound request is built from user input here.
     // Only cache allowlisted GET requests. NOTE: inside a mounted middleware
     // Express strips the mount point, so req.path is '/status/connections'
     // while req.baseUrl is '/api' - compare against the recombined full path.
@@ -303,25 +316,12 @@ async function ensureOpeningBalance(address) {
 
 const PORT = process.env.PORT || process.env.SERVER_PORT || 3001;
 
-// ===== CANONICAL SECURITY HEADERS (single source of truth for CSP) =====
-// Helmet above already sets X-Content-Type-Options / X-Frame-Options / HSTS /
-// Referrer-Policy, so only the hand-tuned CSP (full wallet RPC + Privy +
-// hCaptcha + price/API host list) is set here. Keep this list in sync with
-// NETWORKS in wallet-core.js or the browser refuses RPC calls before send.
+// ===== EXTRA HARDENING HEADERS (CSP itself is served by helmet above) =====
+// Helmet already sets X-Content-Type-Options / X-Frame-Options / HSTS /
+// Referrer-Policy. This keeps the legacy extras only (no second CSP header:
+// two CSP headers would be enforced as their intersection and break RPCs).
 app.use((req, res, next) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    res.setHeader('Referrer-Policy', 'no-referrer');
-    // connect-src must list every RPC endpoint wallet-core.js calls. The
-    // NETWORKS list in wallet-core.js scans Base, Ethereum, Arbitrum,
-    // Optimism, Polygon and BSC, and each network carries several fallback
-    // endpoints because free public RPCs rot (polygon-rpc.com now 401s and
-    // cloudflare-eth.com returns "Internal error"). Every host in NETWORKS
-    // must appear here or the browser refuses the request before it is sent.
-    // Keep this list in sync with NETWORKS in wallet-core.js.
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://accounts.google.com https://cdn.jsdelivr.net https://js.hcaptcha.com https://hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.frankfurter.app https://api.frankfurter.dev https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.coingecko.com https://api.0x.org https://mainnet.base.org https://base-rpc.publicnode.com https://base.drpc.org https://ethereum-rpc.publicnode.com https://eth.drpc.org https://1rpc.io https://arb1.arbitrum.io https://arbitrum-one-rpc.publicnode.com https://arbitrum.drpc.org https://mainnet.optimism.io https://optimism-rpc.publicnode.com https://optimism.drpc.org https://polygon-bor-rpc.publicnode.com https://polygon.drpc.org https://bsc-dataseed.binance.org https://bsc-rpc.publicnode.com https://bsc.drpc.org https://*.alchemyapi.io https://cdn.jsdelivr.net https://auth.privy.io https://explorer-api.walletconnect.com https://9cc5aa622a7b.w.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; frame-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com; child-src 'self' https://auth.privy.io https://newassets.hcaptcha.com https://js.hcaptcha.com https://hcaptcha.com;");
     next();
 });
 
@@ -2899,7 +2899,12 @@ function generateBotConfig(strategy, riskLevel) {
 }
 
 function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    // crypto.randomUUID is the security-correct ID generator (njsscan/js/insecure-randomness:
+    // Math.random is not suitable for IDs/tokens). Fall back to crypto.randomBytes.
+    try {
+        if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    } catch (e) { /* fall through */ }
+    return crypto.randomBytes(16).toString('hex');
 }
 
 // ===== AUTONOMOUS WORKER =====

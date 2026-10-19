@@ -129,29 +129,38 @@ function getRiskAdjustment(riskState, strategy, now = Date.now()) {
   };
 }
 
+/**
+ * Optimized: Accesses options/riskState configuration properties directly via nullish coalescing.
+ * Reuses adjustment.reasons array directly to eliminate redundant object and array spread cloning per evaluation.
+ */
 function applyRiskControls(opportunity, riskState, options = {}, now = Date.now()) {
-  const config = { ...riskState.config, ...options };
+  const minNetEdgeCfg = options.minNetEdge ?? riskState.config?.minNetEdge ?? DEFAULT_RISK_CONFIG.minNetEdge;
+  const minNetProfitUSDCfg = options.minNetProfitUSD ?? riskState.config?.minNetProfitUSD ?? DEFAULT_RISK_CONFIG.minNetProfitUSD;
+  const minLiquidityMultipleCfg = options.minLiquidityMultiple ?? riskState.config?.minLiquidityMultiple ?? DEFAULT_RISK_CONFIG.minLiquidityMultiple;
+  const maxLiquidityShareCfg = options.maxLiquidityShare ?? riskState.config?.maxLiquidityShare ?? DEFAULT_RISK_CONFIG.maxLiquidityShare;
+  const maxTradeSizeUSDCfg = options.maxTradeSizeUSD ?? riskState.config?.maxTradeSizeUSD ?? DEFAULT_RISK_CONFIG.maxTradeSizeUSD;
+
   const strategy = opportunity.strategy || opportunity.type || "UNKNOWN";
   const adjustment = getRiskAdjustment(riskState, strategy, now);
-  const reasons = [...adjustment.reasons];
+  const reasons = adjustment.reasons.slice();
 
   const netEdge = Number(opportunity.netEdge ?? opportunity.edge ?? 0);
   const netProfitUSD = Number(opportunity.netProfitUSD ?? opportunity.expectedProfitUSD ?? 0);
   const liquidityUSD = Number(opportunity.liquidityUSD || 0);
-  const requestedSizeUSD = Number(opportunity.recommendedSizeUSD || opportunity.sizeUSD || config.maxTradeSizeUSD);
-  const minNetEdge = config.minNetEdge + adjustment.minEdgeBump;
+  const requestedSizeUSD = Number(opportunity.recommendedSizeUSD || opportunity.sizeUSD || maxTradeSizeUSDCfg);
+  const minNetEdge = minNetEdgeCfg + adjustment.minEdgeBump;
 
   if (netEdge < minNetEdge) reasons.push("edge_below_threshold");
-  if (netProfitUSD < config.minNetProfitUSD) reasons.push("profit_below_threshold");
-  if (liquidityUSD > 0 && requestedSizeUSD > liquidityUSD / config.minLiquidityMultiple) {
+  if (netProfitUSD < minNetProfitUSDCfg) reasons.push("profit_below_threshold");
+  if (liquidityUSD > 0 && requestedSizeUSD > liquidityUSD / minLiquidityMultipleCfg) {
     reasons.push("insufficient_liquidity_depth");
   }
 
-  const liquidityCap = liquidityUSD > 0 ? liquidityUSD * config.maxLiquidityShare : config.maxTradeSizeUSD;
+  const liquidityCap = liquidityUSD > 0 ? liquidityUSD * maxLiquidityShareCfg : maxTradeSizeUSDCfg;
   const adjustedSizeUSD = clamp(
     requestedSizeUSD * adjustment.riskMultiplier,
     0,
-    Math.min(config.maxTradeSizeUSD, liquidityCap),
+    Math.min(maxTradeSizeUSDCfg, liquidityCap),
   );
 
   if (adjustedSizeUSD <= 0) reasons.push("size_zero_after_risk_controls");

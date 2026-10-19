@@ -210,7 +210,7 @@ let regulatoryState = {
     requiresAfsl: true
 };
 
-app.get('/api/regulatory/status', (req, res) => {
+app.get('/api/regulatory/status', userApiLimiter, (req, res) => {
     res.json({
         success: true,
         regulatory: regulatoryState
@@ -238,7 +238,7 @@ function getServerEffectiveDailyLossLimit(startingBalance = 10000) {
     return serverSafetyState.dailyLossLimit;
 }
 
-app.get('/api/safety-controls', (req, res) => {
+app.get('/api/safety-controls', userApiLimiter, (req, res) => {
     res.json({
         success: true,
         safetyControls: {
@@ -310,7 +310,7 @@ app.post('/api/claude', aiLimiter, async (req, res) => {
 /**
  * GET /api/deployments - Recent deposit-triggered deployment events
  */
-app.get('/api/deployments', (req, res) => {
+app.get('/api/deployments', userApiLimiter, (req, res) => {
     res.json({
         success: true,
         deployments: deploymentEvents

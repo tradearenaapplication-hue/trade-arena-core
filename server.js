@@ -493,6 +493,19 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 
+// Global API rate limit (CodeQL js/missing-rate-limiting #63/#651):
+// sensitive POST routes already carry their own stricter limiters
+// (tradeSessionRateLimiter, swapRateLimiter, maintenanceLogLimiter);
+// this is the backstop for everything else under /api/.
+const globalApiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: 'Too Many Requests', message: 'Slow down and retry shortly' }
+});
+app.use('/api/', globalApiLimiter);
+
 // Apply request validation middleware
 app.use(validateRequest);
 
@@ -522,7 +535,16 @@ app.get('/', (req, res) => {
 // Static assets from the repo root (JS modules, CSS, images, manifests).
 // `index: false` stops express.static from auto-serving index.html for
 // directory requests, which would bypass the explicit route above.
-app.use(express.static(__dirname, { index: false }));
+// CodeQL js/exposure-of-private-files #64: dotfiles (.env) are denied and
+// sensitive paths (users.json, data/, contracts/, node_modules) are blocked
+// explicitly below so they can never be served statically.
+app.use((req, res, next) => {
+    if (/^\/(users\.json|data\/|contracts\/|node_modules\/|\.git\/|\.env)/.test(req.path)) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+    next();
+});
+app.use(express.static(__dirname, { index: false, dotfiles: 'deny' }));
 
 // Configuration
 const RPC_URL = 'https://mainnet.base.org'; // Base network RPC
@@ -1217,18 +1239,17 @@ app.get('/api/health', (req, res) => {
  */
 app.get('/api/version', (req, res) => {
     try {
-        let pkgVersion = '4.1.0';
+        let pkgVersion = '4.0.0';
         try { pkgVersion = require('./package.json').version || pkgVersion; } catch (e) {}
-        let commit = (process.env.RAILWAY_GIT_COMMIT_SHA || '').trim();
+        // CodeQL js/command-line-injection: never shell out (execSync) from a
+        // request handler. Commit comes from env (Railway) or a precomputed
+        // file written at build time - no child_process, no user input.
+        let commit = (process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || '').trim();
         if (!commit) {
-            try {
-                commit = require('child_process')
-                    .execSync('git rev-parse --short HEAD', { timeout: 3000, windowsHide: true })
-                    .toString().trim();
-            } catch (e) { commit = 'local'; }
-        } else {
-            commit = commit.slice(0, 7);
+            try { commit = require('fs').readFileSync(require('path').join(__dirname, '.commit'), 'utf8').trim(); } catch (e) {}
         }
+        if (!commit) commit = 'local';
+        else commit = commit.slice(0, 7);
         const mode = process.env.DRY_RUN === 'true' ? 'DRY_RUN' : 'LIVE';
         res.setHeader('Cache-Control', 'no-store');
         res.json({
@@ -2883,7 +2904,10 @@ function calculateRisk(spread, amount) {
 }
 
 function generateBotConfig(strategy, riskLevel) {
-    const config = configs[strategy] || configs['Arbitrage Detection'];
+    // CodeQL js/prototype-polluting-assignment: never assign a user-controlled
+    // key directly. Clone the base config and only accept known risk levels.
+    const base = configs[strategy] || configs['Arbitrage Detection'];
+    const config = Object.assign({}, base);
 
     // Apply risk adjustments
     const riskMultipliers = {
@@ -2893,7 +2917,11 @@ function generateBotConfig(strategy, riskLevel) {
         'Max Risk (20x leverage)': 3.0
     };
 
-    config.riskMultiplier = riskMultipliers[riskLevel] || 1;
+    if (typeof riskLevel === 'string' && Object.prototype.hasOwnProperty.call(riskMultipliers, riskLevel)) {
+        config.riskMultiplier = riskMultipliers[riskLevel];
+    } else {
+        config.riskMultiplier = 1;
+    }
 
     return config;
 }

@@ -13,3 +13,7 @@
 ## 2026-10-13 - [Floating Banner Escape Key Accessibility]
 **Learning:** Floating notification/warning banners (`role="alert"` / `aria-live`) positioned fixed on screen must be dismissible via the `Escape` key in addition to visible dismiss buttons to satisfy WCAG 2.1 keyboard interaction guidelines.
 **Action:** Include floating banners in global `Escape` key dismissal stacks alongside modal dialogs and dropdown menus.
+
+## 2026-10-18 - [Dynamically Generated Results Modal ARIA & Escape Key Handling]
+**Learning:** Dynamically created DOM modal overlays (like backtest or audit summary results) require explicit `id`, `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, and `aria-label` attributes set at creation time, as well as inclusion in the global `Escape` key dismissal stack.
+**Action:** Always assign explicit ARIA dialog attributes and register the container ID in the global keydown listener when constructing dynamic modal dialog overlays via JS.

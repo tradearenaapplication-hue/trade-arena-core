@@ -1,112 +1,97 @@
-# 🛡️ Trade Arena — Launch Risk Mitigation & Gate 3 Readiness Plan
+# 🛡️ Trade Arena — Top 5 Launch Risks & Comprehensive Mitigation Plan
 
-## 📌 Overview & Risk Hierarchy
+## 📌 Executive Overview & Priority Hierarchy
 
-Accepting real user capital on an automated trading platform introduces systemic legal, financial, behavioral, and technical risks. This Launch Risk Mitigation Plan establishes a prioritized framework to eliminate existential threats before Gate 3 (Live Real-Money Trading Launch).
+Launching Trade Arena involves specific regulatory, reputational, technical, financial, and audience acquisition risks. To ensure platform viability, survival, and defensibility, launch risks are prioritized based on existential severity:
 
----
-
-## 🎯 Priority Risk Matrix
-
-| Priority | Risk Category | Threat Level | Primary Mitigation Strategy | Hard Deadline |
-| :---: | :--- | :---: | :--- | :--- |
-| **1** | **ASIC Regulatory Exposure** | 🛑 Existential | Programmatic Gate 3 Hard-Lock (`AFSL_COMPLIANT=true`) + 30-min Legal Counsel Briefing | Pre-Gate 3 Clearance |
-| **2** | **Gambling-Brain UX Liability** | ⚠️ High | Engine-Level Safety Controls (Daily Loss Caps, Cooling-Off, Session Warnings) | Pre-Gate 3 Clearance |
-| **3** | **Strategy Regime Risk** | ⚠️ Medium | Bear/Chop Regime Backtests & Strategy Transparency Warnings | Pre-Gate 3 Launch |
-| **4** | **Cold Audience Acquisition** | 🟡 Medium | A$200 Meta Ads Funnel Test (Landing → Demo → Wallet Connect → Deposit) | Post-Gate 2 / Pre-Gate 3 |
-| **5** | **Technical Infrastructure** | 🔵 Low / Ongoing | Railway Rollback Strategy, UptimeRobot Monitoring & Incident Protocol | Ongoing |
+1. **ASIC Regulatory Exposure (Existential Risk — Hard Deadline before Gate 3 Real User Funds)**
+2. **Gambling-Brain UX & Legal Liability (Reputational & Regulatory Protective Guardrails)**
+3. **Strategy Regime Risk (Bear & Chop Market Validation)**
+4. **Cold Audience Acquisition Funnel (Unproven Conversion Metrics)**
+5. **Technical Single Points of Failure & Infrastructure Hardening (Deployment & Operational Resiliency)**
 
 ---
 
-## 1. 🏛️ Risk 1: ASIC Regulatory Exposure (Existential Risk)
+## 🏛️ Risk 1: ASIC Regulatory Exposure & AFSL Gate 3 Clearance (Priority 1 — Existential)
 
-### Threat Analysis
-Operating an automated trading platform in Australia where bots make autonomous decisions or manage user funds can trigger classification as a **Managed Investment Scheme (MIS)** under Chapter 5C of the *Corporations Act 2001 (Cth)* or a **Financial Service** requiring an Australian Financial Services Licence (AFSL) under s 911A. Unlicensed operation carries severe civil penalties (up to A$11M+) and statutory shutdown orders.
+### Problem Definition
+ASIC has intensified scrutiny on automated trading platforms, crypto financial products, and AI-driven trade execution since 2024. If Trade Arena's bots execute autonomous trading decisions on behalf of retail users with real funds (pooled or individual), ASIC may classify the service as:
+1. **A Managed Investment Scheme (MIS)** under Chapter 5C of the *Corporations Act 2001 (Cth)*.
+2. **An Unlicenced Financial Service Provider** dealing in financial products or providing automated financial product advice under section 911A.
 
-### Mitigation Framework & Programmatic Locks
-1. **Gate 3 Hard-Lock (`trading-engine.js` & `execution-engine.js`):**
-   - Real-money swaps and order execution are programmatically blocked unless `process.env.AFSL_COMPLIANT === 'true'`.
-   - Backend swap endpoints (`/api/execute/swap`) return HTTP `403 Forbidden` when `AFSL_COMPLIANT` is false.
-2. **30-Minute Legal Counsel Briefing Framework:**
-   - Detailed in `docs/30_MINUTE_REGULATORY_COUNSEL_BRIEFING.md` and `docs/REGULATORY_AFSL_ASSESSMENT.md`.
-   - Core objectives: Determine non-custodial software exemption, evaluate Corporate Authorised Representative (CAR) umbrella model, and finalize Target Market Determination (TMD).
-3. **Regulatory Status API (`/api/regulatory/status`):**
-   - Publicly reports jurisdiction (`Australia (ASIC)`), AFSL status (`PENDING_LEGAL_REVIEW`), and clearance flags.
+Operating without an AFSL when required carries civil penalties (up to A$11M+), criminal liability, and immediate platform shutdown.
 
----
-
-## 2. 🎰 Risk 2: Gambling-Brain UX Liability (Public & Regulatory Protection)
-
-### Threat Analysis
-Trade Arena's engaging arcade/pokies visual framing accelerates user onboarding but creates significant liability if loss-chasing leads to user harm, press scrutiny, or Australian Consumer Law (ACL) regulatory attention.
-
-### Mitigation Framework & Engine Guardrails
-1. **Engine-Level Daily Loss Limits:**
-   - $50 default daily net loss cap enforced at the core engine level (`trading-engine.js`).
-   - Compulsory 24-hour delay required for any user-requested limit increase.
-2. **Cooling-Off & Escalating Self-Exclusion:**
-   - Hitting daily loss limits twice within 7 days triggers an un-overrideable 7-day execution lock.
-   - Users can manually trigger 24-hour "Take-a-Break" or 7-day self-exclusion locks at any time.
-3. **Session Interruption & Time Warnings:**
-   - Automated periodic session notifications at 30, 60, and 90 minutes to break psychological loss-chasing loops.
-4. **Defensible Legal Disclaimers:**
-   - Prominent UI disclaimers clarifying simulated algorithmic trading vs financial product advice.
+### Mitigation & Gate 3 Hard-Lock Architecture
+- **30-Minute Regulatory Briefing:** A structured 30-minute consultation with Australian financial services counsel must occur before any real user funds touch platform smart contracts or execution endpoints (see `docs/30_MINUTE_REGULATORY_COUNSEL_BRIEFING.md` and `docs/REGULATORY_AFSL_ASSESSMENT.md`).
+- **Software-Enforced Gate 3 Hard-Lock:** Real-money execution is programmatically blocked across all layers unless explicitly authorized (`process.env.AFSL_COMPLIANT === 'true'`):
+  - `TradingEngine.executeTrade()` in `trading-engine.js`: Rejects real-money bot orders with `status: 'BLOCKED_AFSL_COMPLIANCE_GATE'`.
+  - `executeOnChainTrade()` in `execution-engine.js`: Throws `Error('AFSL Compliance Gate 3 Lock...')`.
+  - `/api/execute/swap` in `server.js`: Returns HTTP `403 Forbidden` with Gate 3 error message.
+- **Regulatory Status API:** Exposes `/api/regulatory/status` confirming jurisdiction (`Australia (ASIC)`), assessment status (`PENDING_LEGAL_REVIEW`), and active Gate 3 locks (`afslCompliant: false`).
 
 ---
 
-## 3. 📈 Risk 3: Strategy Regime Risk (Bear & Chop Market Robustness)
+## 🎰 Risk 2: Gambling-Brain UX & Public Reputation Liability (Priority 2 — Protective)
 
-### Threat Analysis
-The core strategy (69% oversold-buying) was backtested during a bullish market window (12 August – 11 September 2026). Long-biased strategies underperform severely in flat or choppy market regimes, leading to user churn and chargeback risks upon live deposit.
+### Problem Definition
+Trade Arena's arcade/pokies framing provides a strong product differentiator, but creates immediate exposure under Australia's aggressive gambling harm framework and press scrutiny if a user suffers significant losses.
 
-### Mitigation Framework
-1. **Regime Backtesting Suite (`engine/crucible-v2.js`):**
-   - Crucible V2 framework tests bot strategies across simulated `BULL`, `BEAR`, and `CHOP` market regimes.
-2. **Dynamic Regime Adaptation & Warnings:**
-   - Bot configuration panels surface strategy bias (e.g. "Long-Biased Mean Reversion") and regime suitability ratings.
-   - Real-time volatility and trend regime detection automatically throttles bot trade frequency during unfavorable regime conditions.
-
----
-
-## 4. 🎯 Risk 4: Cold Audience Acquisition Funnel (Conversion Proof)
-
-### Threat Analysis
-Warm lead interest does not equal cold audience conversion. High drop-off rates across any step of the conversion funnel (Landing Page → Demo Mode → Wallet Connection → First Deposit) can render customer acquisition unit economics unviable.
-
-### Mitigation Framework & Pilot Campaign
-1. **Meta Ads Pilot Campaign (A$200 Budget):**
-   - Target demographic: Australian crypto enthusiasts aged 25–45 on Facebook and Instagram.
-2. **Conversion Tracking Pipeline:**
-   - Step 1: Landing Page view to Demo Mode activation.
-   - Step 2: Demo Mode engagement to Wallet Connection (`checkGoLiveAck()` regulatory modal).
-   - Step 3: Wallet Connection to initial deposit intention.
-3. **Funnel Benchmarks & Rapid Iteration:**
-   - Establish baseline conversion metrics within 48 hours to identify funnel friction points before scaling paid acquisition.
+### Mitigation & Engine-Level Safety Controls
+- **Engine-Level Daily Loss Limits:** Net daily loss limits (default $50.00 cap) enforced in `trading-engine.js` rather than client-side UI, preventing client bypasses.
+- **Compulsory 24-Hour Delay on Limit Increases:** Lowering loss limits takes effect immediately, but increasing limits requires a mandatory 24-hour cooling window.
+- **Self-Exclusion & Escalating Cool-Offs:**
+  - "Take-a-Break" (24h) and 7-day self-exclusion options.
+  - Automatic escalation to an un-overrideable 7-day cool-off if a user breaches their daily loss limit twice within 7 days.
+- **Periodic Session Duration Warnings:** Non-intrusive notifications at 30m, 60m, and 90m session intervals to interrupt loss-chasing behaviour.
 
 ---
 
-## 5. 🛠️ Risk 5: Technical Single Points of Failure & Infrastructure Hardening
+## 📈 Risk 3: Strategy Regime Risk — Bear & Chop Market Backtests (Priority 3 — Product Confidence)
 
-### Threat Analysis
-Deployment glitches, RPC node failures, or unmonitored outages during active user trades can cause unexecuted stop-losses or broken wallet states.
+### Problem Definition
+Current backtests cover bullish BTC/ETH market conditions (e.g., Aug–Sep 2026). Oversold-buying strategies (69% long-biased) risk severe drawdown during market chop or bear regimes, leading to user loss, churn, and potential chargebacks.
 
-### Mitigation Framework
-1. **Deployment & Rollback Standard:**
-   - Single-command Railway deployment (`Dockerfile` / `nixpacks.toml`) with automated git commit rollback procedures.
-2. **Uptime & Health Monitoring:**
-   - Ping `/api/regulatory/status` and `/health` endpoints via UptimeRobot at 1-minute intervals.
-   - PagerAlert notifications configured for HTTP non-200 responses.
-3. **Graceful Fallbacks:**
-   - Secondary Web3 RPC provider fallbacks for Base Mainnet.
-   - Client-side error handling in `index.html` preventing UI lockups on API network timeouts.
+### Mitigation & Crucible V2 Multi-Regime Framework
+- **Crucible V2 Backtesting (`crucible-test.js`):** Multi-regime validation covering `BULL`, `BEAR`, `CHOP`, and `HIGH_VOL` regimes with realistic fee/slippage models (`REALISTIC_1X`, `STRESS_1_5X`).
+- **Transparent Regime Labeling & Adaptive Risk Sizing:**
+  - Automated market regime classification based on RSI, ATR, and SMA indicators.
+  - Adaptive position sizing (`CrucibleRealTrading`) reducing exposure automatically during high volatility or consecutive strategy drawdowns.
+- **User Disclosure:** Explicit UI reporting on strategy suitability across different market regimes.
 
 ---
 
-## 📋 Pre-Gate 3 Checklist & Gate Clearance Summary
+## 🎯 Risk 4: Cold Audience Acquisition Funnel (Priority 4 — Funnel Validation)
 
-- [x] Programmatic AFSL Gate 3 Hard-Lock active in core engine & backend endpoints.
-- [x] Engine-level Safety Controls & Responsible Gambling limits operational.
-- [ ] 30-minute regulatory counsel briefing completed with Australian financial legal counsel.
-- [ ] Crucible V2 regime backtests completed for Bear and Chop market scenarios.
-- [ ] A$200 Meta Ads cold conversion funnel test completed.
-- [ ] UptimeRobot monitoring active for Railway backend production instance.
+### Problem Definition
+Interest from warm contacts does not prove cold audience conversion. Converting strangers from social ads (Meta / TikTok) to wallet connection and crypto deposit involves multi-step friction where drop-off rates can exceed 90%.
+
+### Mitigation & Low-Cap Test Plan
+- **A$200 Targeted Test Campaign:** Run localized Meta ad campaign targeting Australian crypto enthusiasts (aged 25–45) to measure exact conversion drop-offs.
+- **Funnel Tracking Milestones:**
+  1. Landing Page Click → Demo / Paper Trading Start
+  2. Paper Trading Start → Web3 Wallet Connect (MetaMask / Privy)
+  3. Wallet Connect → First Testnet/Mainnet Deposit
+- **Optimized Onboarding:** Frictionless Web3 onboarding via Privy/MoonPay integration alongside paper trading sandbox defaults.
+
+---
+
+## ⚙️ Risk 5: Technical Single Points of Failure & Infrastructure Hardening (Priority 5 — Continuous)
+
+### Problem Definition
+Deployment glitches, single-server downtime on Railway, or unmonitored server crashes could freeze active positions during market swings.
+
+### Mitigation & Resiliency Architecture
+- **Railway Production Deployment:** Configured via `Dockerfile`, `nixpacks.toml`, `railway.json`, and `Procfile` targeting Railway Node.js environment.
+- **Uptime Monitoring:** External health monitoring via `/api/regulatory/status` and `/healthcheck` pinging endpoints.
+- **Deployment Rollback Plan:** Instant rollback capability via Railway CLI / GitHub release tagging.
+- **Error Boundaries & Logging:** Circuit breakers in `proxy.js` and `server.js` with structured maintenance logging (`/api/maintenance/log`).
+
+---
+
+## 📋 Launch Gate Summary Matrix
+
+| Launch Gate | Permitted Activity | Real User Funds? | Legal / Compliance Requirement |
+| :--- | :--- | :--- | :--- |
+| **Gate 1 (Demo / Backtest)** | Local paper trading & Crucible V2 simulation | ❌ Prohibited | General terms & simulated capital warning |
+| **Gate 2 (Testnet / Warm Leads)** | Testnet execution & non-custodial wallet link | ❌ Prohibited | ASIC regulatory disclosure modal (`#goLiveModal`) |
+| **Gate 3 (Public Beta / Real Funds)** | Live mainnet swap & bot trading | ⚠️ ONLY WITH SIGN-OFF | **30-min legal counsel review & AFSL_COMPLIANT=true sign-off** |

@@ -124,3 +124,18 @@ Latency spike (82ms). Rerouting from Ankr to Alchemy.
 
 ## 2026-10-16T23:01:34.154Z - [WARN] MAINTENANCE
 Latency spike (83ms). Rerouting from Alchemy to Base RPC.
+
+## 2026-10-17T07:55:12.832Z - [WARN] MAINTENANCE
+Latency spike (92ms). Rerouting from Primary (Base) to QuickNode.
+
+## 2026-10-17T08:04:09.456Z - [WARN] MAINTENANCE
+Latency spike (72ms). Rerouting from QuickNode to Alchemy.
+
+## 2026-10-17T08:25:09.282Z - [WARN] MAINTENANCE
+Latency spike (78ms). Rerouting from Alchemy to Alchemy.
+
+## 2026-10-17T08:28:23.889Z - [WARN] MAINTENANCE
+Latency spike (89ms). Rerouting from Alchemy to Infura.
+
+## 2026-10-17T08:40:09.351Z - [WARN] MAINTENANCE
+Latency spike (74ms). Rerouting from Infura to Ankr.

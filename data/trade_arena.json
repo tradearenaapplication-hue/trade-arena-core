@@ -30,7 +30,7 @@
       "provider": "demo",
       "name": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
       "holdings": [],
-      "lastLogin": "2026-10-16T10:21:03.058Z",
+      "lastLogin": "2026-10-17T07:56:10.930Z",
       "sessionData": {
         "balance": 50
       }
@@ -75,6 +75,14 @@
       "startedAt": "2026-10-16T10:21:08.036Z",
       "updatedAt": "2026-10-16T10:21:08.036Z",
       "balance": 0,
+      "status": "ACTIVE"
+    },
+    "session_1792223770966_1f1cd77e4bdcc6ad": {
+      "id": "session_1792223770966_1f1cd77e4bdcc6ad",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "startedAt": "2026-10-17T07:56:10.985Z",
+      "updatedAt": "2026-10-17T07:56:10.985Z",
+      "balance": 50,
       "status": "ACTIVE"
     }
   },
@@ -2364,6 +2372,4153 @@
         "isWin": true
       },
       "timestamp": "2026-10-17T01:46:13.385Z"
+    },
+    {
+      "id": "trade_1792223801375_e8c7fa8491caab75",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999577,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:56:29.659Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:56:41.376Z",
+      "positionId": "1792223789658.4817",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:56:29.659Z"
+    },
+    {
+      "id": "trade_1792223803140_d82ce3112ace9ea2",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999577,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:56:37.128Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:56:43.140Z",
+      "positionId": "1792223797128.3076",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:56:37.128Z"
+    },
+    {
+      "id": "trade_1792223807334_3a378ec2e2525985",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999577,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:56:45.402Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:56:47.335Z",
+      "positionId": "1792223805402.7842",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:56:45.402Z"
+    },
+    {
+      "id": "trade_1792223816529_d2dac93700509c2e",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999577,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:56:52.623Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:56:56.530Z",
+      "positionId": "1792223812623.4382",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:56:52.623Z"
+    },
+    {
+      "id": "trade_1792223825597_2dfabf291f762ea3",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999577,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:57:00.286Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:57:05.597Z",
+      "positionId": "1792223820286.726",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:57:00.286Z"
+    },
+    {
+      "id": "trade_1792223828739_a42f70dcab7f0128",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999577,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:57:07.029Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:57:08.739Z",
+      "positionId": "1792223827029.052",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:57:07.029Z"
+    },
+    {
+      "id": "trade_1792223837558_a573b570184b3621",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999577,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:57:14.131Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:57:17.558Z",
+      "positionId": "1792223834131.6895",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:57:14.131Z"
+    },
+    {
+      "id": "trade_1792223848313_db72e53146e8c962",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999577,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:57:22.143Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:57:28.314Z",
+      "positionId": "1792223842143.5618",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:57:22.143Z"
+    },
+    {
+      "id": "trade_1792223876216_3563f9a1216f3905",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999577,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:57:30.159Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:57:56.216Z",
+      "positionId": "1792223850159.905",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:57:30.159Z"
+    },
+    {
+      "id": "trade_1792223884361_c7965d9448260699",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999577,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:57:36.530Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:58:04.362Z",
+      "positionId": "1792223856529.6477",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:57:36.530Z"
+    },
+    {
+      "id": "trade_1792223890198_51a0cbc9f2c45bcf",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:58:06.779Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:58:10.198Z",
+      "positionId": "1792223886779.369",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:58:06.779Z"
+    },
+    {
+      "id": "trade_1792223895359_66298eaa93cc6bed",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999577,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:57:44.061Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:58:15.359Z",
+      "positionId": "1792223864061.2705",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:57:44.061Z"
+    },
+    {
+      "id": "trade_1792223901817_5f367d6eda3a8b03",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:57:51.391Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:58:21.817Z",
+      "positionId": "1792223871391.8682",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:57:51.391Z"
+    },
+    {
+      "id": "trade_1792223904539_80311bbc06565481",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:57:57.356Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:58:24.539Z",
+      "positionId": "1792223877356.372",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:57:57.356Z"
+    },
+    {
+      "id": "trade_1792223905284_33fe242ec6ee1fd3",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:58:13.972Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:58:25.284Z",
+      "positionId": "1792223893972.9487",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:58:13.972Z"
+    },
+    {
+      "id": "trade_1792223908206_487133f66ec47e1a",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:58:20.868Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:58:28.207Z",
+      "positionId": "1792223900868.4097",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:58:20.868Z"
+    },
+    {
+      "id": "trade_1792223922397_539594513a04f241",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:58:27.142Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:58:42.421Z",
+      "positionId": "1792223907142.0232",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:58:27.142Z"
+    },
+    {
+      "id": "trade_1792223927242_cbaf96e0298e0220",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:58:42.428Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:58:47.242Z",
+      "positionId": "1792223922428.1553",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:58:42.428Z"
+    },
+    {
+      "id": "trade_1792223927611_61566ecdafe5664d",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:58:34.997Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:58:47.611Z",
+      "positionId": "1792223914997.8044",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:58:34.997Z"
+    },
+    {
+      "id": "trade_1792223930259_eff7482752bf8b91",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:58:48.497Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:58:50.260Z",
+      "positionId": "1792223928497.7073",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:58:48.497Z"
+    },
+    {
+      "id": "trade_1792223936156_92f0fca734546098",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:58:56.138Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:58:56.156Z",
+      "positionId": "1792223936138.9846",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:58:56.138Z"
+    },
+    {
+      "id": "trade_1792223961577_1816de43b6ff61d0",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:59:10.343Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:59:21.577Z",
+      "positionId": "1792223950343.555",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:59:10.343Z"
+    },
+    {
+      "id": "trade_1792223971001_994faa7bd5913e67",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:59:16.845Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:59:31.001Z",
+      "positionId": "1792223956845.9246",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:59:16.845Z"
+    },
+    {
+      "id": "trade_1792223973959_6a16b51619b58e4c",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:59:03.658Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:59:33.959Z",
+      "positionId": "1792223943658.209",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:59:03.658Z"
+    },
+    {
+      "id": "trade_1792223976931_b84fa454d09a409d",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:59:34.302Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:59:36.931Z",
+      "positionId": "1792223974302.3362",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:59:34.302Z"
+    },
+    {
+      "id": "trade_1792223976946_f3d80b001ee99532",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:59:26.930Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T07:59:36.947Z",
+      "positionId": "1792223966930.2676",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:59:26.930Z"
+    },
+    {
+      "id": "trade_1792224031117_4ca0c42c2ae4a9b2",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:59:43.779Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:00:31.117Z",
+      "positionId": "1792223983779.5684",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:59:43.779Z"
+    },
+    {
+      "id": "trade_1792224033121_46270a4d69e05841",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999578,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:00:28.734Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:00:33.121Z",
+      "positionId": "1792224028734.605",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:00:28.734Z"
+    },
+    {
+      "id": "trade_1792224036919_fd7dc839ffaacf09",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999578,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:00:36.299Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:00:36.919Z",
+      "positionId": "1792224036299.9365",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:00:36.299Z"
+    },
+    {
+      "id": "trade_1792224040558_a457d17b4a661410",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999578,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:00:00.400Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:00:40.558Z",
+      "positionId": "1792224000400.4985",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:00:00.400Z"
+    },
+    {
+      "id": "trade_1792224042822_062696d2b42cb09d",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999578,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:00:07.507Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:00:42.823Z",
+      "positionId": "1792224007507.8777",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:00:07.507Z"
+    },
+    {
+      "id": "trade_1792224043856_30d107b617b52ad2",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999578,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:00:15.160Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:00:43.857Z",
+      "positionId": "1792224015160.946",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:00:15.160Z"
+    },
+    {
+      "id": "trade_1792224046330_8d5e2cc9d294e97c",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999578,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:00:22.303Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:00:46.331Z",
+      "positionId": "1792224022303.554",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:00:22.303Z"
+    },
+    {
+      "id": "trade_1792224047731_724ff5467f991f67",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T07:59:50.710Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:00:47.731Z",
+      "positionId": "1792223990710.2385",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T07:59:50.710Z"
+    },
+    {
+      "id": "trade_1792224050869_d206aca4541a474f",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999578,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:00:42.186Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:00:50.869Z",
+      "positionId": "1792224042186.3293",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:00:42.186Z"
+    },
+    {
+      "id": "trade_1792224057325_4875edbe007e4ca4",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999578,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:00:49.703Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:00:57.325Z",
+      "positionId": "1792224049703.648",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:00:49.703Z"
+    },
+    {
+      "id": "trade_1792224059498_b9959a9a3d8acead",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999578,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:00:58.278Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:00:59.499Z",
+      "positionId": "1792224058278.974",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:00:58.278Z"
+    },
+    {
+      "id": "trade_1792224067709_cded482dd0290eb7",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999578,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:01:05.209Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:01:07.709Z",
+      "positionId": "1792224065209.5503",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:01:05.209Z"
+    },
+    {
+      "id": "trade_1792224085345_ba4d77499dd098b9",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:01:21.517Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:01:25.348Z",
+      "positionId": "1792224081517.6946",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:01:21.517Z"
+    },
+    {
+      "id": "trade_1792224087681_12c50b3458510217",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:01:14.353Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:01:27.681Z",
+      "positionId": "1792224074353.971",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:01:14.353Z"
+    },
+    {
+      "id": "trade_1792224090608_44173f3b3f6e9f4e",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:01:28.891Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:01:30.608Z",
+      "positionId": "1792224088891.9272",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:01:28.891Z"
+    },
+    {
+      "id": "trade_1792224098512_bd8272a4a1b50997",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:01:35.950Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:01:38.512Z",
+      "positionId": "1792224095950.5144",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:01:35.950Z"
+    },
+    {
+      "id": "trade_1792224102746_f409f4caeec1bbb7",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:01:41.891Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:01:42.747Z",
+      "positionId": "1792224101891.0107",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:01:41.891Z"
+    },
+    {
+      "id": "trade_1792224111268_a7784f49a058b0e2",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:01:49.848Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:01:51.269Z",
+      "positionId": "1792224109848.243",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:01:49.848Z"
+    },
+    {
+      "id": "trade_1792224119203_87147c31efd559e7",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:01:56.950Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:01:59.203Z",
+      "positionId": "1792224116950.3667",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:01:56.950Z"
+    },
+    {
+      "id": "trade_1792224126732_b1feb25c9a193bed",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:02:04.909Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:02:06.732Z",
+      "positionId": "1792224124909.8608",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:02:04.909Z"
+    },
+    {
+      "id": "trade_1792224135874_eee4b3b1bcdfab37",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:02:13.700Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:02:15.874Z",
+      "positionId": "1792224133700.3257",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:02:13.700Z"
+    },
+    {
+      "id": "trade_1792224143588_abbb321c9ed34537",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:02:22.286Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:02:23.588Z",
+      "positionId": "1792224142286.2217",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:02:22.286Z"
+    },
+    {
+      "id": "trade_1792224149126_c90ce3302df26289",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:02:29.111Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:02:29.127Z",
+      "positionId": "1792224149111.585",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:02:29.111Z"
+    },
+    {
+      "id": "trade_1792224157820_a94ebd3172973eca",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:02:36.531Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:02:37.821Z",
+      "positionId": "1792224156531.0286",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:02:36.531Z"
+    },
+    {
+      "id": "trade_1792224165393_0f4a1dc0dcd8d270",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:02:44.403Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:02:45.394Z",
+      "positionId": "1792224164403.1467",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:02:44.403Z"
+    },
+    {
+      "id": "trade_1792224181170_fc4d3461bc2549bf",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:02:52.118Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:03:01.171Z",
+      "positionId": "1792224172118.7578",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:02:52.118Z"
+    },
+    {
+      "id": "trade_1792224184180_81e7c571f190ae61",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:02:59.431Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:03:04.340Z",
+      "positionId": "1792224179431.7202",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:02:59.431Z"
+    },
+    {
+      "id": "trade_1792224188481_69fa6d048b957910",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:03:05.860Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:03:08.481Z",
+      "positionId": "1792224185860.5862",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:03:05.860Z"
+    },
+    {
+      "id": "trade_1792224194261_21269fa6218ee50f",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:03:13.221Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:03:14.261Z",
+      "positionId": "1792224193221.891",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:03:13.221Z"
+    },
+    {
+      "id": "trade_1792224201332_7baebb83599236c0",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:03:19.772Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:03:21.332Z",
+      "positionId": "1792224199772.5754",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:03:19.772Z"
+    },
+    {
+      "id": "trade_1792224211834_0a2923b33b80d767",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:03:26.922Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:03:31.834Z",
+      "positionId": "1792224206922.2336",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:03:26.922Z"
+    },
+    {
+      "id": "trade_1792224215298_601aa9431fa37b91",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:03:33.458Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:03:35.298Z",
+      "positionId": "1792224213458.2783",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:03:33.458Z"
+    },
+    {
+      "id": "trade_1792224223625_c05df6005b9d1102",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:03:40.374Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:03:43.626Z",
+      "positionId": "1792224220374.762",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:03:40.374Z"
+    },
+    {
+      "id": "trade_1792224230179_ae9b984e57061b7d",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:03:48.016Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:03:50.179Z",
+      "positionId": "1792224228016.0784",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:03:48.016Z"
+    },
+    {
+      "id": "trade_1792224239486_51a88939246fced8",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:03:55.364Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:03:59.486Z",
+      "positionId": "1792224235364.4133",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:03:55.364Z"
+    },
+    {
+      "id": "trade_1792224247285_5e2424bcf6479d88",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:04:03.223Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:04:07.285Z",
+      "positionId": "1792224243223.416",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:04:03.223Z"
+    },
+    {
+      "id": "trade_1792224251354_d5333dd43ff9a739",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:04:11.321Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:04:11.354Z",
+      "positionId": "1792224251321.336",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:04:11.321Z"
+    },
+    {
+      "id": "trade_1792224265398_da3c42f0a57662e2",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:04:18.313Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:04:25.398Z",
+      "positionId": "1792224258313.2744",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:04:18.313Z"
+    },
+    {
+      "id": "trade_1792224265997_9892a487034a30f3",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:04:24.518Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:04:25.997Z",
+      "positionId": "1792224264518.5815",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:04:24.518Z"
+    },
+    {
+      "id": "trade_1792224279832_1b88de248bfc13fa",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:04:31.288Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:04:39.832Z",
+      "positionId": "1792224271288.0974",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:04:31.288Z"
+    },
+    {
+      "id": "trade_1792224282225_30edcefa84644a96",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:04:37.587Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:04:42.226Z",
+      "positionId": "1792224277587.1138",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:04:37.587Z"
+    },
+    {
+      "id": "trade_1792224291434_598bb9ed6e0c70fc",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:04:43.885Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:04:51.434Z",
+      "positionId": "1792224283885.4565",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:04:43.885Z"
+    },
+    {
+      "id": "trade_1792224296279_f79c11f269db5bad",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:04:49.966Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:04:56.280Z",
+      "positionId": "1792224289966.1648",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:04:49.966Z"
+    },
+    {
+      "id": "trade_1792224300026_41059a3e9c13f246",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:04:58.087Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:05:00.026Z",
+      "positionId": "1792224298087.2195",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:04:58.087Z"
+    },
+    {
+      "id": "trade_1792224306979_8f342dc9ecb61318",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:05:05.078Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:05:06.979Z",
+      "positionId": "1792224305078.8425",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:05:05.078Z"
+    },
+    {
+      "id": "trade_1792224312538_5eff1feb9519195a",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:05:12.125Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:05:12.538Z",
+      "positionId": "1792224312125.8103",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:05:12.125Z"
+    },
+    {
+      "id": "trade_1792224319569_44adc5cf1c3f38ed",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:05:19.553Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:05:19.569Z",
+      "positionId": "1792224319553.9478",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:05:19.553Z"
+    },
+    {
+      "id": "trade_1792224333456_a21a1675906f9c41",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:05:27.862Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:05:33.463Z",
+      "positionId": "1792224327862.856",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:05:27.862Z"
+    },
+    {
+      "id": "trade_1792224334877_a4a73fccb2273676",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:05:34.853Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:05:34.960Z",
+      "positionId": "1792224334853.025",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:05:34.853Z"
+    },
+    {
+      "id": "trade_1792224347207_ccdf214b90f3aba2",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:05:42.420Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:05:47.207Z",
+      "positionId": "1792224342420.689",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:05:42.420Z"
+    },
+    {
+      "id": "trade_1792224349798_07c346ab96ec6916",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:05:49.775Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:05:49.798Z",
+      "positionId": "1792224349775.2207",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:05:49.775Z"
+    },
+    {
+      "id": "trade_1792224365822_031949b37b579700",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:06:01.489Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:06:05.822Z",
+      "positionId": "1792224361489.7327",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:06:01.489Z"
+    },
+    {
+      "id": "trade_1792224374038_a7e3c99286b86f1c",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:06:07.449Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:06:14.366Z",
+      "positionId": "1792224367449.312",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:06:07.449Z"
+    },
+    {
+      "id": "trade_1792224381207_de8b900acce5ca0a",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:06:15.689Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:06:22.110Z",
+      "positionId": "1792224375689.1128",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:06:15.689Z"
+    },
+    {
+      "id": "trade_1792224392204_9471cdc71fcd84d0",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:06:24.022Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:06:32.204Z",
+      "positionId": "1792224384022.0771",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:06:24.022Z"
+    },
+    {
+      "id": "trade_1792224404304_a6afafe3dab6dd11",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:06:35.179Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:06:44.304Z",
+      "positionId": "1792224395179.911",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:06:35.179Z"
+    },
+    {
+      "id": "trade_1792224408342_a42d3590d549f258",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:06:43.057Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:06:48.342Z",
+      "positionId": "1792224403057.6284",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:06:43.057Z"
+    },
+    {
+      "id": "trade_1792224436423_bb3b932292d83928",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:06:50.548Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:07:16.423Z",
+      "positionId": "1792224410548.4922",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:06:50.548Z"
+    },
+    {
+      "id": "trade_1792224437187_36c6f622fb022833",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:06:59.538Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:07:17.187Z",
+      "positionId": "1792224419537.4258",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:06:59.538Z"
+    },
+    {
+      "id": "trade_1792224439121_e0e991b1ad599a17",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:07:16.965Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:07:19.121Z",
+      "positionId": "1792224436965.8901",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:07:16.965Z"
+    },
+    {
+      "id": "trade_1792224442224_f8fad9bb4fb4bb1c",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999562,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:07:10.373Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:07:22.356Z",
+      "positionId": "1792224430373.2207",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:07:10.373Z"
+    },
+    {
+      "id": "trade_1792224448327_88445448ec6f8b2c",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:07:23.727Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:07:28.327Z",
+      "positionId": "1792224443727.8904",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:07:23.727Z"
+    },
+    {
+      "id": "trade_1792224459740_799c9b1acd52e6ba",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:07:32.105Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:07:39.740Z",
+      "positionId": "1792224452105.1326",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:07:32.105Z"
+    },
+    {
+      "id": "trade_1792224463272_66a24430d16fb7ea",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:07:40.175Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:07:43.272Z",
+      "positionId": "1792224460174.168",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:07:40.175Z"
+    },
+    {
+      "id": "trade_1792224477114_d8465dceef385c39",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:07:48.085Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:07:57.115Z",
+      "positionId": "1792224468085.0005",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:07:48.085Z"
+    },
+    {
+      "id": "trade_1792224493119_5b487b3ff43aa51b",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:07:58.976Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:08:13.119Z",
+      "positionId": "1792224478976.6284",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:07:58.976Z"
+    },
+    {
+      "id": "trade_1792224506585_9329dbd40a74edda",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:08:07.217Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:08:26.585Z",
+      "positionId": "1792224487217.5466",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:08:07.217Z"
+    },
+    {
+      "id": "trade_1792224523487_3a9d1811079e65e5",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999589,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:08:38.044Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:08:43.490Z",
+      "positionId": "1792224518044.0278",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:08:38.044Z"
+    },
+    {
+      "id": "trade_1792224530648_66b6ab9f9dab8ad4",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:08:18.999Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:08:50.648Z",
+      "positionId": "1792224498999.5146",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:08:18.999Z"
+    },
+    {
+      "id": "trade_1792224530744_aa7aef09c12d7e7b",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "DAI",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 1,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:08:27.843Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:08:50.745Z",
+      "positionId": "1792224507843.0598",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:08:27.843Z"
+    },
+    {
+      "id": "trade_1792224532249_823624c050bd02cd",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999589,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:08:46.637Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:08:52.488Z",
+      "positionId": "1792224526637.1409",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:08:46.637Z"
+    },
+    {
+      "id": "trade_1792224533753_3d8396423c4e75d0",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999589,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:08:53.227Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:08:53.753Z",
+      "positionId": "1792224533227.3074",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:08:53.227Z"
+    },
+    {
+      "id": "trade_1792224562586_2124a18f3b97426b",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999589,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:08:59.728Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:09:22.586Z",
+      "positionId": "1792224539728.0967",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:08:59.728Z"
+    },
+    {
+      "id": "trade_1792224587998_cf11451ad82ee086",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999589,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:09:07.018Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:09:47.998Z",
+      "positionId": "1792224547018.2083",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:09:07.018Z"
+    },
+    {
+      "id": "trade_1792224590678_4b913f31339f091a",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999589,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:09:16.157Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:09:50.678Z",
+      "positionId": "1792224556157.2297",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:09:16.157Z"
+    },
+    {
+      "id": "trade_1792224593505_ee72828a0667c4d5",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999589,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:09:23.647Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:09:53.505Z",
+      "positionId": "1792224563647.2058",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:09:23.647Z"
+    },
+    {
+      "id": "trade_1792224596041_eb13bfb0c64b3320",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999589,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:09:39.487Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:09:56.042Z",
+      "positionId": "1792224579487.4985",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:09:39.487Z"
+    },
+    {
+      "id": "trade_1792224598351_e43a9bbd6090146b",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:09:55.988Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:09:58.351Z",
+      "positionId": "1792224595988.5237",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:09:55.988Z"
+    },
+    {
+      "id": "trade_1792224602224_7d417c10e7e80407",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999589,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:09:32.122Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:10:02.224Z",
+      "positionId": "1792224572122.4053",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:09:32.122Z"
+    },
+    {
+      "id": "trade_1792224609081_613f286243ae3052",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:10:03.959Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:10:09.081Z",
+      "positionId": "1792224603959.972",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:10:03.959Z"
+    },
+    {
+      "id": "trade_1792224617291_f6ba0891299bb67c",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:10:11.470Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:10:17.291Z",
+      "positionId": "1792224611470.0266",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:10:11.470Z"
+    },
+    {
+      "id": "trade_1792224620892_6bf3544fc72422f4",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:10:18.622Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:10:20.892Z",
+      "positionId": "1792224618622.0325",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:10:18.622Z"
+    },
+    {
+      "id": "trade_1792224623421_64de4fda199c2dbc",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:09:48.551Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:10:23.421Z",
+      "positionId": "1792224588551.7976",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:09:48.551Z"
+    },
+    {
+      "id": "trade_1792224638791_d3b477163912bf40",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:10:25.789Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:10:38.871Z",
+      "positionId": "1792224625789.8806",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:10:25.789Z"
+    },
+    {
+      "id": "trade_1792224645923_9e893a81bd38f883",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:10:33.476Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:10:45.923Z",
+      "positionId": "1792224633476.771",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:10:33.476Z"
+    },
+    {
+      "id": "trade_1792224658725_0f4cb9efa9458d06",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:10:40.557Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:10:58.725Z",
+      "positionId": "1792224640557.0493",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:10:40.557Z"
+    },
+    {
+      "id": "trade_1792224668851_6ca880a7892e1252",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:11:05.503Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:11:08.853Z",
+      "positionId": "1792224665503.1335",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:11:05.503Z"
+    },
+    {
+      "id": "trade_1792224680171_9a096d8aa6930142",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:10:57.562Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:11:20.171Z",
+      "positionId": "1792224657562.1165",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:10:57.562Z"
+    },
+    {
+      "id": "trade_1792224689069_8ab6482aae0bb3bc",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:10:48.890Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:11:29.070Z",
+      "positionId": "1792224648890.5535",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:10:48.890Z"
+    },
+    {
+      "id": "trade_1792224703227_d675a8c0cda64101",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:11:13.561Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:11:43.227Z",
+      "positionId": "1792224673561.9907",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:11:13.561Z"
+    },
+    {
+      "id": "trade_1792224716634_65bd2bfff2f687d6",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999574,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:11:53.987Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:11:56.634Z",
+      "positionId": "1792224713987.1184",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:11:53.987Z"
+    },
+    {
+      "id": "trade_1792224722698_bd7c8669ad9e0fdb",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:11:21.382Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:12:02.698Z",
+      "positionId": "1792224681382.732",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:11:21.382Z"
+    },
+    {
+      "id": "trade_1792224730096_3956ffc57155841a",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:11:30.900Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:12:10.096Z",
+      "positionId": "1792224690900.9575",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:11:30.900Z"
+    },
+    {
+      "id": "trade_1792224751043_da47abca05d97052",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.99958,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:11:42.739Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:12:31.043Z",
+      "positionId": "1792224702739.3772",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:11:42.739Z"
+    },
+    {
+      "id": "trade_1792224795631_0a30b43cd2159d55",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999574,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:12:40.316Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:13:15.631Z",
+      "positionId": "1792224760316.3345",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:12:40.316Z"
+    },
+    {
+      "id": "trade_1792224803759_c87793488c57c90f",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999574,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:12:47.039Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:13:23.759Z",
+      "positionId": "1792224767039.5864",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:12:47.039Z"
+    },
+    {
+      "id": "trade_1792224809678_875e7743ff8ca5d6",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999572,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:12:56.481Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:13:29.678Z",
+      "positionId": "1792224776481.819",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:12:56.481Z"
+    },
+    {
+      "id": "trade_1792224817548_d74d92c68e738f9a",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999572,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:13:04.494Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:13:37.548Z",
+      "positionId": "1792224784494.8396",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:13:04.494Z"
+    },
+    {
+      "id": "trade_1792224821731_1c9eaad2507df3ed",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999574,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:12:00.574Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:13:41.731Z",
+      "positionId": "1792224720574.5828",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:12:00.574Z"
+    },
+    {
+      "id": "trade_1792224826780_4816e92347d4feec",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999574,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:12:23.275Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:13:46.781Z",
+      "positionId": "1792224743275.4062",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:12:23.275Z"
+    },
+    {
+      "id": "trade_1792224834893_4e1116818426e127",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999574,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:12:15.999Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:13:54.894Z",
+      "positionId": "1792224735999.222",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:12:15.999Z"
+    },
+    {
+      "id": "trade_1792224842177_9b875a91b41cffc6",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999574,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:12:31.457Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:02.177Z",
+      "positionId": "1792224751457.9187",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:12:31.457Z"
+    },
+    {
+      "id": "trade_1792224844695_b50e92fd5c13cb27",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999572,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:13:15.345Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:04.696Z",
+      "positionId": "1792224795345.645",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:13:15.345Z"
+    },
+    {
+      "id": "trade_1792224850116_d6d2616a5f1920a1",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999572,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:13:26.480Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:10.116Z",
+      "positionId": "1792224806480.391",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:13:26.480Z"
+    },
+    {
+      "id": "trade_1792224851856_572e881c1616da67",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999572,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:13:35.348Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:11.856Z",
+      "positionId": "1792224815348.857",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:13:35.348Z"
+    },
+    {
+      "id": "trade_1792224852748_e405d9c4849b875a",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999572,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:13:44.006Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:12.748Z",
+      "positionId": "1792224824006.7798",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:13:44.006Z"
+    },
+    {
+      "id": "trade_1792224858050_6f79fb2fd2619a96",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999572,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:13:53.380Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:18.146Z",
+      "positionId": "1792224833380.5293",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:13:53.380Z"
+    },
+    {
+      "id": "trade_1792224860599_a674d6fe66bcf0b2",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999572,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:14:01.668Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:20.600Z",
+      "positionId": "1792224841668.0044",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:14:01.668Z"
+    },
+    {
+      "id": "trade_1792224863605_f0e9a1489897e0cd",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999555,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:14:10.667Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:23.605Z",
+      "positionId": "1792224850667.6047",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:14:10.667Z"
+    },
+    {
+      "id": "trade_1792224875874_5c0349c80b578d85",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999555,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:14:17.961Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:35.875Z",
+      "positionId": "1792224857961.6033",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:14:17.961Z"
+    },
+    {
+      "id": "trade_1792224877980_57069db779924417",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "PERP SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999555,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:14:24.497Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:37.980Z",
+      "positionId": "1792224864497.9788",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:14:24.497Z"
+    },
+    {
+      "id": "trade_1792224883850_e82c6c952f4bba3e",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999555,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:14:41.367Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:43.853Z",
+      "positionId": "1792224881367.3015",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:14:41.367Z"
+    },
+    {
+      "id": "trade_1792224886387_fb5967428a9c1ab0",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999574,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:12:07.195Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:46.419Z",
+      "positionId": "1792224727195.2832",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:12:07.195Z"
+    },
+    {
+      "id": "trade_1792224887121_2e55789fcfda8d5e",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999555,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:14:34.418Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:47.122Z",
+      "positionId": "1792224874418.8647",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:14:34.418Z"
+    },
+    {
+      "id": "trade_1792224897462_c664ddf710ad62af",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "long",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT LONG",
+        "regime": "CHOP",
+        "entryPrice": 0.999555,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:14:52.139Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:14:57.462Z",
+      "positionId": "1792224892139.0889",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:14:52.139Z"
+    },
+    {
+      "id": "trade_1792224908039_4705fccda6f7186a",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999555,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:15:06.856Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:15:08.039Z",
+      "positionId": "1792224906856.9568",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:15:06.856Z"
+    },
+    {
+      "id": "trade_1792224908944_12815ff3ade73dba",
+      "address": "0xaee6f8812fcfeed920c18ae92e75789160a9a338",
+      "agentId": "agent-default",
+      "botName": "Trade Bot",
+      "action": "short",
+      "symbol": "USDC",
+      "amount": 0.34794711203897005,
+      "pnl": 0,
+      "details": {
+        "method": "SPOT SHORT",
+        "regime": "CHOP",
+        "entryPrice": 0.999555,
+        "exitPrice": null,
+        "isWin": null,
+        "costs": {
+          "gas": 0.00025,
+          "slippagePct": 0.0001,
+          "spread": 0.0003
+        },
+        "status": "OPEN",
+        "openedAt": "2026-10-17T08:14:59.426Z",
+        "onchain": false
+      },
+      "timestamp": "2026-10-17T08:15:09.122Z",
+      "positionId": "1792224899426.2266",
+      "status": "OPEN",
+      "openedAt": "2026-10-17T08:14:59.426Z"
     }
   ],
   "userState": {

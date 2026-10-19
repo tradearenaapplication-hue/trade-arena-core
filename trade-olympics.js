@@ -517,13 +517,13 @@ const TRADE_OLYMPICS = {
     panel.id = "eloTournamentPanel";
     panel.className = "cpanel";
     panel.innerHTML = `
-      <div class="cpanel-hd open" onclick="document.getElementById('eloTournamentBody')?.classList.toggle('open')">
+      <div class="cpanel-hd open" id="eloTournamentHd" role="button" tabindex="0" aria-expanded="true" aria-controls="eloTournamentBody" onclick="const body = document.getElementById('eloTournamentBody'); const isExpanded = body?.classList.toggle('open'); this.classList.toggle('open', isExpanded); this.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <div class="cpanel-title">🏆 ELO TOURNAMENTS</div><div class="cpanel-toggle">AI model ratings</div>
       </div>
       <div class="cpanel-body open" id="eloTournamentBody">
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-          <button class="bus-apply-btn bus-apply-primary" onclick="runEloTournamentUI()">RUN ELO ROUND</button>
-          <button class="bus-apply-btn bus-apply-secondary" onclick="resetEloTournamentUI()">RESET ELO</button>
+          <button class="bus-apply-btn bus-apply-primary" onclick="runEloTournamentUI()" aria-label="Run ELO Tournament Round">RUN ELO ROUND</button>
+          <button class="bus-apply-btn bus-apply-secondary" onclick="resetEloTournamentUI()" aria-label="Reset ELO Tournament Ratings">RESET ELO</button>
         </div>
         <div id="eloTournamentSummary" style="font-size:9px;color:var(--dim);margin-bottom:8px"></div>
         <div id="eloTournamentRows" style="display:grid;gap:4px"></div>

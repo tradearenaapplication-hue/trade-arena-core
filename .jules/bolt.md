@@ -33,3 +33,7 @@
 ## 2026-12-30 - Array Slicing and Filtering Overhead in High-Frequency Volatility Regime Evaluation
 **Learning:** `updateAIState()` in `crucible-ai-learning.js` was creating temporary sub-arrays via `.slice(-50)` and `.filter()` on every AI state update during 1000-trade evaluation loops, generating unnecessary heap allocations and GC pauses.
 **Action:** Replace `.slice(-50)` array copy and `.filter()` callback passes in sliding window calculations with bounded backward `for` loops over target array indices (~3.2x speedup and 0 array allocations).
+
+## 2027-01-14 - Object Entries and Array Chaining in ELO Tournament Arena UI Updates
+**Learning:** `renderEloArena()` in `elo-tournament-engine.js` was allocating key-value tuple arrays on every render pass via `Object.entries(eloState.agents)` and chaining `.map().join('')` to format agent status HTML rows, generating heap churn and garbage collection pressure during continuous ELO tournament updates.
+**Action:** Replace `Object.entries()` array allocations and `.map().join()` method chaining in UI render loops with key collection arrays and direct string accumulation (`+=`) in a scalar `for` loop.

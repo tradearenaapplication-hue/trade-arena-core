@@ -827,8 +827,7 @@ const CrucibleRealTrading = {
     console.log('\n🎯 TRADE RESULTS:');
     console.log(`  Avg Win: $${avgWin.toFixed(4)} AUD`);
     console.log(`  Avg Loss: $${avgLoss.toFixed(4)} AUD`);
-    const pfDisplay = typeof profitFactor === "number" ? profitFactor.toFixed(2) : profitFactor;
-    console.log(`  Profit Factor: ${pfDisplay}${(typeof profitFactor === "number" && profitFactor > 2) || profitFactor === "Inf" ? ' ✅ STRONG' : ''}`);
+    console.log(`  Profit Factor: ${typeof profitFactor === 'number' ? profitFactor.toFixed(2) : profitFactor}${profitFactor > 2 ? ' ✅ STRONG' : ''}`);
 
     console.log('\n🧠 AI LEARNING METRICS:');
     console.log(`  Volatility Regime: ${this.aiState.volatilityRegime}`);

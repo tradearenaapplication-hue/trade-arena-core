@@ -37,3 +37,8 @@
 **Vulnerability:** In `index.html`, `sendVoiceCommand` used direct browser `fetch` requests to `https://api.anthropic.com/v1/messages` with `anthropic-dangerous-direct-browser-access: true`, exposing client-side API key handling and bypassing backend rate limits.
 **Learning:** Features added directly in frontend templates often bypass established backend proxies (`/api/claude`), introducing dangerous direct browser headers and removing server-side rate limits and validation.
 **Prevention:** Route all frontend AI and LLM requests exclusively through backend proxy endpoints protected by rate limiting (`aiLimiter`) and server-side secret management.
+
+## 2026-10-16 - [HIGH] Stored/DOM XSS Vulnerability in Learn Log & Audit Log Rendering
+**Vulnerability:** In `index.html`, `renderLearnLog` and `renderAuditLog` interpolated unescaped entry properties (`e.type`, `e.ts`, `e.msg`) directly into `innerHTML` strings.
+**Learning:** Persisted or imported log entries (such as model learning logs and audit histories restored from local storage or JSON imports) can act as Stored/DOM XSS sinks if dynamic properties like `type`, `ts`, or `msg` are interpolated without escaping.
+**Prevention:** Wrap all dynamic properties of log entries with `escapeHTML()` when rendering templates into `innerHTML` sinks.

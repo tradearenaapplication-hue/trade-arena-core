@@ -532,19 +532,29 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Static assets from the repo root (JS modules, CSS, images, manifests).
-// `index: false` stops express.static from auto-serving index.html for
-// directory requests, which would bypass the explicit route above.
-// CodeQL js/exposure-of-private-files #64: dotfiles (.env) are denied and
-// sensitive paths (users.json, data/, contracts/, node_modules) are blocked
-// explicitly below so they can never be served statically.
+// Extension + sensitive-path allowlist FIRST (CodeQL js/exposure-of-private-files
+// #64/#653): never serve anything that is not a browser asset, and never
+// serve data/contract/user files even with an allowed extension.
 app.use((req, res, next) => {
-    if (/^\/(users\.json|data\/|contracts\/|node_modules\/|\.git\/|\.env)/.test(req.path)) {
+    if (req.method !== 'GET') return next();
+    if (req.path === '/') return next();
+    if (req.path.startsWith('/api/')) return next();
+    if (!/\.(js|css|html|webmanifest|png|jpg|jpeg|gif|svg|ico|webp|avif|woff|woff2|ttf|otf|mp3|wav|ogg|txt|xml)$/i.test(req.path)) {
         return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     next();
 });
-app.use(express.static(__dirname, { index: false, dotfiles: 'deny' }));
+// Static assets from the repo root (JS modules, CSS, images, manifests).
+// dotfiles denied; sensitive dirs blocked per-file as defense-in-depth.
+app.use(express.static(__dirname, {
+    index: false,
+    dotfiles: 'deny',
+    setHeaders: (res, filePath) => {
+        if (/\/(users\.json|data\/|contracts\/|node_modules\/|\.git\/|\.env)/i.test(filePath)) {
+            res.statusCode = 403;
+        }
+    }
+}));
 
 // Configuration
 const RPC_URL = 'https://mainnet.base.org'; // Base network RPC

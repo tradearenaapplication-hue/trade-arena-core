@@ -17,3 +17,7 @@
 ## 2026-10-18 - [Dynamically Generated Results Modal ARIA & Escape Key Handling]
 **Learning:** Dynamically created DOM modal overlays (like backtest or audit summary results) require explicit `id`, `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, and `aria-label` attributes set at creation time, as well as inclusion in the global `Escape` key dismissal stack.
 **Action:** Always assign explicit ARIA dialog attributes and register the container ID in the global keydown listener when constructing dynamic modal dialog overlays via JS.
+
+## 2026-10-19 - [Dynamic Agent Row Action ARIA Disambiguation]
+**Learning:** Dynamically rendered table action buttons (e.g. SUSPEND, REINSTATE, CLEAR) repeated per table row require explicit agent/entity name context in `aria-label` and `title` to prevent ambiguous announcements for screen reader users (WCAG 2.4.6 / 4.1.2).
+**Action:** Always interpolate entity identifiers into `aria-label` and `title` attributes when mapping row actions in dynamic HTML templates.

@@ -1085,9 +1085,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
          <label for="crucibleTradeCount" style="color:var(--dim);font-size:10px">Trades:</label>
          <input type="number" id="crucibleTradeCount" value="50" min="1" max="1000" style="width:60px;padding:4px 6px;background:var(--chrome);color:#fff;border:1px solid var(--border);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:10px">
 
-          <button class="crucible-run-btn" onclick="runCrucibleV2Batch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">▶ RUN CRUCIBLE V2</button>
-          <button class="crucible-pause-btn" onclick="pauseCrucible()" style="padding:6px 14px;background:linear-gradient(90deg,var(--amber),var(--hot));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">⏸ PAUSE</button>
-          <button class="crucible-cancel-btn" onclick="cancelCrucible()" style="padding:6px 14px;background:linear-gradient(90deg,var(--hot),var(--purple));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">⏹ CANCEL</button>
+          <button class="crucible-run-btn" onclick="runCrucibleV2Batch()" aria-label="Run Crucible V2 backtest batch" title="Run Crucible V2 backtest batch" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">▶ RUN CRUCIBLE V2</button>
+          <button class="crucible-pause-btn" onclick="pauseCrucible()" aria-label="Pause Crucible backtest" title="Pause Crucible backtest" style="padding:6px 14px;background:linear-gradient(90deg,var(--amber),var(--hot));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">⏸ PAUSE</button>
+          <button class="crucible-cancel-btn" onclick="cancelCrucible()" aria-label="Cancel Crucible backtest" title="Cancel Crucible backtest" style="padding:6px 14px;background:linear-gradient(90deg,var(--hot),var(--purple));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">⏹ CANCEL</button>
        </div>
 
       <!-- Databricks Genie Config -->
@@ -1227,7 +1227,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         <label for="staffInput" style="display:block; font-size:9px; color:var(--cyan); font-family:'Bungee'; margin-bottom:8px; letter-spacing:1px;">TALK TO STAFF (CONCIERGE)</label>
         <div style="display:flex; gap:8px;">
           <input type="text" id="staffInput" aria-label="Ask staff a question" placeholder="I lost money on that last trade, why?" onkeydown="if(event.key==='Enter') sendStaffQuery()" style="flex:1; background:var(--bg); border:1px solid var(--border); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:10px;">
-          <button onclick="sendStaffQuery()" style="background:var(--cyan); color:#000; border:none; border-radius:6px; padding:0 15px; font-family:'Bungee'; font-size:10px; cursor:pointer;">ASK</button>
+          <button onclick="sendStaffQuery()" aria-label="Ask concierge staff" title="Ask concierge staff" style="background:var(--cyan); color:#000; border:none; border-radius:6px; padding:0 15px; font-family:'Bungee'; font-size:10px; cursor:pointer;">ASK</button>
         </div>
         <div id="staffResponse" role="status" aria-live="polite" style="margin-top:10px; padding:10px; background:rgba(0,255,231,0.05); border-radius:6px; font-size:10px; color:#ccc; display:none; border-left:2px solid var(--cyan);"></div>
       </div>
@@ -3470,7 +3470,7 @@ function renderBot(bot){
         <div class="m-dd-row">
           <div class="m-dd-section">
             <div class="m-dd-label">Personality</div>
-            <select class="m-dd-select" id="mpersonality-${bot.id}" onchange="setBotPersonality(${bot.id},this.value)">
+            <select class="m-dd-select" id="mpersonality-${bot.id}" aria-label="Bot #${bot.id} Personality" onchange="setBotPersonality(${bot.id},this.value)">
               <option value="BALANCED">⚖️ Balanced</option>
               <option value="AGGRESSIVE">🔥 Aggressive</option>
               <option value="CONSERVATIVE">🛡️ Conservative</option>
@@ -3480,7 +3480,7 @@ function renderBot(bot){
           </div>
           <div class="m-dd-section">
             <div class="m-dd-label">Auto Delay</div>
-            <select class="m-dd-select" id="mdelay-${bot.id}" onchange="setBotDelay(${bot.id},this.value)">
+            <select class="m-dd-select" id="mdelay-${bot.id}" aria-label="Bot #${bot.id} Auto Delay" onchange="setBotDelay(${bot.id},this.value)">
               <option value="2000">Fast (2s)</option>
               <option value="5000" selected>Normal (5s)</option>
               <option value="15000">Slow (15s)</option>
@@ -3491,7 +3491,7 @@ function renderBot(bot){
         <div class="m-dd-row">
           <div class="m-dd-section">
             <div class="m-dd-label">Stop Loss</div>
-            <select class="m-dd-select" id="mstoploss-${bot.id}" onchange="setBotStopLoss(${bot.id},this.value)">
+            <select class="m-dd-select" id="mstoploss-${bot.id}" aria-label="Bot #${bot.id} Stop Loss" onchange="setBotStopLoss(${bot.id},this.value)">
               <option value="0">None</option>
               <option value="10">−10%</option>
               <option value="20" selected>−20%</option>
@@ -5008,13 +5008,14 @@ function renderAuditPanel() {
       'REINSTATED':'<span class="aa-status-badge aas-reinstated">REINSTATED</span>',
     }[status] || '';
 
+    const agentName = escapeHTML(AGENT_META[key].name);
     const actions = status === 'SUSPENDED'
-      ? `<button class="aa-action-btn aa-btn-reinstate" onclick="manualReinstate('${key}')">REINSTATE</button>`
+      ? `<button class="aa-action-btn aa-btn-reinstate" onclick="manualReinstate('${key}')" aria-label="Reinstate agent ${agentName}" title="Reinstate ${agentName}">REINSTATE</button>`
       : status === 'ON_NOTICE'
-      ? `<button class="aa-action-btn aa-btn-clear" onclick="manualClear('${key}')">CLEAR</button><button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')">SUSPEND</button>`
+      ? `<button class="aa-action-btn aa-btn-clear" onclick="manualClear('${key}')" aria-label="Clear notice for agent ${agentName}" title="Clear notice for ${agentName}">CLEAR</button><button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')" aria-label="Suspend agent ${agentName}" title="Suspend ${agentName}">SUSPEND</button>`
       : status === 'REINSTATED'
-      ? `<button class="aa-action-btn aa-btn-clear" onclick="manualClear('${key}')">FULLY CLEAR</button><button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')">SUSPEND</button>`
-      : `<button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')">SUSPEND</button>`;
+      ? `<button class="aa-action-btn aa-btn-clear" onclick="manualClear('${key}')" aria-label="Fully clear agent ${agentName}" title="Fully clear ${agentName}">FULLY CLEAR</button><button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')" aria-label="Suspend agent ${agentName}" title="Suspend ${agentName}">SUSPEND</button>`
+      : `<button class="aa-action-btn aa-btn-suspend" onclick="manualSuspend('${key}')" aria-label="Suspend agent ${agentName}" title="Suspend ${agentName}">SUSPEND</button>`;
 
     const probBar = status === 'ON_NOTICE' ? `
       <div style="margin-top:3px;font-size:7px;color:var(--amber)">Probation: ${probUsed}/${probTotal} trades</div>
@@ -5728,7 +5729,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button id="vaListenBtn" onclick="window.GEMINI_VOICE.toggleListening()" style="width:100%; padding:10px; background:var(--cyan); border:none; border-radius:6px; font-family:'Bungee'; font-size:10px; cursor:pointer;">🎤 PUSH TO TALK</button>
     <div style="display:flex; gap:8px; width:100%">
       <input type="text" class="va-input" id="vaInput" aria-label="Command the fleet" placeholder="Command the fleet..." onkeydown="if(event.key==='Enter') sendVoiceCommand()">
-      <button class="va-send" onclick="sendVoiceCommand()">SEND</button>
+      <button class="va-send" onclick="sendVoiceCommand()" aria-label="Send voice text command" title="Send voice text command">SEND</button>
     </div>
   </div>
 </div>

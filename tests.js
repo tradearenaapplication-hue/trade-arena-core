@@ -1849,7 +1849,10 @@ describe("Server Error Handling & Input Validation Security", () => {
       "/api/flash-loan/simulate",
       "/api/analyze/arbitrage",
       "/api/analyze/volatility",
-      "/api/market/prices"
+      "/api/market/prices",
+      "/api/regulatory/status",
+      "/api/safety-controls",
+      "/api/deployments"
     ];
 
     for (const path of protectedPaths) {
@@ -2827,12 +2830,14 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
 
     let statusCode = 200;
     let jsonResponse = null;
+    const req = {};
     const res = {
       status: (code) => { statusCode = code; return res; },
       json: (data) => { jsonResponse = data; return res; },
     };
 
-    route.route.stack[0].handle({}, res);
+    const handler = route.route.stack.length > 1 ? route.route.stack[1].handle : route.route.stack[0].handle;
+    handler(req, res);
 
     expect(statusCode).toBe(200);
     expect(jsonResponse.success).toBe(true);

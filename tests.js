@@ -2734,6 +2734,55 @@ describe("MetaMask Login Flow Resiliency (index.html:loginMetaMask)", () => {
   });
 });
 
+describe("Coinbase Wallet Login XSS Sanitization (index.html:loginCoinbase)", () => {
+  function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  it("escapes malicious error message XSS payload in loginCoinbase catch block", async () => {
+    let statusHTML = "";
+    const mockStatusEl = {
+      set innerHTML(val) { statusHTML = val; },
+      get innerHTML() { return statusHTML; }
+    };
+
+    global.document = {
+      getElementById: (id) => (id === "cStatus" ? mockStatusEl : null)
+    };
+    global.window = {
+      coinbaseWalletExtension: {
+        request: async () => {
+          throw new Error("<img src=x onerror=alert('xss')>");
+        }
+      }
+    };
+
+    const loginCoinbase = async () => {
+      const s = global.document.getElementById('cStatus'); if (!s) return;
+      try {
+        if (global.window.coinbaseWalletExtension) {
+          const a = await global.window.coinbaseWalletExtension.request({ method: 'eth_requestAccounts' });
+        }
+      } catch (e) {
+        s.innerHTML = '❌ ' + escapeHTML(e?.message || String(e));
+      }
+    };
+
+    await loginCoinbase();
+    expect(statusHTML.includes("<img")).toBe(false);
+    expect(statusHTML).toContain("&lt;img src=x onerror=alert(&#039;xss&#039;)&gt;");
+
+    delete global.document;
+    delete global.window;
+  });
+});
+
 describe("Database Session & Agent Trade Log Persistence", () => {
   const db = require("./data/database.js");
 

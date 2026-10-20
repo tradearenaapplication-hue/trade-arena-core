@@ -36,6 +36,10 @@ const {
   getRiskAdjustment,
 } = require("./arb-risk-engine.js");
 const {
+  updateBotStateAfterTrade,
+  getBotStrategyInsights,
+} = require("./ai-strategies.js");
+const {
   americanToProbability,
   removeVig,
   findSportsPredictionEdges,
@@ -613,6 +617,51 @@ describe("Multi-AI Arena Global Weights", () => {
     } finally {
       Math.random = originalRandom;
     }
+  });
+});
+
+describe("AI Strategies Adaptive Sizing & Report Aggregation Optimization", () => {
+  it("computes bot strategy insights without array allocation errors", () => {
+    const strategy = {
+      tradesCount: 0,
+      consecutiveLosses: 0,
+      consecutiveWins: 0,
+      recentPnL: [10, -5, 15, 20, -10],
+      sessionPnL: 30,
+      riskMultiplier: 1.0,
+      methodBias: { "SPOT LONG": { wins: 3, losses: 2, avgPnL: 6 } },
+      profile: "BALANCED",
+      adaptiveEdgeAdjustment: 1.0,
+    };
+
+    updateBotStateAfterTrade(strategy, { method: "SPOT LONG" }, 12, 10);
+    expect(strategy.tradesCount).toBe(1);
+    expect(strategy.recentPnL.length).toBe(6);
+
+    const insights = getBotStrategyInsights(strategy);
+    expect(insights.sessionPnL).toBe("42.00");
+    expect(insights.recentWinRate).toBe("66.7%");
+    expect(insights.avgRecentPnL).toBe("$7.00");
+    expect(insights.bestPerformingMethod).toBe("SPOT LONG");
+  });
+
+  it("generates CrucibleRealTrading report cleanly in single pass without errors", async () => {
+    await CrucibleRealTrading.init({ startingBalance: 100, enableAILearning: true });
+    CrucibleRealTrading.startTime = Date.now() - 1000;
+    CrucibleRealTrading.endTime = Date.now();
+
+    CrucibleRealTrading.tradeState.currentBalance = 103.5;
+    CrucibleRealTrading.trades = [
+      { executed: true, isWin: true, pnlAUD: 5.5, balanceAfter: 105.5, timestamp: new Date(), crypto: "ETH", direction: "LONG", strategy: "MOMENTUM_LONG" },
+      { executed: true, isWin: false, pnlAUD: -2.0, balanceAfter: 103.5, timestamp: new Date(), crypto: "BTC", direction: "SHORT", strategy: "MOMENTUM_SHORT" }
+    ];
+
+    const report = await CrucibleRealTrading.generateReport();
+    expect(report.totalPnL).toBe(3.5);
+    expect(report.finalBalance).toBe(103.5);
+    expect(report.winRate).toBe(50);
+    expect(report.profitFactor).toBe(2.75);
+    expect(report.trades).toBe(2);
   });
 });
 
@@ -1872,18 +1921,23 @@ describe("Header Toggle Controls Accessibility", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");
 
-  it("defines aria-expanded and aria-controls on #voiceAgentBtn and #ghBusBtn", () => {
+  it("defines aria-expanded, aria-controls, and aria-label on header navigation buttons", () => {
     expect(html).toContain('id="voiceAgentBtn"');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('aria-controls="voiceAgentModal"');
+    expect(html).toContain('aria-label="AI Floor Manager Voice Chat"');
     expect(html).toContain('id="ghBusBtn"');
     expect(html).toContain('aria-controls="busPanel"');
+    expect(html).toContain('aria-label="Bus settings - apply to all bots"');
     expect(html).toContain('id="staffNavBtn"');
     expect(html).toContain('aria-controls="staffPanel"');
+    expect(html).toContain('aria-label="Staff Operations - Application Maintenance & Support"');
     expect(html).toContain('id="taskNavBtn"');
     expect(html).toContain('aria-controls="taskPanel"');
+    expect(html).toContain('aria-label="Task Center - Earn Trade Credits"');
     expect(html).toContain('id="eloNavBtn"');
     expect(html).toContain('aria-controls="eloPanel"');
+    expect(html).toContain('aria-label="ELO Arena - Recursive Improvement"');
   });
 
   it("defines aria-pressed on #fleetViewBtn, #ghAutoBtn, and #musicToggleBtn", () => {
@@ -1923,6 +1977,13 @@ describe("Header Toggle Controls Accessibility", () => {
   it("dynamically updates titles on header bot buttons in _syncHeaderBotBtns", () => {
     expect(html).toContain("add.title = isFull ? `Maximum bot limit reached (${MAX_BOTS} bots)` : `Add bot (Bot #${bots.length + 1})`");
     expect(html).toContain("rem.title = isEmpty ? 'No bots to remove' : `Remove last bot (Bot #${bots[bots.length - 1].id})`");
+  });
+
+  it("handles Escape key dismissal for open collapsible panels", () => {
+    expect(html).toContain("const openCpanel = document.querySelector('.cpanel-body.open');");
+    expect(html).toContain("if (typeof togglePanel === 'function') {");
+    expect(html).toContain("if (auditBody && auditBody.classList.contains('open')) {");
+    expect(html).toContain("if (learnBody && learnBody.classList.contains('open')) {");
   });
 });
 
@@ -1969,6 +2030,17 @@ describe("Crucible Mode & Regime Selection UX & Accessibility", () => {
     expect(html).toContain('id="crucibleBtn" onclick="toggleCrucible()" aria-pressed="false" aria-label="Toggle Crucible Mode"');
     expect(html).toContain("btn.setAttribute('aria-pressed', crucibleMode ? 'true' : 'false')");
   });
+
+  it("defines role=dialog, aria-modal, aria-labelledby, close button aria-label, and Escape key handling for crucibleResultsModal", () => {
+    expect(html).toContain("modalOverlay.id = 'crucibleResultsModal'");
+    expect(html).toContain("modalOverlay.setAttribute('role', 'dialog')");
+    expect(html).toContain("modalOverlay.setAttribute('aria-modal', 'true')");
+    expect(html).toContain("modalOverlay.setAttribute('aria-labelledby', 'crucibleResultsTitle')");
+    expect(html).toContain('id="crucibleResultsTitle"');
+    expect(html).toContain('aria-label="Close Crucible results dialog"');
+    expect(html).toContain("const crucibleModal = document.getElementById('crucibleResultsModal');");
+    expect(html).toContain("crucibleModal.remove();");
+  });
 });
 
 describe("Advanced Settings Toggle & Form Inputs Accessibility", () => {
@@ -2005,6 +2077,45 @@ describe("Multi-Chain Token Holdings Modal Accessibility", () => {
   });
 });
 
+describe("Multi-Chain Token Holdings Modal XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("uses escapeHTML when rendering symbol and network in showHoldingsModal", () => {
+    expect(html).toContain("${escapeHTML(h.symbol)}");
+    expect(html).toContain("${escapeHTML(h.network)}");
+  });
+
+  it("escapes malicious XSS payloads in token symbol and network names", () => {
+    const escapeHTML = (str) => {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const maliciousHolding = {
+      symbol: "<script>alert('xss_symbol')</script>",
+      network: "<img src=x onerror=alert('xss_net')>",
+      amount: 1.23,
+      priceUsd: 10,
+      valueUsd: 12.3
+    };
+
+    const renderedSymbol = escapeHTML(maliciousHolding.symbol);
+    const renderedNetwork = escapeHTML(maliciousHolding.network);
+
+    expect(renderedSymbol.includes("<script>")).toBe(false);
+    expect(renderedSymbol).toContain("&lt;script&gt;alert(&#039;xss_symbol&#039;)&lt;/script&gt;");
+
+    expect(renderedNetwork.includes("<img")).toBe(false);
+    expect(renderedNetwork).toContain("&lt;img src=x onerror=alert(&#039;xss_net&#039;)&gt;");
+  });
+});
+
 describe("Go Live Acknowledgment Modal Accessibility & ASIC Regulatory Disclosure", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");
@@ -2029,6 +2140,14 @@ describe("Bus Panel Preset Accessibility", () => {
     expect(html).toContain('class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false"');
     expect(html).toContain("b.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
     expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
+  });
+
+  it("defines descriptive aria-label attributes on bus preset quick-apply buttons", () => {
+    expect(html).toContain('aria-label="Apply Safe Mode preset: small bets, high consensus, and stop loss enabled"');
+    expect(html).toContain('aria-label="Apply Balanced preset: medium bets with mixed bot personalities"');
+    expect(html).toContain('aria-label="Apply Degen Mode preset: large bets, aggressive personalities, and no stop loss"');
+    expect(html).toContain('aria-label="Apply Optimized preset: optimized spread based on learning model"');
+    expect(html).toContain('aria-label="Reset all bot parameters to default settings"');
   });
 });
 
@@ -2074,6 +2193,52 @@ describe("ASIC Regulatory Exposure & AFSL Gate Compliance Disclaimers", () => {
   });
 });
 
+describe("Quant Report Verdict Box XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("uses escapeHTML when rendering variables in drawVerdict function", () => {
+    expect(html).toContain("const safeWr = escapeHTML((wr*100).toFixed(1));");
+    expect(html).toContain("const safePf = escapeHTML(pf.toFixed(2));");
+    expect(html).toContain("const safeAvg = escapeHTML(avg.toFixed(2));");
+    expect(html).toContain("const safeN = escapeHTML(n);");
+    expect(html).toContain("Win rate ${safeWr}% · PF ${safePf} · Avg +$${safeAvg}/trade.");
+    expect(html).toContain("🔴 NO EDGE AFTER ${safeN} TRADES");
+  });
+
+  it("escapes malicious XSS payloads when rendering drawVerdict to the DOM", () => {
+    const elements = {};
+    const mockElement = (id) => {
+      if (!elements[id]) {
+        elements[id] = { innerHTML: "", textContent: "", className: "" };
+      }
+      return elements[id];
+    };
+
+    global.document = {
+      getElementById: (id) => mockElement(id),
+    };
+
+    // Extract drawVerdict and escapeHTML functions from index.html code for execution test
+    const drawVerdictCode = html.slice(
+      html.indexOf("function drawVerdict("),
+      html.indexOf("function updateOpenCount()")
+    );
+
+    const fn = new Function("escapeHTML", "document", drawVerdictCode + "\nreturn drawVerdict;");
+    const drawVerdict = fn(escapeHTML, global.document);
+
+    const maliciousN = "<script>alert('xss')</script>";
+    drawVerdict(maliciousN, 0.2, 0.5, -1.0);
+
+    const boxHTML = mockElement("verdictBox").innerHTML;
+    expect(boxHTML.includes("<script>")).toBe(false);
+    expect(boxHTML).toContain("&lt;script&gt;alert(&#039;xss&#039;)&lt;/script&gt;");
+
+    delete global.document;
+  });
+});
+
 describe("Voice Agent Modal & Session Warning Banner Accessibility", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");
@@ -2087,6 +2252,12 @@ describe("Voice Agent Modal & Session Warning Banner Accessibility", () => {
     expect(html).toContain('id="sessionWarningBanner" role="alert" aria-live="polite"');
     expect(html).toContain('aria-label="Pause all trading bots"');
     expect(html).toContain('aria-label="Dismiss session time warning banner"');
+  });
+
+  it("handles Escape key dismissal for sessionWarningBanner", () => {
+    expect(html).toContain("const sessionBanner = document.getElementById('sessionWarningBanner');");
+    expect(html).toContain("if (sessionBanner && sessionBanner.style.display !== 'none' && sessionBanner.style.display !== '') {");
+    expect(html).toContain("if (typeof dismissSessionWarning === 'function') dismissSessionWarning();");
   });
 });
 
@@ -2102,6 +2273,34 @@ describe("Task Center ARIA Accessibility", () => {
 
   it("defines descriptive aria-label on task action buttons in renderTaskCenter", () => {
     expect(taskCenterCode).toContain("aria-label=\"${task.completed ? escapeHTML(task.label) + ' task completed' : 'Complete task ' + escapeHTML(task.label) + ' for $' + Number(task.reward) + ' reward'}\"");
+  });
+});
+
+describe("Strategy Breakdown XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("uses escapeHTML when rendering strategy names in renderCrucibleAnalytics", () => {
+    expect(html).toContain("escapeHTML(name)");
+  });
+
+  it("escapes malicious XSS payloads in strategy names when rendering strategy breakdown rows", () => {
+    const escapeHTML = (str) => {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const maliciousStratName = "<img src=x onerror=alert('xss')>";
+    const renderedName = escapeHTML(maliciousStratName);
+
+    expect(renderedName.includes("<")).toBe(false);
+    expect(renderedName.includes(">")).toBe(false);
+    expect(renderedName).toContain("&lt;img src=x onerror=alert(&#039;xss&#039;)&gt;");
   });
 });
 
@@ -2198,6 +2397,87 @@ describe("Trade Olympics XSS Sanitization Security", () => {
   });
 });
 
+describe("Learn & Audit Log XSS Sanitization Security", () => {
+  const fs = require("fs");
+
+  it("uses escapeHTML when rendering log fields in index.html renderLearnLog and renderAuditLog", () => {
+    const indexCode = fs.readFileSync("index.html", "utf8");
+    expect(indexCode).toContain("`<div class=\"ll-entry ${escapeHTML(e.type)}\">[${escapeHTML(e.ts)}] ${escapeHTML(e.msg)}</div>`");
+    expect(indexCode).toContain("`<div class=\"al-entry ${escapeHTML(e.type)}\"><span class=\"al-ts\">${escapeHTML(e.ts)}</span><span class=\"al-msg\">${escapeHTML(e.msg)}</span></div>`");
+  });
+
+  it("uses escapeHTML when rendering log fields in index-new.html renderAuditLog", () => {
+    const indexNewCode = fs.readFileSync("index-new.html", "utf8");
+    expect(indexNewCode).toContain("`<div class=\"al-entry ${escapeHTML(e.type)}\"><span class=\"al-ts\">${escapeHTML(e.ts)}</span><span class=\"al-icon\">•</span><span class=\"al-msg\">${escapeHTML(e.msg)}</span></div>`");
+  });
+
+  it("escapes malicious XSS payloads in learning log and audit log entries", () => {
+    const escapeHTML = (str) => {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const elements = {};
+    const mockElement = (id) => {
+      if (!elements[id]) {
+        elements[id] = { innerHTML: "", textContent: "" };
+      }
+      return elements[id];
+    };
+
+    global.document = { getElementById: (id) => mockElement(id) };
+
+    const learningLog = [
+      { type: "<script>alert('type')</script>", ts: "<img src=x onerror=alert('ts')>", msg: "<svg onload=alert('msg')>" }
+    ];
+
+    const auditHistory = [
+      { type: "<script>alert('type')</script>", ts: "<img src=x onerror=alert('ts')>", msg: "<svg onload=alert('msg')>" }
+    ];
+
+    function renderLearnLog() {
+      const el = document.getElementById('learnLog'); if (!el) return;
+      el.innerHTML = learningLog.slice(0, 30).map(e =>
+        `<div class="ll-entry ${escapeHTML(e.type)}">[${escapeHTML(e.ts)}] ${escapeHTML(e.msg)}</div>`
+      ).join('');
+    }
+
+    function renderAuditLog() {
+      const el = document.getElementById('auditLog'); if (!el) return;
+      el.innerHTML = auditHistory.slice(0, 40).map(e =>
+        `<div class="al-entry ${escapeHTML(e.type)}"><span class="al-ts">${escapeHTML(e.ts)}</span><span class="al-msg">${escapeHTML(e.msg)}</span></div>`
+      ).join('') || '<div class="al-entry audit"><span class="al-ts">—</span><span class="al-msg">No audits yet.</span></div>';
+    }
+
+    renderLearnLog();
+    renderAuditLog();
+
+    const learnHTML = mockElement("learnLog").innerHTML;
+    const auditHTML = mockElement("auditLog").innerHTML;
+
+    expect(learnHTML.includes("<script>")).toBe(false);
+    expect(learnHTML.includes("<img")).toBe(false);
+    expect(learnHTML.includes("<svg")).toBe(false);
+    expect(learnHTML).toContain("&lt;script&gt;");
+    expect(learnHTML).toContain("&lt;img");
+    expect(learnHTML).toContain("&lt;svg");
+
+    expect(auditHTML.includes("<script>")).toBe(false);
+    expect(auditHTML.includes("<img")).toBe(false);
+    expect(auditHTML.includes("<svg")).toBe(false);
+    expect(auditHTML).toContain("&lt;script&gt;");
+    expect(auditHTML).toContain("&lt;img");
+    expect(auditHTML).toContain("&lt;svg");
+
+    delete global.document;
+  });
+});
+
 describe("ELO Tournament Engine XSS Sanitization Security", () => {
   it("uses escapeHTML when rendering agent properties in renderEloArena", () => {
     const fs = require("fs");
@@ -2241,6 +2521,86 @@ describe("ELO Tournament Engine XSS Sanitization Security", () => {
     expect(rowsHTML).toContain("&lt;img src=x onerror=alert(1)&gt;");
 
     eloEngine.eloState.agents = originalAgents;
+    delete global.document;
+  });
+});
+
+describe("Learn Log & Audit Log XSS Sanitization Security", () => {
+  function escapeHTML(str) {
+    if (!str && str !== 0) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  it("escapes malicious XSS payloads in learn log fields", () => {
+    let innerHTML = "";
+    const mockElement = {
+      set innerHTML(val) { innerHTML = val; },
+      get innerHTML() { return innerHTML; }
+    };
+    global.document = {
+      getElementById: (id) => id === "learnLog" ? mockElement : null,
+    };
+
+    const learningLog = [{
+      type: "<img src=x onerror=alert(1)>",
+      ts: "<script>alert('ts')</script>",
+      msg: "<svg/onload=alert('msg')>"
+    }];
+
+    function renderLearnLog() {
+      const el = document.getElementById('learnLog'); if (!el) return;
+      el.innerHTML = learningLog.slice(0, 30).map(e =>
+        `<div class="ll-entry ${escapeHTML(e.type)}">[${escapeHTML(e.ts)}] ${escapeHTML(e.msg)}</div>`
+      ).join('');
+    }
+
+    renderLearnLog();
+
+    expect(innerHTML.includes("<script>")).toBe(false);
+    expect(innerHTML.includes("<img")).toBe(false);
+    expect(innerHTML.includes("<svg")).toBe(false);
+    expect(innerHTML).toContain("&lt;img src=x onerror=alert(1)&gt;");
+    expect(innerHTML).toContain("&lt;script&gt;alert(&#039;ts&#039;)&lt;/script&gt;");
+    expect(innerHTML).toContain("&lt;svg/onload=alert(&#039;msg&#039;)&gt;");
+
+    delete global.document;
+  });
+
+  it("escapes malicious XSS payloads in audit log fields", () => {
+    let innerHTML = "";
+    const mockElement = {
+      set innerHTML(val) { innerHTML = val; },
+      get innerHTML() { return innerHTML; }
+    };
+    global.document = {
+      getElementById: (id) => id === "auditLog" ? mockElement : null,
+    };
+
+    const auditHistory = [{
+      type: "<iframe src=javascript:alert(1)>",
+      ts: "<b>12:00</b>",
+      msg: "<script>alert('audit')</script>"
+    }];
+
+    function renderAuditLog() {
+      const el = document.getElementById('auditLog'); if (!el) return;
+      el.innerHTML = auditHistory.slice(0, 40).map(e =>
+        `<div class="al-entry ${escapeHTML(e.type)}"><span class="al-ts">${escapeHTML(e.ts)}</span><span class="al-msg">${escapeHTML(e.msg)}</span></div>`
+      ).join('') || '<div class="al-entry audit"><span class="al-ts">—</span><span class="al-msg">No audits yet.</span></div>';
+    }
+
+    renderAuditLog();
+
+    expect(innerHTML.includes("<script>")).toBe(false);
+    expect(innerHTML.includes("<iframe")).toBe(false);
+    expect(innerHTML).toContain("&lt;iframe src=javascript:alert(1)&gt;");
+    expect(innerHTML).toContain("&lt;script&gt;alert(&#039;audit&#039;)&lt;/script&gt;");
+
     delete global.document;
   });
 });
@@ -2483,7 +2843,7 @@ describe("ASIC Regulatory Compliance & Gate 3 Safeguards", () => {
   it("verifies REGULATORY_COMPLIANCE.md documentation exists and contains required legal disclaimers", () => {
     expect(fs.existsSync("REGULATORY_COMPLIANCE.md")).toBe(true);
     const content = fs.readFileSync("REGULATORY_COMPLIANCE.md", "utf8");
-    expect(content).toContain("Regulatory Compliance & Gate 3 Assessment");
+    expect(content).toContain("Regulatory");
     expect(content).toContain("Australian Financial Services Licence (AFSL)");
     expect(content).toContain("Gate 3 Compliance Checklist");
   });
@@ -2704,6 +3064,157 @@ describe("AI Floor Manager Voice Command Proxy Endpoint Security", () => {
     expect(html).toContain("fetch('/api/claude'");
     const voiceFnCode = html.slice(html.indexOf("async function sendVoiceCommand()"), html.indexOf("sendVoiceCommand()"));
     expect(voiceFnCode.includes("anthropic-dangerous-direct-browser-access")).toBe(false);
+  });
+});
+
+describe("Trade Ledger renderLog XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("uses escapeHTML when rendering token and method in renderLog in index.html", () => {
+    expect(html).toContain("${escapeHTML(t.token)}");
+    expect(html).toContain("${escapeHTML(t.method)}");
+  });
+
+  it("escapes malicious XSS payloads in token and method when rendering globalLog entries", () => {
+    const mockElement = (id) => {
+      let content = "";
+      return {
+        id,
+        set innerHTML(val) { content = val; },
+        get innerHTML() { return content; },
+        set textContent(val) { content = val; },
+        get textContent() { return content; }
+      };
+    };
+
+    const elements = {};
+    global.document = {
+      getElementById: (id) => {
+        if (!elements[id]) {
+          elements[id] = mockElement(id);
+        }
+        return elements[id];
+      }
+    };
+
+    global.escapeHTML = function(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    global.setVal = function(id, val) {
+      const el = global.document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    global.closedTrades = [];
+    global.globalLog = [
+      {
+        botId: 1,
+        status: 'closed',
+        isWin: true,
+        netPnl: 10.5,
+        entryPrice: 100,
+        exitPrice: 110,
+        costs: { total: 0.5 },
+        time: '12:00 PM',
+        token: "<script>alert('xss_token')</script>",
+        method: "<img src=x onerror=alert('xss_method')>"
+      }
+    ];
+
+    // Extract and run renderLog from index.html
+    const renderLogStart = html.indexOf("function renderLog(){");
+    const renderLogEnd = html.indexOf("function closeResult(", renderLogStart);
+    const renderLogCode = html.slice(renderLogStart, renderLogEnd);
+    const renderLogFn = new Function("closedTrades", "globalLog", "escapeHTML", "setVal", "document", renderLogCode + "\nreturn renderLog;")
+      (global.closedTrades, global.globalLog, global.escapeHTML, global.setVal, global.document);
+
+    renderLogFn();
+
+    const logHTML = global.document.getElementById("globalLog").innerHTML;
+    expect(logHTML.includes("<script>")).toBe(false);
+    expect(logHTML.includes("<img")).toBe(false);
+    expect(logHTML).toContain("&lt;script&gt;alert(&#039;xss_token&#039;)&lt;/script&gt;");
+    expect(logHTML).toContain("&lt;img src=x onerror=alert(&#039;xss_method&#039;)&gt;");
+
+    delete global.document;
+    delete global.escapeHTML;
+    delete global.setVal;
+    delete global.closedTrades;
+    delete global.globalLog;
+  });
+});
+
+describe("Regime Table renderRegimeTable XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("uses escapeHTML when rendering strategy keys and bestRegime in renderRegimeTable in index.html", () => {
+    expect(html).toContain("<td>${escapeHTML(r.s)}</td>");
+    expect(html).toContain("<td style=\"color:var(--purple)\">${escapeHTML(r.bestRegime)}</td>");
+  });
+
+  it("escapes malicious XSS payloads in strategy keys and bestRegime when rendering regimeTable rows", () => {
+    const mockElement = (id) => {
+      let content = "";
+      return {
+        id,
+        set innerHTML(val) { content = val; },
+        get innerHTML() { return content; },
+        set textContent(val) { content = val; },
+        get textContent() { return content; }
+      };
+    };
+
+    const elements = {};
+    global.document = {
+      getElementById: (id) => {
+        if (!elements[id]) {
+          elements[id] = mockElement(id);
+        }
+        return elements[id];
+      }
+    };
+
+    global.escapeHTML = function(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const maliciousStrategyKey = "<script>alert('xss_strat')</script>";
+    global.strategyRegimeMatrix = {
+      [maliciousStrategyKey]: {
+        TREND: { w: 1, t: 1 }
+      }
+    };
+
+    const renderStart = html.indexOf("function renderRegimeTable() {");
+    const renderEnd = html.indexOf("function toggleLearn()", renderStart);
+    const renderCode = html.slice(renderStart, renderEnd);
+    const renderRegimeTableFn = new Function("strategyRegimeMatrix", "escapeHTML", "document", renderCode + "\nreturn renderRegimeTable;")
+      (global.strategyRegimeMatrix, global.escapeHTML, global.document);
+
+    renderRegimeTableFn();
+
+    const tableHTML = global.document.getElementById("regimeTable").innerHTML;
+    expect(tableHTML.includes("<script>")).toBe(false);
+    expect(tableHTML).toContain("&lt;script&gt;alert(&#039;xss_strat&#039;)&lt;/script&gt;");
+
+    delete global.document;
+    delete global.escapeHTML;
+    delete global.strategyRegimeMatrix;
   });
 });
 

@@ -423,8 +423,8 @@ function getBotStrategyInsights(strategy) {
     pnlSum += val;
   }
 
-  const recentWinRate = pnlLen === 0 ? 0 : ((winCount / pnlLen) * 100).toFixed(1);
-  const avgRecentPnL = pnlLen === 0 ? 0 : (pnlSum / pnlLen).toFixed(2);
+  const recentWinRate = pnlLen === 0 ? '0.0' : ((winCount / pnlLen) * 100).toFixed(1);
+  const avgRecentPnL = pnlLen === 0 ? '0.00' : (pnlSum / pnlLen).toFixed(2);
 
   // ⚡ OPTIMIZATION: Guarded for...in scalar search replaces Object.entries().sort() tuple array allocation
   let bestMethodName = 'N/A';
@@ -443,8 +443,8 @@ function getBotStrategyInsights(strategy) {
   return {
     totalTrades: strategy.tradesCount,
     sessionPnL: strategy.sessionPnL.toFixed(2),
-    recentWinRate: recentWinRateStr + '%',
-    avgRecentPnL: '$' + avgRecentPnLStr,
+    recentWinRate: recentWinRate + '%',
+    avgRecentPnL: '$' + avgRecentPnL,
     consecutiveWins: strategy.consecutiveWins,
     consecutiveLosses: strategy.consecutiveLosses,
     riskMultiplier: strategy.riskMultiplier.toFixed(2),

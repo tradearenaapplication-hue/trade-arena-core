@@ -42,3 +42,8 @@
 **Vulnerability:** In `index.html`, `renderLearnLog` and `renderAuditLog` interpolated unescaped entry properties (`e.type`, `e.ts`, `e.msg`) directly into `innerHTML` strings.
 **Learning:** Persisted or imported log entries (such as model learning logs and audit histories restored from local storage or JSON imports) can act as Stored/DOM XSS sinks if dynamic properties like `type`, `ts`, or `msg` are interpolated without escaping.
 **Prevention:** Wrap all dynamic properties of log entries with `escapeHTML()` when rendering templates into `innerHTML` sinks.
+
+## 2026-10-20 - [HIGH] DOM XSS Vulnerability in Coinbase Wallet Login Error Handler
+**Vulnerability:** In `index.html:loginCoinbase`, error messages (`e.message`) from wallet extensions or network rejections were interpolated directly into `s.innerHTML` without sanitization.
+**Learning:** Exception messages thrown by external objects or wallet providers can contain user-controlled or injected HTML/JS payloads that execute if assigned directly to `innerHTML`.
+**Prevention:** Always wrap dynamic error properties (`e?.message`) with `escapeHTML()` before assigning to `innerHTML` elements.

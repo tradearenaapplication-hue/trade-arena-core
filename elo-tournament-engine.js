@@ -195,9 +195,21 @@ function renderEloArena() {
     const body = typeof document !== 'undefined' ? document.getElementById('eloBody') : null;
     if (body && body.classList && typeof body.classList.contains === 'function' && !body.classList.contains('open')) return;
 
-    const sorted = Object.entries(eloState.agents).sort((a, b) => b[1].rating - a[1].rating);
+    // ⚡ OPTIMIZATION: Use key array collect & inline loop accumulation to eliminate Object.entries tuple allocations and .map().join() overhead
+    const keys = [];
+    for (const key in eloState.agents) {
+        if (eloState.agents.hasOwnProperty(key)) {
+            keys.push(key);
+        }
+    }
+    keys.sort((a, b) => (eloState.agents[b]?.rating || 0) - (eloState.agents[a]?.rating || 0));
 
-    container.innerHTML = sorted.map(([key, data]) => {
+    let html = '';
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const data = eloState.agents[key];
+        if (!data) continue;
+
         const wr = data.matches > 0 ? (data.wins / data.matches * 100).toFixed(1) : 0;
         const rawRank = data.rating > 1800 ? 'GRANDMASTER' : data.rating > 1500 ? 'ELITE' : data.rating > 1200 ? 'PRO' : 'NOVICE';
         const rankColor = data.rating > 1800 ? 'var(--purple)' : data.rating > 1500 ? 'var(--cyan)' : data.rating > 1200 ? 'var(--green)' : 'var(--dim)';
@@ -207,7 +219,7 @@ function renderEloArena() {
         const safeRank = escapeHTML(rawRank);
         const safeRating = Math.round(data.rating || 0);
 
-        return `
+        html += `
             <div class="elo-row" style="display:flex; align-items:center; gap:10px; padding:8px; border-bottom:1px solid var(--border)">
                 <div style="font-size:18px">${safeIcon}</div>
                 <div style="flex:1">
@@ -220,7 +232,9 @@ function renderEloArena() {
                 </div>
             </div>
         `;
-    }).join('');
+    }
+
+    container.innerHTML = html;
 }
 
 // Global Exports

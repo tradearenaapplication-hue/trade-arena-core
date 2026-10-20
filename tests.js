@@ -576,6 +576,26 @@ describe("Self-Evolving ELO Tournament System", () => {
   });
 });
 
+describe("AI Arena Tournament System Optimization & Insights", () => {
+  const { getArenaInsights, arenaState } = require("./ai-arena.js");
+
+  it("computes model performance insights cleanly without Object.entries array allocation errors", () => {
+    arenaState.modelPerformance = {
+      ANALYST: { wins: 12, losses: 5, accuracy: "70.6" },
+      TRADER: { wins: 18, losses: 9, accuracy: "66.7" },
+      STRATEGIST: { wins: 15, losses: 6, accuracy: "71.4" },
+      FALLBACK: { wins: 2, losses: 4, accuracy: "33.3" }
+    };
+
+    const insights = getArenaInsights();
+    expect(insights.models.length).toBe(4);
+    expect(insights.bestModel).toBe("STRATEGIST");
+    expect(insights.models[0].name).toBe("STRATEGIST");
+    expect(insights.models[0].accuracy).toBe(71.4);
+    expect(insights.models[0].wins).toBe(15);
+  });
+});
+
 describe("Multi-AI Arena Global Weights", () => {
   it("loads ELO model metadata for weighted model selection", () => {
     expect(getModelConfig("gpt-5-turbo").elo).toBe(1400);

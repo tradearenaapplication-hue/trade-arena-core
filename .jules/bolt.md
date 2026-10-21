@@ -37,3 +37,7 @@
 ## 2027-01-14 - Object Entries and Array Chaining in ELO Tournament Arena UI Updates
 **Learning:** `renderEloArena()` in `elo-tournament-engine.js` was allocating key-value tuple arrays on every render pass via `Object.entries(eloState.agents)` and chaining `.map().join('')` to format agent status HTML rows, generating heap churn and garbage collection pressure during continuous ELO tournament updates.
 **Action:** Replace `Object.entries()` array allocations and `.map().join()` method chaining in UI render loops with key collection arrays and direct string accumulation (`+=`) in a scalar `for` loop.
+
+## 2027-01-28 - Cascading Tier Checks and Unindexed Property Lookups in Multi-AI Arena Model Stats
+**Learning:** `ARENA_COMPETITION.initializeModel()` and `getModelElo()` in `multi-ai-arena.js` were executing cascading `LM_ARENA_MODELS.TIER_*` property evaluations and `for...in` loops across model tier objects on every model initialization and ELO query.
+**Action:** Leverage pre-built O(1) model configuration lookup maps (`getModelConfig(modelName)`) to retrieve model metadata and ELO ratings directly without tier iteration or cascading property chains.

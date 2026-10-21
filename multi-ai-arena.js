@@ -346,15 +346,13 @@ const ARENA_COMPETITION = {
   modelStats: {},
 
   // Initialize model stats
+  // ⚡ OPTIMIZATION: Uses O(1) getModelConfig lookup instead of cascading tier checks and for...in loops
   initializeModel(modelName, botId, botProfile) {
     if (!this.modelStats[modelName]) {
+      const cfg = getModelConfig(modelName);
       this.modelStats[modelName] = {
         name: modelName,
-        provider: LM_ARENA_MODELS.TIER_1[modelName]?.provider ||
-                 LM_ARENA_MODELS.TIER_2[modelName]?.provider ||
-                 LM_ARENA_MODELS.TIER_3[modelName]?.provider ||
-                 LM_ARENA_MODELS.TIER_4[modelName]?.provider ||
-                 'Unknown',
+        provider: cfg?.provider || 'Unknown',
         baseTrades: 0,
         wins: 0,
         losses: 0,
@@ -363,7 +361,7 @@ const ARENA_COMPETITION = {
         successRate: 0,
         botIds: [],
         winRate: 0,
-        eloRating: this.getModelElo(modelName),
+        eloRating: cfg?.elo || 1000,
         trades: []
       };
     }
@@ -373,13 +371,9 @@ const ARENA_COMPETITION = {
   },
 
   // Get model ELO rating
+  // ⚡ OPTIMIZATION: Uses O(1) getModelConfig lookup instead of for...in loop over tiers
   getModelElo(modelName) {
-    for (const tier in LM_ARENA_MODELS) {
-      if (LM_ARENA_MODELS[tier][modelName]) {
-        return LM_ARENA_MODELS[tier][modelName].elo;
-      }
-    }
-    return 1000; // Default
+    return getModelConfig(modelName)?.elo || 1000;
   },
 
   // Record trade result

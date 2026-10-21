@@ -255,10 +255,13 @@ function generateScalperDecision(botId, marketData, bet, botStrategy) {
 function generateTrendDecision(botId, marketData, bet, botStrategy) {
   // Trend followers: Momentum riders, follow market direction
 
+  // ⚡ OPTIMIZATION: Indexed loop over marketData preserving full dataset accumulation
   let sumMom = 0;
   if (Array.isArray(marketData)) {
-    for (let i = 0; i < marketData.length; i++) {
-      sumMom += (marketData[i]?.price_change_percentage_24h || 0);
+    const len = marketData.length;
+    for (let i = 0; i < len; i++) {
+      const c = marketData[i];
+      if (c) sumMom += (c.price_change_percentage_24h || 0);
     }
   }
   const momentum = (sumMom / 8) || 0;
@@ -317,10 +320,13 @@ function generateTrendDecision(botId, marketData, bet, botStrategy) {
 function generateAggressiveDecision(botId, marketData, bet, botStrategy) {
   // Aggressive: High risk, high reward, exploit volatility
 
+  // ⚡ OPTIMIZATION: Indexed loop over marketData preserving full dataset accumulation
   let sumVol = 0;
   if (Array.isArray(marketData)) {
-    for (let i = 0; i < marketData.length; i++) {
-      sumVol += Math.abs(marketData[i]?.price_change_percentage_24h || 0);
+    const len = marketData.length;
+    for (let i = 0; i < len; i++) {
+      const c = marketData[i];
+      if (c) sumVol += Math.abs(c.price_change_percentage_24h || 0);
     }
   }
   const volatility = (sumVol / 8) || 2;
@@ -384,10 +390,13 @@ function generateConservativeDecision(botId, marketData, bet, botStrategy) {
 function generateBalancedDecision(botId, marketData, bet, botStrategy) {
   // Balanced: Mix of everything, adapt to conditions
 
+  // ⚡ OPTIMIZATION: Indexed loop over marketData preserving full dataset accumulation
   let sumVol = 0;
   if (Array.isArray(marketData)) {
-    for (let i = 0; i < marketData.length; i++) {
-      sumVol += Math.abs(marketData[i]?.price_change_percentage_24h || 0);
+    const len = marketData.length;
+    for (let i = 0; i < len; i++) {
+      const c = marketData[i];
+      if (c) sumVol += Math.abs(c.price_change_percentage_24h || 0);
     }
   }
   const volatility = (sumVol / 8) || 2;

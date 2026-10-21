@@ -55,7 +55,7 @@ app.post('/api/openai', aiLimiter, async (req, res) => {
       body: JSON.stringify(req.body)
     });
     const data = await response.json();
-    res.json(data);
+    res.status(response.status).json(data);
   } catch (error) {
     console.error('Proxy OpenAI error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -81,7 +81,7 @@ app.post('/api/gemini', aiLimiter, async (req, res) => {
       })
     });
     const data = await response.json();
-    res.json(data);
+    res.status(response.status).json(data);
   } catch (error) {
     console.error('Proxy Gemini error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -151,12 +151,11 @@ app.post('/api/maintenance/patch', maintenanceLimiter, async (req, res) => {
     if (!filepath || typeof filepath !== 'string') {
       return res.status(400).json({ error: 'Invalid filepath' });
     }
-    const fullPath = path.resolve(__dirname, filepath);
-    const relative = path.relative(__dirname, fullPath);
-    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    if (!isPathSafe(__dirname, filepath)) {
       return res.status(403).json({ error: 'Access denied: Invalid file path' });
     }
-    if (!fs.existsSync(fullPath)) {
+    const fullPath = path.resolve(__dirname, filepath);
+    if (!fs.existsSync(fullPath) || fs.statSync(fullPath).isDirectory()) {
       return res.status(404).json({ error: 'File not found' });
     }
 

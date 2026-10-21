@@ -42,3 +42,8 @@
 **Vulnerability:** In `index.html`, `renderLearnLog` and `renderAuditLog` interpolated unescaped entry properties (`e.type`, `e.ts`, `e.msg`) directly into `innerHTML` strings.
 **Learning:** Persisted or imported log entries (such as model learning logs and audit histories restored from local storage or JSON imports) can act as Stored/DOM XSS sinks if dynamic properties like `type`, `ts`, or `msg` are interpolated without escaping.
 **Prevention:** Wrap all dynamic properties of log entries with `escapeHTML()` when rendering templates into `innerHTML` sinks.
+
+## 2026-10-21 - [HIGH] Path Traversal & Directory Exposure in Maintenance Patch Endpoint
+**Vulnerability:** In `proxy.js`, `/api/maintenance/patch` validated `filepath` using `relative.startsWith('..') || path.isAbsolute(relative)`, which evaluates to `false` when target paths resolve to the root directory itself (e.g. `filepath = "."` or `filepath = "../trade-arena"`), exposing directory targets and bypassing path sanitization.
+**Learning:** Relative path string checking (such as `.startsWith('..')`) can produce empty string relative paths when input targets resolve to the base directory itself, bypassing naive checks. Custom path validation should be replaced with canonical prefix comparison (`isPathSafe`).
+**Prevention:** Always use canonical `isPathSafe` base directory prefix matching and verify `!fs.statSync(fullPath).isDirectory()` before handling filesystem operations on endpoints.

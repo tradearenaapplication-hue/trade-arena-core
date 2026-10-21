@@ -1703,6 +1703,88 @@ describe("Proxy Endpoint Security", () => {
     }
   });
 
+  it("rejects path traversal attempts on maintenance patch endpoint", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/maintenance/patch"
+    );
+    expect(Boolean(route)).toBe(true);
+
+    const traversalPayloads = [
+      { filepath: "../package.json" },
+      { filepath: "../../etc/passwd" },
+      { filepath: ".."},
+      { filepath: "../trade-arena" },
+      { filepath: "/etc/passwd" }
+    ];
+
+    for (const body of traversalPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const req = { body, ip: "127.0.0.102", headers: {}, app: proxyApp };
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; }
+      };
+
+      await route.route.stack[0].handle(req, res, async () => {
+        await route.route.stack[1].handle(req, res);
+      });
+
+      expect([403, 404]).toContain(statusCode);
+      expect(Boolean(jsonResponse.error)).toBe(true);
+    }
+  });
+
+  it("rejects directory targets on maintenance patch endpoint", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/maintenance/patch"
+    );
+
+    const dirPayloads = [
+      { filepath: "." },
+      { filepath: "src" },
+      { filepath: "./contracts" }
+    ];
+
+    for (const body of dirPayloads) {
+      let statusCode = 200;
+      let jsonResponse = null;
+      const req = { body, ip: "127.0.0.103", headers: {}, app: proxyApp };
+      const res = {
+        status: (code) => { statusCode = code; return res; },
+        json: (data) => { jsonResponse = data; return res; }
+      };
+
+      await route.route.stack[0].handle(req, res, async () => {
+        await route.route.stack[1].handle(req, res);
+      });
+
+      expect(statusCode).toBe(404);
+      expect(jsonResponse.error).toBe("File not found");
+    }
+  });
+
+  it("accepts valid relative file paths on maintenance patch endpoint", async () => {
+    const route = proxyApp._router.stack.find(
+      (layer) => layer.route && layer.route.path === "/api/maintenance/patch"
+    );
+
+    let statusCode = 200;
+    let jsonResponse = null;
+    const req = { body: { filepath: "server.js", patch: "diff", description: "test patch" }, ip: "127.0.0.104", headers: {}, app: proxyApp };
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; }
+    };
+
+    await route.route.stack[0].handle(req, res, async () => {
+      await route.route.stack[1].handle(req, res);
+    });
+
+    expect(statusCode).toBe(200);
+    expect(jsonResponse.success).toBe(true);
+  });
+
   it("returns generic error message on patch endpoint when an internal exception occurs", async () => {
     // Require proxy route logic test or simulate exception path
     const path = require("path");

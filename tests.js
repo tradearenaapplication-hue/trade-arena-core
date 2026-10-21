@@ -2251,6 +2251,16 @@ describe("Voice Agent Modal & Session Warning Banner Accessibility", () => {
     expect(html).toContain('id="vaTitle"');
   });
 
+  it("defines aria-label, aria-pressed, and focus management on voice agent and holdings modals", () => {
+    expect(html).toContain('id="vaListenBtn"');
+    expect(html).toContain('aria-label="Toggle voice listening mode"');
+    expect(html).toContain('aria-pressed="false"');
+    expect(html).toContain("document.getElementById('vaInput')?.focus()");
+    expect(html).toContain('id="holdingsCloseBtn"');
+    expect(html).toContain('aria-label="Close token holdings modal"');
+    expect(html).toContain("document.getElementById('holdingsCloseBtn')?.focus()");
+  });
+
   it("defines role=alert and aria-live=polite on #sessionWarningBanner", () => {
     expect(html).toContain('id="sessionWarningBanner" role="alert" aria-live="polite"');
     expect(html).toContain('aria-label="Pause all trading bots"');

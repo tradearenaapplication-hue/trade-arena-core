@@ -3223,10 +3223,11 @@ function showHoldingsModal() {
       <div style="max-height:300px;overflow-y:auto;margin-bottom:16px;">
         ${holdingsHtml}
       </div>
-      <button onclick="document.getElementById('holdingsModal').style.display='none'" style="width:100%;padding:10px;background:var(--cyan);border:none;border-radius:6px;color:#000;font-weight:bold;font-family:'Bungee',display;font-size:11px;cursor:pointer;">CLOSE</button>
+      <button id="holdingsCloseBtn" onclick="document.getElementById('holdingsModal').style.display='none'" aria-label="Close token holdings modal" title="Close token holdings modal" style="width:100%;padding:10px;background:var(--cyan);border:none;border-radius:6px;color:#000;font-weight:bold;font-family:'Bungee',display;font-size:11px;cursor:pointer;">CLOSE</button>
     </div>
   `;
   modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('holdingsCloseBtn')?.focus(), 50);
 }
 
 function setupApp({name,avatar,badge,address,provider}){
@@ -5726,7 +5727,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
   </div>
   <div class="va-input-area" style="flex-direction:column; gap:5px;">
-    <button id="vaListenBtn" onclick="window.GEMINI_VOICE.toggleListening()" style="width:100%; padding:10px; background:var(--cyan); border:none; border-radius:6px; font-family:'Bungee'; font-size:10px; cursor:pointer;">🎤 PUSH TO TALK</button>
+    <button id="vaListenBtn" onclick="window.GEMINI_VOICE.toggleListening()" aria-label="Toggle voice listening mode" aria-pressed="false" title="Push to talk voice listening mode" style="width:100%; padding:10px; background:var(--cyan); border:none; border-radius:6px; font-family:'Bungee'; font-size:10px; cursor:pointer;">🎤 PUSH TO TALK</button>
     <div style="display:flex; gap:8px; width:100%">
       <input type="text" class="va-input" id="vaInput" aria-label="Command the fleet" placeholder="Command the fleet..." onkeydown="if(event.key==='Enter') sendVoiceCommand()">
       <button class="va-send" onclick="sendVoiceCommand()" aria-label="Send voice text command" title="Send voice text command">SEND</button>
@@ -5743,6 +5744,11 @@ function toggleVoiceAgent() {
   if (btn) {
     btn.classList.toggle('open', isOpen);
     btn.setAttribute('aria-expanded', isOpen);
+  }
+  if (isOpen) {
+    setTimeout(() => document.getElementById('vaInput')?.focus(), 50);
+  } else if (btn) {
+    btn.focus();
   }
 }
 

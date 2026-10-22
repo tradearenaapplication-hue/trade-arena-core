@@ -42,3 +42,8 @@
 **Vulnerability:** In `index.html`, `renderLearnLog` and `renderAuditLog` interpolated unescaped entry properties (`e.type`, `e.ts`, `e.msg`) directly into `innerHTML` strings.
 **Learning:** Persisted or imported log entries (such as model learning logs and audit histories restored from local storage or JSON imports) can act as Stored/DOM XSS sinks if dynamic properties like `type`, `ts`, or `msg` are interpolated without escaping.
 **Prevention:** Wrap all dynamic properties of log entries with `escapeHTML()` when rendering templates into `innerHTML` sinks.
+
+## 2026-10-22 - [HIGH] DOM XSS Vulnerability in MoonPay Deposit Status Rendering
+**Vulnerability:** In `moonpay-client.js`, `handleDepositSuccess` interpolated unescaped deposit `amount` directly into `statusEl.innerHTML` template string without escaping HTML or validating numeric types.
+**Learning:** External webhook/SDK callbacks providing transaction metadata (like deposit amount strings) can serve as DOM XSS sinks when inserted directly into `innerHTML`. Passing non-numeric string values to numeric helper methods like `.toFixed()` also causes runtime type errors.
+**Prevention:** Define an `escapeHTML` helper in client integration modules, wrap dynamic variables before interpolating into HTML template strings, and sanitize/cast numeric amounts using `Number(amount) || 0`.

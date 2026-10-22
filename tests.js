@@ -3223,6 +3223,55 @@ describe("Regime Table renderRegimeTable XSS Sanitization Security", () => {
   });
 });
 
+describe("MoonPay Client Deposit Status XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const clientCode = fs.readFileSync("moonpay-client.js", "utf8");
+
+  it("defines escapeHTML and uses it when setting statusEl.innerHTML in handleDepositSuccess", () => {
+    expect(clientCode).toContain("function escapeHTML(");
+    expect(clientCode).toContain("statusEl.innerHTML = `✅ ${escapeHTML(amount)} USDC ready to trade!`;");
+  });
+
+  it("escapes malicious XSS payloads in deposit amount before rendering statusEl.innerHTML", () => {
+    const mockElement = (id) => {
+      let content = "";
+      return {
+        id,
+        set innerHTML(val) { content = val; },
+        get innerHTML() { return content; }
+      };
+    };
+
+    const elements = {};
+    global.document = {
+      getElementById: (id) => {
+        if (!elements[id]) elements[id] = mockElement(id);
+        return elements[id];
+      }
+    };
+    global.showToast = () => {};
+    global.updateBalanceDisplay = () => {};
+    global.deployBotsAfterDeposit = () => {};
+
+    const fn = new Function("document", "showToast", "updateBalanceDisplay", "deployBotsAfterDeposit", clientCode + "\nreturn { handleDepositSuccess, setPending: (val) => { pendingDeposit = val; } };")(
+      global.document, global.showToast, global.updateBalanceDisplay, global.deployBotsAfterDeposit
+    );
+
+    const maliciousAmount = "<img src=x onerror=alert('xss_moonpay')>";
+    fn.setPending({ amount: maliciousAmount });
+    fn.handleDepositSuccess("0x123");
+
+    const statusHTML = global.document.getElementById("cStatus").innerHTML;
+    expect(statusHTML.includes("<img")).toBe(false);
+    expect(statusHTML).toContain("&lt;img src=x onerror=alert(&#039;xss_moonpay&#039;)&gt;");
+
+    delete global.document;
+    delete global.showToast;
+    delete global.updateBalanceDisplay;
+    delete global.deployBotsAfterDeposit;
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

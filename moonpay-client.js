@@ -30,6 +30,19 @@ let moonpaySession = null;
 let pendingDeposit = null;
 
 /**
+ * Helper to escape HTML and prevent DOM XSS vulnerabilities
+ */
+function escapeHTML(str) {
+    if (!str && str !== 0) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/**
  * Initialize MoonPay
  */
 function moonpayInit() {
@@ -209,7 +222,7 @@ function handleDepositSuccess(walletAddress) {
     // Update status
     const statusEl = document.getElementById('cStatus');
     if (statusEl) {
-        statusEl.innerHTML = `✅ ${amount} USDC ready to trade!`;
+        statusEl.innerHTML = `✅ ${escapeHTML(amount)} USDC ready to trade!`;
     }
 }
 
@@ -236,14 +249,15 @@ function getFeeBreakdown(amount) {
  * Update balance display
  */
 function updateBalanceDisplay(usdcAmount) {
+    const numAmount = Number(usdcAmount) || 0;
     const balanceEl = document.getElementById('walletBalance');
     if (balanceEl) {
-        balanceEl.textContent = '$' + usdcAmount.toFixed(2);
+        balanceEl.textContent = '$' + numAmount.toFixed(2);
     }
 
     const ghBalance = document.getElementById('ghBalance');
     if (ghBalance) {
-        ghBalance.textContent = '$' + usdcAmount.toFixed(2);
+        ghBalance.textContent = '$' + numAmount.toFixed(2);
     }
 }
 

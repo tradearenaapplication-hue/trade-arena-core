@@ -21,3 +21,7 @@
 ## 2026-10-19 - [Dynamic Agent Row Action ARIA Disambiguation]
 **Learning:** Dynamically rendered table action buttons (e.g. SUSPEND, REINSTATE, CLEAR) repeated per table row require explicit agent/entity name context in `aria-label` and `title` to prevent ambiguous announcements for screen reader users (WCAG 2.4.6 / 4.1.2).
 **Action:** Always interpolate entity identifiers into `aria-label` and `title` attributes when mapping row actions in dynamic HTML templates.
+
+## 2026-10-22 - [Dynamic Action Button ARIA Label Sync]
+**Learning:** Dynamic control buttons (e.g. add/remove bot buttons) whose hover `title` updates based on application limit state require setting `aria-label` dynamically alongside `title` in state sync functions so screen reader users receive up-to-date state context.
+**Action:** Always assign `element.setAttribute('aria-label', element.title)` in helper functions whenever button title or status text is recalculated dynamically.

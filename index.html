@@ -3332,11 +3332,13 @@ function _syncHeaderBotBtns(){
     const isFull = bots.length >= MAX_BOTS;
     add.disabled = isFull;
     add.title = isFull ? `Maximum bot limit reached (${MAX_BOTS} bots)` : `Add bot (Bot #${bots.length + 1})`;
+    add.setAttribute('aria-label', add.title);
   }
   if(rem){
     const isEmpty = bots.length === 0;
     rem.disabled = isEmpty;
     rem.title = isEmpty ? 'No bots to remove' : `Remove last bot (Bot #${bots[bots.length - 1].id})`;
+    rem.setAttribute('aria-label', rem.title);
   }
   // keep legacy button in sync if still present
   const legacy=document.getElementById('addBotBtn');

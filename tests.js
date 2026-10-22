@@ -1980,6 +1980,8 @@ describe("Header Toggle Controls Accessibility", () => {
   it("dynamically updates titles on header bot buttons in _syncHeaderBotBtns", () => {
     expect(html).toContain("add.title = isFull ? `Maximum bot limit reached (${MAX_BOTS} bots)` : `Add bot (Bot #${bots.length + 1})`");
     expect(html).toContain("rem.title = isEmpty ? 'No bots to remove' : `Remove last bot (Bot #${bots[bots.length - 1].id})`");
+    expect(html).toContain("add.setAttribute('aria-label', add.title)");
+    expect(html).toContain("rem.setAttribute('aria-label', rem.title)");
   });
 
   it("handles Escape key dismissal for open collapsible panels", () => {

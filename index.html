@@ -767,10 +767,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           </ul>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;">
-          <button id="goLiveConfirmBtn" onclick="confirmGoLiveAck()" style="padding:12px;background:linear-gradient(135deg,var(--gold2),#e2761b);border:none;border-radius:6px;color:#000;font-family:'Bungee',display;font-size:11px;letter-spacing:1px;cursor:pointer;font-weight:bold;">
+          <button id="goLiveConfirmBtn" onclick="confirmGoLiveAck()" aria-label="Acknowledge regulatory warning and go live" title="Acknowledge regulatory warning and go live" style="padding:12px;background:linear-gradient(135deg,var(--gold2),#e2761b);border:none;border-radius:6px;color:#000;font-family:'Bungee',display;font-size:11px;letter-spacing:1px;cursor:pointer;font-weight:bold;">
             I ACKNOWLEDGE & GO LIVE
           </button>
-          <button onclick="closeGoLiveModal()" style="padding:10px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;">
+          <button onclick="closeGoLiveModal()" aria-label="Cancel live mode and remain in demo mode" title="Cancel live mode and remain in demo mode" style="padding:10px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;">
             CANCEL (REMAIN IN DEMO MODE)
           </button>
         </div>
@@ -790,10 +790,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
     <!-- Deposit Buttons -->
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      <button class="onramp-btn" onclick="checkGoLiveAck(() => openDepositFlow(50))" style="flex:1;min-width:120px;">
+      <button class="onramp-btn" onclick="checkGoLiveAck(() => openDepositFlow(50))" aria-label="Deposit $50 USDC on Base" title="Deposit $50 USDC on Base" style="flex:1;min-width:120px;">
         Deposit $50
       </button>
-      <button class="onramp-btn" onclick="checkGoLiveAck(() => openDepositFlow(100))" style="flex:1;min-width:120px;">
+      <button class="onramp-btn" onclick="checkGoLiveAck(() => openDepositFlow(100))" aria-label="Deposit $100 USDC on Base" title="Deposit $100 USDC on Base" style="flex:1;min-width:120px;">
         Deposit $100
       </button>
     </div>
@@ -826,7 +826,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
         </svg>
         <span id="errorMessage">Deposit failed. Please try again.</span>
       </div>
-      <button class="demo-btn" onclick="retryDeposit()" style="width:100%;">
+      <button class="demo-btn" onclick="retryDeposit()" aria-label="Retry deposit attempt" title="Retry deposit attempt" style="width:100%;">
         Retry Deposit
       </button>
     </div>
@@ -885,14 +885,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>💰</span> TRADE AMOUNT — ALL BOTS</div>
         <div class="bus-presets" id="busAmtPresets">
-          <button class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false">$0.10</button>
-          <button class="bus-preset" onclick="busSetAmount(0.25)" aria-pressed="false">$0.25</button>
-          <button class="bus-preset" onclick="busSetAmount(0.50)" aria-pressed="false">$0.50</button>
-          <button class="bus-preset" onclick="busSetAmount(1)" aria-pressed="false">$1</button>
-          <button class="bus-preset" onclick="busSetAmount(2)" aria-pressed="false">$2</button>
-          <button class="bus-preset" onclick="busSetAmount(5)" aria-pressed="false">$5</button>
-          <button class="bus-preset" onclick="busSetAmount(20)" aria-pressed="false">$20</button>
-          <button class="bus-preset" onclick="busSetAmount(100)" aria-pressed="false">$100</button>
+          <button class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false" aria-label="Set trade amount to $0.10 for all bots" title="Set trade amount to $0.10 for all bots">$0.10</button>
+          <button class="bus-preset" onclick="busSetAmount(0.25)" aria-pressed="false" aria-label="Set trade amount to $0.25 for all bots" title="Set trade amount to $0.25 for all bots">$0.25</button>
+          <button class="bus-preset" onclick="busSetAmount(0.50)" aria-pressed="false" aria-label="Set trade amount to $0.50 for all bots" title="Set trade amount to $0.50 for all bots">$0.50</button>
+          <button class="bus-preset" onclick="busSetAmount(1)" aria-pressed="false" aria-label="Set trade amount to $1 for all bots" title="Set trade amount to $1 for all bots">$1</button>
+          <button class="bus-preset" onclick="busSetAmount(2)" aria-pressed="false" aria-label="Set trade amount to $2 for all bots" title="Set trade amount to $2 for all bots">$2</button>
+          <button class="bus-preset" onclick="busSetAmount(5)" aria-pressed="false" aria-label="Set trade amount to $5 for all bots" title="Set trade amount to $5 for all bots">$5</button>
+          <button class="bus-preset" onclick="busSetAmount(20)" aria-pressed="false" aria-label="Set trade amount to $20 for all bots" title="Set trade amount to $20 for all bots">$20</button>
+          <button class="bus-preset" onclick="busSetAmount(100)" aria-pressed="false" aria-label="Set trade amount to $100 for all bots" title="Set trade amount to $100 for all bots">$100</button>
         </div>
         <div class="bus-custom-row">
           <input type="number" id="busCustomAmt" aria-label="Custom trade amount in dollars" placeholder="Custom $" min="0.01" step="0.01">
@@ -904,13 +904,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>🧠</span> PERSONALITY — ALL BOTS</div>
         <div class="bus-presets" id="busPersonalityPresets">
-          <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')" aria-pressed="false">🔥 Aggressive</button>
-          <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')" aria-pressed="false">🛡️ Conservative</button>
-          <button class="bus-preset" onclick="busSetPersonality('MOMENTUM')" aria-pressed="false">📈 Momentum</button>
-          <button class="bus-preset" onclick="busSetPersonality('CONTRARIAN')" aria-pressed="false">🔄 Contrarian</button>
-          <button class="bus-preset" onclick="busSetPersonality('BALANCED')" aria-pressed="false">⚖️ Balanced</button>
-          <button class="bus-preset" onclick="busSetPersonality('RANDOM')" aria-pressed="false">🎲 Random Spread</button>
-          <button class="bus-preset" onclick="busSetPersonality('OPTIMIZED')" aria-pressed="false">⚡ Optimized Spread</button>
+          <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')" aria-pressed="false" aria-label="Set Aggressive personality for all bots" title="Set Aggressive personality for all bots">🔥 Aggressive</button>
+          <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')" aria-pressed="false" aria-label="Set Conservative personality for all bots" title="Set Conservative personality for all bots">🛡️ Conservative</button>
+          <button class="bus-preset" onclick="busSetPersonality('MOMENTUM')" aria-pressed="false" aria-label="Set Momentum personality for all bots" title="Set Momentum personality for all bots">📈 Momentum</button>
+          <button class="bus-preset" onclick="busSetPersonality('CONTRARIAN')" aria-pressed="false" aria-label="Set Contrarian personality for all bots" title="Set Contrarian personality for all bots">🔄 Contrarian</button>
+          <button class="bus-preset" onclick="busSetPersonality('BALANCED')" aria-pressed="false" aria-label="Set Balanced personality for all bots" title="Set Balanced personality for all bots">⚖️ Balanced</button>
+          <button class="bus-preset" onclick="busSetPersonality('RANDOM')" aria-pressed="false" aria-label="Set Random personality spread across all bots" title="Set Random personality spread across all bots">🎲 Random Spread</button>
+          <button class="bus-preset" onclick="busSetPersonality('OPTIMIZED')" aria-pressed="false" aria-label="Set Optimized personality spread across all bots" title="Set Optimized personality spread across all bots">⚡ Optimized Spread</button>
         </div>
       </div>
 
@@ -918,10 +918,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>⏱️</span> AUTO DELAY — ALL BOTS</div>
         <div class="bus-presets" id="busDelayPresets">
-          <button class="bus-preset" onclick="busSetDelay(2000)" aria-pressed="false">Fast 2s</button>
-          <button class="bus-preset" onclick="busSetDelay(5000)" aria-pressed="false">Normal 5s</button>
-          <button class="bus-preset" onclick="busSetDelay(15000)" aria-pressed="false">Slow 15s</button>
-          <button class="bus-preset" onclick="busSetDelay(60000)" aria-pressed="false">Patient 1m</button>
+          <button class="bus-preset" onclick="busSetDelay(2000)" aria-pressed="false" aria-label="Set auto delay to 2 seconds for all bots" title="Set auto delay to 2 seconds for all bots">Fast 2s</button>
+          <button class="bus-preset" onclick="busSetDelay(5000)" aria-pressed="false" aria-label="Set auto delay to 5 seconds for all bots" title="Set auto delay to 5 seconds for all bots">Normal 5s</button>
+          <button class="bus-preset" onclick="busSetDelay(15000)" aria-pressed="false" aria-label="Set auto delay to 15 seconds for all bots" title="Set auto delay to 15 seconds for all bots">Slow 15s</button>
+          <button class="bus-preset" onclick="busSetDelay(60000)" aria-pressed="false" aria-label="Set auto delay to 1 minute for all bots" title="Set auto delay to 1 minute for all bots">Patient 1m</button>
         </div>
       </div>
 
@@ -932,19 +932,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <div style="flex:1">
             <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Stop Loss</div>
             <div class="bus-presets" id="busSLPresets" style="flex-direction:column">
-              <button class="bus-preset" onclick="busSetSL(0)" aria-pressed="false">None</button>
-              <button class="bus-preset" onclick="busSetSL(10)" aria-pressed="false">−10%</button>
-              <button class="bus-preset" onclick="busSetSL(20)" aria-pressed="false">−20%</button>
-              <button class="bus-preset" onclick="busSetSL(50)" aria-pressed="false">−50%</button>
+              <button class="bus-preset" onclick="busSetSL(0)" aria-pressed="false" aria-label="Disable stop loss for all bots" title="Disable stop loss for all bots">None</button>
+              <button class="bus-preset" onclick="busSetSL(10)" aria-pressed="false" aria-label="Set stop loss to minus 10% for all bots" title="Set stop loss to minus 10% for all bots">−10%</button>
+              <button class="bus-preset" onclick="busSetSL(20)" aria-pressed="false" aria-label="Set stop loss to minus 20% for all bots" title="Set stop loss to minus 20% for all bots">−20%</button>
+              <button class="bus-preset" onclick="busSetSL(50)" aria-pressed="false" aria-label="Set stop loss to minus 50% for all bots" title="Set stop loss to minus 50% for all bots">−50%</button>
             </div>
           </div>
           <div style="flex:1">
             <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Take Profit</div>
             <div class="bus-presets" id="busTPPresets" style="flex-direction:column">
-              <button class="bus-preset" onclick="busSetTP(0)" aria-pressed="false">None</button>
-              <button class="bus-preset" onclick="busSetTP(20)" aria-pressed="false">+20%</button>
-              <button class="bus-preset" onclick="busSetTP(50)" aria-pressed="false">+50%</button>
-              <button class="bus-preset" onclick="busSetTP(100)" aria-pressed="false">+100%</button>
+              <button class="bus-preset" onclick="busSetTP(0)" aria-pressed="false" aria-label="Disable take profit for all bots" title="Disable take profit for all bots">None</button>
+              <button class="bus-preset" onclick="busSetTP(20)" aria-pressed="false" aria-label="Set take profit to plus 20% for all bots" title="Set take profit to plus 20% for all bots">+20%</button>
+              <button class="bus-preset" onclick="busSetTP(50)" aria-pressed="false" aria-label="Set take profit to plus 50% for all bots" title="Set take profit to plus 50% for all bots">+50%</button>
+              <button class="bus-preset" onclick="busSetTP(100)" aria-pressed="false" aria-label="Set take profit to plus 100% for all bots" title="Set take profit to plus 100% for all bots">+100%</button>
             </div>
           </div>
         </div>
@@ -3103,7 +3103,7 @@ function openOskoRamp(type) {
   } else {
     // Sell - check if wallet connected first
     if(!window.ethereum?.selectedAddress) {
-      s.innerHTML = '⚠️ Connect wallet first to sell.<br><button onclick="loginMetaMask()" style="margin-top:8px;padding:6px 12px;background:var(--hot);border:none;border-radius:4px;color:#fff;cursor:pointer">CONNECT WALLET</button>';
+      s.innerHTML = '⚠️ Connect wallet first to sell.<br><button onclick="loginMetaMask()" aria-label="Connect wallet to sell tokens" title="Connect wallet to sell tokens" style="margin-top:8px;padding:6px 12px;background:var(--hot);border:none;border-radius:4px;color:#fff;cursor:pointer">CONNECT WALLET</button>';
       return;
     }
     // Sell - opens Ramp's sell widget

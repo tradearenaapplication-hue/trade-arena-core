@@ -3086,7 +3086,7 @@ async function loginCoinbase(){
         if(p) p.classList.add('live');return;
       }
     }else{s.innerHTML='⚠️ Coinbase Wallet not found.<br><a href="https://www.coinbase.com/wallet" target="_blank" style="color:var(--hot)">Install Coinbase Wallet</a>';}
-  }catch(e){s.innerHTML='❌ '+e.message;console.error('Coinbase error:',e);}
+  }catch(e){s.innerHTML='❌ '+escapeHTML(e.message);console.error('Coinbase error:',e);}
 }
 
 // OSKO Fiat On/Off Ramp Functions

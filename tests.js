@@ -2670,6 +2670,60 @@ describe("Multi-Chain Token Fetching Engine & Real Wallet Integration", () => {
   });
 });
 
+describe("Coinbase Wallet Login XSS Security (index.html:loginCoinbase)", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("uses escapeHTML when rendering error messages in loginCoinbase in index.html", () => {
+    expect(html).toContain("catch(e){s.innerHTML='❌ '+escapeHTML(e.message);console.error('Coinbase error:',e);}");
+  });
+
+  it("escapes malicious XSS payloads in error messages when loginCoinbase fails", async () => {
+    let statusText = "";
+    const mockStatusEl = {
+      set innerHTML(val) { statusText = val; },
+      get innerHTML() { return statusText; }
+    };
+
+    global.document = {
+      getElementById: (id) => (id === "cStatus" ? mockStatusEl : null)
+    };
+    global.window = {
+      coinbaseWalletExtension: {
+        request: async () => {
+          throw new Error("<img src=x onerror=alert('coinbase_xss')>");
+        }
+      }
+    };
+
+    global.escapeHTML = (str) => {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const loginCoinbaseStart = html.indexOf("async function loginCoinbase(){");
+    const loginCoinbaseEnd = html.indexOf("// OSKO Fiat On/Off Ramp Functions", loginCoinbaseStart);
+    const loginCoinbaseCode = html.slice(loginCoinbaseStart, loginCoinbaseEnd);
+
+    const loginCoinbaseFn = new Function("escapeHTML", "document", "window", "console", "etherscanBase", loginCoinbaseCode + "\nreturn loginCoinbase;")
+      (global.escapeHTML, global.document, global.window, { error: () => {} }, "https://etherscan.io/address/");
+
+    await loginCoinbaseFn();
+
+    expect(statusText.includes("<img")).toBe(false);
+    expect(statusText).toContain("&lt;img src=x onerror=alert(&#039;coinbase_xss&#039;)&gt;");
+
+    delete global.document;
+    delete global.window;
+    delete global.escapeHTML;
+  });
+});
+
 describe("MetaMask Login Flow Resiliency (index.html:loginMetaMask)", () => {
   it("handles missing window.ethereum provider gracefully", async () => {
     let statusText = "";

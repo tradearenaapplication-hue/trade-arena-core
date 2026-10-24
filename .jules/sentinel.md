@@ -47,3 +47,8 @@
 **Vulnerability:** In `index-new.html`, `renderLog` interpolated unescaped trade log properties (`t.botId`, `t.token`, `t.method`, `t.time`) directly into `innerHTML` template literals without sanitization, and `escapeHTML` was completely missing from the module scope.
 **Learning:** Secondary or alternative UI layout files (such as `index-new.html`) often mirror components from primary templates but miss newly introduced security utility functions like `escapeHTML`, resulting in unhandled DOM XSS sinks when rendering dynamic trade records or user/API logs.
 **Prevention:** Ensure utility helpers like `escapeHTML` are defined across all HTML entry points and always wrap dynamic record properties (`botId`, `token`, `method`, `time`) before rendering HTML template literals into `innerHTML`.
+
+## 2026-10-24 - [HIGH] DOM XSS Vulnerability in Coinbase Wallet Error Handler (`index.html`)
+**Vulnerability:** In `index.html`, `loginCoinbase` caught connection/wallet errors (`e`) and assigned `e.message` directly to `s.innerHTML` without sanitization (`s.innerHTML='❌ '+e.message`).
+**Learning:** Error messages returned by external browser extensions or wallet providers can contain untrusted user inputs or HTML/JS payloads. Assigning raw `e.message` to `innerHTML` sinks creates a DOM XSS vulnerability.
+**Prevention:** Always wrap `e.message` with `escapeHTML()` or assign error messages via `textContent` when rendering error status displays in DOM sinks.

@@ -2289,6 +2289,25 @@ describe("Task Center ARIA Accessibility", () => {
   });
 });
 
+describe("Bus Controls & Modal Action ARIA Accessibility", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines descriptive aria-label attributes on Bus preset buttons in index.html", () => {
+    expect(html).toContain('class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false" aria-label="Set trade amount to $0.10 for all bots"');
+    expect(html).toContain('class="bus-preset" onclick="busSetPersonality(\'AGGRESSIVE\')" aria-pressed="false" aria-label="Set Aggressive personality for all bots"');
+    expect(html).toContain('class="bus-preset" onclick="busSetDelay(2000)" aria-pressed="false" aria-label="Set auto delay to 2 seconds for all bots"');
+    expect(html).toContain('class="bus-preset" onclick="busSetSL(10)" aria-pressed="false" aria-label="Set stop loss to minus 10% for all bots"');
+    expect(html).toContain('class="bus-preset" onclick="busSetTP(20)" aria-pressed="false" aria-label="Set take profit to plus 20% for all bots"');
+  });
+
+  it("defines aria-label on Go-Live modal and deposit onramp buttons in index.html", () => {
+    expect(html).toContain('id="goLiveConfirmBtn" onclick="confirmGoLiveAck()" aria-label="Acknowledge regulatory warning and go live"');
+    expect(html).toContain('onclick="closeGoLiveModal()" aria-label="Cancel live mode and remain in demo mode"');
+    expect(html).toContain('class="onramp-btn" onclick="checkGoLiveAck(() => openDepositFlow(50))" aria-label="Deposit $50 USDC on Base"');
+  });
+});
+
 describe("Strategy Breakdown XSS Sanitization Security", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");

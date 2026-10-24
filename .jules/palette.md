@@ -25,3 +25,7 @@
 ## 2026-10-21 - [Modal Dialog Initial Focus & Toggle ARIA Attributes]
 **Learning:** When launching or toggling fixed modal dialog overlays (such as the voice agent modal or holdings modal), explicitly setting focus to the primary interactive element (e.g. text input or close button) via setTimeout prevents focus loss behind the overlay, while pairing toggle controls with aria-label and aria-pressed attributes ensures WCAG 2.1 compliance.
 **Action:** Always shift focus to an interior element upon opening modal dialogs and restore focus to trigger buttons upon close.
+
+## 2026-10-24 - [Preset Button Icon & Symbol ARIA Context]
+**Learning:** Compact preset toggle buttons containing leading emojis or concise symbol percentages (e.g. 🔥 Aggressive, −10%) require explicit `aria-label` and `title` attributes describing the exact action scope (e.g. 'Set Aggressive personality for all bots', 'Set stop loss to minus 10% for all bots') so screen readers announce human-understandable context rather than disjointed symbol names.
+**Action:** Always pair compact icon/percentage preset buttons with explicit, descriptive `aria-label` and `title` attributes.

@@ -21,3 +21,7 @@
 ## 2026-10-19 - [Dynamic Agent Row Action ARIA Disambiguation]
 **Learning:** Dynamically rendered table action buttons (e.g. SUSPEND, REINSTATE, CLEAR) repeated per table row require explicit agent/entity name context in `aria-label` and `title` to prevent ambiguous announcements for screen reader users (WCAG 2.4.6 / 4.1.2).
 **Action:** Always interpolate entity identifiers into `aria-label` and `title` attributes when mapping row actions in dynamic HTML templates.
+
+## 2026-10-21 - [Modal Dialog Initial Focus & Toggle ARIA Attributes]
+**Learning:** When launching or toggling fixed modal dialog overlays (such as the voice agent modal or holdings modal), explicitly setting focus to the primary interactive element (e.g. text input or close button) via setTimeout prevents focus loss behind the overlay, while pairing toggle controls with aria-label and aria-pressed attributes ensures WCAG 2.1 compliance.
+**Action:** Always shift focus to an interior element upon opening modal dialogs and restore focus to trigger buttons upon close.

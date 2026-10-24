@@ -3155,6 +3155,77 @@ describe("Trade Ledger renderLog XSS Sanitization Security", () => {
     delete global.closedTrades;
     delete global.globalLog;
   });
+
+  it("defines escapeHTML and uses it when rendering dynamic trade log fields in renderLog in index-new.html", () => {
+    const htmlNew = fs.readFileSync("index-new.html", "utf8");
+
+    expect(htmlNew).toContain("function escapeHTML(str)");
+    expect(htmlNew).toContain("${escapeHTML(t.botId)}");
+    expect(htmlNew).toContain("${escapeHTML(t.token)}");
+    expect(htmlNew).toContain("${escapeHTML(t.method)}");
+    expect(htmlNew).toContain("${escapeHTML(t.time)}");
+
+    const mockElement = (id) => {
+      let content = "";
+      return {
+        id,
+        set innerHTML(val) { content = val; },
+        get innerHTML() { return content; },
+        set textContent(val) { content = val; },
+        get textContent() { return content; }
+      };
+    };
+
+    const elements = {};
+    global.document = {
+      getElementById: (id) => {
+        if (!elements[id]) {
+          elements[id] = mockElement(id);
+        }
+        return elements[id];
+      }
+    };
+
+    global.setVal = function(id, val) {
+      const el = global.document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    global.globalLog = [
+      {
+        botId: "<script>alert('xss_bot')</script>",
+        isWin: true,
+        netPnl: 15.2,
+        entryPrice: 200,
+        time: "<svg onload=alert('xss_time')>",
+        token: "<script>alert('xss_token_new')</script>",
+        method: "<iframe src=javascript:alert('xss_method')>"
+      }
+    ];
+
+    const escapeHTMLStart = htmlNew.indexOf("function escapeHTML(str)");
+    const renderLogStart = htmlNew.indexOf("function renderLog(){", escapeHTMLStart);
+    const renderLogEnd = htmlNew.indexOf("// HELPERS", renderLogStart);
+    const renderLogCode = htmlNew.slice(escapeHTMLStart, renderLogEnd);
+
+    const renderLogFn = new Function("globalLog", "setVal", "document", renderLogCode + "\nreturn renderLog;")
+      (global.globalLog, global.setVal, global.document);
+
+    renderLogFn();
+
+    const logHTML = global.document.getElementById("globalLog").innerHTML;
+    expect(logHTML.includes("<script>")).toBe(false);
+    expect(logHTML.includes("<svg")).toBe(false);
+    expect(logHTML.includes("<iframe")).toBe(false);
+    expect(logHTML).toContain("&lt;script&gt;alert(&#039;xss_bot&#039;)&lt;/script&gt;");
+    expect(logHTML).toContain("&lt;script&gt;alert(&#039;xss_token_new&#039;)&lt;/script&gt;");
+    expect(logHTML).toContain("&lt;iframe src=javascript:alert(&#039;xss_method&#039;)&gt;");
+    expect(logHTML).toContain("&lt;svg onload=alert(&#039;xss_time&#039;)&gt;");
+
+    delete global.document;
+    delete global.setVal;
+    delete global.globalLog;
+  });
 });
 
 describe("Regime Table renderRegimeTable XSS Sanitization Security", () => {

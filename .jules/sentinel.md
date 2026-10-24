@@ -42,3 +42,8 @@
 **Vulnerability:** In `index.html`, `renderLearnLog` and `renderAuditLog` interpolated unescaped entry properties (`e.type`, `e.ts`, `e.msg`) directly into `innerHTML` strings.
 **Learning:** Persisted or imported log entries (such as model learning logs and audit histories restored from local storage or JSON imports) can act as Stored/DOM XSS sinks if dynamic properties like `type`, `ts`, or `msg` are interpolated without escaping.
 **Prevention:** Wrap all dynamic properties of log entries with `escapeHTML()` when rendering templates into `innerHTML` sinks.
+
+## 2026-10-23 - [HIGH] Stored/DOM XSS Vulnerability in Global Trade Ledger Rendering (`index-new.html`)
+**Vulnerability:** In `index-new.html`, `renderLog` interpolated unescaped trade log properties (`t.botId`, `t.token`, `t.method`, `t.time`) directly into `innerHTML` template literals without sanitization, and `escapeHTML` was completely missing from the module scope.
+**Learning:** Secondary or alternative UI layout files (such as `index-new.html`) often mirror components from primary templates but miss newly introduced security utility functions like `escapeHTML`, resulting in unhandled DOM XSS sinks when rendering dynamic trade records or user/API logs.
+**Prevention:** Ensure utility helpers like `escapeHTML` are defined across all HTML entry points and always wrap dynamic record properties (`botId`, `token`, `method`, `time`) before rendering HTML template literals into `innerHTML`.

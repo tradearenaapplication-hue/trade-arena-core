@@ -2500,6 +2500,13 @@ describe("ELO Tournament Engine XSS Sanitization Security", () => {
     expect(eloCode).toContain("escapeHTML(rawRank)");
   });
 
+  it("uses escapeHTML when rendering agent name and icon in renderAuditPanel", () => {
+    const fs = require("fs");
+    const htmlCode = fs.readFileSync("./index.html", "utf8");
+    expect(htmlCode).toContain("${escapeHTML(AGENT_META[key].icon)}");
+    expect(htmlCode).toContain("${escapeHTML(AGENT_META[key].name)}");
+  });
+
   it("escapes malicious XSS payloads in agent keys and icons when rendering arena rows", () => {
     const eloEngine = require("./elo-tournament-engine.js");
 

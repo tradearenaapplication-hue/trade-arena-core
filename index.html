@@ -5025,8 +5025,8 @@ function renderAuditPanel() {
     const rowClass = status === 'ON_NOTICE' ? 'on-notice' : status === 'SUSPENDED' ? 'suspended' : status === 'REINSTATED' ? 'reinstated' : '';
 
     return `<div class="audit-agent-row ${rowClass}">
-      <div class="aa-icon">${AGENT_META[key].icon}</div>
-      <div class="aa-name">${AGENT_META[key].name}</div>
+      <div class="aa-icon">${escapeHTML(AGENT_META[key].icon)}</div>
+      <div class="aa-name">${escapeHTML(AGENT_META[key].name)}</div>
       <div class="aa-stats">
         Overall: ${stats.t > 0 ? (wr*100).toFixed(0)+'% WR ('+stats.t+' votes)' : '—'} ·
         Recent 15: ${stats.t >= 5 ? (recentWr*100).toFixed(0)+'%' : 'insufficient data'} ·

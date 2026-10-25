@@ -211,6 +211,8 @@ let regulatoryState = {
 };
 
 app.get('/api/regulatory/status', userApiLimiter, (req, res) => {
+    regulatoryState.afslCompliant = process.env.AFSL_COMPLIANT === 'true';
+    regulatoryState.assessmentStatus = process.env.AFSL_COMPLIANT === 'true' ? 'CLEARED' : 'PENDING_LEGAL_REVIEW';
     res.json({
         success: true,
         regulatory: regulatoryState

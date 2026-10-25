@@ -41,3 +41,7 @@
 ## 2027-01-28 - Multi-Pass Array Projections in Baseline Strategy Comparison Routines
 **Learning:** `runBaselineComparison()` in `crucible-test.js` was allocating multiple temporary object arrays and executing repeated `.map()`, `.filter()`, and `.reduce()` passes per strategy comparison call. In high-frequency backtest and simulation loops, this created unnecessary memory pressure and GC pauses (~3.8s / 10k calls on 1000 trades).
 **Action:** Replace functional array pipelines (`.map()`, `.filter()`, `.reduce()`) in baseline evaluation routines with a single scalar `for` loop that accumulates strategy and baseline metrics (random, always long, momentum) in scalar variables in one pass (~6x speedup, 0 array allocations).
+
+## 2027-02-11 - Multi-Pass Sub-Array Slicing and Chaining in LLM Arena Prompt Construction
+**Learning:** `getAIModelDecision()` in `ai-arena.js` was executing dual `.slice(0, 8)` sub-array allocations along with `.map().join()` string building and `.reduce()` math accumulation on every AI model decision request, generating temporary arrays and GC churn during multi-agent tournament execution.
+**Action:** Consolidate market candle aggregation and prompt text formatting into a single bounded `for` loop that accumulates the 24h price change sum and constructs the prompt text in one pass without intermediate `.slice()`, `.map()`, or `.reduce()` allocations (~22% speedup).

@@ -138,17 +138,28 @@ function noteArenaApiSuccess() {
 async function getAIModelDecision(modelType, marketData, bet, botId, botStrategy = null) {
   const model = AI_ARENA.models[modelType];
   let summary = 'No live data.';
-
-  if (marketData?.length) {
-    summary = marketData.slice(0, 8).map(c =>
-      `${c.symbol.toUpperCase()}: $${c.current_price} | 24h: ${(c.price_change_percentage_24h||0).toFixed(1)}% | Vol: $${(c.total_volume/1e6).toFixed(0)}M`
-    ).join('\n');
-  }
-
-  // Market condition analysis
   let marketContext = 'STABLE';
+
+  // ⚡ OPTIMIZATION: Single-pass scalar loop over top 8 market candles accumulates 24h price sum and formats
+  // summary text without allocating intermediate sub-arrays via .slice(0, 8), .map(), and .reduce().
   if (marketData?.length > 0) {
-    const avg24h = marketData.slice(0, 8).reduce((sum, c) => sum + (c.price_change_percentage_24h || 0), 0) / 8;
+    const limit = Math.min(8, marketData.length);
+    let sum24h = 0;
+    let summaryStr = '';
+    for (let i = 0; i < limit; i++) {
+      const c = marketData[i];
+      const change24h = c ? (c.price_change_percentage_24h || 0) : 0;
+      const volM = c ? (c.total_volume / 1e6 || 0) : 0;
+      const sym = c && c.symbol ? c.symbol.toUpperCase() : 'UNKNOWN';
+      const price = c && c.current_price !== undefined ? c.current_price : 0;
+
+      sum24h += change24h;
+      if (i > 0) summaryStr += '\n';
+      summaryStr += `${sym}: $${price} | 24h: ${change24h.toFixed(1)}% | Vol: $${volM.toFixed(0)}M`;
+    }
+    summary = summaryStr;
+
+    const avg24h = sum24h / limit;
     const volatility = Math.abs(avg24h);
     if (volatility > 5) marketContext = 'VOLATILE';
     else if (avg24h > 2) marketContext = 'BULLISH';

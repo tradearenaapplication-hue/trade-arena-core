@@ -25,3 +25,7 @@
 ## 2026-10-21 - [Modal Dialog Initial Focus & Toggle ARIA Attributes]
 **Learning:** When launching or toggling fixed modal dialog overlays (such as the voice agent modal or holdings modal), explicitly setting focus to the primary interactive element (e.g. text input or close button) via setTimeout prevents focus loss behind the overlay, while pairing toggle controls with aria-label and aria-pressed attributes ensures WCAG 2.1 compliance.
 **Action:** Always shift focus to an interior element upon opening modal dialogs and restore focus to trigger buttons upon close.
+
+## 2026-10-26 - [Regulatory Compliance Modal Focus Trap & Restoration]
+**Learning:** Fixed regulatory disclosure modals (`#goLiveModal`) triggered prior to sensitive operations require storing `document.activeElement` before display, programmatically moving focus to the confirm action button (`#goLiveConfirmBtn`), and restoring focus to the stored trigger element upon modal confirm or cancel/close.
+**Action:** Store `document.activeElement` when triggering confirmation modals and restore focus to the originating trigger element upon modal closure.

@@ -2841,6 +2841,7 @@ function startOverride(bot,btn){
 // GO LIVE GATING & COMPLIANCE ACKNOWLEDGMENT
 // ══════════════════════════════════════════════════════
 let pendingLiveLoginFn = null;
+let goLiveTriggerEl = null;
 
 function checkGoLiveAck(onAcknowledge) {
   if (localStorage.getItem('ta_golive_ack') === 'true') {
@@ -2848,14 +2849,23 @@ function checkGoLiveAck(onAcknowledge) {
     return;
   }
   pendingLiveLoginFn = onAcknowledge;
+  goLiveTriggerEl = document.activeElement;
   const modal = document.getElementById('goLiveModal');
   if (modal) modal.style.display = 'flex';
+  setTimeout(() => {
+    const confirmBtn = document.getElementById('goLiveConfirmBtn');
+    if (confirmBtn) confirmBtn.focus();
+  }, 10);
 }
 
 function confirmGoLiveAck() {
   localStorage.setItem('ta_golive_ack', 'true');
   const modal = document.getElementById('goLiveModal');
   if (modal) modal.style.display = 'none';
+  if (goLiveTriggerEl && typeof goLiveTriggerEl.focus === 'function') {
+    goLiveTriggerEl.focus();
+    goLiveTriggerEl = null;
+  }
   if (typeof pendingLiveLoginFn === 'function') {
     const fn = pendingLiveLoginFn;
     pendingLiveLoginFn = null;
@@ -2867,6 +2877,10 @@ function closeGoLiveModal() {
   pendingLiveLoginFn = null;
   const modal = document.getElementById('goLiveModal');
   if (modal) modal.style.display = 'none';
+  if (goLiveTriggerEl && typeof goLiveTriggerEl.focus === 'function') {
+    goLiveTriggerEl.focus();
+    goLiveTriggerEl = null;
+  }
 }
 
 // ══════════════════════════════════════════════════════

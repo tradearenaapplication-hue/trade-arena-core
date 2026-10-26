@@ -2133,6 +2133,13 @@ describe("Go Live Acknowledgment Modal Accessibility & ASIC Regulatory Disclosur
     expect(html).toContain("does not hold an Australian Financial Services Licence (AFSL)");
     expect(html).toContain("Trade Arena is a purely non-custodial software interface.");
   });
+
+  it("contains focus management and restoration logic for #goLiveModal in checkGoLiveAck", () => {
+    expect(html).toContain("goLiveTriggerEl = document.activeElement;");
+    expect(html).toContain("const confirmBtn = document.getElementById('goLiveConfirmBtn');");
+    expect(html).toContain("if (confirmBtn) confirmBtn.focus();");
+    expect(html).toContain("if (goLiveTriggerEl && typeof goLiveTriggerEl.focus === 'function')");
+  });
 });
 
 describe("Bus Panel Preset Accessibility", () => {

@@ -8,6 +8,14 @@ const app = express();
 app.use(express.json());
 app.use(cors({ origin: '*' }));
 
+// Security headers middleware (defense-in-depth: mitigate MIME-sniffing and clickjacking)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '0');
+  next();
+});
+
 /**
  * Rate limiter middleware for AI proxy endpoints
  * Prevents API key quota exhaustion and DoS attacks

@@ -423,8 +423,8 @@ function getBotStrategyInsights(strategy) {
     pnlSum += val;
   }
 
-  const recentWinRateStr = pnlLen === 0 ? '0.0' : ((winCount / pnlLen) * 100).toFixed(1);
-  const avgRecentPnLStr = pnlLen === 0 ? '0.00' : (pnlSum / pnlLen).toFixed(2);
+  const recentWinRate = pnlLen === 0 ? '0.0' : ((winCount / pnlLen) * 100).toFixed(1);
+  const avgRecentPnL = pnlLen === 0 ? '0.00' : (pnlSum / pnlLen).toFixed(2);
 
   // ⚡ OPTIMIZATION: Guarded for...in scalar search replaces Object.entries().sort() tuple array allocation
   let bestMethodName = 'N/A';

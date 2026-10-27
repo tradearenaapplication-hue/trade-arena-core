@@ -3304,6 +3304,38 @@ describe("Regime Table renderRegimeTable XSS Sanitization Security", () => {
   });
 });
 
+describe("HTTP Security Response Headers", () => {
+  const server = require("./server.js");
+
+  it("sets X-Content-Type-Options, X-Frame-Options, and X-XSS-Protection headers on HTTP responses", async () => {
+    const headers = {};
+    const req = {
+      method: "GET",
+      url: "/api/health",
+      headers: {},
+      app: server
+    };
+    const res = {
+      setHeader: (key, val) => { headers[key] = val; },
+      status: () => res,
+      json: () => res
+    };
+
+    const middlewareStack = server._router.stack.filter(layer => !layer.route);
+    for (const layer of middlewareStack) {
+      if (layer.handle && layer.handle.length === 3) {
+        await new Promise((resolve) => {
+          layer.handle(req, res, () => resolve());
+        });
+      }
+    }
+
+    expect(headers["X-Content-Type-Options"]).toBe("nosniff");
+    expect(headers["X-Frame-Options"]).toBe("DENY");
+    expect(headers["X-XSS-Protection"]).toBe("0");
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

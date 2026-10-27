@@ -2064,6 +2064,18 @@ describe("Advanced Settings Toggle & Form Inputs Accessibility", () => {
     expect(html).toContain('id="suspendWindow" aria-label="Probation trades before suspension"');
     expect(html).toContain('id="mcustom-${bot.id}" aria-label="Custom trade amount for Bot #${bot.id} in dollars"');
     expect(html).toContain('aria-label="Set custom trade amount for Bot #${bot.id}"');
+    expect(html).toContain('id="costModelSelect" aria-label="Cost Model"');
+    expect(html).toContain('id="crucibleTradeCount" aria-label="Crucible backtest trade count"');
+    expect(html).toContain('id="dailyLossLimitInput" aria-label="Daily loss limit in dollars"');
+    expect(html).toContain('id="aggrSlider" aria-label="Aggression level slider"');
+    expect(html).toContain('id="consensusSlider" aria-label="Consensus threshold slider"');
+    expect(html).toContain('id="gasSlider" aria-label="Simulated gas in gwei slider"');
+    expect(html).toContain('id="mtakeprofit-${bot.id}" aria-label="Bot #${bot.id} Take Profit"');
+  });
+
+  it("defines Enter key submission handlers on custom bet inputs", () => {
+    expect(html).toContain('onkeydown="if(event.key===\'Enter\') setCustomBet(${bot.id})"');
+    expect(html).toContain('onkeydown="if(event.key===\'Enter\') busSetCustomAmount()"');
   });
 });
 

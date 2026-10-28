@@ -3314,13 +3314,21 @@ function addBot(){
   };
   bots.push(bot); renderBot(bot);
   _syncHeaderBotBtns();
+  if (typeof renderPadGrid === 'function') renderPadGrid();
 }
 function removeBot(id){
+  const card = document.getElementById('bot-'+id);
+  const focusWasInside = card && card.contains(document.activeElement);
   const bot=bots.find(b=>b.id===id);
   if(bot){if(bot.autoTimer)clearTimeout(bot.autoTimer);if(bot.tickerTimer)clearTimeout(bot.tickerTimer);}
   bots=bots.filter(b=>b.id!==id);
-  document.getElementById('bot-'+id)?.remove();
+  card?.remove();
   _syncHeaderBotBtns();
+  if (typeof renderPadGrid === 'function') renderPadGrid();
+  if (focusWasInside) {
+    const nextTarget = document.getElementById('ghAddBtn') || document.body;
+    nextTarget.focus();
+  }
 }
 function removeLastBot(){
   if(bots.length===0) return;
@@ -3590,7 +3598,13 @@ function toggleBotSettings(id){
   const open=drop.classList.toggle('open');
   if(gear) {
     gear.classList.toggle('open',open);
-    gear.setAttribute('aria-expanded', open);
+    gear.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  if (open) {
+    setTimeout(() => {
+      const activeBetBtn = drop.querySelector('.m-dd-bet.on') || drop.querySelector('input, select, button');
+      if (activeBetBtn) activeBetBtn.focus();
+    }, 50);
   }
 }
 function setBotPersonality(id,val){

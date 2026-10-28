@@ -25,3 +25,7 @@
 ## 2026-10-21 - [Modal Dialog Initial Focus & Toggle ARIA Attributes]
 **Learning:** When launching or toggling fixed modal dialog overlays (such as the voice agent modal or holdings modal), explicitly setting focus to the primary interactive element (e.g. text input or close button) via setTimeout prevents focus loss behind the overlay, while pairing toggle controls with aria-label and aria-pressed attributes ensures WCAG 2.1 compliance.
 **Action:** Always shift focus to an interior element upon opening modal dialogs and restore focus to trigger buttons upon close.
+
+## 2026-10-28 - [DOM Element Removal Focus Preservation & Dropdown Initial Focus]
+**Learning:** Removing active DOM elements (such as bot cards or list items) while focused drops keyboard focus to `document.body`, causing loss of screen reader context (WCAG 2.4.3). Checking `card.contains(document.activeElement)` before node removal and shifting focus to a nearby fallback button (like `#ghAddBtn`) preserves focus order. Additionally, shifting focus into toggled dropdown controls via `setTimeout` allows immediate keyboard navigation.
+**Action:** Always check `container.contains(document.activeElement)` prior to removing DOM nodes and redirect focus to a logical persistent target.

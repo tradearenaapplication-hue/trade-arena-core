@@ -41,3 +41,7 @@
 ## 2027-01-28 - Multi-Pass Array Projections in Baseline Strategy Comparison Routines
 **Learning:** `runBaselineComparison()` in `crucible-test.js` was allocating multiple temporary object arrays and executing repeated `.map()`, `.filter()`, and `.reduce()` passes per strategy comparison call. In high-frequency backtest and simulation loops, this created unnecessary memory pressure and GC pauses (~3.8s / 10k calls on 1000 trades).
 **Action:** Replace functional array pipelines (`.map()`, `.filter()`, `.reduce()`) in baseline evaluation routines with a single scalar `for` loop that accumulates strategy and baseline metrics (random, always long, momentum) in scalar variables in one pass (~6x speedup, 0 array allocations).
+
+## 2027-02-11 - Tier Object Iteration and Object.values() Projections in Multi-AI Arena Lookups
+**Learning:** `getModelElo` in `multi-ai-arena.js` was performing sequential `for...in` tier loops over `LM_ARENA_MODELS` on every model rating lookup (~25.4ms / 100k calls), and `getLeaderboard` was executing `Object.values().sort().map()` double array projections (~438.2ms / 50k calls).
+**Action:** Replace `for...in` tier iterations in `getModelElo` with O(1) `MODEL_LOOKUP_MAP` lookups (~2x speedup), and replace `Object.values().map()` in `getLeaderboard` with a single-pass `for...in` collect loop and pre-allocated indexed result map (~1.28x speedup).

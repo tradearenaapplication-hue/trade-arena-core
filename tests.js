@@ -3304,6 +3304,44 @@ describe("Regime Table renderRegimeTable XSS Sanitization Security", () => {
   });
 });
 
+describe("MoonPay Client XSS Sanitization Security", () => {
+  const fs = require("fs");
+  const moonpayCode = fs.readFileSync("./moonpay-client.js", "utf8");
+
+  it("defines escapeHTML helper and uses it in handleDepositSuccess", () => {
+    expect(moonpayCode).toContain("function escapeHTML(str)");
+    expect(moonpayCode).toContain("${escapeHTML(amount)}");
+  });
+
+  it("escapes malicious XSS payloads in deposit amount when rendering statusEl", () => {
+    const { handleDepositSuccess } = require("./moonpay-client.js");
+
+    let statusHTML = "";
+    const mockElement = {
+      set innerHTML(val) { statusHTML = val; },
+      get innerHTML() { return statusHTML; }
+    };
+
+    global.document = {
+      getElementById: (id) => id === "cStatus" ? mockElement : null,
+    };
+    global.showToast = () => {};
+    global.updateBalanceDisplay = () => {};
+    global.deployBotsAfterDeposit = () => {};
+
+    handleDepositSuccess({ amount: "<script>alert('xss_amount')</script>" });
+
+    expect(statusHTML.includes("<script>")).toBe(false);
+    expect(statusHTML).toContain("&lt;script&gt;alert(&#039;xss_amount&#039;)&lt;/script&gt;");
+
+    delete global.document;
+    delete global.showToast;
+    delete global.updateBalanceDisplay;
+    delete global.deployBotsAfterDeposit;
+    delete global.pendingDeposit;
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

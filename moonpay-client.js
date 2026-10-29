@@ -186,13 +186,32 @@ function showPendingDeposit(walletAddress, amount) {
 }
 
 /**
+ * Helper to escape HTML and prevent XSS
+ */
+function escapeHTML(str) {
+    if (!str && str !== 0) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/**
  * Handle successful deposit (called from webhook or callback)
  */
-function handleDepositSuccess(walletAddress) {
-    console.log('[MoonPay] Deposit success!', { walletAddress });
+function handleDepositSuccess(param) {
+    console.log('[MoonPay] Deposit success!', { param });
 
-    // Get amount from pending deposit
-    const amount = pendingDeposit?.amount || MOONPAY_CONFIG.defaultAmount;
+    let amount = MOONPAY_CONFIG.defaultAmount;
+    if (typeof param === 'object' && param !== null && param.amount) {
+        amount = param.amount;
+    } else if (typeof param === 'number' || (typeof param === 'string' && param && !param.startsWith('0x'))) {
+        amount = param;
+    } else if (pendingDeposit?.amount) {
+        amount = pendingDeposit.amount;
+    }
 
     // Clear pending
     pendingDeposit = null;
@@ -206,10 +225,10 @@ function handleDepositSuccess(walletAddress) {
     // Trigger bot deployment
     deployBotsAfterDeposit(amount);
 
-    // Update status
+    // Update status safely
     const statusEl = document.getElementById('cStatus');
     if (statusEl) {
-        statusEl.innerHTML = `✅ ${amount} USDC ready to trade!`;
+        statusEl.innerHTML = `✅ ${escapeHTML(amount)} USDC ready to trade!`;
     }
 }
 
@@ -352,8 +371,24 @@ function moonpaySellCrypto(walletAddress, amount) {
 }
 
 // Export functions
-window.moonpayInit = moonpayInit;
-window.moonpayBuyCrypto = moonpayBuyCrypto;
-window.moonpaySellCrypto = moonpaySellCrypto;
-window.getNetworkFeeDisplay = getNetworkFeeDisplay;
-window.handleMoonPayWebhook = handleMoonPayWebhook;
+if (typeof window !== 'undefined') {
+    window.moonpayInit = moonpayInit;
+    window.moonpayBuyCrypto = moonpayBuyCrypto;
+    window.moonpaySellCrypto = moonpaySellCrypto;
+    window.getNetworkFeeDisplay = getNetworkFeeDisplay;
+    window.handleMoonPayWebhook = handleMoonPayWebhook;
+    window.handleDepositSuccess = handleDepositSuccess;
+    window.escapeHTML = escapeHTML;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        moonpayInit,
+        moonpayBuyCrypto,
+        moonpaySellCrypto,
+        getNetworkFeeDisplay,
+        handleMoonPayWebhook,
+        handleDepositSuccess,
+        escapeHTML
+    };
+}

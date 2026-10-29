@@ -47,3 +47,8 @@
 **Vulnerability:** In `index-new.html`, `renderLog` interpolated unescaped trade log properties (`t.botId`, `t.token`, `t.method`, `t.time`) directly into `innerHTML` template literals without sanitization, and `escapeHTML` was completely missing from the module scope.
 **Learning:** Secondary or alternative UI layout files (such as `index-new.html`) often mirror components from primary templates but miss newly introduced security utility functions like `escapeHTML`, resulting in unhandled DOM XSS sinks when rendering dynamic trade records or user/API logs.
 **Prevention:** Ensure utility helpers like `escapeHTML` are defined across all HTML entry points and always wrap dynamic record properties (`botId`, `token`, `method`, `time`) before rendering HTML template literals into `innerHTML`.
+
+## 2026-10-29 - [HIGH] DOM XSS Vulnerability in MoonPay Client Deposit Status Rendering
+**Vulnerability:** In `moonpay-client.js`, `handleDepositSuccess` interpolated the dynamic `amount` variable directly into an `innerHTML` sink without HTML entity escaping.
+**Learning:** External or callback-driven parameters (such as fiat deposit amounts received from webhooks or widget callbacks) can carry string payloads that result in DOM XSS if assigned directly to `innerHTML`.
+**Prevention:** Always define an `escapeHTML` helper function in client modules and sanitize dynamic expressions before interpolating them into `innerHTML` template strings.

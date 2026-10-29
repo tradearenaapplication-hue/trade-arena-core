@@ -25,3 +25,7 @@
 ## 2026-10-21 - [Modal Dialog Initial Focus & Toggle ARIA Attributes]
 **Learning:** When launching or toggling fixed modal dialog overlays (such as the voice agent modal or holdings modal), explicitly setting focus to the primary interactive element (e.g. text input or close button) via setTimeout prevents focus loss behind the overlay, while pairing toggle controls with aria-label and aria-pressed attributes ensures WCAG 2.1 compliance.
 **Action:** Always shift focus to an interior element upon opening modal dialogs and restore focus to trigger buttons upon close.
+
+## 2026-10-29 - [Form Inputs & Range Sliders ARIA Labeling Pattern]
+**Learning:** Numeric input fields, select dropdowns, range sliders, and action buttons in dark-mode dense trading dashboards often lack screen reader context if relied solely on visual adjacent labels. Providing explicit `aria-label` and `title` attributes ensures WCAG 2.1 accessible navigation and hover clarity.
+**Action:** Always complement form controls, select menus, range sliders, and monetary action buttons with explicit `aria-label` and `title` attributes.

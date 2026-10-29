@@ -2289,6 +2289,16 @@ describe("Task Center ARIA Accessibility", () => {
   });
 });
 
+describe("Fiat Deposit Buttons ARIA Accessibility (index.html)", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("verifies aria-labels and title attributes on fiat deposit preset buttons", () => {
+    expect(html).toContain('aria-label="Deposit $50 USDC" title="Deposit $50 USDC via fiat onramp"');
+    expect(html).toContain('aria-label="Deposit $100 USDC" title="Deposit $100 USDC via fiat onramp"');
+  });
+});
+
 describe("Strategy Breakdown XSS Sanitization Security", () => {
   const fs = require("fs");
   const html = fs.readFileSync("index.html", "utf8");

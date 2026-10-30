@@ -2145,6 +2145,17 @@ describe("Bus Panel Preset Accessibility", () => {
     expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
   });
 
+  it("defines descriptive aria-label attributes on bus amount preset buttons starting with visible text", () => {
+    expect(html).toContain('aria-label="$0.10 trade amount for all bots"');
+    expect(html).toContain('aria-label="$0.25 trade amount for all bots"');
+    expect(html).toContain('aria-label="$0.50 trade amount for all bots"');
+    expect(html).toContain('aria-label="$1 trade amount for all bots"');
+    expect(html).toContain('aria-label="$2 trade amount for all bots"');
+    expect(html).toContain('aria-label="$5 trade amount for all bots"');
+    expect(html).toContain('aria-label="$20 trade amount for all bots"');
+    expect(html).toContain('aria-label="$100 trade amount for all bots"');
+  });
+
   it("defines descriptive aria-label attributes on bus preset quick-apply buttons", () => {
     expect(html).toContain('aria-label="Apply Safe Mode preset: small bets, high consensus, and stop loss enabled"');
     expect(html).toContain('aria-label="Apply Balanced preset: medium bets with mixed bot personalities"');

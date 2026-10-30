@@ -25,3 +25,7 @@
 ## 2026-10-21 - [Modal Dialog Initial Focus & Toggle ARIA Attributes]
 **Learning:** When launching or toggling fixed modal dialog overlays (such as the voice agent modal or holdings modal), explicitly setting focus to the primary interactive element (e.g. text input or close button) via setTimeout prevents focus loss behind the overlay, while pairing toggle controls with aria-label and aria-pressed attributes ensures WCAG 2.1 compliance.
 **Action:** Always shift focus to an interior element upon opening modal dialogs and restore focus to trigger buttons upon close.
+
+## 2026-10-30 - [WCAG 2.5.3 Label in Name for Visible Text Buttons]
+**Learning:** When adding `aria-label` to buttons with visible text, the `aria-label` text MUST begin with the exact visible text string (WCAG 2.5.3 Label in Name). Otherwise, speech recognition and voice dictation users calling out visible button text will fail to trigger the control.
+**Action:** Ensure any `aria-label` on a visible-text button begins with the exact visible string (e.g., `aria-label="$0.10 trade amount for all bots"` for a button displaying `$0.10`).

@@ -25,3 +25,7 @@
 ## 2026-10-21 - [Modal Dialog Initial Focus & Toggle ARIA Attributes]
 **Learning:** When launching or toggling fixed modal dialog overlays (such as the voice agent modal or holdings modal), explicitly setting focus to the primary interactive element (e.g. text input or close button) via setTimeout prevents focus loss behind the overlay, while pairing toggle controls with aria-label and aria-pressed attributes ensures WCAG 2.1 compliance.
 **Action:** Always shift focus to an interior element upon opening modal dialogs and restore focus to trigger buttons upon close.
+
+## 2026-11-01 - [Regulatory Modal Focus Trapping & Restoration]
+**Learning:** Fixed regulatory disclosure modals invoked by multiple distinct UI triggers (such as live trading gateways and wallet sign-in buttons) leave keyboard focus stranded in the background if the invoking trigger element is not captured. Storing `document.activeElement` on open and refocusing it on dismissal prevents keyboard focus disorientation (WCAG 2.4.3).
+**Action:** Store the active trigger in a module-scoped variable upon opening interceptor modals and restore focus to it in all dismissal handlers (cancel button, header close button, and Escape key).

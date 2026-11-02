@@ -443,8 +443,8 @@ function getBotStrategyInsights(strategy) {
   return {
     totalTrades: strategy.tradesCount,
     sessionPnL: strategy.sessionPnL.toFixed(2),
-    recentWinRate: recentWinRate + '%',
-    avgRecentPnL: '$' + avgRecentPnL,
+    recentWinRate: recentWinRateStr + '%',
+    avgRecentPnL: '$' + avgRecentPnLStr,
     consecutiveWins: strategy.consecutiveWins,
     consecutiveLosses: strategy.consecutiveLosses,
     riskMultiplier: strategy.riskMultiplier.toFixed(2),

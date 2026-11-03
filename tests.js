@@ -2133,6 +2133,18 @@ describe("Go Live Acknowledgment Modal Accessibility & ASIC Regulatory Disclosur
     expect(html).toContain("does not hold an Australian Financial Services Licence (AFSL)");
     expect(html).toContain("Trade Arena is a purely non-custodial software interface.");
   });
+
+  it("configures accessible buttons and focus management in #goLiveModal", () => {
+    expect(html).toContain('id="goLiveCloseBtn"');
+    expect(html).toContain('aria-label="Close regulatory disclosure modal"');
+    expect(html).toContain('id="goLiveConfirmBtn"');
+    expect(html).toContain('aria-label="Acknowledge regulatory disclosures and enter live mode"');
+    expect(html).toContain('id="goLiveCancelBtn"');
+    expect(html).toContain('aria-label="Cancel and remain in demo mode"');
+    expect(html).toContain("_lastGoLiveTrigger = document.activeElement;");
+    expect(html).toContain("confirmBtn.focus()");
+    expect(html).toContain("_lastGoLiveTrigger.focus()");
+  });
 });
 
 describe("Bus Panel Preset Accessibility", () => {
@@ -2143,6 +2155,17 @@ describe("Bus Panel Preset Accessibility", () => {
     expect(html).toContain('class="bus-preset" onclick="busSetAmount(0.10)" aria-pressed="false"');
     expect(html).toContain("b.setAttribute('aria-pressed', isMatch ? 'true' : 'false')");
     expect(html).toContain("b.setAttribute('aria-pressed', 'false')");
+  });
+
+  it("defines descriptive aria-label attributes on bus amount preset buttons starting with visible text", () => {
+    expect(html).toContain('aria-label="$0.10 trade amount for all bots"');
+    expect(html).toContain('aria-label="$0.25 trade amount for all bots"');
+    expect(html).toContain('aria-label="$0.50 trade amount for all bots"');
+    expect(html).toContain('aria-label="$1 trade amount for all bots"');
+    expect(html).toContain('aria-label="$2 trade amount for all bots"');
+    expect(html).toContain('aria-label="$5 trade amount for all bots"');
+    expect(html).toContain('aria-label="$20 trade amount for all bots"');
+    expect(html).toContain('aria-label="$100 trade amount for all bots"');
   });
 
   it("defines descriptive aria-label attributes on bus preset quick-apply buttons", () => {

@@ -550,20 +550,33 @@ function updateModelPerformance(decision, outcome) {
 // GET ARENA INSIGHTS: Show which models are performing best
 // ════════════════════════════════════════════════════════════════════════════════
 
+/**
+ * ⚡ OPTIMIZATION: Guarded for...in scalar search replaces Object.entries().map()
+ * tuple array allocations and intermediate function calls in AI Arena insight queries.
+ */
 function getArenaInsights() {
   const perf = arenaState.modelPerformance;
-  const models = Object.entries(perf)
-    .map(([name, stats]) => {
-      const modelConfig = AI_ARENA.models[name];
-      return {
-        name,
-        accuracy: parseFloat(stats.accuracy) || 0,
-        total: stats.wins + stats.losses,
-        wins: stats.wins,
-        emoji: modelConfig?.emoji || '🤖',  // Default emoji if model not found
-      };
-    })
-    .sort((a, b) => b.accuracy - a.accuracy);
+  const models = [];
+
+  for (const name in perf) {
+    if (Object.prototype.hasOwnProperty.call(perf, name)) {
+      const stats = perf[name];
+      if (stats) {
+        const modelConfig = AI_ARENA.models[name];
+        const wins = stats.wins || 0;
+        const losses = stats.losses || 0;
+        models.push({
+          name,
+          accuracy: parseFloat(stats.accuracy) || 0,
+          total: wins + losses,
+          wins,
+          emoji: modelConfig?.emoji || '🤖', // Default emoji if model not found
+        });
+      }
+    }
+  }
+
+  models.sort((a, b) => b.accuracy - a.accuracy);
 
   return {
     models,

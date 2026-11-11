@@ -3337,6 +3337,26 @@ describe("Regime Table renderRegimeTable XSS Sanitization Security", () => {
   });
 });
 
+describe("Bus Preset Accessibility", () => {
+  it("ensures all bus preset buttons in index.html have aria-label and aria-pressed attributes", () => {
+    const fs = require("fs");
+    const path = require("path");
+    const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+    const presetRegex = /<button[^>]*class=["'][^"']*bus-preset[^"']*["'][^>]*>/g;
+    const matches = html.match(presetRegex) || [];
+    expect(matches.length).toBeGreaterThan(0);
+
+    for (const match of matches) {
+      expect(match).toContain('aria-label=');
+      expect(match).toContain('aria-pressed=');
+      // Ensure aria-label is non-empty
+      const ariaLabelMatch = match.match(/aria-label=["']([^"']+)["']/);
+      expect(Boolean(ariaLabelMatch)).toBe(true);
+      expect(ariaLabelMatch[1].trim().length).toBeGreaterThan(0);
+    }
+  });
+});
+
 async function run() {
   let lastSuite = null;
 

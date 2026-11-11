@@ -907,13 +907,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>🧠</span> PERSONALITY — ALL BOTS</div>
         <div class="bus-presets" id="busPersonalityPresets">
-          <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')" aria-pressed="false">🔥 Aggressive</button>
-          <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')" aria-pressed="false">🛡️ Conservative</button>
-          <button class="bus-preset" onclick="busSetPersonality('MOMENTUM')" aria-pressed="false">📈 Momentum</button>
-          <button class="bus-preset" onclick="busSetPersonality('CONTRARIAN')" aria-pressed="false">🔄 Contrarian</button>
-          <button class="bus-preset" onclick="busSetPersonality('BALANCED')" aria-pressed="false">⚖️ Balanced</button>
-          <button class="bus-preset" onclick="busSetPersonality('RANDOM')" aria-pressed="false">🎲 Random Spread</button>
-          <button class="bus-preset" onclick="busSetPersonality('OPTIMIZED')" aria-pressed="false">⚡ Optimized Spread</button>
+          <button class="bus-preset" onclick="busSetPersonality('AGGRESSIVE')" aria-pressed="false" aria-label="Aggressive personality for all bots">🔥 Aggressive</button>
+          <button class="bus-preset" onclick="busSetPersonality('CONSERVATIVE')" aria-pressed="false" aria-label="Conservative personality for all bots">🛡️ Conservative</button>
+          <button class="bus-preset" onclick="busSetPersonality('MOMENTUM')" aria-pressed="false" aria-label="Momentum personality for all bots">📈 Momentum</button>
+          <button class="bus-preset" onclick="busSetPersonality('CONTRARIAN')" aria-pressed="false" aria-label="Contrarian personality for all bots">🔄 Contrarian</button>
+          <button class="bus-preset" onclick="busSetPersonality('BALANCED')" aria-pressed="false" aria-label="Balanced personality for all bots">⚖️ Balanced</button>
+          <button class="bus-preset" onclick="busSetPersonality('RANDOM')" aria-pressed="false" aria-label="Random personality spread for all bots">🎲 Random Spread</button>
+          <button class="bus-preset" onclick="busSetPersonality('OPTIMIZED')" aria-pressed="false" aria-label="Optimized personality spread for all bots">⚡ Optimized Spread</button>
         </div>
       </div>
 
@@ -921,10 +921,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
       <div class="bus-section">
         <div class="bus-section-title"><span>⏱️</span> AUTO DELAY — ALL BOTS</div>
         <div class="bus-presets" id="busDelayPresets">
-          <button class="bus-preset" onclick="busSetDelay(2000)" aria-pressed="false">Fast 2s</button>
-          <button class="bus-preset" onclick="busSetDelay(5000)" aria-pressed="false">Normal 5s</button>
-          <button class="bus-preset" onclick="busSetDelay(15000)" aria-pressed="false">Slow 15s</button>
-          <button class="bus-preset" onclick="busSetDelay(60000)" aria-pressed="false">Patient 1m</button>
+          <button class="bus-preset" onclick="busSetDelay(2000)" aria-pressed="false" aria-label="Fast 2 second auto delay for all bots">Fast 2s</button>
+          <button class="bus-preset" onclick="busSetDelay(5000)" aria-pressed="false" aria-label="Normal 5 second auto delay for all bots">Normal 5s</button>
+          <button class="bus-preset" onclick="busSetDelay(15000)" aria-pressed="false" aria-label="Slow 15 second auto delay for all bots">Slow 15s</button>
+          <button class="bus-preset" onclick="busSetDelay(60000)" aria-pressed="false" aria-label="Patient 1 minute auto delay for all bots">Patient 1m</button>
         </div>
       </div>
 
@@ -935,19 +935,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
           <div style="flex:1">
             <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Stop Loss</div>
             <div class="bus-presets" id="busSLPresets" style="flex-direction:column">
-              <button class="bus-preset" onclick="busSetSL(0)" aria-pressed="false">None</button>
-              <button class="bus-preset" onclick="busSetSL(10)" aria-pressed="false">−10%</button>
-              <button class="bus-preset" onclick="busSetSL(20)" aria-pressed="false">−20%</button>
-              <button class="bus-preset" onclick="busSetSL(50)" aria-pressed="false">−50%</button>
+              <button class="bus-preset" onclick="busSetSL(0)" aria-pressed="false" aria-label="Disable stop loss for all bots">None</button>
+              <button class="bus-preset" onclick="busSetSL(10)" aria-pressed="false" aria-label="Minus 10% stop loss for all bots">−10%</button>
+              <button class="bus-preset" onclick="busSetSL(20)" aria-pressed="false" aria-label="Minus 20% stop loss for all bots">−20%</button>
+              <button class="bus-preset" onclick="busSetSL(50)" aria-pressed="false" aria-label="Minus 50% stop loss for all bots">−50%</button>
             </div>
           </div>
           <div style="flex:1">
             <div style="font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Take Profit</div>
             <div class="bus-presets" id="busTPPresets" style="flex-direction:column">
-              <button class="bus-preset" onclick="busSetTP(0)" aria-pressed="false">None</button>
-              <button class="bus-preset" onclick="busSetTP(20)" aria-pressed="false">+20%</button>
-              <button class="bus-preset" onclick="busSetTP(50)" aria-pressed="false">+50%</button>
-              <button class="bus-preset" onclick="busSetTP(100)" aria-pressed="false">+100%</button>
+              <button class="bus-preset" onclick="busSetTP(0)" aria-pressed="false" aria-label="Disable take profit for all bots">None</button>
+              <button class="bus-preset" onclick="busSetTP(20)" aria-pressed="false" aria-label="Plus 20% take profit for all bots">+20%</button>
+              <button class="bus-preset" onclick="busSetTP(50)" aria-pressed="false" aria-label="Plus 50% take profit for all bots">+50%</button>
+              <button class="bus-preset" onclick="busSetTP(100)" aria-pressed="false" aria-label="Plus 100% take profit for all bots">+100%</button>
             </div>
           </div>
         </div>

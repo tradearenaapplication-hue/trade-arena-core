@@ -42,3 +42,8 @@ data/scan-history.jsonl
 
 # Scans recorded before price cross-validation. Superseded - do not analyse.
 data/scan-history.UNTRUSTED-*.jsonl
+
+# Kill-switch runtime state (T-002). Local halt/spend state, not source.
+# Must never be committed: a committed "engaged" state would halt a fresh
+# deploy until an admin disengages it.
+data/kill-switch.json

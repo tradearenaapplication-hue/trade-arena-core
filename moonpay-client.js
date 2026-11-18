@@ -85,11 +85,27 @@ function moonpayBuyCrypto(walletAddress, amount) {
 
     // If MoonPay widget SDK is available, use it
     if (window.MoonPayWidget) {
-        openMoonPayWidget(addr, buyAmount);
+        // openMoonPayWidget(amount, currency) — amount FIRST. Passing the
+        // wallet address here used to make the widget treat the address as
+        // the USD amount.
+        openMoonPayWidget(buyAmount, 'usdc');
     } else {
         // Fallback: open MoonPay directly
         openMoonPayDirect(addr, buyAmount);
     }
+}
+
+/**
+ * Entry point wired to the "💳 DEPOSIT USDC" button in index.html
+ * (onclick="window.openMoonpay && window.openMoonpay()"). Previously this
+ * function did not exist anywhere, so the button silently did nothing.
+ * Delegates to moonpayBuyCrypto, which resolves the signed-in wallet
+ * (Privy embedded wallet) and opens the MoonPay widget / buy page.
+ * Fails safe — moonpayBuyCrypto toasts "Please sign in first" and returns
+ * without opening anything when no wallet is connected.
+ */
+function openMoonpay(amount) {
+    return moonpayBuyCrypto(null, amount);
 }
 
 /**
@@ -300,23 +316,17 @@ async function handleMoonPayWebhook(req, res) {
 }
 
 /**
- * Verify MoonPay webhook signature
+ * Verify MoonPay webhook signature (client-side stub — FAILS CLOSED).
+ *
+ * Webhook signatures are verified server-side only (server.js), where the
+ * webhook secret lives. A browser bundle must never hold that secret, so
+ * this client helper cannot verify anything. It previously returned `true`
+ * for any signature while the placeholder secret was set, and called
+ * `require('crypto')`, which does not exist in browsers. It now always
+ * returns false so a legacy caller fails loudly instead of trusting a stub.
  */
 function verifyMoonPaySignature(body, signature) {
-    // TODO: Implement HMAC verification with MOONPAY_CONFIG.secretKey
-    // For development, accept all signatures
-    if (MOONPAY_CONFIG.secretKey.startsWith('YOUR_')) {
-        return true;
-    }
-
-    try {
-        const crypto = require('crypto');
-        const hmac = crypto.createHmac('sha256', MOONPAY_CONFIG.secretKey);
-        const digest = hmac.update(JSON.stringify(body)).digest('base64');
-        return digest === signature;
-    } catch (e) {
-        return false;
-    }
+    return false;
 }
 
 /**
@@ -354,6 +364,7 @@ function moonpaySellCrypto(walletAddress, amount) {
 // Export functions
 window.moonpayInit = moonpayInit;
 window.moonpayBuyCrypto = moonpayBuyCrypto;
+window.openMoonpay = openMoonpay;
 window.moonpaySellCrypto = moonpaySellCrypto;
 window.getNetworkFeeDisplay = getNetworkFeeDisplay;
 window.handleMoonPayWebhook = handleMoonPayWebhook;

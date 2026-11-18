@@ -491,7 +491,14 @@ app.use(cors({
     credentials: false
 }));
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+    limit: '10mb',
+    // Capture the exact raw request bytes before JSON parsing. MoonPay signs
+    // the raw body (see verifyMoonPaySignature below); a JSON parser can
+    // reorder keys / change whitespace, which would break the HMAC. This
+    // only stores the buffer on the request object — parsing is unchanged.
+    verify: (req, res, buf) => { req.rawBody = buf; }
+}));
 
 // Global API rate limit (CodeQL js/missing-rate-limiting #63/#651):
 // sensitive POST routes already carry their own stricter limiters
@@ -583,6 +590,70 @@ function safeCompare(a, b) {
     const bufB = Buffer.from(b);
     if (bufA.length !== bufB.length) return false;
     return crypto.timingSafeEqual(bufA, bufB);
+}
+
+/**
+ * Raw request body for HMAC verification, as exact bytes.
+ * Live requests carry req.rawBody (captured by the express.json verify hook
+ * above). Direct handler invocations (tests) have no raw body, so fall back
+ * to re-serialising the parsed body — the HMAC is still checked, just over
+ * the re-serialised bytes. Never trust a caller-supplied rawBody that is
+ * not a Buffer/string.
+ */
+function getMoonPayRawBody(req) {
+    if (req.rawBody) {
+        return Buffer.isBuffer(req.rawBody) ? req.rawBody : Buffer.from(String(req.rawBody));
+    }
+    if (typeof req.body === 'string') return Buffer.from(req.body);
+    if (req.body && typeof req.body === 'object') return Buffer.from(JSON.stringify(req.body));
+    return Buffer.alloc(0);
+}
+
+/**
+ * Verify a MoonPay webhook signature (HMAC-SHA256, hex, constant-time).
+ *
+ * Accepts the two signature forms MoonPay actually sends, keyed by the
+ * webhook API key in MOONPAY_WEBHOOK_SECRET (never the secret itself):
+ *
+ *  1. Plain hex HMAC of the raw request body:
+ *     X-Moonpay-Signature: <hex>
+ *  2. MoonPay's current V2 form (docs: dev.moonpay.com, "Verify the
+ *     signature"): Moonpay-Signature-V2: t=<unix timestamp>,s=<hex>, where
+ *     the signed text is "<timestamp>.<raw request body>".
+ *
+ * The old code compared the signature directly against the secret
+ * (safeCompare(signature, expectedSecret)), so a signature literally equal
+ * to the secret passed and a genuine HMAC always failed with 401. That
+ * contract is gone: a signature equal to the secret now fails, and only a
+ * correct HMAC passes. Returns false when the secret is unconfigured or
+ * the signature is missing/malformed.
+ *
+ * Note: no timestamp freshness window is enforced — MoonPay documents no
+ * tolerance, and a replayed "completed" webhook only re-queues an already
+ * confirmed deployment. If replay protection is wanted later, enforce it
+ * here alongside idempotency on the deployment queue.
+ */
+function verifyMoonPaySignature(req) {
+    const secret = process.env.MOONPAY_WEBHOOK_SECRET || '';
+    if (!secret) return false;
+
+    const headers = req.headers || {};
+    const header = headers['moonpay-signature-v2'] || headers['moonpay-signature'] || headers['x-moonpay-signature'] || '';
+    if (!header || typeof header !== 'string') return false;
+
+    const raw = getMoonPayRawBody(req);
+    const rawText = raw.toString('utf8');
+
+    // Form 2: t=<timestamp>,s=<hex> over "<timestamp>.<raw body>"
+    const v2 = header.match(/t=([^,]+),s=([0-9a-fA-F]+)/);
+    if (v2) {
+        const expected = crypto.createHmac('sha256', secret).update(`${v2[1]}.${rawText}`).digest('hex');
+        return safeCompare(v2[2].toLowerCase(), expected);
+    }
+
+    // Form 1: plain hex HMAC over the raw body
+    const expected = crypto.createHmac('sha256', secret).update(raw).digest('hex');
+    return safeCompare(header.trim().toLowerCase(), expected);
 }
 
 /** Deployment queue for confirmed deposits */
@@ -1395,6 +1466,189 @@ function getServerEffectiveDailyLossLimit(startingBalance = 10000) {
     return serverSafetyState.dailyLossLimit;
 }
 
+/**
+ * Global Kill-Switch & Hardcoded Caps (BACKLOG T-002, Critical).
+ *
+ * The red EMERGENCY STOP button in index.html used to be browser-only: it
+ * stopped paper bots and never reached the server. This is the server-side
+ * half. A halt here blocks both swap endpoints at the top of
+ * handleSwapRequest, stops the AutonomousWorker, and — per the recommended
+ * defaults in KILL_SWITCH_PLAN.md — persists to disk, because railway.json
+ * sets restartPolicyType ON_FAILURE: a crash auto-restarts the server, and
+ * an in-memory halt would clear on that restart and silently resume trading.
+ * Disengage is only possible via the admin endpoint with ADMIN_TOKEN.
+ *
+ * Caps are hardcoded (not env-overridable): 0.05 ETH per trade, 0.5 ETH
+ * aggregate over a 24h sliding window. The worker keeps its own USD caps
+ * ($500/trade, $100/day loss); reconciling the two ledgers into one is
+ * follow-up work. Per-bot 10% loss halt is a second pass, not built here.
+ */
+const MAX_TRADE_ETH = 0.05;
+const MAX_24H_ETH = 0.5;
+const KILL_SWITCH_STATE_FILE = path.join(__dirname, 'data', 'kill-switch.json');
+
+let killSwitchState = {
+    engaged: false,
+    engagedAt: null,
+    engagedBy: null,
+    reason: null,
+    // 24h sliding-window spend, in ETH. In-memory list, persisted with the
+    // halt state so a restart does not silently reset the daily cap.
+    spend24h: []
+};
+
+function persistKillSwitchState() {
+    try {
+        fs.mkdirSync(path.dirname(KILL_SWITCH_STATE_FILE), { recursive: true });
+        const tmp = KILL_SWITCH_STATE_FILE + '.tmp';
+        fs.writeFileSync(tmp, JSON.stringify(killSwitchState, null, 2));
+        fs.renameSync(tmp, KILL_SWITCH_STATE_FILE);
+    } catch (err) {
+        // A halt that cannot be persisted must not be silently lost: log it
+        // loudly. The in-memory flag still blocks swaps for this process.
+        console.error('[KillSwitch] FAILED to persist state:', err.message);
+    }
+}
+
+function loadKillSwitchState() {
+    try {
+        const raw = fs.readFileSync(KILL_SWITCH_STATE_FILE, 'utf8');
+        const parsed = JSON.parse(raw);
+        killSwitchState.engaged = parsed.engaged === true;
+        killSwitchState.engagedAt = parsed.engagedAt || null;
+        killSwitchState.engagedBy = parsed.engagedBy || null;
+        killSwitchState.reason = parsed.reason || null;
+        killSwitchState.spend24h = Array.isArray(parsed.spend24h)
+            ? parsed.spend24h.filter(e => e && Number.isFinite(Number(e.at)) && Number.isFinite(Number(e.eth)))
+            : [];
+        pruneKillSwitchSpend();
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            // No state file yet: first boot, disengaged. Nothing to do.
+            return;
+        }
+        // Fail closed: an unreadable/corrupt state file must never be read as
+        // "trading is live". Halt until an admin deliberately disengages.
+        console.error('[KillSwitch] State file unreadable, failing closed (halted):', err.message);
+        killSwitchState.engaged = true;
+        killSwitchState.engagedAt = killSwitchState.engagedAt || new Date().toISOString();
+        killSwitchState.reason = 'CORRUPT_STATE';
+    }
+}
+
+function pruneKillSwitchSpend(now = Date.now()) {
+    const cutoff = now - 24 * 60 * 60 * 1000;
+    killSwitchState.spend24h = killSwitchState.spend24h.filter(e => Number(e.at) > cutoff);
+}
+
+function killSwitchSpend24h(now = Date.now()) {
+    pruneKillSwitchSpend(now);
+    return killSwitchState.spend24h.reduce((sum, e) => sum + Number(e.eth), 0);
+}
+
+// Test/support hook: reset in-memory state AND the persisted file. Tests
+// must call this to isolate themselves; it is not an admin endpoint.
+function resetKillSwitchState() {
+    killSwitchState = { engaged: false, engagedAt: null, engagedBy: null, reason: null, spend24h: [] };
+    persistKillSwitchState();
+}
+
+loadKillSwitchState();
+
+function isKillSwitchAdmin(req) {
+    const configured = (process.env.ADMIN_TOKEN || '').trim();
+    if (!configured) return { ok: false, status: 503, error: 'ADMIN_TOKEN_NOT_CONFIGURED' };
+    const supplied = String((req.headers && (req.headers['x-admin-token'] || req.headers['X-Admin-Token'])) || '');
+    const a = Buffer.from(supplied);
+    const b = Buffer.from(configured);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return { ok: false, status: 401, error: 'UNAUTHORISED' };
+    }
+    return { ok: true };
+}
+
+async function handleKillSwitchAdmin(req, res) {
+    const auth = isKillSwitchAdmin(req);
+    if (!auth.ok) {
+        return res.status(auth.status).json({ success: false, error: auth.error });
+    }
+    try {
+        const { action, reason } = req.body || {};
+        if (action === 'engage') {
+            killSwitchState.engaged = true;
+            killSwitchState.engagedAt = new Date().toISOString();
+            killSwitchState.engagedBy = 'admin';
+            killSwitchState.reason = typeof reason === 'string' && reason ? reason.slice(0, 200) : 'MANUAL_HALT';
+            persistKillSwitchState();
+            // Stop the worker too. stop() is a no-op when it is not running
+            // (it is off by default), so this is safe to call unconditionally.
+            // In-flight on-chain swaps cannot be recalled; the flag only
+            // blocks new ones, in under a second because the check is
+            // synchronous in handleSwapRequest.
+            try { require('./services/AutonomousWorker').stop(); } catch (e) {
+                console.error('[KillSwitch] AutonomousWorker.stop() failed:', e.message);
+            }
+            return res.json({ success: true, engaged: true, engagedAt: killSwitchState.engagedAt, reason: killSwitchState.reason });
+        }
+        if (action === 'disengage') {
+            killSwitchState.engaged = false;
+            killSwitchState.engagedAt = null;
+            killSwitchState.engagedBy = null;
+            killSwitchState.reason = null;
+            persistKillSwitchState();
+            return res.json({ success: true, engaged: false, engagedAt: null, reason: null });
+        }
+        return res.status(400).json({ success: false, error: 'Unknown action: use "engage" or "disengage"' });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+}
+
+function handleKillSwitchStatus(req, res) {
+    // Read-only and contains no secret, so it is public: the UI polls it on
+    // load so a refresh cannot show trading as live while the server is halted.
+    res.json({
+        success: true,
+        engaged: killSwitchState.engaged,
+        engagedAt: killSwitchState.engagedAt,
+        reason: killSwitchState.reason
+    });
+}
+
+// Convert a trade to ETH terms for the hardcoded caps, or fail closed.
+// Returns { eth } on success, or { error } when it cannot be priced — the
+// caller must refuse the trade rather than guess. ETH/WETH input needs no
+// price lookup: the quantity already IS the ETH amount.
+async function tradeSizeEth(fromToken, engineAmount, amountUSD) {
+    const isEth = /^(ETH|WETH|NATIVE)$/i.test(String(fromToken || '').trim());
+    if (!isEth) {
+        // Non-ETH input: price the input token, then convert via the ETH price.
+        let ethPrice = null;
+        try { ethPrice = await onchainEngine.getTokenPriceUSD('ETH'); } catch (e) { ethPrice = null; }
+        if (!ethPrice || !Number.isFinite(Number(ethPrice)) || Number(ethPrice) <= 0) {
+            return { error: 'Could not price ETH; refusing to trade without a size check.' };
+        }
+        if (amountUSD !== undefined && amountUSD !== null && amountUSD !== '') {
+            return { eth: Number(amountUSD) / Number(ethPrice) };
+        }
+        let tokenPrice = null;
+        try { tokenPrice = await onchainEngine.getTokenPriceUSD(fromToken); } catch (e) { tokenPrice = null; }
+        if (!tokenPrice || !Number.isFinite(Number(tokenPrice)) || Number(tokenPrice) <= 0) {
+            return { error: `Could not price ${fromToken} in ETH terms; refusing to trade without a size check.` };
+        }
+        return { eth: Number(engineAmount) * Number(tokenPrice) / Number(ethPrice) };
+    }
+    if (amountUSD !== undefined && amountUSD !== null && amountUSD !== '') {
+        let ethPrice = null;
+        try { ethPrice = await onchainEngine.getTokenPriceUSD('ETH'); } catch (e) { ethPrice = null; }
+        if (!ethPrice || !Number.isFinite(Number(ethPrice)) || Number(ethPrice) <= 0) {
+            return { error: 'Could not price ETH; refusing to trade without a size check.' };
+        }
+        return { eth: Number(amountUSD) / Number(ethPrice) };
+    }
+    return { eth: Number(engineAmount) };
+}
+
 app.get('/api/safety-controls', (req, res) => {
     res.json({
         success: true,
@@ -1444,6 +1698,9 @@ app.post('/api/safety-controls/update', (req, res) => {
     }
 });
 
+app.post('/api/admin/kill-switch', handleKillSwitchAdmin);
+app.get('/api/admin/kill-switch/status', handleKillSwitchStatus);
+
 app.post('/api/claude', async (req, res) => {
     try {
         const apiKey = process.env.ANTHROPIC_API_KEY || '';
@@ -1475,13 +1732,14 @@ app.get('/api/deployments', (req, res) => {
     });
 });
 
-app.post('/api/deployments/webhook', (req, res) => {
+/**
+ * Shared MoonPay deposit webhook handler for both routes below.
+ * Signature is verified with verifyMoonPaySignature (HMAC-SHA256 over the
+ * raw body, see above) — never by comparing against the secret itself.
+ */
+function handleMoonPayDepositWebhook(req, res) {
     try {
-        const signature = req.headers['x-moonpay-signature'];
-        const expectedSecret = process.env.MOONPAY_WEBHOOK_SECRET || '';
-
-        // Security: Require valid webhook secret & signature, compared in constant time
-        if (!expectedSecret || !signature || !safeCompare(signature, expectedSecret)) {
+        if (!verifyMoonPaySignature(req)) {
             return res.status(401).json({ success: false, error: 'Invalid or unconfigured webhook signature' });
         }
 
@@ -1521,55 +1779,12 @@ app.post('/api/deployments/webhook', (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
-});
+}
+
+app.post('/api/deployments/webhook', handleMoonPayDepositWebhook);
 
 // ===== ALIAS: /api/webhooks/moonpay/deposit =====
-app.post('/api/webhooks/moonpay/deposit', (req, res) => {
-    try {
-        const signature = req.headers['x-moonpay-signature'];
-        const expectedSecret = process.env.MOONPAY_WEBHOOK_SECRET || '';
-
-        if (!expectedSecret || !signature || !safeCompare(signature, expectedSecret)) {
-            return res.status(401).json({ success: false, error: 'Invalid or unconfigured webhook signature' });
-        }
-
-        const payload = req.body || {};
-        const status = String(payload.status || payload.state || '').toLowerCase();
-        const amount = Number(payload.amount || payload.cryptoAmount || payload.fiatAmount || 0);
-        const currency = String(payload.currency || payload.cryptoCurrency || 'USDC').toUpperCase();
-        const destination = payload.walletAddress || payload.address || payload.destinationAddress || '';
-        const reference = payload.transactionId || payload.id || payload.reference || null;
-
-        const isConfirmed = ['completed', 'complete', 'confirmed', 'succeeded', 'success'].includes(status);
-
-        if (!isConfirmed) {
-            return res.json({
-                success: true,
-                received: true,
-                ignored: true,
-                reason: 'Deposit not confirmed yet'
-            });
-        }
-
-        const deployment = queueBotDeployment({
-            reference,
-            currency,
-            amount,
-            destination,
-            source: 'moonpay',
-            confirmedAt: Date.now()
-        });
-
-        res.json({
-            success: true,
-            received: true,
-            deployment,
-            message: 'Deposit confirmed and deployment queued'
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, error: 'Internal server error' });
-    }
-});
+app.post('/api/webhooks/moonpay/deposit', handleMoonPayDepositWebhook);
 
 /**
  * POST /api/analyze/arbitrage - Detect arbitrage opportunities using real prices
@@ -2257,6 +2472,28 @@ app.delete('/api/wallet/trade-session', (req, res) => {
 
 async function handleSwapRequest(req, res, next) {
     try {
+        // T-002 kill-switch: checked FIRST, before any pricing or engine call.
+        // The check is synchronous, so a halt engages in under 1 second and
+        // no new swap can start after it. In-flight swaps cannot be recalled.
+        if (killSwitchState.engaged) {
+            return res.status(503).json({
+                success: false,
+                error: 'TRADING_HALTED',
+                engagedAt: killSwitchState.engagedAt,
+                reason: killSwitchState.reason
+            });
+        }
+        // Cooling-off (take-a-break / self-exclusion) also blocks swaps. This
+        // state was previously only returned by GET /api/safety-controls and
+        // never enforced on the swap path.
+        if (serverSafetyState.coolingUntil && Date.now() < serverSafetyState.coolingUntil) {
+            return res.status(503).json({
+                success: false,
+                error: serverSafetyState.coolingReason || 'COOLING_OFF_ACTIVE',
+                coolingUntil: serverSafetyState.coolingUntil
+            });
+        }
+
         const { fromToken, toToken, amount, amountUSD, slippage, botId } = req.body || {};
 
         // Exactly one denomination must be supplied, and it is always explicit.
@@ -2317,6 +2554,25 @@ async function handleSwapRequest(req, res, next) {
             sizing = { input: 'amount', engineAmount };
         }
 
+        // T-002 hardcoded caps (not env-overridable). Size the trade in ETH
+        // terms and refuse it — fail closed — if it cannot be priced, if it
+        // exceeds 0.05 ETH, or if it would push 24h aggregate spend past
+        // 0.5 ETH. Spend is recorded only after a successful engine call.
+        const sized = await tradeSizeEth(fromToken, engineAmount, hasUsd ? amountUSD : undefined);
+        if (sized.error) {
+            return res.status(400).json({ success: false, error: sized.error });
+        }
+        const sizeEth = sized.eth;
+        if (!Number.isFinite(sizeEth) || sizeEth <= 0) {
+            return res.status(400).json({ success: false, error: 'Could not size trade in ETH terms; refusing to trade without a size check.' });
+        }
+        if (sizeEth > MAX_TRADE_ETH) {
+            return res.status(400).json({ success: false, error: 'Trade exceeds maximum single-trade size of 0.05 ETH' });
+        }
+        if (killSwitchSpend24h() + sizeEth > MAX_24H_ETH) {
+            return res.status(400).json({ success: false, error: 'Trade exceeds maximum 24h aggregate spend of 0.5 ETH' });
+        }
+
         const result = await onchainEngine.executeTrade({
             botId: botId || 'manual',
             fromToken,
@@ -2324,6 +2580,11 @@ async function handleSwapRequest(req, res, next) {
             amount: engineAmount,
             slippageBps
         });
+
+        // Successful fill: record it against the 24h cap.
+        killSwitchState.spend24h.push({ at: Date.now(), eth: sizeEth });
+        pruneKillSwitchSpend();
+        persistKillSwitchState();
 
         // Record the trade server-side. Without this, onchain swaps executed
         // through this endpoint were never written to the trade log: only the
@@ -3019,6 +3280,21 @@ process.on('SIGINT', () => {
 });
 
 module.exports = app;
+
+// Test/support access to the kill-switch (T-002) and safety state. The
+// handlers above are the only admin surface; these properties exist so
+// tests.js can reset state between cases and verify persistence without
+// going through HTTP. `state` is the live object — mutate it only via
+// reset() in tests, never in production code.
+app.killSwitch = {
+    get state() { return killSwitchState; },
+    load: loadKillSwitchState,
+    persist: persistKillSwitchState,
+    reset: resetKillSwitchState,
+    MAX_TRADE_ETH,
+    MAX_24H_ETH
+};
+app.safetyState = serverSafetyState;
 
 console.log('📋 Server configuration complete');
 console.log('🔐 Security middleware applied');

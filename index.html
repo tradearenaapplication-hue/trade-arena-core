@@ -3848,6 +3848,10 @@ setInterval(checkSessionWarning, 10000);
 function globalKill() {
   if(!confirm('Stop all bots?')) return;
   globalKilled=true;
+  // T-002: also halt the SERVER, not just the browser bots. The admin token
+  // is prompted (once per session) and never baked into this page; without
+  // it the server refuses the halt and only the local stop applies.
+  syncKillSwitchToServer('engage');
   bots.forEach(b=>{ b.auto=false; if(b.autoTimer) clearTimeout(b.autoTimer);
     const btn=document.getElementById('mauto-'+b.id), card=document.getElementById('bot-'+b.id);
     if(btn){btn.textContent='AUTO';btn.classList.remove('on');} if(card) card.classList.remove('auto-on'); });
@@ -3861,11 +3865,48 @@ function globalKill() {
   if(kb){kb.textContent='🟢 RESET — RESUME TRADING';kb.onclick=resetKill;kb.style.background='linear-gradient(180deg,#004020,#002010)';}
 }
 function resetKill(){
-  globalKilled=false;
-  const kb=document.getElementById('killBtn');
-  if(kb){kb.textContent='🔴 EMERGENCY STOP ALL BOTS';kb.onclick=globalKill;kb.style.background='';}
-  checkGlobalBreakers();
+  // T-002: disengaging the server halt needs the admin token. If that call
+  // is refused, re-sync the button from the server so the page cannot show
+  // trading as live while the server is still halted.
+  syncKillSwitchToServer('disengage').then(function(ok){
+    if(ok){ globalKilled=false; }
+    const kb=document.getElementById('killBtn');
+    if(kb && !globalKilled){kb.textContent='🔴 EMERGENCY STOP ALL BOTS';kb.onclick=globalKill;kb.style.background='';}
+    checkGlobalBreakers();
+    if(!ok) syncKillSwitchButton();
+  });
 }
+
+// T-002 kill-switch server wiring. Token lives in sessionStorage for this
+// browser session only (prompted once); it is never written into the page.
+async function getKillSwitchAdminToken(){
+  try{ const t=sessionStorage.getItem('ta_admin_token'); if(t) return t; }catch(e){}
+  const t=prompt('Admin token to halt/resume the server too (cancel or blank = local bots only):')||'';
+  if(t){ try{ sessionStorage.setItem('ta_admin_token',t); }catch(e){} }
+  return t;
+}
+async function syncKillSwitchToServer(action){
+  try{
+    const token=await getKillSwitchAdminToken();
+    if(!token){ console.warn('[KillSwitch] No admin token — server halt not changed.'); return false; }
+    const r=await fetch('/api/admin/kill-switch',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':token},body:JSON.stringify({action:action,reason:'UI_EMERGENCY_STOP'})});
+    if(!r.ok){ console.warn('[KillSwitch] Server '+action+' refused:',r.status); return false; }
+    return true;
+  }catch(e){ console.warn('[KillSwitch] Server '+action+' failed:',e.message); return false; }
+}
+async function syncKillSwitchButton(){
+  try{
+    const r=await fetch('/api/admin/kill-switch/status'); if(!r.ok) return;
+    const d=await r.json();
+    if(d && d.engaged){
+      globalKilled=true;
+      const kb=document.getElementById('killBtn');
+      if(kb){kb.textContent='🟢 RESET — RESUME TRADING';kb.onclick=resetKill;kb.style.background='linear-gradient(180deg,#004020,#002010)';}
+      checkGlobalBreakers();
+    }
+  }catch(e){}
+}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',syncKillSwitchButton);}else{syncKillSwitchButton();}
 
 // ══════════════════════════════════════════════════════
 // COOLDOWN
@@ -7485,6 +7526,7 @@ document.addEventListener('keydown', function(e) {
 <script src="task-center.js" defer></script>
 <script src="earn-dashboard.js" defer></script>
 <script src="privy-client.js" defer></script>
+<script src="moonpay-client.js" defer></script>
 <script src="staff-engine.js" defer></script>
 <script src="gemini-voice-engine.js" defer></script>
 <script>

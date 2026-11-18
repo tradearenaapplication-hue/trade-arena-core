@@ -2323,8 +2323,10 @@ describe("Swap Execution Endpoint Security", () => {
       // through OnchainExecutionEngine, so it must be awaited.
       // Auth is bypassed deliberately: this exercises the handler itself, and
       // `requires a signed authorisation` covers the guard.
+      // 0.01 WETH: under the T-002 per-trade cap of 0.05 ETH, so the
+      // kill-switch caps must let this through to the engine.
       await handlerLayer.handle({
-        body: { fromToken: "WETH", toToken: "USDC", amount: 1.5, slippage: 0.01 }
+        body: { fromToken: "WETH", toToken: "USDC", amount: 0.01, slippage: 0.01 }
       }, res, () => {});
     } finally {
       engine.executeTrade = realExecuteTrade;
@@ -2336,7 +2338,7 @@ describe("Swap Execution Endpoint Security", () => {
     expect(statusCode).toBe(200);
     expect(jsonResponse.success).toBe(true);
     expect(jsonResponse.swap.from.token).toBe("WETH");
-    expect(jsonResponse.swap.from.amount).toBe("1.5");
+    expect(jsonResponse.swap.from.amount).toBe("0.01");
     expect(jsonResponse.swap.to.token).toBe("USDC");
 
     // The response must reflect what the engine actually did. Previously this
@@ -2347,6 +2349,289 @@ describe("Swap Execution Endpoint Security", () => {
       expect(jsonResponse.txHash === null).toBe(true);
     } else {
       expect(jsonResponse.txHash).toMatch(/^0x[0-9a-f]{64}$/);
+    }
+  });
+});
+
+describe("Global Kill-Switch & Hardcoded Caps (T-002)", () => {
+  const server = require("./server.js");
+  const engine = require("./services/OnchainExecutionEngine");
+  const fs = require("fs");
+  const path = require("path");
+  const STATE_FILE = path.join(__dirname, "data", "kill-switch.json");
+
+  // Mock Express res, following the "Swap Execution Endpoint Security" suite.
+  function mockRes() {
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+    return { res, status: () => statusCode, json: () => jsonResponse };
+  }
+
+  function findRoute(routePath) {
+    return server.router.stack.find(
+      (layer) => layer.route && layer.route.path === routePath
+    );
+  }
+
+  function handlerOf(route, name) {
+    return route.route.stack.find((l) => l.name === name);
+  }
+
+  async function callAdmin(action, token) {
+    const route = findRoute("/api/admin/kill-switch");
+    expect(Boolean(route)).toBe(true);
+    const m = mockRes();
+    const headers = {};
+    if (token !== undefined) headers["x-admin-token"] = token;
+    await handlerOf(route, "handleKillSwitchAdmin").handle(
+      { body: { action }, headers }, m.res, () => {}
+    );
+    return m;
+  }
+
+  async function callStatus() {
+    const route = findRoute("/api/admin/kill-switch/status");
+    expect(Boolean(route)).toBe(true);
+    const m = mockRes();
+    await handlerOf(route, "handleKillSwitchStatus").handle({}, m.res, () => {});
+    return m;
+  }
+
+  async function callSwap(body) {
+    const route = findRoute("/api/execute/swap");
+    expect(Boolean(route)).toBe(true);
+    const m = mockRes();
+    await handlerOf(route, "handleSwapRequest").handle({ body }, m.res, () => {});
+    return m;
+  }
+
+  function stubEngineSuccess() {
+    const real = engine.executeTrade;
+    engine.executeTrade = async (request) => ({
+      success: true,
+      mode: "DRY_RUN",
+      txHash: null,
+      blockNumber: 12345678,
+      gasUsed: "150000",
+      gasCostETH: "0.0001",
+      fromAmount: request.amount,
+      toAmount: "1.5",
+      timestamp: Date.now(),
+    });
+    return () => { engine.executeTrade = real; };
+  }
+
+  it("status route exists and reports disengaged by default", async () => {
+    server.killSwitch.reset();
+    server.safetyState.coolingUntil = 0;
+    const m = await callStatus();
+    expect(m.status()).toBe(200);
+    expect(m.json().success).toBe(true);
+    expect(m.json().engaged).toBe(false);
+  });
+
+  it("engaging without a token, with a wrong token, or with ADMIN_TOKEN unset is refused fail-closed", async () => {
+    server.killSwitch.reset();
+    const token = process.env.ADMIN_TOKEN || "";
+    expect(token.length).toBeGreaterThan(0);
+
+    let m = await callAdmin("engage");
+    expect(m.status()).toBe(401);
+    expect(m.json().error).toBe("UNAUTHORISED");
+
+    m = await callAdmin("engage", "definitely-not-the-token");
+    expect(m.status()).toBe(401);
+    expect(m.json().error).toBe("UNAUTHORISED");
+
+    // Unset ADMIN_TOKEN: the endpoint must refuse everything, not open up.
+    const saved = process.env.ADMIN_TOKEN;
+    delete process.env.ADMIN_TOKEN;
+    try {
+      m = await callAdmin("engage", saved);
+      expect(m.status()).toBe(503);
+      expect(m.json().error).toBe("ADMIN_TOKEN_NOT_CONFIGURED");
+    } finally {
+      process.env.ADMIN_TOKEN = saved;
+    }
+
+    const status = await callStatus();
+    expect(status.json().engaged).toBe(false);
+  });
+
+  it("engaging with the admin token halts in under 1s and a halted swap returns 503 TRADING_HALTED without touching the engine", async () => {
+    server.killSwitch.reset();
+    server.safetyState.coolingUntil = 0;
+    const token = process.env.ADMIN_TOKEN || "";
+
+    const started = Date.now();
+    const m = await callAdmin("engage", token);
+    const elapsedMs = Date.now() - started;
+    expect(m.status()).toBe(200);
+    expect(m.json().engaged).toBe(true);
+    expect(elapsedMs).toBeLessThan(1000);
+
+    let engineWasCalled = false;
+    const real = engine.executeTrade;
+    engine.executeTrade = async () => {
+      engineWasCalled = true;
+      throw new Error("engine must not be called while halted");
+    };
+    try {
+      const swap = await callSwap({ fromToken: "WETH", toToken: "USDC", amount: 0.01, slippage: 0.01 });
+      expect(swap.status()).toBe(503);
+      expect(swap.json().error).toBe("TRADING_HALTED");
+      expect(engineWasCalled).toBe(false);
+    } finally {
+      engine.executeTrade = real;
+      await callAdmin("disengage", token);
+    }
+  });
+
+  it("disengage with the token re-enables swaps", async () => {
+    server.killSwitch.reset();
+    server.safetyState.coolingUntil = 0;
+    const token = process.env.ADMIN_TOKEN || "";
+    await callAdmin("engage", token);
+
+    const m = await callAdmin("disengage", token);
+    expect(m.status()).toBe(200);
+    expect(m.json().engaged).toBe(false);
+
+    const restore = stubEngineSuccess();
+    try {
+      const swap = await callSwap({ fromToken: "WETH", toToken: "USDC", amount: 0.01, slippage: 0.01 });
+      expect(swap.status()).toBe(200);
+      expect(swap.json().success).toBe(true);
+    } finally {
+      restore();
+      server.killSwitch.reset();
+    }
+  });
+
+  it("a trade over 0.05 ETH, and an over-cap amountUSD trade, are rejected", async () => {
+    server.killSwitch.reset();
+    server.safetyState.coolingUntil = 0;
+
+    const over = await callSwap({ fromToken: "WETH", toToken: "USDC", amount: 0.06, slippage: 0.01 });
+    expect(over.status()).toBe(400);
+    expect(over.json().error).toBe("Trade exceeds maximum single-trade size of 0.05 ETH");
+
+    // $300 at $3,000/ETH is 0.1 ETH — over the per-trade cap.
+    const realUsd = engine.usdToTokenAmount;
+    const realPrice = engine.getTokenPriceUSD;
+    engine.usdToTokenAmount = async () => 0.1;
+    engine.getTokenPriceUSD = async () => 3000;
+    try {
+      const usd = await callSwap({ fromToken: "WETH", toToken: "USDC", amountUSD: 300, slippage: 0.01 });
+      expect(usd.status()).toBe(400);
+      expect(usd.json().error).toBe("Trade exceeds maximum single-trade size of 0.05 ETH");
+    } finally {
+      engine.usdToTokenAmount = realUsd;
+      engine.getTokenPriceUSD = realPrice;
+      server.killSwitch.reset();
+    }
+  });
+
+  it("a trade that cannot be priced in ETH terms fails closed instead of guessing", async () => {
+    server.killSwitch.reset();
+    server.safetyState.coolingUntil = 0;
+
+    const realUsd = engine.usdToTokenAmount;
+    const realPrice = engine.getTokenPriceUSD;
+    engine.usdToTokenAmount = async () => 0.01;
+    engine.getTokenPriceUSD = async () => null;
+    try {
+      const m = await callSwap({ fromToken: "WETH", toToken: "USDC", amountUSD: 10, slippage: 0.01 });
+      expect(m.status()).toBe(400);
+      expect(m.json().error).toBe("Could not price ETH; refusing to trade without a size check.");
+    } finally {
+      engine.usdToTokenAmount = realUsd;
+      engine.getTokenPriceUSD = realPrice;
+      server.killSwitch.reset();
+    }
+  });
+
+  it("24h aggregate spend past 0.5 ETH is rejected, and a successful trade records its spend", async () => {
+    server.killSwitch.reset();
+    server.safetyState.coolingUntil = 0;
+
+    // 0.48 ETH already spent in the last 24h: a 0.03 ETH trade would pass
+    // 0.5 ETH in total.
+    server.killSwitch.state.spend24h.push({ at: Date.now(), eth: 0.48 });
+    const over = await callSwap({ fromToken: "WETH", toToken: "USDC", amount: 0.03, slippage: 0.01 });
+    expect(over.status()).toBe(400);
+    expect(over.json().error).toBe("Trade exceeds maximum 24h aggregate spend of 0.5 ETH");
+
+    // A clean ledger records a successful fill against the cap.
+    server.killSwitch.reset();
+    const restore = stubEngineSuccess();
+    try {
+      const swap = await callSwap({ fromToken: "WETH", toToken: "USDC", amount: 0.04, slippage: 0.01 });
+      expect(swap.status()).toBe(200);
+      const spent = server.killSwitch.state.spend24h.reduce((s, e) => s + Number(e.eth), 0);
+      expect(spent).toBeCloseTo(0.04, 10);
+    } finally {
+      restore();
+      server.killSwitch.reset();
+    }
+  });
+
+  it("cooling-off blocks swaps with a 503", async () => {
+    server.killSwitch.reset();
+    server.safetyState.coolingUntil = Date.now() + 60 * 60 * 1000;
+    server.safetyState.coolingReason = "USER_TAKE_A_BREAK";
+    try {
+      const m = await callSwap({ fromToken: "WETH", toToken: "USDC", amount: 0.01, slippage: 0.01 });
+      expect(m.status()).toBe(503);
+      expect(m.json().error).toBe("USER_TAKE_A_BREAK");
+    } finally {
+      server.safetyState.coolingUntil = 0;
+      server.safetyState.coolingReason = null;
+      server.killSwitch.reset();
+    }
+  });
+
+  it("halt persists across a restart: reloading the state file restores it", async () => {
+    server.killSwitch.reset();
+    const token = process.env.ADMIN_TOKEN || "";
+    await callAdmin("engage", token);
+
+    // The state file on disk is the source of truth a fresh boot reads.
+    const onDisk = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
+    expect(onDisk.engaged).toBe(true);
+
+    // Simulate a restart: wipe the in-memory flag, reload from disk.
+    server.killSwitch.state.engaged = false;
+    server.killSwitch.load();
+    expect(server.killSwitch.state.engaged).toBe(true);
+
+    const status = await callStatus();
+    expect(status.json().engaged).toBe(true);
+    await callAdmin("disengage", token);
+    server.killSwitch.reset();
+  });
+
+  it("engaging stops the AutonomousWorker", async () => {
+    server.killSwitch.reset();
+    const token = process.env.ADMIN_TOKEN || "";
+    const worker = require("./services/AutonomousWorker");
+    worker.isRunning = true;
+    worker.intervalId = setInterval(() => {}, 60000);
+    try {
+      const m = await callAdmin("engage", token);
+      expect(m.status()).toBe(200);
+      expect(worker.isRunning).toBe(false);
+      expect(worker.intervalId).toBe(null);
+    } finally {
+      if (worker.intervalId) clearInterval(worker.intervalId);
+      worker.isRunning = false;
+      worker.intervalId = null;
+      await callAdmin("disengage", token);
+      server.killSwitch.reset();
     }
   });
 });
@@ -2472,27 +2757,53 @@ describe("Bot Creation Endpoint Security", () => {
 
 describe("MoonPay Webhook Security", () => {
   const server = require("./server.js");
+  const crypto = require("crypto");
+
+  // Sign the exact raw bytes MoonPay would send: HMAC-SHA256 hex, keyed by
+  // the webhook secret. The old tests "signed" by passing the secret itself
+  // as the signature — that was the wrong contract and is now a 401.
+  const signRaw = (secret, raw) =>
+    crypto.createHmac("sha256", secret).update(raw).digest("hex");
+
+  const findRoute = (path) =>
+    server.router.stack.find(
+      (layer) => layer.route && layer.route.path === path
+    );
+
+  // Build a request the way the live server sees it: parsed body plus the
+  // exact raw bytes captured before JSON parsing (req.rawBody).
+  const makeReq = (headers, body) => {
+    const raw = JSON.stringify(body);
+    return { headers, body, rawBody: Buffer.from(raw) };
+  };
+
+  const callRoute = (route, req) => {
+    let statusCode = 200;
+    let jsonResponse = null;
+    const res = {
+      status: (code) => { statusCode = code; return res; },
+      json: (data) => { jsonResponse = data; return res; },
+    };
+    route.route.stack[0].handle(req, res);
+    return { statusCode, jsonResponse };
+  };
 
   it("rejects webhook request when MOONPAY_WEBHOOK_SECRET is unconfigured", () => {
     const originalSecret = process.env.MOONPAY_WEBHOOK_SECRET;
     delete process.env.MOONPAY_WEBHOOK_SECRET;
 
     try {
-      let statusCode = 200;
-      let jsonResponse = null;
-
-      const req = { headers: { "x-moonpay-signature": "test_sig" }, body: { status: "completed" } };
-      const res = {
-        status: (code) => { statusCode = code; return res; },
-        json: (data) => { jsonResponse = data; return res; },
-      };
-
-      const route = server.router.stack.find(
-        (layer) => layer.route && layer.route.path === "/api/webhooks/moonpay/deposit"
-      );
+      const route = findRoute("/api/webhooks/moonpay/deposit");
       expect(Boolean(route)).toBe(true);
 
-      route.route.stack[0].handle(req, res);
+      const body = { status: "completed" };
+      const { statusCode, jsonResponse } = callRoute(
+        route,
+        makeReq(
+          { "x-moonpay-signature": signRaw("secret_12345", JSON.stringify(body)) },
+          body
+        )
+      );
 
       expect(statusCode).toBe(401);
       expect(jsonResponse.success).toBe(false);
@@ -2502,59 +2813,83 @@ describe("MoonPay Webhook Security", () => {
     }
   });
 
-  it("rejects webhook request when signature is missing or invalid", () => {
+  it("rejects webhook request when signature is missing, invalid, or equal to the secret", () => {
     const originalSecret = process.env.MOONPAY_WEBHOOK_SECRET;
     process.env.MOONPAY_WEBHOOK_SECRET = "secret_12345";
 
     try {
-      const route = server.router.stack.find(
-        (layer) => layer.route && layer.route.path === "/api/webhooks/moonpay/deposit"
-      );
+      const route = findRoute("/api/webhooks/moonpay/deposit");
+      expect(Boolean(route)).toBe(true);
+      const body = { status: "completed" };
+      const raw = JSON.stringify(body);
 
       // Missing signature
-      let statusCode = 200;
-      let jsonResponse = null;
-      let res = {
-        status: (code) => { statusCode = code; return res; },
-        json: (data) => { jsonResponse = data; return res; },
-      };
-      route.route.stack[0].handle({ headers: {}, body: { status: "completed" } }, res);
-      expect(statusCode).toBe(401);
+      expect(callRoute(route, makeReq({}, body)).statusCode).toBe(401);
 
-      // Invalid signature
-      statusCode = 200;
-      res = {
-        status: (code) => { statusCode = code; return res; },
-        json: (data) => { jsonResponse = data; return res; },
-      };
-      route.route.stack[0].handle({ headers: { "x-moonpay-signature": "wrong_sig" }, body: { status: "completed" } }, res);
-      expect(statusCode).toBe(401);
+      // Wrong HMAC
+      expect(
+        callRoute(route, makeReq({ "x-moonpay-signature": signRaw("wrong_secret", raw) }, body)).statusCode
+      ).toBe(401);
+
+      // The OLD (wrong) contract: signature literally equal to the secret.
+      // This used to pass; it must now fail.
+      expect(
+        callRoute(route, makeReq({ "x-moonpay-signature": "secret_12345" }, body)).statusCode
+      ).toBe(401);
     } finally {
       if (originalSecret !== undefined) process.env.MOONPAY_WEBHOOK_SECRET = originalSecret;
       else delete process.env.MOONPAY_WEBHOOK_SECRET;
     }
   });
 
-  it("accepts deposit confirmation when signature is valid", () => {
+  it("accepts deposit confirmation on both webhook routes when signature is a genuine HMAC over the raw body", () => {
     const originalSecret = process.env.MOONPAY_WEBHOOK_SECRET;
     process.env.MOONPAY_WEBHOOK_SECRET = "secret_12345";
 
     try {
-      const route = server.router.stack.find(
-        (layer) => layer.route && layer.route.path === "/api/webhooks/moonpay/deposit"
+      for (const path of ["/api/webhooks/moonpay/deposit", "/api/deployments/webhook"]) {
+        const route = findRoute(path);
+        expect(Boolean(route)).toBe(true);
+
+        const body = { status: "completed", amount: 100, walletAddress: "0x123" };
+        const { statusCode, jsonResponse } = callRoute(
+          route,
+          makeReq(
+            { "x-moonpay-signature": signRaw("secret_12345", JSON.stringify(body)) },
+            body
+          )
+        );
+
+        expect(statusCode).toBe(200);
+        expect(jsonResponse.success).toBe(true);
+        expect(jsonResponse.message).toContain("Deposit confirmed");
+      }
+    } finally {
+      if (originalSecret !== undefined) process.env.MOONPAY_WEBHOOK_SECRET = originalSecret;
+      else delete process.env.MOONPAY_WEBHOOK_SECRET;
+    }
+  });
+
+  it("accepts MoonPay's V2 signature form t=<ts>,s=<hex> over '<ts>.<raw body>'", () => {
+    const originalSecret = process.env.MOONPAY_WEBHOOK_SECRET;
+    process.env.MOONPAY_WEBHOOK_SECRET = "secret_12345";
+
+    try {
+      const route = findRoute("/api/webhooks/moonpay/deposit");
+      expect(Boolean(route)).toBe(true);
+
+      const body = { status: "completed", amount: 50, walletAddress: "0x123" };
+      const raw = JSON.stringify(body);
+      const t = "1492774577";
+      const s = crypto
+        .createHmac("sha256", "secret_12345")
+        .update(`${t}.${raw}`)
+        .digest("hex");
+
+      const { statusCode, jsonResponse } = callRoute(
+        route,
+        makeReq({ "moonpay-signature-v2": `t=${t},s=${s}` }, body)
       );
-
-      let statusCode = 200;
-      let jsonResponse = null;
-      const res = {
-        status: (code) => { statusCode = code; return res; },
-        json: (data) => { jsonResponse = data; return res; },
-      };
-
-      route.route.stack[0].handle({
-        headers: { "x-moonpay-signature": "secret_12345" },
-        body: { status: "completed", amount: 100, walletAddress: "0x123" }
-      }, res);
 
       expect(statusCode).toBe(200);
       expect(jsonResponse.success).toBe(true);
@@ -2563,6 +2898,112 @@ describe("MoonPay Webhook Security", () => {
       if (originalSecret !== undefined) process.env.MOONPAY_WEBHOOK_SECRET = originalSecret;
       else delete process.env.MOONPAY_WEBHOOK_SECRET;
     }
+  });
+
+  it("rejects a V2 signature whose digest does not match the raw body", () => {
+    const originalSecret = process.env.MOONPAY_WEBHOOK_SECRET;
+    process.env.MOONPAY_WEBHOOK_SECRET = "secret_12345";
+
+    try {
+      const route = findRoute("/api/webhooks/moonpay/deposit");
+      expect(Boolean(route)).toBe(true);
+
+      const body = { status: "completed", amount: 50, walletAddress: "0x123" };
+      const { statusCode } = callRoute(
+        route,
+        makeReq({ "moonpay-signature-v2": "t=1492774577,s=0000000000000000000000000000000000000000000000000000000000000000" }, body)
+      );
+
+      expect(statusCode).toBe(401);
+    } finally {
+      if (originalSecret !== undefined) process.env.MOONPAY_WEBHOOK_SECRET = originalSecret;
+      else delete process.env.MOONPAY_WEBHOOK_SECRET;
+    }
+  });
+
+  it("authenticates but ignores an unconfirmed deposit", () => {
+    const originalSecret = process.env.MOONPAY_WEBHOOK_SECRET;
+    process.env.MOONPAY_WEBHOOK_SECRET = "secret_12345";
+
+    try {
+      const route = findRoute("/api/webhooks/moonpay/deposit");
+      expect(Boolean(route)).toBe(true);
+
+      const body = { status: "pending", amount: 50, walletAddress: "0x123" };
+      const { statusCode, jsonResponse } = callRoute(
+        route,
+        makeReq(
+          { "x-moonpay-signature": signRaw("secret_12345", JSON.stringify(body)) },
+          body
+        )
+      );
+
+      expect(statusCode).toBe(200);
+      expect(jsonResponse.success).toBe(true);
+      expect(jsonResponse.ignored).toBe(true);
+    } finally {
+      if (originalSecret !== undefined) process.env.MOONPAY_WEBHOOK_SECRET = originalSecret;
+      else delete process.env.MOONPAY_WEBHOOK_SECRET;
+    }
+  });
+});
+
+describe("MoonPay Deposit Button Wiring", () => {
+  const fs = require("fs");
+  const vm = require("vm");
+
+  it("loads moonpay-client.js from the served index.html and wires the Deposit button to window.openMoonpay", () => {
+    const html = fs.readFileSync("./index.html", "utf8");
+    expect(html.includes('<script src="moonpay-client.js"')).toBe(true);
+    expect(html.includes("window.openMoonpay")).toBe(true);
+    expect(html.includes("DEPOSIT USDC")).toBe(true);
+  });
+
+  it("defines window.openMoonpay and passes amount (not wallet address) to openMoonPayWidget", () => {
+    const client = fs.readFileSync("./moonpay-client.js", "utf8");
+    expect(client.includes("window.openMoonpay = openMoonpay")).toBe(true);
+    expect(client.includes("openMoonPayWidget(buyAmount")).toBe(true);
+    expect(client.includes("openMoonPayWidget(addr, buyAmount)")).toBe(false);
+  });
+
+  // Run the real client file in a sandbox with a stubbed widget SDK and a
+  // connected wallet, the way the Deposit button path runs in the browser.
+  const runClient = (walletAddress) => {
+    const captured = { widgetOpts: null, shown: false, toasts: [] };
+    const sandbox = {
+      console,
+      location: { origin: "http://localhost:3001" },
+      showToast: (msg, type) => { captured.toasts.push({ msg, type }); },
+      getPrivyAddress: () => walletAddress,
+    };
+    sandbox.window = sandbox;
+    sandbox.MoonPayWidget = class {
+      constructor(opts) { captured.widgetOpts = opts; }
+      on() {}
+      show() { captured.shown = true; }
+    };
+    vm.createContext(sandbox);
+    vm.runInContext(fs.readFileSync("./moonpay-client.js", "utf8"), sandbox);
+    return { sandbox, captured };
+  };
+
+  it("opens the widget with amount=50 USDC for the connected wallet when the Deposit button path runs", () => {
+    const { sandbox, captured } = runClient("0x1234567890123456789012345678901234567890");
+    expect(typeof sandbox.openMoonpay).toBe("function");
+    sandbox.openMoonpay();
+    expect(captured.widgetOpts.amount).toBe(50);
+    expect(captured.widgetOpts.currency).toBe("usdc");
+    expect(captured.widgetOpts.walletAddress).toBe("0x1234567890123456789012345678901234567890");
+    expect(captured.shown).toBe(true);
+  });
+
+  it("fails safe (toast, no widget) when no wallet is connected", () => {
+    const { sandbox, captured } = runClient(null);
+    sandbox.openMoonpay();
+    expect(captured.widgetOpts).toBe(null);
+    expect(captured.shown).toBe(false);
+    expect(captured.toasts.length).toBe(1);
+    expect(captured.toasts[0].msg).toContain("Please sign in first");
   });
 });
 

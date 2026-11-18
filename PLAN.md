@@ -155,8 +155,8 @@ Improve final results display:
 - [ ] 1. Add music toggle button to header
 - [ ] 2. Implement toggleBackgroundMusic() function
 - [ ] 3. Test background music playback
-- [ ] 4. Enhance runCrucibleBatch() with live progress
-- [ ] 5. Add pause/cancel controls
-- [ ] 6. Create results modal with detailed breakdown
+- [x] 4. Enhance runCrucibleBatch() with live progress — DONE 2026-11-18: shared `crucibleRun` state, live bar/counter/P&L ticker (`updateCrucibleProgress`, `#crucibleLive`); V2 backtest reports Fetching → Computing → Done stages
+- [x] 5. Add pause/cancel controls — DONE 2026-11-18: ⏸ PAUSE / ⏹ CANCEL buttons (`cruciblePauseBtn`/`crucibleCancelBtn`, disabled until a batch runs). Pause applies to the legacy bot batch (the only loop with per-trade boundaries); V2 is a single fetch + compute so it supports Cancel only — cancel bumps a generation token and the in-flight result is discarded. Root cause fixed: the old loop read `window.cruciblePaused`, which top-level `let` never sets, so pause/cancel could never fire.
+- [x] 6. Create results modal with detailed breakdown — DONE 2026-11-18: `showCrucibleResults()` now reports real win rate (from settled trades, not the old 0 placeholder), status, W/L, and a V2 strategy-vs-baselines table via `showCrucibleV2Results()`. Close bug fixed: CLOSE used to remove only the inner panel and leave the full-screen overlay in place; it now removes the whole overlay (`closeCrucibleResults()`), plus backdrop-click and Escape to close.
 - [ ] 7. Integrate music with crucible execution
 - [ ] 8. Test full flow end-to-end

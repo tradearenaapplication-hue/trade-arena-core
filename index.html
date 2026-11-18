@@ -1565,11 +1565,16 @@ a, button, input, select, textarea {
 
           <button class="crucible-run-btn" id="crucibleRunBtn" onclick="runCrucibleV2Batch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--purple),var(--cyan));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">▶ RUN CRUCIBLE V2</button>
 
+          <button class="crucible-pause-btn" id="cruciblePauseBtn" onclick="pauseCrucible()" disabled aria-pressed="false" aria-label="Pause or resume the running Crucible batch" title="Pauses the legacy bot batch between trades. A V2 backtest is a single fetch + compute, so it can be cancelled but not paused." style="padding:6px 14px;background:linear-gradient(90deg,var(--amber),var(--hot));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">⏸ PAUSE</button>
+
+          <button class="crucible-cancel-btn" id="crucibleCancelBtn" onclick="cancelCrucible()" disabled aria-label="Cancel the running Crucible batch" title="Stops the running batch. A V2 backtest already in flight is discarded when it returns." style="padding:6px 14px;background:linear-gradient(90deg,var(--hot),var(--purple));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">⏹ CANCEL</button>
+
           <button id="edgeSearchBtn" onclick="runEdgeSearch()" style="padding:6px 14px;background:linear-gradient(90deg,var(--amber),var(--hot));border:none;border-radius:4px;color:#fff;font-family:'Bungee',display;font-size:10px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all 0.2s">🔬 SEARCH FOR EDGE</button>
        </div>
        <div id="crucibleStatus" style="font-size:9px;color:var(--dim);margin-top:6px;line-height:1.5">
          Backtests the selected asset over REAL historical candles. Nothing shown here is simulated.
        </div>
+       <div id="crucibleLive" aria-live="polite" style="font-size:9px;color:var(--purple);margin-top:4px;line-height:1.5"></div>
        <div id="edgeSearchResult" style="font-size:9px;margin-top:6px"></div>
       <!-- Databricks Genie Config -->
       <div class="db-config" id="dbConfig">
@@ -2061,9 +2066,94 @@ let priceCache={};
 const inFlightRequests = new Map(); // Request deduplication map
 let gasHardCeiling=50, currentGas=18, drawdownPct=10, globalKilled=false;
 let crucibleMode=false, crucibleCount=0;
-// Pause/cancel flags for crucible batch execution
+// ── Crucible batch run state (Phase 4: live progress + pause/cancel) ──────
+// One shared state object for both batch runners. The old code kept two
+// `let` flags (`cruciblePaused` / `crucibleCancelled`) but the batch loop
+// read `window.cruciblePaused` instead — top-level `let` never lands on
+// `window`, so pause/cancel could never trigger. Everything below reads
+// and writes `crucibleRun`; the two `let` flags are kept only as mirrors
+// for any external code that referenced them.
+//  - `kind`: 'legacy' (bot batch, iterates trades) or 'v2' (real-data
+//    backtest: one fetch + one synchronous compute).
+//  - Pause only applies to the legacy batch: a V2 run has no per-trade
+//    loop to pause, so its Pause button stays disabled and Cancel is the
+//    way to stop it. `generation` is bumped on cancel (and on each new
+//    run) so an in-flight V2 fetch whose result arrives afterwards is
+//    discarded instead of rendered — fetchCandles() takes no abort
+//    signal, so discarding the stale result is the honest cancel.
+const crucibleRun = {
+  running: false, kind: null, paused: false, cancelled: false,
+  total: 0, done: 0, wins: 0, losses: 0, pnl: 0,
+  stage: '', startedAt: 0, generation: 0,
+};
 let cruciblePaused = false;
 let crucibleCancelled = false;
+
+function setCrucibleRunState(patch) {
+  Object.assign(crucibleRun, patch);
+  cruciblePaused = crucibleRun.paused;
+  crucibleCancelled = crucibleRun.cancelled;
+  updateCrucibleControls();
+}
+
+function updateCrucibleControls() {
+  const runBtn = document.getElementById('crucibleRunBtn');
+  const pauseBtn = document.getElementById('cruciblePauseBtn');
+  const cancelBtn = document.getElementById('crucibleCancelBtn');
+  if (runBtn) runBtn.disabled = crucibleRun.running;
+  // Pause is only meaningful for the legacy bot batch, which yields
+  // between trades. A V2 backtest cannot be paused mid-fetch/compute.
+  if (pauseBtn) {
+    pauseBtn.disabled = !(crucibleRun.running && crucibleRun.kind === 'legacy');
+    pauseBtn.textContent = crucibleRun.paused ? '▶ RESUME' : '⏸ PAUSE';
+    pauseBtn.setAttribute('aria-pressed', crucibleRun.paused ? 'true' : 'false');
+  }
+  if (cancelBtn) cancelBtn.disabled = !crucibleRun.running;
+}
+
+// Live progress: bar + counter + one-line ticker (stage, done/total,
+// running P&L, wins/losses, elapsed). Called after every trade in the
+// legacy batch and at each stage of a V2 backtest.
+function updateCrucibleProgress() {
+  const total = crucibleRun.total || 100;
+  const pct = Math.min(crucibleRun.done / total * 100, 100);
+  const fill = document.getElementById('crucibleFill');
+  if (fill) fill.style.width = pct + '%';
+  setVal('crucibleCount', crucibleRun.done + ' / ' + total);
+  const live = document.getElementById('crucibleLive');
+  if (!live) return;
+  if (!crucibleRun.running && !crucibleRun.stage) { live.textContent = ''; return; }
+  const elapsed = crucibleRun.startedAt ? ((Date.now() - crucibleRun.startedAt) / 1000).toFixed(0) + 's' : '0s';
+  const pnl = (crucibleRun.pnl >= 0 ? '+' : '') + fmtUSD(crucibleRun.pnl, 2);
+  live.textContent = (crucibleRun.stage ? crucibleRun.stage + ' · ' : '') +
+    crucibleRun.done + '/' + total + ' trades · P&L ' + pnl +
+    ' · ' + crucibleRun.wins + 'W / ' + crucibleRun.losses + 'L · ' + elapsed +
+    (crucibleRun.paused ? ' · ⏸ PAUSED' : '');
+}
+
+// Pause/resume the running legacy bot batch. No-op unless one is running:
+// the button is disabled otherwise, and a V2 backtest cannot be paused.
+function pauseCrucible() {
+  if (!crucibleRun.running || crucibleRun.kind !== 'legacy') return;
+  setCrucibleRunState({ paused: !crucibleRun.paused });
+  setCrucibleLiveStatus(crucibleRun.paused ? 'Paused — press RESUME to continue the batch.' : 'Resumed.');
+  updateCrucibleProgress();
+}
+
+// Cancel the running batch. For the legacy batch the loop breaks at the
+// next trade boundary; for a V2 backtest the generation bump makes the
+// in-flight fetch result get discarded when it arrives.
+function cancelCrucible() {
+  if (!crucibleRun.running) return;
+  setCrucibleRunState({ cancelled: true, paused: false, generation: crucibleRun.generation + 1 });
+  setCrucibleLiveStatus('Cancelling…');
+  updateCrucibleProgress();
+}
+
+function setCrucibleLiveStatus(html) {
+  const el = document.getElementById('crucibleStatus');
+  if (el) el.innerHTML = html;
+}
 
 // ── Learning model state ──
 let agentWeights = { mom:1.0, vol:1.0, pol:1.0, sen:1.0, risk:1.0 };
@@ -2776,77 +2866,101 @@ function updateCrucible() {
   setVal('crucibleCount',crucibleCount+' / 100');
 }
 
-async function runCrucibleBatch() {
-  const runBtn = document.querySelector('.crucible-run-btn');
-  if(runBtn) runBtn.disabled = true;
+async function runCrucibleBatch(tradeCount) {
+  // Legacy bot batch. No button calls this today (the panel runs the V2
+  // backtest); it is kept working for console / future use. `tradeCount`
+  // is an argument, not the #crucibleTradeCount input — that input is now
+  // "Notional USD per trade", so reading a trade count from it was wrong.
+  const count = Number.isFinite(tradeCount) ? Math.floor(tradeCount)
+    : parseInt(document.getElementById('crucibleTradeCount')?.value || '50', 10);
+  if (!Number.isFinite(count) || count < 1 || count > 1000) {
+    alert('Trade count must be between 1 and 1000');
+    return;
+  }
+  if (crucibleRun.running) return; // one batch at a time
+
+  const mode = crucibleMode ? 'CRUCIBLE' : 'TEST';
+  const startBalance = balance;
+  // spinBot() only OPENS a position; it closes later on a timer, so wins
+  // cannot be counted per iteration. Snapshot closedTrades now and count
+  // what actually settled by the time the batch ends.
+  const closedAtStart = closedTrades.length;
+  const startPnl = totalPnl;
+  let tradesRun = 0, stoppedReason = '';
+
+  setCrucibleRunState({
+    running: true, kind: 'legacy', paused: false, cancelled: false,
+    total: count, done: 0, wins: 0, losses: 0, pnl: 0,
+    stage: 'Opening trades', startedAt: Date.now(),
+  });
+  crucibleCount = 0;
+  updateCrucibleProgress();
 
   try {
-    const mode = document.getElementById('crucibleModeSelect')?.value || 'TEST';
-    const tradeCount = parseInt(document.getElementById('crucibleTradeCount')?.value || '50');
+    for (let i = 0; i < count && balance > 0; i++) {
+      // Pause: wait here until resumed or cancelled. Cancel: stop now.
+      // NOTE: these read crucibleRun, not window.cruciblePaused — the old
+      // code read window.* flags that `let` never sets, so pause/cancel
+      // could never fire.
+      while (crucibleRun.paused && !crucibleRun.cancelled) {
+        await new Promise(r => setTimeout(r, 100));
+      }
+      if (crucibleRun.cancelled) { stoppedReason = 'cancelled'; break; }
 
-    if(tradeCount < 1 || tradeCount > 1000) {
-      alert('Trade count must be between 1 and 1000');
-      return;
-    }
-
-    // Reset counters
-    crucibleCount = 0;
-    updateCrucible();
-
-     // Run batch of trades
-      const startBalance = balance;
-      let tradesRun = 0;
-
-      for(let i = 0; i < tradeCount && balance > 0; i++) {
-        // Check if paused or cancelled
-        if (window.cruciblePaused) {
-          // Wait until resumed or cancelled
-          while (window.cruciblePaused && !window.crucibleCancelled) {
-            await new Promise(r => setTimeout(r, 100));
-          }
-          if (window.crucibleCancelled) break;
-        }
-        if (window.crucibleCancelled) break;
-
-        // Pick a random bot that can trade
-        const availableBots = bots.filter(b => !b.spinning && !b.cooling && balance >= 0.10);
-        if(availableBots.length === 0) {
-          console.log(`Crucible: Stopped at ${tradesRun} trades (no available bots)`);
-          break;
-        }
-
-        const bot = availableBots[Math.floor(Math.random() * availableBots.length)];
-
-        // Use a default bet if none selected
-        if(!bot.bet || bot.bet < 0.10) bot.bet = 1.00;
-
-        // Run the trade
-        await spinBot(bot.id);
-        tradesRun++;
-
-        // Update live progress
-        crucibleCount = tradesRun;
-        updateCrucible();
-
-        // Wait for trade to settle
-        await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
+      const availableBots = bots.filter(b => !b.spinning && !b.cooling && balance >= 0.10);
+      if (availableBots.length === 0) {
+        stoppedReason = 'no available bots';
+        console.log(`Crucible: Stopped at ${tradesRun} trades (no available bots)`);
+        break;
       }
 
+      const bot = availableBots[Math.floor(Math.random() * availableBots.length)];
+      if (!bot.bet || bot.bet < 0.10) bot.bet = 1.00;
+
+      await spinBot(bot.id);
+      tradesRun++;
+
+      // Live progress from what has actually settled so far.
+      const settled = closedTrades.slice(closedAtStart);
+      setCrucibleRunState({
+        done: tradesRun,
+        wins: settled.filter(t => t.isWin).length,
+        losses: settled.filter(t => !t.isWin).length,
+        pnl: totalPnl - startPnl,
+        stage: 'Opening trades',
+      });
+      updateCrucibleProgress();
+
+      await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
+    }
+
+    const settled = closedTrades.slice(closedAtStart);
+    const wins = settled.filter(t => t.isWin).length;
     const endBalance = balance;
     const pnl = endBalance - startBalance;
-    const pnlPct = ((pnl / startBalance) * 100).toFixed(2);
+    const pnlPct = startBalance ? ((pnl / startBalance) * 100).toFixed(2) : '0.00';
+    const status = crucibleRun.cancelled ? 'cancelled'
+      : stoppedReason ? 'stopped (' + stoppedReason + ')' : 'completed';
 
-     showCrucibleResults({
-        mode,
-        tradesRun,
-        startBalance,
-        endBalance,
-        pnl,
-        pnlPct,
-        winRate: 0   // placeholder
-     });
+    showCrucibleResults({
+      mode,
+      status,
+      tradesRun,
+      tradesSettled: settled.length,
+      wins,
+      losses: settled.length - wins,
+      startBalance,
+      endBalance,
+      pnl,
+      pnlPct,
+      winRate: settled.length ? (wins / settled.length) * 100 : 0,
+      note: openPositions.length
+        ? openPositions.length + ' position(s) still open — their P&L is not in these totals yet.'
+        : '',
+    });
   } finally {
-    if(runBtn) runBtn.disabled = false;
+    setCrucibleRunState({ running: false, kind: null, paused: false, stage: '' });
+    updateCrucibleProgress();
   }
 }
 
@@ -2883,10 +2997,7 @@ function selectRegime(regime) {
  * fee + slippage deducted on both legs of every trade.
  */
 async function runCrucibleV2Batch() {
-  const runBtn = document.getElementById('crucibleRunBtn');
   const statusEl = document.getElementById('crucibleStatus');
-  if (runBtn) runBtn.disabled = true;
-
   const asset = document.getElementById('crucibleAsset')?.value || 'bitcoin';
   const days = parseInt(document.getElementById('crucibleWindow')?.value || '30', 10);
   const costModel = document.getElementById('costModelSelect')?.value || 'REALISTIC_1X';
@@ -2894,7 +3005,6 @@ async function runCrucibleV2Batch() {
 
   if (!Number.isFinite(notional) || notional <= 0) {
     if (statusEl) statusEl.innerHTML = '<span style="color:var(--hot)">Enter a positive notional.</span>';
-    if (runBtn) runBtn.disabled = false;
     return;
   }
 
@@ -2902,30 +3012,113 @@ async function runCrucibleV2Batch() {
 
   if (typeof OnchainRegime === 'undefined') {
     setStatus('<span style="color:var(--hot)">crucible-regime.js failed to load - cannot verify anything without it.</span>');
-    if (runBtn) runBtn.disabled = false;
     return;
   }
+  if (crucibleRun.running) return; // one batch at a time
+
+  // Generation token: cancelCrucible() bumps crucibleRun.generation, so a
+  // fetch that resolves afterwards sees a stale generation and is
+  // discarded instead of rendered. The controls are released immediately
+  // on cancel — the user is not left waiting on the network.
+  const gen = crucibleRun.generation + 1;
+  setCrucibleRunState({
+    running: true, kind: 'v2', paused: false, cancelled: false,
+    total: 100, done: 0, wins: 0, losses: 0, pnl: 0,
+    stage: 'Fetching real candles', startedAt: Date.now(), generation: gen,
+  });
+  updateCrucibleProgress();
 
   try {
     setStatus('Fetching real candles for <b>' + escapeHTML(asset.toUpperCase()) + '</b> over ' + days + ' days...');
-
     const fetched = await OnchainRegime.fetchCandles(asset, { days });
+    if (crucibleRun.cancelled || crucibleRun.generation !== gen) {
+      setStatus('<span style="color:var(--amber)">Backtest cancelled — no results.</span>');
+      return;
+    }
+
+    // Stage 2: the backtest itself is synchronous, so yield once first —
+    // otherwise the "Computing…" stage never paints before the report.
+    setCrucibleRunState({ done: 50, stage: 'Computing backtest over ' + fetched.candles.close.length + ' candles' });
+    updateCrucibleProgress();
+    await new Promise(r => setTimeout(r, 0));
+
     const result = OnchainRegime.backtestRegime(fetched.candles, {
       requestedRegime: crucibleRegime,
       costModel,
       notional,
     });
+    if (crucibleRun.cancelled || crucibleRun.generation !== gen) {
+      setStatus('<span style="color:var(--amber)">Backtest cancelled — no results.</span>');
+      return;
+    }
 
+    setCrucibleRunState({ done: 100, wins: result.strategy.trades, stage: 'Done' });
+    updateCrucibleProgress();
     renderCrucibleRegimeReport(result, fetched);
+    showCrucibleV2Results(result, fetched, { asset, days, costModel, notional });
   } catch (e) {
+    if (crucibleRun.cancelled || crucibleRun.generation !== gen) {
+      setStatus('<span style="color:var(--amber)">Backtest cancelled — no results.</span>');
+      return;
+    }
     // A failure to source real data is reported as a failure. The panel never
     // falls back to a plausible-looking number.
     setStatus('<span style="color:var(--hot)">Could not complete the backtest: ' +
       escapeHTML(e.message || String(e)) + '</span>');
     console.warn('[Crucible] backtest failed', e);
   } finally {
-    if (runBtn) runBtn.disabled = false;
+    setCrucibleRunState({ running: false, kind: null, paused: false, stage: '' });
+    updateCrucibleProgress();
   }
+}
+
+// Results modal for a V2 backtest: the same figures as the inline report,
+// with the strategy vs. baselines breakdown and the edge verdict. The
+// inline report stays on the page as well, so the modal is a summary you
+// can dismiss without losing the detail.
+function showCrucibleV2Results(r, fetched, opts) {
+  const row = (label, s, highlight) => {
+    const cls = highlight ? 'style="color:' + (s.netPnl >= 0 ? 'var(--green)' : 'var(--hot)') + ';font-weight:bold"' : 'style="color:#bbb"';
+    return '<tr><td ' + cls + '>' + escapeHTML(label) + '</td><td ' + cls + '>' + s.trades +
+      '</td><td ' + cls + '>' + s.winRate.toFixed(1) + '%</td><td ' + cls + '>' + _fmtPnl(s.netPnl) +
+      '</td><td ' + cls + '>' + _fmtPf(s.profitFactor) + '</td></tr>';
+  };
+  const verdict = r.edgeSignificant
+    ? 'Significant edge: beats the coin-flip control by ' + r.winRateEdgePct.toFixed(1) + 'pp, wider than the ' + r.noiseBandPct.toFixed(1) + 'pp noise band.'
+    : r.beatsRandom
+      ? 'Ahead of the coin-flip control, but by less than the ' + r.noiseBandPct.toFixed(1) + 'pp noise band — treat this as no demonstrated edge.'
+      : 'Does not beat the coin-flip control after costs. No demonstrated edge.';
+  const mismatch = r.regimeMismatch
+    ? 'You selected ' + r.requestedRegime + ', but the real data is currently ' + r.detectedRegime + '. '
+    : '';
+  showCrucibleResults({
+    mode: 'V2 · ' + opts.asset.toUpperCase() + ' · ' + opts.days + 'd · ' + opts.costModel,
+    status: 'completed',
+    tradesRun: r.strategy.trades,
+    tradesSettled: r.strategy.trades,
+    wins: Math.round(r.strategy.trades * r.strategy.winRate / 100),
+    losses: r.strategy.trades - Math.round(r.strategy.trades * r.strategy.winRate / 100),
+    startBalance: opts.notional,
+    endBalance: opts.notional + r.strategy.netPnl,
+    pnl: r.strategy.netPnl,
+    pnlPct: opts.notional ? ((r.strategy.netPnl / opts.notional) * 100).toFixed(2) : '0.00',
+    winRate: r.strategy.winRate,
+    note: mismatch + verdict,
+    extraHTML:
+      '<table style="width:100%;border-collapse:collapse;font-size:9px;margin:10px 0">' +
+      '<tr style="color:var(--purple);text-align:left"><th style="padding:3px 5px">Series</th>' +
+      '<th style="padding:3px 5px">Trades</th><th style="padding:3px 5px">Win %</th>' +
+      '<th style="padding:3px 5px">Net P&amp;L</th><th style="padding:3px 5px">PF</th></tr>' +
+      row('Strategy (' + r.strategy.direction + ')', r.strategy, true) +
+      row('Random control', r.baselines.random, false) +
+      row('Momentum', r.baselines.momentum, false) +
+      row('Buy &amp; hold', r.baselines.buyAndHold, false) +
+      row('Short &amp; hold', r.baselines.shortAndHold, false) +
+      '</table>' +
+      '<div style="font-size:9px;color:var(--dim)">Candles: ' + r.candles + ' · Cost: ' +
+      r.costBpsPerRoundTrip.toFixed(0) + ' bps round trip · Data: ' +
+      escapeHTML(fetched.degraded ? 'CoinGecko /market_chart (closes only)' : 'CoinGecko /ohlc') + '</div>',
+  });
 }
 
 const _fmtPf = (v) => (!Number.isFinite(v) ? 'n/a' : v.toFixed(2));
@@ -3084,10 +3277,24 @@ async function runEdgeSearch() {
   }
 }
 
-// Show detailed crucible results in a modal
+// Show detailed crucible results in a modal.
+// `results` fields: mode, status ('completed' | 'cancelled' | 'stopped …'),
+// tradesRun, tradesSettled, wins, losses, startBalance, endBalance, pnl,
+// pnlPct, winRate (a real number — the old code passed a 0 placeholder),
+// plus optional note (plain text) and extraHTML (already-escaped markup,
+// e.g. the V2 strategy-vs-baselines table).
 function showCrucibleResults(results) {
-   // Create modal overlay
+   closeCrucibleResults(); // never stack two result modals
+   const status = results.status || 'completed';
+   const settled = typeof results.tradesSettled === 'number' ? results.tradesSettled : results.tradesRun;
+   const wins = typeof results.wins === 'number' ? results.wins : 0;
+   const losses = typeof results.losses === 'number' ? results.losses : Math.max(settled - wins, 0);
+
    const modalOverlay = document.createElement('div');
+   modalOverlay.id = 'crucibleResultsOverlay';
+   modalOverlay.setAttribute('role', 'dialog');
+   modalOverlay.setAttribute('aria-modal', 'true');
+   modalOverlay.setAttribute('aria-labelledby', 'crucibleResultsTitle');
    modalOverlay.style.cssText = `
       position: fixed;
       top: 0;
@@ -3100,6 +3307,11 @@ function showCrucibleResults(results) {
       align-items: center;
       z-index: 10000;
    `;
+   // Clicking the dimmed backdrop closes the modal; clicks inside the
+   // panel do not (the target check keeps panel clicks from bubbling up).
+   modalOverlay.addEventListener('click', (e) => {
+     if (e.target === modalOverlay) closeCrucibleResults();
+   });
 
    const modalContent = document.createElement('div');
    modalContent.style.cssText = `
@@ -3109,22 +3321,29 @@ function showCrucibleResults(results) {
       padding: 20px;
       width: 90%;
       max-width: 500px;
+      max-height: 85vh;
+      overflow-y: auto;
       color: white;
       font-family: 'Share Tech Mono', monospace;
    `;
 
+   const statusColor = status === 'completed' ? 'var(--green)' : 'var(--amber)';
    modalContent.innerHTML = `
-      <h2 style="color: var(--cyan); text-align: center; margin-bottom: 20px;">CRUCIBLE BATCH RESULTS</h2>
+      <h2 id="crucibleResultsTitle" style="color: var(--cyan); text-align: center; margin-bottom: 6px;">CRUCIBLE BATCH RESULTS</h2>
+      <div style="text-align:center;margin-bottom: 14px;font-size:11px;color:${statusColor}">Status: ${escapeHTML(status.toUpperCase())}</div>
       <div style="margin-bottom: 15px;">
          <strong>Mode:</strong> ${escapeHTML(results.mode)}<br>
          <strong>Trades Executed:</strong> ${results.tradesRun}<br>
+         <strong>Trades Settled:</strong> ${settled} (${wins}W / ${losses}L)<br>
          <strong>Starting Balance:</strong> ${fmtUSD(results.startBalance, 2)}<br>
          <strong>Ending Balance:</strong> ${fmtUSD(results.endBalance, 2)}<br>
          <strong>Profit/Loss:</strong> ${results.pnl >= 0 ? '+' : ''}${fmtUSD(results.pnl, 2)} (${results.pnlPct}%)<br>
          <strong>Win Rate:</strong> ${results.winRate.toFixed(1)}%
       </div>
+      ${results.note ? `<div style="margin-bottom: 10px;font-size:10px;color:var(--amber)">${escapeHTML(results.note)}</div>` : ''}
+      ${results.extraHTML || ''}
       <div style="margin-top: 20px; text-align: center;">
-         <button onclick="this.parentElement.parentElement.remove()"
+         <button onclick="closeCrucibleResults()" aria-label="Close Crucible results"
                  style="background: var(--purple); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
             CLOSE
          </button>
@@ -3133,6 +3352,22 @@ function showCrucibleResults(results) {
 
    modalOverlay.appendChild(modalContent);
    document.body.appendChild(modalOverlay);
+}
+
+// Removes the whole results modal, overlay included. The old CLOSE button
+// removed only the inner panel (`this.parentElement.parentElement`), which
+// left the full-screen overlay in place and the app unusable behind it.
+function closeCrucibleResults() {
+   document.getElementById('crucibleResultsOverlay')?.remove();
+}
+
+// Escape closes the results modal. Registered once, guarded so it is a
+// no-op when no modal is open.
+if (typeof document !== 'undefined' && !document._crucibleEscapeBound) {
+  document._crucibleEscapeBound = true;
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeCrucibleResults();
+  });
 }
 
 
@@ -7191,7 +7426,10 @@ function _injectAVControls() {
     <button id="voiceBtn" style="${btnStyle}" class="${voiceOn?'av-on':''}" title="Voice Announcements" aria-label="Toggle Voice Announcements" aria-pressed="${voiceOn}"
       onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleVOICE(); const isOn = ACOUSTIC.getConfig().voice.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🎙️</button>
     <button id="audioBtn" style="${btnStyle}" class="${audioOn?'av-on':''}" title="Acoustic Core Sequencer" aria-label="Toggle Acoustic Core Sequencer" aria-pressed="${audioOn}"
-      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleAudio(); const isOn = ACOUSTIC.getConfig().audio.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🎹</button>`;
+      onclick="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.toggleAudio(); const isOn = ACOUSTIC.getConfig().audio.enabled; this.classList.toggle('av-on', isOn); this.setAttribute('aria-pressed', isOn); }">🎹</button>
+    <input id="sfxVol" type="range" min="0" max="100" value="50" title="Sound volume" aria-label="Sound volume"
+      style="width:60px;align-self:center;accent-color:var(--cyan)"
+      oninput="if(typeof ACOUSTIC!=='undefined'){ ACOUSTIC.setVolume(this.value/100); }">`;
 
   const gen = document.getElementById('genBadge');
   if (gen) hdr.insertBefore(wrap, gen); else hdr.appendChild(wrap);

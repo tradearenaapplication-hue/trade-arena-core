@@ -538,6 +538,8 @@ app.get('/', (req, res) => {
 app.use((req, res, next) => {
     if (req.method !== 'GET') return next();
     if (req.path === '/') return next();
+    if (req.path === '/health') return next();
+    if (req.path === '/manifest.json') return next();
     if (req.path.startsWith('/api/')) return next();
     if (!/\.(js|css|html|webmanifest|png|jpg|jpeg|gif|svg|ico|webp|avif|woff|woff2|ttf|otf|mp3|wav|ogg|txt|xml)$/i.test(req.path)) {
         return res.status(403).json({ success: false, error: 'Forbidden' });

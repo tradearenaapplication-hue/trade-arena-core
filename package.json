@@ -46,6 +46,7 @@
     "axios": "^1.20.0",
     "body-parser": "^1.20.6",
     "ccxt": "^4.2.77",
+    "compression": "^1.8.2",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "ethers": "^6.17.0",

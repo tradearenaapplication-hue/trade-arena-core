@@ -113,6 +113,9 @@
   function createControlPanel() {
     // Check if already exists
     if (document.getElementById('acoustic-ctrl')) return;
+    // index.html already injects #avControls with SFX/voice/audio toggles.
+    // Don't add a second, duplicate set of buttons in the header.
+    if (document.getElementById('avControls')) return;
 
     const panel = document.createElement('div');
     panel.id = 'acoustic-ctrl';
@@ -148,7 +151,7 @@
     if (!sfx) return;
 
     CONFIG.sfx.enabled = !CONFIG.sfx.enabled;
-    sfx.setMuted(!CONFIG.sfx.enabled);
+    if (sfx.setMuted) sfx.setMuted(!CONFIG.sfx.enabled);
 
     const btn = document.getElementById('acoustic-sfx-btn');
     if (btn) {
@@ -174,7 +177,7 @@
 
     CONFIG.voice.muted = !CONFIG.voice.muted;
     CONFIG.voice.enabled = !CONFIG.voice.muted;
-    voice.setMuted(CONFIG.voice.muted);
+    if (voice.setMuted) voice.setMuted(CONFIG.voice.muted);
 
     const btn = document.getElementById('acoustic-voice-btn');
     if (btn) {
@@ -302,10 +305,59 @@
   }
 
   // ══════════════════════════════════════════════════════
+  // PUBLIC API expected by app-rebuild.js / TradeArenaApp
+  // ══════════════════════════════════════════════════════
+  // Master toggle: same as toggling SFX. Returns the new enabled state.
+  function toggle() {
+    toggleSFX();
+    return CONFIG.sfx.enabled;
+  }
+
+  // Master volume (0-1): applies to SFX and voice where supported.
+  function setVolume(vol) {
+    const v = Math.max(0, Math.min(1, Number(vol) || 0));
+    CONFIG.sfx.volume = v;
+    if (sfx && sfx.setVolume) sfx.setVolume(v);
+    if (voice && voice.setVolume) voice.setVolume(v);
+    return v;
+  }
+
+  // Dispatch a named trade event, e.g. playEvent('win', botId, pnl).
+  // Returns true when the event was handled, false for unknown names.
+  function playEvent(event, ...args) {
+    const name = String(event || '').toLowerCase();
+    if (name === 'tradeopen' || name === 'open') {
+      onTradeOpen(...args);
+      return true;
+    }
+    if (name === 'win' || name === 'bigwin') {
+      onWin(args[0], args[1], name === 'bigwin');
+      return true;
+    }
+    if (name === 'loss') {
+      onLoss(args[0], args[1], false);
+      return true;
+    }
+    if (name === 'stoploss') {
+      onLoss(args[0], args[1], true);
+      return true;
+    }
+    if (name === 'takeprofit') {
+      onTakeProfit(args[0]);
+      return true;
+    }
+    return false;
+  }
+
+  // ══════════════════════════════════════════════════════
   // EXPORTS
   // ══════════════════════════════════════════════════════
   window.ACOUSTIC = {
     init,
+    toggle,
+    setVolume,
+    playEvent,
+    get isEnabled() { return CONFIG.sfx.enabled; },
     toggleSFX,
     toggleFX,
     toggleVOICE,

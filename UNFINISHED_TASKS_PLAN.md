@@ -17,9 +17,9 @@
 - [ ] Add music toggle button to header
 - [ ] Implement toggleBackgroundMusic() function
 - [ ] Test background music playback
-- [ ] Enhance runCrucibleBatch() with live progress
-- [ ] Add pause/cancel controls
-- [ ] Create results modal with detailed breakdown
+- [x] Enhance runCrucibleBatch() with live progress — done 2026-11-18 (Phase 4)
+- [x] Add pause/cancel controls — done 2026-11-18 (Phase 4)
+- [x] Create results modal with detailed breakdown — done 2026-11-18 (Phase 4)
 
 ### 4. ACOUSTIC_CORE_IMPLEMENTATION_TODO.md - Phase 5 (ADVANCED)
 - Requires live blockchain integration
@@ -45,10 +45,10 @@
 2. Verify MoonPay deposit flow works
 3. Verify demo mode fallback
 
-### PHASE 4: Crucible Enhancements (Medium Priority)
-1. Add live progress to crucible batch execution
-2. Add pause/cancel controls
-3. Enhance results modal
+### PHASE 4: Crucible Enhancements (Medium Priority) — DONE 2026-11-18
+1. Add live progress to crucible batch execution — done: `crucibleRun` state + `updateCrucibleProgress()` + `#crucibleLive` ticker; V2 stages Fetching → Computing → Done
+2. Add pause/cancel controls — done: Pause/Cancel buttons; pause works on the legacy bot batch, cancel stops both runners (V2 via generation-token discard)
+3. Enhance results modal — done: real win rate/status/W-L, V2 strategy-vs-baselines table; Close-button overlay bug fixed (see PLAN.md)
 
 ---
 

@@ -1370,7 +1370,7 @@ describe("Trade Authorisation Hardening", () => {
 
   const findRoute = (path, method = "get") => {
     const wants = method === "get" ? { get: true } : { [method]: true };
-    const r = server._router.stack.find(
+    const r = server.router.stack.find(
       (l) =>
         l.route &&
         l.route.path === path &&
@@ -1380,7 +1380,7 @@ describe("Trade Authorisation Hardening", () => {
     // helper learned about methods (call sites that need a verb pass it).
     const found =
       r ||
-      server._router.stack.find((l) => l.route && l.route.path === path);
+      server.router.stack.find((l) => l.route && l.route.path === path);
     expect(Boolean(found)).toBe(true);
     return found.route;
   };
@@ -2190,7 +2190,7 @@ describe("Swap Execution Endpoint Security", () => {
   const server = require("./server.js");
 
   it("rejects swap requests with missing or invalid parameters", async () => {
-    const route = server._router.stack.find(
+    const route = server.router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/execute/swap"
     );
     expect(Boolean(route)).toBe(true);
@@ -2234,7 +2234,7 @@ describe("Swap Execution Endpoint Security", () => {
   });
 
   it("requires a signed authorisation before any swap can execute", async () => {
-    const route = server._router.stack.find(
+    const route = server.router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/execute/swap"
     );
 
@@ -2272,7 +2272,7 @@ describe("Swap Execution Endpoint Security", () => {
   });
 
   it("executes valid swap requests through the real on-chain engine", async () => {
-    const route = server._router.stack.find(
+    const route = server.router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/execute/swap"
     );
 
@@ -2355,7 +2355,7 @@ describe("Flash Loan Simulation Endpoint Security", () => {
   const server = require("./server.js");
 
   it("rejects flash loan simulation requests with missing or invalid loanAmount", async () => {
-    const route = server._router.stack.find(
+    const route = server.router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/flash-loan/simulate"
     );
     expect(Boolean(route)).toBe(true);
@@ -2384,7 +2384,7 @@ describe("Flash Loan Simulation Endpoint Security", () => {
   });
 
   it("simulates flash loan opportunity when valid positive loanAmount is provided", async () => {
-    const route = server._router.stack.find(
+    const route = server.router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/flash-loan/simulate"
     );
 
@@ -2408,7 +2408,7 @@ describe("Bot Creation Endpoint Security", () => {
   const server = require("./server.js");
 
   it("rejects bot creation requests with missing or invalid parameters", () => {
-    const route = server._router.stack.find(
+    const route = server.router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/bot/create"
     );
     expect(Boolean(route)).toBe(true);
@@ -2439,7 +2439,7 @@ describe("Bot Creation Endpoint Security", () => {
   });
 
   it("creates a bot when valid inputs are provided", () => {
-    const route = server._router.stack.find(
+    const route = server.router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/bot/create"
     );
 
@@ -2487,7 +2487,7 @@ describe("MoonPay Webhook Security", () => {
         json: (data) => { jsonResponse = data; return res; },
       };
 
-      const route = server._router.stack.find(
+      const route = server.router.stack.find(
         (layer) => layer.route && layer.route.path === "/api/webhooks/moonpay/deposit"
       );
       expect(Boolean(route)).toBe(true);
@@ -2507,7 +2507,7 @@ describe("MoonPay Webhook Security", () => {
     process.env.MOONPAY_WEBHOOK_SECRET = "secret_12345";
 
     try {
-      const route = server._router.stack.find(
+      const route = server.router.stack.find(
         (layer) => layer.route && layer.route.path === "/api/webhooks/moonpay/deposit"
       );
 
@@ -2540,7 +2540,7 @@ describe("MoonPay Webhook Security", () => {
     process.env.MOONPAY_WEBHOOK_SECRET = "secret_12345";
 
     try {
-      const route = server._router.stack.find(
+      const route = server.router.stack.find(
         (layer) => layer.route && layer.route.path === "/api/webhooks/moonpay/deposit"
       );
 
@@ -2577,7 +2577,7 @@ describe("Proxy Endpoint Security", () => {
   });
 
   it("rejects invalid log payloads on maintenance log endpoint", async () => {
-    const route = proxyApp._router.stack.find(
+    const route = proxyApp.router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/maintenance/log"
     );
     expect(Boolean(route)).toBe(true);
@@ -2609,7 +2609,7 @@ describe("Proxy Endpoint Security", () => {
   });
 
   it("enforces rate limiting on excessive maintenance log requests", async () => {
-    const route = proxyApp._router.stack.find(
+    const route = proxyApp.router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/maintenance/log"
     );
     expect(Boolean(route)).toBe(true);
@@ -2658,7 +2658,7 @@ describe("Proxy Endpoint Security", () => {
   });
 
   it("successfully logs valid maintenance entry without side effects", async () => {
-    const route = proxyApp._router.stack.find(
+    const route = proxyApp.router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/maintenance/log"
     );
 
@@ -2742,7 +2742,7 @@ describe("Server Error Handling & Input Validation Security", () => {
   const server = require("./server.js");
 
   it("sanitizes 500 error responses and does not leak internal error messages", async () => {
-    const route = server._router.stack.find(
+    const route = server.router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/analyze/volatility"
     );
     expect(Boolean(route)).toBe(true);
@@ -2762,7 +2762,7 @@ describe("Server Error Handling & Input Validation Security", () => {
   });
 
   it("rejects non-array or invalid priceHistory inputs in volatility analysis", async () => {
-    const route = server._router.stack.find(
+    const route = server.router.stack.find(
       (layer) => layer.route && layer.route.path === "/api/analyze/volatility"
     );
 
@@ -2877,6 +2877,61 @@ describe("Crucible Mode & Regime Selection UX & Accessibility", () => {
   it("defines aria-pressed and aria-label on crucibleBtn and updates aria-pressed in toggleCrucible", () => {
     expect(html).toContain('id="crucibleBtn" onclick="toggleCrucible()" aria-pressed="false" aria-label="Toggle Crucible Mode"');
     expect(html).toContain("btn.setAttribute('aria-pressed', crucibleMode ? 'true' : 'false')");
+  });
+});
+
+describe("Crucible Batch Live Progress, Pause/Cancel & Results Modal (Phase 4)", () => {
+  const fs = require("fs");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  it("defines Pause and Cancel buttons wired to pauseCrucible/cancelCrucible, disabled until a batch runs", () => {
+    expect(html).toContain('id="cruciblePauseBtn" onclick="pauseCrucible()" disabled');
+    expect(html).toContain('id="crucibleCancelBtn" onclick="cancelCrucible()" disabled');
+    expect(html).toContain('id="crucibleLive"');
+  });
+
+  it("keeps one shared crucibleRun state object instead of window.* flags", () => {
+    expect(html).toContain("const crucibleRun = {");
+    expect(html).toContain("function setCrucibleRunState(patch)");
+    expect(html).toContain("function updateCrucibleControls()");
+    expect(html).toContain("function updateCrucibleProgress()");
+    // REGRESSION: the old loop read window.cruciblePaused, which top-level
+    // `let` never sets, so pause/cancel could never fire. No live code
+    // may gate on window.* flags anymore (comments may still mention them).
+    const code = html.replace(/\/\/[^\n]*/g, "");
+    expect(code.includes("window.cruciblePaused")).toBe(false);
+    expect(code.includes("window.crucibleCancelled")).toBe(false);
+    expect(code).toContain("while (crucibleRun.paused && !crucibleRun.cancelled)");
+    expect(code).toContain("if (crucibleRun.cancelled) { stoppedReason = 'cancelled'; break; }");
+  });
+
+  it("defines pauseCrucible/cancelCrucible and only enables Pause for the legacy batch", () => {
+    expect(html).toContain("function pauseCrucible()");
+    expect(html).toContain("function cancelCrucible()");
+    expect(html).toContain("crucibleRun.kind === 'legacy'");
+    expect(html).toContain("generation: crucibleRun.generation + 1");
+  });
+
+  it("V2 backtest reports staged progress and discards a cancelled in-flight result", () => {
+    expect(html).toContain("stage: 'Fetching real candles'");
+    expect(html).toContain("stage: 'Computing backtest over '");
+    expect(html).toContain("if (crucibleRun.cancelled || crucibleRun.generation !== gen)");
+    expect(html).toContain("Backtest cancelled — no results.");
+    expect(html).toContain("function showCrucibleV2Results(r, fetched, opts)");
+  });
+
+  it("results modal closes the whole overlay, reports real win rate and status", () => {
+    expect(html).toContain("function closeCrucibleResults()");
+    expect(html).toContain("document.getElementById('crucibleResultsOverlay')?.remove()");
+    expect(html).toContain('modalOverlay.id = \'crucibleResultsOverlay\'');
+    expect(html).toContain("modalOverlay.setAttribute('role', 'dialog')");
+    // REGRESSION: the old CLOSE button removed only the inner panel
+    // (this.parentElement.parentElement), leaving the overlay covering
+    // the app. The button must call closeCrucibleResults() instead.
+    expect(html.includes('onclick="this.parentElement.parentElement.remove()"')).toBe(false);
+    expect(html).toContain('onclick="closeCrucibleResults()"');
+    expect(html).toContain("Status: ${escapeHTML(status.toUpperCase())}");
+    expect(html).toContain("winRate: settled.length ? (wins / settled.length) * 100 : 0");
   });
 });
 

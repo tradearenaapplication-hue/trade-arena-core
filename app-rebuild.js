@@ -701,9 +701,10 @@ function initAppRebuildV42() {
   realMarketPricing = new RealMarketPricing();
 
   // ACOUSTIC Audio-Visual System
-  if (typeof ACOUSTICCore !== "undefined") {
-    window.ACOUSTIC = new ACOUSTICCore();
-    window.ACOUSTIC.init();
+  // ACOUSTIC_CORE.js defines window.ACOUSTIC as a plain object (not a
+  // class), and auto-inits on DOMContentLoaded. Do not overwrite it here
+  // with `new ACOUSTICCore()` — that name never existed.
+  if (typeof window.ACOUSTIC !== "undefined" && window.ACOUSTIC) {
     console.log("%c→ ACOUSTIC Audio-Visual System ONLINE", "color: #ff00ff;");
   }
 
